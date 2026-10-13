@@ -1130,12 +1130,12 @@ def main():
         def _add(self, p):
             with dlock: dirty.add(p)
         def on_created(self, e):
-            if not e.is_directory: self._add(e.src_path)
+            if not e.is_directory: B._add(e.src_path)
         def on_modified(self, e):
-            if not e.is_directory: self._add(e.src_path)
+            if not e.is_directory: B._add(e.src_path)
         def on_moved(self, e):
             if not e.is_directory:
-                self._add(e.dest_path)
+                B._add(e.dest_path)
                 if not e.dest_path.startswith(B.root):
                     B._check_siblings(os.path.dirname(e.src_path))
         def on_deleted(self, e):
@@ -1179,6 +1179,11 @@ def main():
         print("\n⛔ Stopped early — progress kept.")
         obs.stop(); sys.exit(0)
     print(f"\n✅ Scan complete · ⚙️ {B.stats['converted']} converted · ✏️ {B.stats['renamed']} renamed · 📦 {B.stats['moved']} moved")
+    try:
+        B._reconcile_tags(print)
+        B._compact_numbers(B.root, print)
+    except Exception as _se:
+        print('startup-reconcile error:', _se)
     B._save_idx()
     B.scanning = False
     print("👀 Watching silently… (Ctrl+C to quit)\n")
@@ -1297,7 +1302,7 @@ def main():
                 if _git_stamp() != GIT_STAMP:
                     print(f"⚠️ newer committed code exists (git {_git_stamp()}) - type  restart  to run the latest proven version")
                 try:
-                    for dp, dn, fn in os.walk(self.root):
+                    for dp, dn, fn in os.walk(B.root):
                         dn[:] = [x for x in dn if not x.startswith(".")]
                         B._compact_numbers(dp, print)
                 except Exception as _ce:
