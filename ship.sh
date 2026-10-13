@@ -12,7 +12,7 @@ health() {
   LH="$(git rev-parse --short HEAD)"
   LB="$(grep -o 'git [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]' butler_live.log 2>/dev/null | tail -1 | awk '{print $2}')"
   if [ "$LH" = "$LB" ]; then echo "🔁 version: live = committed ($LH)"; else echo "⚠️ version drift: live=${LB:-?} vs committed=$LH"; fi
-  if [ -n "$(git status --porcelain)" ]; then echo "⚠️ uncommitted edits in ~/CV_Tool - gate them: ./ship.sh \"msg\""; else echo "📚 local git: clean & in sync"; fi
+  if [ -n "$(git status --porcelain -- butler.py briefing.py wa.py cleaner.py ship.sh PROTOCOL.md butler_check.py requirements.txt)" ]; then echo "⚠️ uncommitted CODE edits - gate them: ./ship.sh \"msg\""; else echo "📚 code clean & in sync (runtime/data ignored)"; fi
   echo "☁️ mirror head: $(git -C "$HOME/CV_Tool_pub" rev-parse --short HEAD 2>/dev/null) · local head: $LH"
   echo "── last log lines"; tail -2 butler_live.log 2>/dev/null
 }

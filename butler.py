@@ -483,7 +483,7 @@ def get_tags(path):
         return []
 
 class Butler:
-    RULES_VERSION = 'v13-decisions-free'
+    RULES_VERSION = 'v19-fresh-eyes'
     def __init__(self, root):
         self.root = os.path.abspath(root)
         self.engines = sorted(detect_engines(), key=lambda e: 0 if e[0] == 'pages' else 1)  # Pages first (best fidelity); libreoffice/html remain automatic fallbacks
