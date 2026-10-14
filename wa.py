@@ -4,6 +4,11 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROFILE = os.path.join(BASE_DIR, "wa_profile")
 _state = {}
 
+try:
+    from playwright.sync_api import sync_playwright
+except Exception:
+    sync_playwright = None
+
 def _ctx():
     if 'ctx' not in _state:
         from playwright.sync_api import sync_playwright

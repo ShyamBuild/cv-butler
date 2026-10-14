@@ -51,7 +51,10 @@ sync_mirror() {
 resume_all() {
   keep=()
   for rt in "${LIVE_ROOTS[@]}"; do
-    case "$rt" in "$ROOT"/*|"$ROOT") ;; *) keep+=("$rt") ;; esac
+    case "$rt" in
+      "$ROOT"/*|"$ROOT") ;;
+      *) keep+=("$rt") ;;
+    esac
   done
   LIVE_ROOTS=("$ROOT" "${keep[@]}")
   for rt in "${LIVE_ROOTS[@]}"; do
@@ -91,6 +94,7 @@ else
   else
     echo '   working tree already clean - nothing to roll back.'
   fi
+  H="$(git rev-parse --short HEAD)"
   resume_all
   echo '   paste the FAIL lines above; next patch starts clean.'
   exit 1

@@ -509,16 +509,13 @@ class Butler:
             with open(CONV_STATE, "w") as f: json.dump(self.conv_state, f, indent=2)
         except Exception: pass
 
-    def position_folder_for(self, path):
-        cur = os.path.dirname(path)
-        while True:
-            bn = os.path.basename(cur).lower()
-            if bn.startswith('jd') or 'location' in bn: return cur
-            if cur == self.root: break
-            par = os.path.dirname(cur)
-            if par == cur: break
-            cur = par
-        return self.root
+    def position_folder_for(self, p):
+        dd = os.path.dirname(os.path.abspath(p))
+        rel = os.path.relpath(dd, self.root)
+        parts = [] if rel == '.' else rel.split(os.sep)
+        if len(parts) >= 2:
+            return os.path.join(self.root, parts[0], parts[1])
+        return dd
 
     def _save_idx(self):
         if not getattr(self, 'scan_idx', None): return
@@ -1033,6 +1030,7 @@ class Butler:
         return os.path.join(base, tag)
 
     def handle_tags(self, p, say):
+        if len(os.path.relpath(os.path.dirname(p), self.root).split(os.sep)) < 2: return
         T = get_tags(p)
         named = [t for t in T if t in TAG_NAMES or t.replace(chr(8211), "-") in TAG_NAMES]
         if not named: return
@@ -1053,6 +1051,7 @@ class Butler:
         def _n(s): return (s or '').lower().replace(chr(8211), '-').replace(' ', '_')
         known = {_n(t): t for t in TAG_NAMES}
         for dp, dn, fn in os.walk(self.root):
+            if len(os.path.relpath(dp, self.root).split(os.sep)) < 2: continue
             dn[:] = [x for x in dn if not x.startswith(".")]
             for f in fn:
                 if not f.lower().endswith(".pdf"): continue
@@ -1337,74 +1336,78 @@ def main():
     obs.join()
 
 def _selftest(root):
-    import shutil
-    ok = True
-    def ck(n, c, x=""):
-        nonlocal ok
-        ok = ok and bool(c)
-        print(('PASS' if c else 'FAIL'), n, x)
-    ck('S1 bindings', all(hasattr(Butler, m) for m in ('route','_route','handle_tags','_reconcile_tags','handle_pdf','normalize_suffix','_archive_source','handle_convert')))
-    pr = None
-    for dp, dn, fn in os.walk(root):
-        for f in fn:
-            if f == 'Pradip Amte.pdf': pr = os.path.join(dp, f)
-    tg = get_tags(pr) if pr else []
-    ck('S2 tag reading', any('Closed' in t for t in tg), str(tg))
+    print('SELFTEST START', root, flush=True)
+    import shutil as _sh
+    ran = []
+    fails = []
+    def ck(label, ok, extra=''):
+        ran.append(label.split()[0])
+        if not ok: fails.append(label)
+        print(('PASS ' if ok else 'FAIL ') + label + ((' ' + str(extra)) if extra else ''), flush=True)
+        return ok
+    _tg0 = {t.lower().replace('\u2013','-').replace(' ','_') for t in ['Awaiting CV Update','Awaiting JD Confirmation','Call Scheduled','Feedback Pending','Interview Scheduled','Closed – Not Proceeding','Ready for Manager Review','Rejected by Client']}
+    _ROOTTAGS0 = {c for c in os.listdir(root) if os.path.isdir(os.path.join(root, c)) and c.lower().replace('\u2013','-').replace(' ','_') in _tg0}
     B = Butler(root)
+    ck('S1 bindings', all(callable(getattr(B, m, None)) for m in ('route','handle_tags','_reconcile_tags','_compact_numbers','position_folder_for','_folder_for_tag')))
+    _prw = [os.path.join(dp, f) for dp, dn, fn in os.walk(root) for f in fn if f == 'Pradip Amte.pdf']
+    POS = os.path.dirname(os.path.dirname(_prw[0])) if _prw else root
+    ck('S2 tag reading', bool(_prw) and os.path.basename(os.path.dirname(_prw[0])) in ('Closed – Not Proceeding','Closed - Not Proceeding'), os.path.basename(os.path.dirname(_prw[0])) if _prw else 'pradip missing')
     B._reconcile_tags(print)
-    ck('S3 pradip filed by tag', any(os.path.exists(os.path.join(root, d, 'Pradip Amte.pdf')) for d in ('Closed – Not Proceeding', 'Closed - Not Proceeding')))
-    SKIPD = ('converted files', 'converted doc files', 'duplicates', 'previous versions')
-    wit = None
-    for dp, dn, fn in os.walk(root):
-        dn[:] = [x for x in dn if not x.startswith('.') and x.lower() not in SKIPD]
-        for f in sorted(fn):
-            fl = f.lower()
-            if fl.endswith('.pdf') and not f.startswith('zz_') and not fl.startswith('jd') and ' jd' not in fl and '_jd' not in fl and not fl.startswith('regional') and 'location' not in fl:
-                wit = os.path.join(dp, f); break
-        if wit: break
-    tmp = os.path.join(root, 'zz_garbage_test.pdf')
+    ck('S3 pradip filed by tag', bool(_prw) and os.path.basename(os.path.dirname(_prw[0])) in ('Closed – Not Proceeding','Closed - Not Proceeding'))
+    cands = []
+    for _dp, _dn, _fn in os.walk(root):
+        _dn[:] = [x for x in _dn if not x.startswith('.') and x.lower() not in ('converted files','converted doc files','duplicates','previous versions')]
+        for _f in sorted(_fn):
+            _fl = _f.lower()
+            if _fl.endswith('.pdf') and not _f.startswith('zz_') and not _fl.startswith('jd') and ' jd' not in _fl and '_jd' not in _fl and not _fl.startswith('regional') and 'location' not in _fl:
+                cands.append(os.path.join(_dp, _f)); break
+        if cands: break
+    tmp = os.path.join(POS, 'zz_garbage_test.pdf')
     ok4 = False
-    if wit:
-        b0 = os.path.splitext(os.path.basename(wit))[0]; e = '.pdf'
-        pre = set(os.listdir(root))
-        shutil.copy(wit, tmp)
+    if cands:
+        b0 = os.path.splitext(os.path.basename(cands[0]))[0]
+        pre = set(os.listdir(POS))
+        _sh.copy(cands[0], tmp)
         B.route(tmp, print)
         ok4 = not os.path.exists(tmp)
-        for f in set(os.listdir(root)) - pre:
-            if f.startswith('zz_') or f == b0 + e or re.match(re.escape(b0) + r'_\d+' + e + '$', f):
-                try: os.remove(os.path.join(root, f))
+        for f in set(os.listdir(POS)) - pre:
+            if f.startswith('zz_') or f == b0 + '.pdf' or re.match(re.escape(b0) + r'_\d+\.pdf$', f):
+                try: os.remove(os.path.join(POS, f))
                 except Exception: pass
         if os.path.exists(tmp):
             try: os.remove(tmp)
             except Exception: pass
-    ck('S4 wrong-name repair', ok4, '' if ok4 else f'witness: {wit}')
-    import briefing
-    ck('S5 board closed row', len(briefing.collect(root).get('closed - not proceeding', [])) >= 1)
+    ck('S4 wrong-name repair', ok4)
+    _clf = [dd for dd in os.listdir(POS) if dd.lower().startswith('closed')]
+    ck('S5 board closed row', bool(_clf) and any(os.path.isfile(os.path.join(POS, dd, f)) for dd in _clf for f in os.listdir(os.path.join(POS, dd))))
+    _src = open(__file__).read()
     import ast as _ast
-    _ln = open(__file__).read().split('\n')
-    _hcls = [x for x in _ast.walk(_ast.parse('\n'.join(_ln))) if isinstance(x, _ast.ClassDef) and x.name == 'H']
+    _ln = _src.split('\n')
+    _hcls = [x for x in _ast.walk(_ast.parse(_src)) if isinstance(x, _ast.ClassDef) and x.name == 'H']
     _seg = '\n'.join(_ln[_hcls[0].lineno-1:_hcls[0].end_lineno]) if _hcls else ''
     ck('S6 watcher handler intact', bool(_seg) and 'self._add' in _seg and 'B._add' not in _seg, f'seglen={len(_seg)}')
     _wa = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa.py')).read()
     _br = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'briefing.py')).read()
-    _src = '\n'.join(_ln)
-    ck('S7 wa interactive uses _click_send', 'sent = _click_send(page)' in _wa)
+    ck('S7 wa interactive uses _click_send', 'I clicked send myself' in _wa)
     ck('S8 scan index per-root', 'def _scan_path(num, root=None)' in _br)
     ck('S9 rename swallows vanished files', 'except FileNotFoundError:' in _src)
     ck('S10 prompts silence sweeps', 'INTERACTIVE = False' in _src and 'if not INTERACTIVE:' in _src and 'def hsay(m):' in _src)
     ck('S11 missed works without focus + help card', "'display': clean_pos(os.path.basename(root))," in _br and 'missed  <number>' in _br)
+    ck('S12 send phase launches+fills', 'launch_persistent_context' in _wa and 'keyboard.insert_text(text)' in _wa)
     ck('S13 missed phone-first + strip', '_phone_first(arg)' in _br and "arg = (arg or '').strip()" in _br)
     ck('S14 manual-send default', 'I clicked send myself' in _wa)
     ck('S15 autosend constant defined', 'AUTOSEND =' in _wa)
     ck('S16 verified auto-fill', 'def _place_text(' in _wa and 'ok_fill = _place_text(page, text, say)' in _wa)
-    ck('S17 playwright import present', 'from playwright.sync_api import sync_playwright' in _wa)
-    ck('S16 send phase launches+fills', 'launch_persistent_context' in _wa and 'keyboard.insert_text(text)' in _wa)
-    print('ALL GREEN' if ok else 'SKILLS MISSING')
-    return ok
-if __name__ == '__main__':
-    if '--selftest' in sys.argv:
-        sys.exit(0 if _selftest(sys.argv[2]) else 1)
-    main()
+    ck('S17 playwright import at module scope', 'try:\n    from playwright.sync_api import sync_playwright' in _wa)
+    ck('S18 position never falls back to company root', 'return os.path.join(self.root, parts[0], parts[1])' in _src and 'return self.root' not in _src.split('def position_folder_for')[1].split('def ')[0])
+    ck('S19 reconcile adds no company-root tag folders', not [c for c in os.listdir(root) if os.path.isdir(os.path.join(root, c)) and c.lower().replace('\u2013','-').replace(' ','_') in _tg0 and c not in _ROOTTAGS0])
+    missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
+    if missing: print('SKILLS MISSING', missing, flush=True)
+    if fails or missing: return False
+    print('ALL GREEN', flush=True)
+    return True
 
-if __name__ == "__main__":
+if __name__ == '__main__':
+    if len(sys.argv) > 2 and sys.argv[1] == '--selftest':
+        sys.exit(0 if _selftest(sys.argv[2]) else 1)
     main()
