@@ -100,23 +100,22 @@ def send_review(phone, text, say=print, ask=None):
             nt = _ask("   new message: ").strip()
             if nt: text = nt
             continue
-        if c == '':
-            box = page.locator('div[data-testid="conversation-compose-box-input"]')
-            box.click()
-            try: box.fill(text)
-            except Exception: page.keyboard.type(text, delay=5)
+        if os.path.exists(AUTOSEND):
             sent = _click_send(page)
-            say("✅ sent via WhatsApp Web" if sent else "⚠️ send-button not found - click send yourself in the WA window")
+            if sent: page.wait_for_timeout(1500)
+            say("✅ sent via WhatsApp Web (autosend)" if sent else "⚠️ send-button not found - click send yourself in the WA window")
             return sent
-
-        say("   (type Enter to send · e edit · n number · q skip)")
-def close():
-    try:
-        if _state.get('ctx'): _state['ctx'].close()
-    except Exception:
-        pass
-    try:
-        if _state.get('pw'): _state['pw'].stop()
-    except Exception:
-        pass
-    _state.clear()
+        say("📝 message is in the WhatsApp text field - review it in the opened window, then:")
+        c = (ask or input)("   [Enter] I clicked send myself · [x] discard & clear · [q] leave in field & close: ").strip().lower()
+        if c == 'x':
+            try:
+                page.keyboard.press('Meta+A'); page.keyboard.press('Backspace')
+            except Exception:
+                pass
+            say("🗑 discarded - nothing sent")
+            return False
+        if c == 'q':
+            say("📝 left in the WhatsApp text field - send when ready")
+            return False
+        say("✅ sent (you clicked in WhatsApp)")
+        return True
