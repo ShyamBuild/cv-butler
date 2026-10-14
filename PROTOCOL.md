@@ -16,3 +16,4 @@
 9. FORBIDDEN: blanket 'self. -> B.' rewrites by rule. Nested classes (watchdog H inside main) are
    outside class Butler but NEED self. Fix self/B bugs surgically, one named block at a time.
 11. Shell scripts are validated with `zsh -n` (syntax check, never executes) before staging; per-line quote-parity is NOT a valid test (heredocs span lines). Never rewrite ship.sh from inside a running ship.sh.
+12. ONE company-wide watcher (~/Downloads/Sunsoft Technology, recursive) does all silent work; focus narrows briefs/commands to one position. Never launch per-position butlers while it runs (locks refuse). Other Sunsoft trees elsewhere are out of scope.

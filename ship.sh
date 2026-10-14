@@ -4,7 +4,7 @@ export GIT_TERMINAL_PROMPT=0
 HOLD=0; [ "$1" = "--hold" ] && { HOLD=1; shift; }
 CHECK=0; [ "$1" = "--check" ] && { CHECK=1; shift; }
 MSG="$1"; PATCH="$2"
-PRIMARY="/Users/apple/Downloads/Sunsoft Technology/04 Avis/Regional Head - Sales || Vikhroli East- Mumbai  Location"
+PRIMARY="/Users/apple/Downloads/Sunsoft Technology"
 ROOT="${CV_ROOT:-$PRIMARY}"
 LIVE_ROOTS=()
 for lf in "$HOME"/CV_Tool/butler_*.lock(N); do
@@ -49,7 +49,11 @@ sync_mirror() {
   fi
 }
 resume_all() {
-  if [ ${#LIVE_ROOTS[@]} -eq 0 ]; then LIVE_ROOTS=("$ROOT"); fi
+  keep=()
+  for rt in "${LIVE_ROOTS[@]}"; do
+    case "$rt" in "$ROOT"/*|"$ROOT") ;; *) keep+=("$rt") ;; esac
+  done
+  LIVE_ROOTS=("$ROOT" "${keep[@]}")
   for rt in "${LIVE_ROOTS[@]}"; do
     nohup cv_env/bin/python3 butler.py "$rt" >> butler_live.log 2>&1 &
     disown
