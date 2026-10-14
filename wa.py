@@ -54,6 +54,8 @@ def _goto(page, url, say=print):
     say('⚠️ WhatsApp page did not load (network?) - try again in a minute')
     return False
 
+AUTOSEND = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates', '.autosend')
+
 def send_review(phone, text, say=print, ask=None):
     _ask = ask or input
     page = ensure_login(say)
@@ -77,7 +79,7 @@ def send_review(phone, text, say=print, ask=None):
         say("✅ auto-sent via WhatsApp Web" if sent else "⚠️ auto-send could not click send - message left in the box for you")
         return sent
     while True:
-        try: c = _ask("   [Enter] send · [e] edit msg · [n] fix number · [q] skip: ").strip()
+        try: c = _ask("   [Enter] put in WhatsApp field (you send) · [e] edit msg · [n] fix number · [q] skip: ").strip()
         except EOFError: return False
         if c.lower() == 'q':
             say("⏭ skipped"); return False
