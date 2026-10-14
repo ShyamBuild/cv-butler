@@ -4,8 +4,8 @@ export GIT_TERMINAL_PROMPT=0
 HOLD=0; [ "$1" = "--hold" ] && { HOLD=1; shift; }
 CHECK=0; [ "$1" = "--check" ] && { CHECK=1; shift; }
 MSG="$1"; PATCH="$2"
-ROOT="$(cat ~/.cvtool_last_butler_root 2>/dev/null)"
-[ -z "$ROOT" ] && ROOT="/Users/apple/Downloads/Sunsoft Technology/04 Avis/Regional Head - Sales || Vikhroli East- Mumbai  Location"
+PRIMARY="/Users/apple/Downloads/Sunsoft Technology/04 Avis/Regional Head - Sales || Vikhroli East- Mumbai  Location"
+ROOT="${CV_ROOT:-$PRIMARY}"
 WAS_UP=0; pgrep -f butler.py > /dev/null && WAS_UP=1
 health() {
   echo "── health"

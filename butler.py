@@ -1344,13 +1344,31 @@ def _selftest(root):
     B = Butler(root)
     B._reconcile_tags(print)
     ck('S3 pradip filed by tag', any(os.path.exists(os.path.join(root, d, 'Pradip Amte.pdf')) for d in ('Closed – Not Proceeding', 'Closed - Not Proceeding')))
-    src = os.path.join(root, 'Mohit Mathur.pdf'); tmp = os.path.join(root, 'zz_garbage_test.pdf')
-    if os.path.exists(src):
-        shutil.copy(src, tmp)
+    SKIPD = ('converted files', 'converted doc files', 'duplicates', 'previous versions')
+    wit = None
+    for dp, dn, fn in os.walk(root):
+        dn[:] = [x for x in dn if not x.startswith('.') and x.lower() not in SKIPD]
+        for f in sorted(fn):
+            fl = f.lower()
+            if fl.endswith('.pdf') and not f.startswith('zz_') and not fl.startswith('jd') and ' jd' not in fl and '_jd' not in fl and not fl.startswith('regional') and 'location' not in fl:
+                wit = os.path.join(dp, f); break
+        if wit: break
+    tmp = os.path.join(root, 'zz_garbage_test.pdf')
+    ok4 = False
+    if wit:
+        b0 = os.path.splitext(os.path.basename(wit))[0]; e = '.pdf'
+        pre = set(os.listdir(root))
+        shutil.copy(wit, tmp)
         B.route(tmp, print)
-        ck('S4 wrong-name repair', not os.path.exists(tmp))
-        for f in list(os.listdir(root)):
-            if f.startswith('zz_garbage_test') or f.startswith('Mohit Mathur_'): os.remove(os.path.join(root, f))
+        ok4 = not os.path.exists(tmp)
+        for f in set(os.listdir(root)) - pre:
+            if f.startswith('zz_') or f == b0 + e or re.match(re.escape(b0) + r'_\d+' + e + '$', f):
+                try: os.remove(os.path.join(root, f))
+                except Exception: pass
+        if os.path.exists(tmp):
+            try: os.remove(tmp)
+            except Exception: pass
+    ck('S4 wrong-name repair', ok4, '' if ok4 else f'witness: {wit}')
     import briefing
     ck('S5 board closed row', len(briefing.collect(root).get('closed - not proceeding', [])) >= 1)
     import ast as _ast

@@ -15,3 +15,4 @@
    Commands/chat: cv_env/bin/python3 briefing.py chat · Stop: pkill -f butler.py · Manual restart: ./ship.sh "restart-only" (no patch).
 9. FORBIDDEN: blanket 'self. -> B.' rewrites by rule. Nested classes (watchdog H inside main) are
    outside class Butler but NEED self. Fix self/B bugs surgically, one named block at a time.
+11. Shell scripts are validated with `zsh -n` (syntax check, never executes) before staging; per-line quote-parity is NOT a valid test (heredocs span lines). Never rewrite ship.sh from inside a running ship.sh.
