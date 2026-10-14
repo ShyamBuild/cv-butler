@@ -1169,6 +1169,7 @@ def main():
         try: B.scan_ino[str(_i+1)] = os.stat(_p).st_ino
         except OSError: pass
     B._save_idx()
+    _BOOT_T = time.time()
     print(f"⏳ Scanning {len(files)} files… let it FINISH.")
     futs = [ex.submit(work, p, len(files)) for p in files]
     try:
@@ -1179,6 +1180,7 @@ def main():
         print("\n⛔ Stopped early — progress kept.")
         obs.stop(); sys.exit(0)
     print(f"\n✅ Scan complete · ⚙️ {B.stats['converted']} converted · ✏️ {B.stats['renamed']} renamed · 📦 {B.stats['moved']} moved")
+    print(f"⏱ boot scan {time.time()-_BOOT_T:.1f}s · journal-skipped most of it")
     try:
         B._reconcile_tags(print)
         B._compact_numbers(B.root, print)
