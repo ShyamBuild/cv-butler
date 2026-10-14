@@ -1396,6 +1396,7 @@ def _selftest(root):
     ck('S13 missed phone-first + strip', '_phone_first(arg)' in _br and "arg = (arg or '').strip()" in _br)
     ck('S14 manual-send default', 'I clicked send myself' in _wa)
     ck('S15 autosend constant defined', 'AUTOSEND =' in _wa)
+    ck('S16 verified auto-fill', 'def _place_text(' in _wa and 'ok_fill = _place_text(page, text, say)' in _wa)
     ck('S16 send phase launches+fills', 'launch_persistent_context' in _wa and 'keyboard.insert_text(text)' in _wa)
     print('ALL GREEN' if ok else 'SKILLS MISSING')
     return ok

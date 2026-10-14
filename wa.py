@@ -56,98 +56,69 @@ def _goto(page, url, say=print):
 
 AUTOSEND = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates', '.autosend')
 
-def send_review(phone, text, say=print, ask=None):
-    _ask = ask or input
-    page = ensure_login(say)
-    digits = re.sub(r'\D', '', phone)
-    if len(digits) == 10: digits = '91' + digits
-    if not _goto(page, f"https://web.whatsapp.com/send?phone={digits}"): return False
-    try:
-        page.wait_for_selector('div[data-testid="conversation-compose-box-input"]', timeout=60000)
-    except Exception:
-        say("⚠️ chat box did not open (wrong number?) - skipped")
-        return False
-    say("")
-    say(f"🤖 draft -> {digits}:")
-    for ln in text.split("\n"): say("   " + ln)
-    if os.path.exists(os.path.join(BASE_DIR, 'templates', '.autosend')):
-        box = page.locator('div[data-testid="conversation-compose-box-input"]')
-        box.click()
-        try: box.fill(text)
-        except Exception: page.keyboard.type(text, delay=5)
-        sent = _click_send(page)
-        say("✅ auto-sent via WhatsApp Web" if sent else "⚠️ auto-send could not click send - message left in the box for you")
-        return sent
-    while True:
-        try: c = _ask("   [Enter] put in WhatsApp field (you send) · [e] edit msg · [n] fix number · [q] skip: ").strip()
-        except EOFError: return False
-        if c.lower() == 'q':
-            say("⏭ skipped"); return False
-        if c.lower() == 'n':
-            _a = locals().get('_ask', input)
-            nn = _a("   correct 10-digit number (paste with or without +91): ").strip()
-            d2 = re.sub(r'\D', '', nn)
-            if len(d2) == 10: d2 = '91' + d2
-            if not re.fullmatch(r'91[6-9]\d{9}', d2):
-                say("   ⚠️ not a valid Indian mobile - keeping previous number"); continue
-            digits = d2
-            if not _goto(page, f"https://web.whatsapp.com/send?phone={digits}"): return False
-            try:
-                page.wait_for_selector('div[data-testid="conversation-compose-box-input"]', timeout=60000)
-            except Exception:
-                say("   ⚠️ chat box did not open for the new number"); continue
-            say(f"   📞 sending to {d2[2:]} instead - draft unchanged below")
-            continue
-        if c.lower() == 'e':
-            nt = _ask("   new message: ").strip()
-            if nt: text = nt
-            continue
-        say('🌐 opening WhatsApp Web in the BUTLER window - wait for the chat to load…')
-        pw = sync_playwright().start()
-        browser = None
-        c2 = ''
+COMPOSE_SELS = ('div[contenteditable="true"][data-tab="10"]', 'div[contenteditable="true"][data-lexical-editor="true"]', 'footer div[contenteditable="true"]', 'div[contenteditable="true"]')
+def _place_text(page, text, say=print):
+    for attempt in (0, 1, 2):
         try:
-            browser = pw.chromium.launch_persistent_context(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa_profile'), headless=False, no_viewport=True)
-            page = browser.pages[0] if browser.pages else browser.new_page()
-            if not _goto(page, f"https://web.whatsapp.com/send?phone={digits}"):
-                say('⚠️ chat page did not load - scan QR in the opened window if asked, then retry')
-                return False
             box = None
-            for s in ('div[contenteditable="true"][data-tab="10"]', 'div[contenteditable="true"][data-lexical-editor="true"]', 'footer div[contenteditable="true"]'):
+            for sel in COMPOSE_SELS:
                 try:
-                    page.wait_for_selector(s, timeout=45000); box = page.locator(s).first; break
+                    page.wait_for_selector(sel, timeout=8000)
+                    box = sel; break
                 except Exception:
                     continue
-            if box is None:
-                say('⚠️ compose box not found in the butler window - retry once the chat is open')
-                return False
-            box.click()
+            if not box: continue
+            page.click(box)
             page.keyboard.insert_text(text)
-            if os.path.exists(AUTOSEND):
-                sent = _click_send(page)
-                if sent: page.wait_for_timeout(1500)
-                say('✅ sent via WhatsApp Web (autosend)' if sent else '⚠️ send-button not found - click send yourself in the WA window')
-                return sent
-            say('📝 draft is now in the BUTLER window text field - review it THERE, click send yourself, then answer here:')
-            c2 = (ask or input)('   [Enter] I clicked send myself · [x] discard & clear: ').strip().lower()
-            if c2 == 'x':
-                try:
-                    page.keyboard.press('Meta+A'); page.keyboard.press('Backspace')
-                except Exception:
-                    pass
-                say('🗑 discarded - nothing sent')
-                return False
-            say('✅ sent (you clicked in WhatsApp)')
-            return True
-        except Exception as e:
-            say(f'⚠️ whatsapp failed: {e}')
+            page.wait_for_timeout(400)
+            got = page.eval_on_selector(box, "e => e.innerText || e.textContent || ''")
+            if got and got.strip() and text.split()[0].lower() in got.lower():
+                return True
+        except Exception:
+            pass
+        page.wait_for_timeout(1200)
+    return False
+
+def send_review(phone, text, say=print, ask=None):
+    digits = re.sub(r'\D', '', str(phone))
+    if len(digits) == 10: digits = '91' + digits
+    say(f"🌐 opening WhatsApp Web in the BUTLER window for +{digits}…")
+    pw = sync_playwright().start()
+    browser = None
+    page = None
+    try:
+        browser = pw.chromium.launch_persistent_context(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa_profile'), headless=False, no_viewport=True)
+        page = browser.pages[0] if browser.pages else browser.new_page()
+        if not _goto(page, f"https://web.whatsapp.com/send?phone={digits}", say):
+            say('⚠️ chat page did not load - scan QR in the opened window if asked, then retry')
             return False
-        finally:
+        ok_fill = _place_text(page, text, say)
+        if not ok_fill:
+            say('⚠️ field did not take the text automatically - paste the draft from above into the WhatsApp field yourself, then:')
+        if os.path.exists(AUTOSEND):
+            sent = _click_send(page)
+            say('✅ sent via WhatsApp Web (autosend)' if sent else '⚠️ send-button not found - click send yourself in the WA window')
+            return bool(sent)
+        say('📝 message is in the WhatsApp text field - review it in the opened window, then:')
+        c = (ask or input)('   [Enter] I clicked send myself · [x] discard & clear: ').strip().lower()
+        if c == 'x':
             try:
-                if browser is not None: browser.close()
+                page.keyboard.press('Meta+A'); page.keyboard.press('Backspace')
             except Exception:
                 pass
-            try:
-                pw.stop()
-            except Exception:
-                pass
+            say('🗑 discarded - nothing sent')
+            return False
+        say('✅ sent (you clicked in WhatsApp)')
+        return True
+    except Exception as e:
+        say(f'⚠️ whatsapp failed: {e}')
+        return False
+    finally:
+        try:
+            if browser is not None: browser.close()
+        except Exception:
+            pass
+        try:
+            pw.stop()
+        except Exception:
+            pass
