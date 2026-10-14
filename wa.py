@@ -102,22 +102,52 @@ def send_review(phone, text, say=print, ask=None):
             nt = _ask("   new message: ").strip()
             if nt: text = nt
             continue
-        if os.path.exists(AUTOSEND):
-            sent = _click_send(page)
-            if sent: page.wait_for_timeout(1500)
-            say("✅ sent via WhatsApp Web (autosend)" if sent else "⚠️ send-button not found - click send yourself in the WA window")
-            return sent
-        say("📝 message is in the WhatsApp text field - review it in the opened window, then:")
-        c = (ask or input)("   [Enter] I clicked send myself · [x] discard & clear · [q] leave in field & close: ").strip().lower()
-        if c == 'x':
+        say('🌐 opening WhatsApp Web in the BUTLER window - wait for the chat to load…')
+        pw = sync_playwright().start()
+        browser = None
+        c2 = ''
+        try:
+            browser = pw.chromium.launch_persistent_context(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa_profile'), headless=False, no_viewport=True)
+            page = browser.pages[0] if browser.pages else browser.new_page()
+            if not _goto(page, f"https://web.whatsapp.com/send?phone={digits}"):
+                say('⚠️ chat page did not load - scan QR in the opened window if asked, then retry')
+                return False
+            box = None
+            for s in ('div[contenteditable="true"][data-tab="10"]', 'div[contenteditable="true"][data-lexical-editor="true"]', 'footer div[contenteditable="true"]'):
+                try:
+                    page.wait_for_selector(s, timeout=45000); box = page.locator(s).first; break
+                except Exception:
+                    continue
+            if box is None:
+                say('⚠️ compose box not found in the butler window - retry once the chat is open')
+                return False
+            box.click()
+            page.keyboard.insert_text(text)
+            if os.path.exists(AUTOSEND):
+                sent = _click_send(page)
+                if sent: page.wait_for_timeout(1500)
+                say('✅ sent via WhatsApp Web (autosend)' if sent else '⚠️ send-button not found - click send yourself in the WA window')
+                return sent
+            say('📝 draft is now in the BUTLER window text field - review it THERE, click send yourself, then answer here:')
+            c2 = (ask or input)('   [Enter] I clicked send myself · [x] discard & clear: ').strip().lower()
+            if c2 == 'x':
+                try:
+                    page.keyboard.press('Meta+A'); page.keyboard.press('Backspace')
+                except Exception:
+                    pass
+                say('🗑 discarded - nothing sent')
+                return False
+            say('✅ sent (you clicked in WhatsApp)')
+            return True
+        except Exception as e:
+            say(f'⚠️ whatsapp failed: {e}')
+            return False
+        finally:
             try:
-                page.keyboard.press('Meta+A'); page.keyboard.press('Backspace')
+                if browser is not None: browser.close()
             except Exception:
                 pass
-            say("🗑 discarded - nothing sent")
-            return False
-        if c == 'q':
-            say("📝 left in the WhatsApp text field - send when ready")
-            return False
-        say("✅ sent (you clicked in WhatsApp)")
-        return True
+            try:
+                pw.stop()
+            except Exception:
+                pass
