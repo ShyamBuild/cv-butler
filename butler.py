@@ -525,7 +525,7 @@ class Butler:
             json.dump({'root': self.root, 'at': time.time(),
                        'idx': getattr(self, 'scan_idx', {}),
                        'ino': getattr(self, 'scan_ino', {})},
-                      open(os.path.join(BASE_DIR, 'scan_index.json'), 'w'))
+                      open(_idx_path(self.root), 'w'))
         except Exception:
             pass
 
@@ -1195,8 +1195,13 @@ def main():
         import threading as _th
         def _console(tty):
             while True:
-                try: raw = tty.readline().strip(); line = raw.lower()
-                except Exception: return
+                INTERACTIVE = True
+                try:
+                    raw = tty.readline().strip(); line = raw.lower()
+                except Exception:
+                    INTERACTIVE = False
+                    return
+                INTERACTIVE = False
                 if not line: continue
                 if line in ('chat', 'c'):
                     try:
@@ -1353,6 +1358,13 @@ def _selftest(root):
     _hcls = [x for x in _ast.walk(_ast.parse('\n'.join(_ln))) if isinstance(x, _ast.ClassDef) and x.name == 'H']
     _seg = '\n'.join(_ln[_hcls[0].lineno-1:_hcls[0].end_lineno]) if _hcls else ''
     ck('S6 watcher handler intact', bool(_seg) and 'self._add' in _seg and 'B._add' not in _seg, f'seglen={len(_seg)}')
+    _wa = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa.py')).read()
+    _br = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'briefing.py')).read()
+    _src = '\n'.join(_ln)
+    ck('S7 wa interactive uses _click_send', 'sent = _click_send(page)' in _wa)
+    ck('S8 scan index per-root', 'def _scan_path(num, root=None)' in _br)
+    ck('S9 rename swallows vanished files', 'except FileNotFoundError:' in _src)
+    ck('S10 prompts silence sweeps', 'INTERACTIVE = False' in _src)
     print('ALL GREEN' if ok else 'SKILLS MISSING')
     return ok
 if __name__ == '__main__':

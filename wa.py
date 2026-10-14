@@ -24,7 +24,7 @@ def ensure_login(say=print):
     ctx = _ctx()
     page = ctx.pages[0] if ctx.pages else ctx.new_page()
     if 'whatsapp' not in (page.url or ''):
-        page.goto("https://web.whatsapp.com")
+        _goto(page, "https://web.whatsapp.com")
     told = False
     for _ in range(150):
         if _logged_in(page): return page
@@ -45,12 +45,21 @@ def _click_send(page):
             continue
     return False
 
+def _goto(page, url, say=print):
+    for a in (0, 1):
+        try:
+            page.goto(url, timeout=90000, wait_until='domcontentloaded'); return True
+        except Exception:
+            if a == 0: time.sleep(2)
+    say('⚠️ WhatsApp page did not load (network?) - try again in a minute')
+    return False
+
 def send_review(phone, text, say=print, ask=None):
     _ask = ask or input
     page = ensure_login(say)
     digits = re.sub(r'\D', '', phone)
     if len(digits) == 10: digits = '91' + digits
-    page.goto(f"https://web.whatsapp.com/send?phone={digits}")
+    if not _goto(page, f"https://web.whatsapp.com/send?phone={digits}"): return False
     try:
         page.wait_for_selector('div[data-testid="conversation-compose-box-input"]', timeout=60000)
     except Exception:
@@ -80,7 +89,7 @@ def send_review(phone, text, say=print, ask=None):
             if not re.fullmatch(r'91[6-9]\d{9}', d2):
                 say("   ⚠️ not a valid Indian mobile - keeping previous number"); continue
             digits = d2
-            page.goto(f"https://web.whatsapp.com/send?phone={digits}")
+            if not _goto(page, f"https://web.whatsapp.com/send?phone={digits}"): return False
             try:
                 page.wait_for_selector('div[data-testid="conversation-compose-box-input"]', timeout=60000)
             except Exception:
@@ -96,14 +105,11 @@ def send_review(phone, text, say=print, ask=None):
             box.click()
             try: box.fill(text)
             except Exception: page.keyboard.type(text, delay=5)
-            sent = False
-            for sel in ('button[data-testid="compose-btn-send"]', 'span[data-icon="btn-send"]'):
-                try:
-                    page.locator(sel).first.click(timeout=3000); sent = True; break
-                except Exception: continue
+            sent = _click_send(page)
             say("✅ sent via WhatsApp Web" if sent else "⚠️ send-button not found - click send yourself in the WA window")
             return sent
 
+        say("   (type Enter to send · e edit · n number · q skip)")
 def close():
     try:
         if _state.get('ctx'): _state['ctx'].close()

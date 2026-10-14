@@ -32,7 +32,7 @@ sync_mirror() {
 }
 if [ -n "$PATCH" ]; then
   echo "── patch: $PATCH"
-  /usr/bin/python3 "$PATCH" || { echo "❌ patch crashed - rolling back to last proven commit"; git checkout -- butler.py briefing.py; exit 1; }
+  /usr/bin/python3 "$PATCH" || { echo "❌ patch crashed - rolling back to last proven commit"; git checkout -- butler.py briefing.py wa.py cleaner.py; exit 1; }
 fi
 pkill -f butler.py || true
 sleep 1
@@ -69,7 +69,7 @@ if echo "$OUT" | grep -q "ALL GREEN" && [ -z "$TWINS" ]; then
 else
   echo "❌ NOT GREEN (twins: $TWINS) - rollback if dirty, then relaunch proven butler"
   if [ -n "$(git status --porcelain -- butler.py briefing.py)" ]; then
-    git checkout -- butler.py briefing.py
+    git checkout -- butler.py briefing.py wa.py cleaner.py
     echo "   proven state restored."
   else
     echo "   working tree already clean - nothing to roll back."

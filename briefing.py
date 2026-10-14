@@ -528,28 +528,29 @@ def _full_name(path):
     b = re.sub(r'[\s_(-]*\d+[)\s_]*$', '', b).strip()
     return b or os.path.splitext(os.path.basename(path))[0]
 
-def _scan_path(num):
-    try:
-        d = json.load(open(os.path.join(BASE_DIR, 'scan_index.json')))
-    except Exception:
-        return None
-    p = d.get('idx', {}).get(str(num))
-    if p and os.path.exists(p): return p
-    ino = d.get('ino', {}).get(str(num))
-    if ino:
-        root = d.get('root') or os.path.expanduser('~')
-        for dp, dn, fn in os.walk(root):
-            dn[:] = [x for x in dn if not x.startswith(".")]
-            for f in fn:
-                fp = os.path.join(dp, f)
-                try:
-                    if os.stat(fp).st_ino == ino:
-                        d['idx'][str(num)] = fp
-                        try: json.dump(d, open(os.path.join(BASE_DIR, 'scan_index.json'), 'w'))
-                        except Exception: pass
-                        return fp
-                except OSError:
-                    pass
+def _idx_path(root):
+    import hashlib
+    return os.path.join(BASE_DIR, 'scan_index_' + hashlib.md5(os.path.abspath(root).encode()).hexdigest()[:8] + '.json')
+
+def _phone_first(arg):
+    m = re.match(r'^\s*(\d{10}|\d{12})\b\s*(.*)$', arg or '', re.S)
+    if not m: return None, arg
+    d = m.group(1)
+    if len(d) == 10: d = '91' + d
+    return d, m.group(2).strip()
+
+def _scan_path(num, root=None):
+    cands = []
+    if root: cands.append(_idx_path(root))
+    cands.append(os.path.join(BASE_DIR, 'scan_index.json'))
+    for c in cands:
+        try:
+            d = json.load(open(c))
+            if root and d.get('root') and os.path.abspath(d['root']) != os.path.abspath(root): continue
+            p = d.get('idx', {}).get(str(num))
+            if p and os.path.exists(p): return p
+        except Exception:
+            pass
     return None
 
 def do_missed(arg, root, say=print, ask=None):
@@ -557,7 +558,7 @@ def do_missed(arg, root, say=print, ask=None):
     if not f:
         say("set a focus first:  focus <position words>"); return
     q = arg.lower().strip()
-    hit = _scan_path(arg.strip()) if arg.strip().isdigit() else None
+    hit = _scan_path(arg.strip(), root) if arg.strip().isdigit() else None
     if arg.strip().isdigit() and not hit:
         say(f"🤷 no file at scan number {arg.strip()} in the latest scan"); return
     for dp, dn, fn in ([] if hit else os.walk(f['path'])):
@@ -595,7 +596,7 @@ def do_reject(arg, root, say=print, ask=None):
     q = arg.lower().strip()
     if not q:
         say("usage: reject <candidate name>"); return
-    hit = _scan_path(arg.strip()) if arg.strip().isdigit() else None
+    hit = _scan_path(arg.strip(), root) if arg.strip().isdigit() else None
     if arg.strip().isdigit() and not hit:
         say(f"🤷 no file at scan number {arg.strip()} in the latest scan"); return
     for dp, dn, fn in ([] if hit else os.walk(f['path'])):
@@ -626,7 +627,7 @@ def do_send(arg, root, tpl_words, say=print, ask=None):
     q = arg.lower().strip()
     if not q:
         say("usage: <command> <candidate name>"); return
-    hit = _scan_path(arg.strip()) if arg.strip().isdigit() else None
+    hit = _scan_path(arg.strip(), root) if arg.strip().isdigit() else None
     if arg.strip().isdigit() and not hit:
         say(f"🤷 no file at scan number {arg.strip()} in the latest scan"); return
     for scan_root in ([] if hit else (base, root)):
@@ -919,7 +920,7 @@ def do_phonefix(arg, root, say=print):
         say("🤷 no 10-digit number found on the right side"); return
     hit = None
     if q.strip().isdigit() and '_scan_path' in globals():
-        hit = _scan_path(q.strip())
+        hit = _scan_path(q.strip(), root)
         if not hit:
             say(f"🤷 no file at scan number {q.strip()}"); return
     if not hit:
@@ -945,7 +946,7 @@ def do_phonefix(arg, root, say=print):
 
 def do_phone(arg, root, say=print):
     if arg.strip().isdigit():
-        pp = _scan_path(arg.strip())
+        pp = _scan_path(arg.strip(), root)
         if pp:
             say(f"📞 {os.path.basename(pp)}: {phone_of(pp) or 'no phone inside CV'}"); return
         say(f"🤷 no file at scan number {arg.strip()}"); return
@@ -974,7 +975,7 @@ def do_wa(arg, root, say=print, ask=None):
         return
     hit = None; ntok = 0
     if toks and toks[0].isdigit():
-        hit = _scan_path(toks[0]); ntok = 1
+        hit = _scan_path(toks[0], root); ntok = 1
         if not hit:
             say(f"🤷 no file at scan number {toks[0]} in the latest scan"); return
     for n in ([] if hit else (3, 2, 1)):
@@ -1132,6 +1133,6 @@ def do_list(root, say=print):
         shown += 1
     try:
         json.dump({'root': os.path.abspath(root), 'idx': idx, 'ino': ino},
-                  open(os.path.join(BASE_DIR, 'scan_index.json'), 'w'))
+                  open(_idx_path(root), 'w'))
     except Exception: pass
     say('   %d CV(s) - numbers are live right now: jd/missed/wa/nudge <number>' % shown)
