@@ -13,3 +13,5 @@
    overlapping folders · permanent deletes (cleaner is Trash-only) · inline # comments in terminal commands.
 8. RUNTIME: butler runs in background after each green commit. Watch: tail -f butler_live.log ·
    Commands/chat: cv_env/bin/python3 briefing.py chat · Stop: pkill -f butler.py · Manual restart: ./ship.sh "restart-only" (no patch).
+9. FORBIDDEN: blanket 'self. -> B.' rewrites by rule. Nested classes (watchdog H inside main) are
+   outside class Butler but NEED self. Fix self/B bugs surgically, one named block at a time.

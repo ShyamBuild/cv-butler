@@ -1130,12 +1130,12 @@ def main():
         def _add(self, p):
             with dlock: dirty.add(p)
         def on_created(self, e):
-            if not e.is_directory: B._add(e.src_path)
+            if not e.is_directory: self._add(e.src_path)
         def on_modified(self, e):
-            if not e.is_directory: B._add(e.src_path)
+            if not e.is_directory: self._add(e.src_path)
         def on_moved(self, e):
             if not e.is_directory:
-                B._add(e.dest_path)
+                self._add(e.dest_path)
                 if not e.dest_path.startswith(B.root):
                     B._check_siblings(os.path.dirname(e.src_path))
         def on_deleted(self, e):
@@ -1348,6 +1348,11 @@ def _selftest(root):
             if f.startswith('zz_garbage_test') or f.startswith('Mohit Mathur_'): os.remove(os.path.join(root, f))
     import briefing
     ck('S5 board closed row', len(briefing.collect(root).get('closed - not proceeding', [])) >= 1)
+    import ast as _ast
+    _ln = open(__file__).read().split('\n')
+    _hcls = [x for x in _ast.walk(_ast.parse('\n'.join(_ln))) if isinstance(x, _ast.ClassDef) and x.name == 'H']
+    _seg = '\n'.join(_ln[_hcls[0].lineno-1:_hcls[0].end_lineno]) if _hcls else ''
+    ck('S6 watcher handler intact', bool(_seg) and 'self._add' in _seg and 'B._add' not in _seg, f'seglen={len(_seg)}')
     print('ALL GREEN' if ok else 'SKILLS MISSING')
     return ok
 if __name__ == '__main__':
