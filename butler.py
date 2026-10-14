@@ -1393,6 +1393,7 @@ def _selftest(root):
     ck('S9 rename swallows vanished files', 'except FileNotFoundError:' in _src)
     ck('S10 prompts silence sweeps', 'INTERACTIVE = False' in _src and 'if not INTERACTIVE:' in _src and 'def hsay(m):' in _src)
     ck('S11 missed works without focus + help card', "'display': clean_pos(os.path.basename(root))," in _br and 'missed  <number>' in _br)
+    ck('S13 missed phone-first + strip', '_phone_first(arg)' in _br and "arg = (arg or '').strip()" in _br)
     print('ALL GREEN' if ok else 'SKILLS MISSING')
     return ok
 if __name__ == '__main__':

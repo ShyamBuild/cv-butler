@@ -554,10 +554,23 @@ def _scan_path(num, root=None):
     return None
 
 def do_missed(arg, root, say=print, ask=None):
+    arg = (arg or '').strip()
     f = _read_focus()
     if not f:
         f = {'path': root, 'display': clean_pos(os.path.basename(root)),
              'client': re.sub(r'^\d+[\s_-]*', '', os.path.basename(os.path.dirname(root)))}
+    ph0, rest0 = _phone_first(arg)
+    if ph0:
+        nm = rest0.title() or 'there'
+        pos = f['display'] if f else clean_pos(os.path.basename(root))
+        cli = f['client'] if f else re.sub(r'^\d+[\s_-]*', '', os.path.basename(os.path.dirname(root)))
+        text = _tpl_for(['missed']).format(name=nm, position=pos, company=cli)
+        try:
+            import wa
+            wa.send_review(ph0, text, say, ask=ask)
+        except Exception as e:
+            say(f"⚠️ whatsapp failed: {e}")
+        return
     q = arg.lower().strip()
     hit = _scan_path(arg.strip(), root) if arg.strip().isdigit() else None
     if arg.strip().isdigit() and not hit:
@@ -623,8 +636,21 @@ def do_reject(arg, root, say=print, ask=None):
         say(f"⚠️ whatsapp failed: {e}")
 
 def do_send(arg, root, tpl_words, say=print, ask=None):
+    arg = (arg or '').strip()
     f = _read_focus()
     base = f['path'] if f else root
+    ph0, rest0 = _phone_first(arg)
+    if ph0:
+        nm = rest0.title() or 'there'
+        pos = f['display'] if f else clean_pos(os.path.basename(root))
+        cli = f['client'] if f else re.sub(r'^\d+[\s_-]*', '', os.path.basename(os.path.dirname(root)))
+        text = _tpl_for(tpl_words).format(name=nm, position=pos, company=cli)
+        try:
+            import wa
+            wa.send_review(ph0, text, say, ask=ask)
+        except Exception as e:
+            say(f"⚠️ whatsapp failed: {e}")
+        return
     q = arg.lower().strip()
     if not q:
         say("usage: <command> <candidate name>"); return
@@ -959,6 +985,7 @@ def do_phone(arg, root, say=print):
         say(f"📞 {os.path.basename(h)}: {phone_of(h) or 'no phone inside CV'}")
 
 def do_wa(arg, root, say=print, ask=None):
+    arg = (arg or '').strip()
     f = _read_focus()
     base = (f or {}).get('path') or root
     toks = arg.split()
@@ -1004,7 +1031,29 @@ def do_wa(arg, root, say=print, ask=None):
     except Exception as e:
         say(f"⚠️whatsapp failed: {e}")
 
+def _cli_root():
+    f = _read_focus()
+    if f: return f['path']
+    try:
+        r = open(os.path.expanduser('~/.cvtool_last_butler_root')).read().strip()
+        if r and os.path.isdir(r): return r
+    except Exception:
+        pass
+    raise SystemExit('no focus and no last butler root - open chat and: focus <position>')
+def _cli(argv):
+    cmd = argv[0].lower(); arg = " ".join(argv[1:])
+    root = _cli_root()
+    if cmd == 'missed': do_missed(arg, root, print)
+    elif cmd == 'wa': do_wa(arg, root, print)
+    elif cmd == 'jd': do_send(arg, root, ['jd shared'], print)
+    elif cmd == 'nudge': do_send(arg, root, ['nudge'], print)
+    elif cmd == 'touch': do_send(arg, root, ['touch'], print)
+    elif cmd in ('brief', 'board'): print_briefing(root)
+    else: print('cli: missed | wa | jd | nudge | touch | brief  <args>')
+
 if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board'):
+        _cli(sys.argv[1:]); raise SystemExit(0)
     LAST = os.path.expanduser("~/.cvtool_last_root")
     args = sys.argv[1:]
     mode = 'brief'
