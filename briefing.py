@@ -556,7 +556,8 @@ def _scan_path(num, root=None):
 def do_missed(arg, root, say=print, ask=None):
     f = _read_focus()
     if not f:
-        say("set a focus first:  focus <position words>"); return
+        f = {'path': root, 'display': clean_pos(os.path.basename(root)),
+             'client': re.sub(r'^\d+[\s_-]*', '', os.path.basename(os.path.dirname(root)))}
     q = arg.lower().strip()
     hit = _scan_path(arg.strip(), root) if arg.strip().isdigit() else None
     if arg.strip().isdigit() and not hit:
@@ -839,6 +840,7 @@ HELP_CARD = """
  focus <positions> .......... set working positions (comma-separated)
  focus / focus clear ........ show / forget (+ stop watchers)
  missed <name> .............. missed-call WhatsApp draft
+ missed  <number> <Name> .. missed-call template to a pasted number (Naukri tab - no CV needed)
  wa <name> <your words> .... free-text WhatsApp (phone auto-found)
  reject <name> .............. rejection draft, one person
  text <tag> ................. walk a tag folder, draft each

@@ -15,6 +15,7 @@ for _n in ("pdfminer", "fontTools"):
     _l.setLevel(logging.CRITICAL)
 
 VERSION = "butler v6 (final-rules edition)"
+INTERACTIVE = False
 def _git_stamp():
     try:
         r = subprocess.run(['git', '-C', os.path.dirname(os.path.abspath(__file__)), 'rev-parse', '--short', 'HEAD'], capture_output=True, text=True, timeout=5)
@@ -1194,6 +1195,7 @@ def main():
             return
         import threading as _th
         def _console(tty):
+            global INTERACTIVE
             while True:
                 INTERACTIVE = True
                 try:
@@ -1240,8 +1242,11 @@ def main():
                                     open(briefing.FOCUS_FILE, 'w'), indent=2)
                         print(f"🎯 focus auto-set to this position: {os.path.basename(root)}")
                     def _ask(prompt):
+                        global INTERACTIVE
                         print(prompt, end='', flush=True)
-                        return tty.readline().strip()
+                        INTERACTIVE = True
+                        try: return tty.readline().strip()
+                        finally: INTERACTIVE = False
                     try:
                         if line.startswith('wa '): briefing.do_wa(raw[3:], root, print, ask=_ask)
                         elif line.startswith('missed '): briefing.do_missed(raw[7:], root, print, ask=_ask)
@@ -1303,7 +1308,11 @@ def main():
                 cleaner.clean_tree(root, print)
             if time.time() - last_hb > 120:
                 last_hb = time.time(); n += 1
-                print(f"💓 sweep #{n} · quiet · ⚙️ {B.stats['converted']} · ✏️ {B.stats['renamed']} · 📦 {B.stats['moved']}")
+                if not INTERACTIVE:
+                    print(f"💓 sweep #{n} · quiet · ⚙️ {B.stats['converted']} · ✏️ {B.stats['renamed']} · 📦 {B.stats['moved']}")
+                def hsay(m):
+                    if INTERACTIVE: log.info(m)
+                    else: print(m)
                 if _git_stamp() != GIT_STAMP:
                     print(f"⚠️ newer committed code exists (git {_git_stamp()}) - type  restart  to run the latest proven version")
                 try:
@@ -1382,7 +1391,8 @@ def _selftest(root):
     ck('S7 wa interactive uses _click_send', 'sent = _click_send(page)' in _wa)
     ck('S8 scan index per-root', 'def _scan_path(num, root=None)' in _br)
     ck('S9 rename swallows vanished files', 'except FileNotFoundError:' in _src)
-    ck('S10 prompts silence sweeps', 'INTERACTIVE = False' in _src)
+    ck('S10 prompts silence sweeps', 'INTERACTIVE = False' in _src and 'if not INTERACTIVE:' in _src and 'def hsay(m):' in _src)
+    ck('S11 missed works without focus + help card', "'display': clean_pos(os.path.basename(root))," in _br and 'missed  <number>' in _br)
     print('ALL GREEN' if ok else 'SKILLS MISSING')
     return ok
 if __name__ == '__main__':
