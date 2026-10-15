@@ -1150,6 +1150,9 @@ if __name__ == "__main__":
                 do_focus(q[5:], root); continue
             if q.lower().startswith('missed'):
                 do_missed(q[6:], root); continue
+            if q.lower().startswith('history '): do_history(q[8:], root); continue
+            if q.lower().startswith('history'): do_history(q[7:].strip(), root); continue
+            if q.lower().startswith('stale'): do_stale(q[5:].strip(), root); continue
             if q.lower().startswith('text '):
                 do_text(q[5:], root); continue
             if q.lower().startswith('reject'):
