@@ -1174,6 +1174,19 @@ def main():
             print(f"⚠️ A butler is already watching an overlapping folder: {other}")
             print("   Run butler on ONE level only (parent OR children), not both.")
             sys.exit(1)
+    for _fn in os.listdir(os.path.dirname(lock_path)):
+        if not (_fn.startswith('butler_') and _fn.endswith('.lock')): continue
+        _lp = os.path.join(os.path.dirname(lock_path), _fn)
+        if _lp == lock_path: continue
+        try:
+            _pid, _rt = open(_lp).read().strip().split('|', 1)
+        except Exception:
+            continue
+        if not _alive(_lp): continue
+        _a = root.rstrip('/') + '/'; _b = _rt.rstrip('/') + '/'
+        if _rt != root and (_a.startswith(_b) or _b.startswith(_a)):
+            print(f"⛔ refused: live butler {_pid} already covers {_rt} (one writer per tree) - use chat/CLI one-shots, not a second console")
+            sys.exit(0)
     with open(lock_path, "w") as f: f.write(f"{os.getpid()}|{root}")
 
     ensure_ocr()
@@ -1476,6 +1489,7 @@ def _selftest(root):
     ck('S22 fixphone command routed', 'def do_fixphone(' in _br and "cmd == 'fixphone'" in _br)
     ck('S23 not-on-WhatsApp aborts before gate', "isn't on WhatsApp" in _wa)
     ck('S24 live locks visible at launch', '🔒 live lock: " +' in _src)
+    ck('S25 containment refusal at lock acquire', ('\u26d4' + ' refused: live butler') in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
