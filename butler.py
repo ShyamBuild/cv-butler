@@ -483,6 +483,38 @@ def get_tags(path):
     except Exception:
         return []
 
+class StageLog:
+    def __init__(self, root):
+        self.slog = StageLog(root)
+        self.path = os.path.join(root, 'stage_log.json')
+        self.data = {}
+        try:
+            if os.path.exists(self.path):
+                self.data = json.load(open(self.path))
+        except Exception:
+            self.data = {}
+    def _save(self):
+        try:
+            tmp = self.path + '.tmp'
+            json.dump(self.data, open(tmp, 'w'), indent=2)
+            os.replace(tmp, self.path)
+        except Exception:
+            pass
+    def _n(self, s): return (s or '').strip().lower()
+    def observe(self, name, stage, position):
+        k = self._n(name)
+        if not k or not stage: return
+        cur = self.data.get(k, [])
+        if cur and cur[-1].get('stage') == stage and cur[-1].get('position') == position: return
+        cur.append({'stage': stage, 'position': position, 'ts': int(time.time())})
+        self.data[k] = cur[-50:]
+        self._save()
+    def latest(self, name):
+        cur = self.data.get(self._n(name), [])
+        return cur[-1] if cur else None
+    def all_for(self, name):
+        return list(reversed(self.data.get(self._n(name), [])))
+
 class Butler:
     RULES_VERSION = 'v19-fresh-eyes'
     def __init__(self, root):
@@ -1427,6 +1459,7 @@ def _selftest(root):
     ck('S18 position never falls back to company root', 'return os.path.join(self.root, parts[0], parts[1])' in _src and 'return self.root' not in _src.split('def position_folder_for')[1].split('def ')[0])
     ck('S19 reconcile adds no company-root tag folders', not [c for c in os.listdir(root) if os.path.isdir(os.path.join(root, c)) and c.lower().replace('\u2013','-').replace(' ','_') in _tg0 and c not in _ROOTTAGS0])
     ck('S20 sweep scoping + heat net intact', 'def sweep_dirs(self' in _src and 'n % 9 == 0 or not dirs' in _src)
+    ck('S21 stage ageing + history + stale', 'class StageLog:' in _src and 'def do_history(' in _br and 'def do_stale(' in _br)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False

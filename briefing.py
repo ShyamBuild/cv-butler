@@ -553,6 +553,34 @@ def _scan_path(num, root=None):
             pass
     return None
 
+def do_history(arg, root, say=print):
+    from butler import StageLog
+    if not arg: say('usage: history <name>'); return
+    slog = StageLog(root)
+    rows = slog.all_for(arg)
+    if not rows: say(f'no history for {arg!r}'); return
+    say(f"{arg}:")
+    import datetime as _dt
+    for r in rows:
+        d = _dt.datetime.fromtimestamp(r['ts']).strftime('%Y-%m-%d')
+        say(f"  {d} · {r['stage']} · {r.get('position','')}")
+def do_stale(arg, root, say=print):
+    from butler import StageLog
+    days = int(arg) if (arg or '').strip().isdigit() else 7
+    slog = StageLog(root)
+    now = int(time.time())
+    out = []
+    for k, entries in slog.data.items():
+        if not entries: continue
+        last = entries[-1]
+        age = (now - last['ts']) // 86400
+        if age >= days:
+            out.append((age, k.title(), last['stage'], last.get('position','')))
+    if not out: say(f'nothing older than {days}d'); return
+    say(f'🕑 stale (>{days}d):')
+    for age, nm, st, ps in sorted(out, reverse=True):
+        say(f'  {age:3d}d · {nm:<24s} · {st} · {ps}')
+
 def do_missed(arg, root, say=print, ask=None):
     arg = (arg or '').strip()
     f = _read_focus()
