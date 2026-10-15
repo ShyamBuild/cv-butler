@@ -1075,6 +1075,8 @@ def _cli(argv):
     elif cmd == 'wa': do_wa(arg, root, print)
     elif cmd == 'jd': do_send(arg, root, ['jd shared'], print)
     elif cmd == 'nudge': do_send(arg, root, ['nudge'], print)
+    elif cmd == 'history': do_history(arg, root, print)
+    elif cmd == 'stale': do_stale(arg, root, print)
     elif cmd == 'touch': do_send(arg, root, ['touch'], print)
     elif cmd in ('brief', 'board'): print_briefing(root)
     else: print('cli: missed | wa | jd | nudge | touch | brief  <args>')

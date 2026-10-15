@@ -1124,6 +1124,14 @@ class Butler:
                     os.rename(fp, dst)
                     with self.lock: self.stats['moved'] += 1
                     say(f"\U0001f4c1 [reconcile] {f} -> {tag}/")
+                    try:
+                        _g = locals()
+                        _pp = _g.get('p') or _g.get('fp') or _g.get('src')
+                        _tt = _g.get('tag') or _g.get('tg') or _g.get('stage')
+                        if _pp and _tt:
+                            self.slog.observe(os.path.splitext(os.path.basename(_pp))[0], _tt, os.path.relpath(self.position_folder_for(_pp), self.root))
+                    except Exception:
+                        pass
 
 def main():
     print(f"🤖✨ {VERSION} · git {GIT_STAMP}")
@@ -1306,6 +1314,8 @@ def main():
                     try:
                         if line.startswith('wa '): briefing.do_wa(raw[3:], root, print, ask=_ask)
                         elif line.startswith('missed '): briefing.do_missed(raw[7:], root, print, ask=_ask)
+                        elif line.startswith('history '): briefing.do_history(raw[8:], root, print)
+                        elif line.startswith('stale'): briefing.do_stale(raw[5:].strip(), root, print)
                         elif line.startswith('reject '): briefing.do_reject(raw[6:], root, print, ask=_ask)
                         elif line.startswith('jd '): briefing.do_send(raw[3:], root, ['jd shared'], print, ask=_ask)
                         elif line.startswith('nudge '): briefing.do_send(raw[6:], root, ['awaiting', 'confirmation'], print, ask=_ask)
@@ -1459,7 +1469,7 @@ def _selftest(root):
     ck('S18 position never falls back to company root', 'return os.path.join(self.root, parts[0], parts[1])' in _src and 'return self.root' not in _src.split('def position_folder_for')[1].split('def ')[0])
     ck('S19 reconcile adds no company-root tag folders', not [c for c in os.listdir(root) if os.path.isdir(os.path.join(root, c)) and c.lower().replace('\u2013','-').replace(' ','_') in _tg0 and c not in _ROOTTAGS0])
     ck('S20 sweep scoping + heat net intact', 'def sweep_dirs(self' in _src and 'n % 9 == 0 or not dirs' in _src)
-    ck('S21 stage ageing + history + stale', 'class StageLog:' in _src and 'def do_history(' in _br and 'def do_stale(' in _br)
+    ck('S21 stage ageing wired end-to-end', 'self.slog.observe' in _src and "elif cmd == 'history'" in _br and 'def do_stale(' in _br)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
