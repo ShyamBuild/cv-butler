@@ -964,6 +964,8 @@ class Butler:
         self._compact_numbers(os.path.dirname(p), say)
 
     def route(self, p, say):
+        try: self.heat = getattr(self, 'heat', {}); self.heat[self.position_folder_for(p)] = time.time()
+        except Exception: pass
         p = os.path.abspath(p)
         if os.path.basename(os.path.dirname(p)).lower() in ('converted doc files', 'converted files', 'duplicates', 'previous versions'):
             return
@@ -1047,28 +1049,49 @@ class Butler:
         os.rename(p, dst)
         with self.lock: self.stats['moved'] += 1
         say(f"\U0001f4c1 [move] {os.path.basename(p)} -> {safe_tag}/")
-    def _reconcile_tags(self, say):
+    def sweep_dirs(self, n):
+        now = time.time()
+        dirs = []
+        f = None
+        try:
+            import briefing as _b
+            fz = _b._read_focus()
+            f = fz['path'] if fz else None
+        except Exception:
+            f = None
+        if f and f.startswith(self.root): dirs.append(f)
+        for pp, tt in list(getattr(self, 'heat', {}).items()):
+            if now - tt < 1800 and pp not in dirs and pp.startswith(self.root): dirs.append(pp)
+        if n % 3 == 0:
+            for pp in list(dirs):
+                cc = os.path.dirname(pp)
+                if cc not in dirs and cc.startswith(self.root): dirs.append(cc)
+        if n % 9 == 0 or not dirs: dirs = [self.root]
+        return dirs
+
+    def _reconcile_tags(self, say, dirs=None):
         def _n(s): return (s or '').lower().replace(chr(8211), '-').replace(' ', '_')
         known = {_n(t): t for t in TAG_NAMES}
-        for dp, dn, fn in os.walk(self.root):
-            if len(os.path.relpath(dp, self.root).split(os.sep)) < 2: continue
-            dn[:] = [x for x in dn if not x.startswith(".")]
-            for f in fn:
-                if not f.lower().endswith(".pdf"): continue
-                fp = os.path.join(dp, f)
-                T = get_tags(fp)
-                tag = None
-                for t in T:
-                    if _n(t) in known: tag = known[_n(t)]; break
-                if not tag: continue
-                tgt = self._folder_for_tag(self.position_folder_for(fp), tag)
-                if os.path.abspath(os.path.dirname(fp)) == os.path.abspath(tgt): continue
-                os.makedirs(tgt, exist_ok=True)
-                dst = os.path.join(tgt, f)
-                if os.path.exists(dst): continue
-                os.rename(fp, dst)
-                with self.lock: self.stats['moved'] += 1
-                say(f"\U0001f4c1 [reconcile] {f} -> {tag}/")
+        for _d0 in (dirs or [self.root]):
+            for dp, dn, fn in os.walk(_d0):
+                if len(os.path.relpath(dp, self.root).split(os.sep)) < 2: continue
+                dn[:] = [x for x in dn if not x.startswith(".")]
+                for f in fn:
+                    if not f.lower().endswith(".pdf"): continue
+                    fp = os.path.join(dp, f)
+                    T = get_tags(fp)
+                    tag = None
+                    for t in T:
+                        if _n(t) in known: tag = known[_n(t)]; break
+                    if not tag: continue
+                    tgt = self._folder_for_tag(self.position_folder_for(fp), tag)
+                    if os.path.abspath(os.path.dirname(fp)) == os.path.abspath(tgt): continue
+                    os.makedirs(tgt, exist_ok=True)
+                    dst = os.path.join(tgt, f)
+                    if os.path.exists(dst): continue
+                    os.rename(fp, dst)
+                    with self.lock: self.stats['moved'] += 1
+                    say(f"\U0001f4c1 [reconcile] {f} -> {tag}/")
 
 def main():
     print(f"🤖✨ {VERSION} · git {GIT_STAMP}")
@@ -1182,7 +1205,7 @@ def main():
     print(f"\n✅ Scan complete · ⚙️ {B.stats['converted']} converted · ✏️ {B.stats['renamed']} renamed · 📦 {B.stats['moved']} moved")
     print(f"⏱ boot scan {time.time()-_BOOT_T:.1f}s · journal-skipped most of it")
     try:
-        B._reconcile_tags(print)
+        B._reconcile_tags(hsay, B.sweep_dirs(n))
         B._compact_numbers(B.root, print)
     except Exception as _se:
         print('startup-reconcile error:', _se)
@@ -1403,6 +1426,7 @@ def _selftest(root):
     ck('S17 playwright import at module scope', 'try:\n    from playwright.sync_api import sync_playwright' in _wa)
     ck('S18 position never falls back to company root', 'return os.path.join(self.root, parts[0], parts[1])' in _src and 'return self.root' not in _src.split('def position_folder_for')[1].split('def ')[0])
     ck('S19 reconcile adds no company-root tag folders', not [c for c in os.listdir(root) if os.path.isdir(os.path.join(root, c)) and c.lower().replace('\u2013','-').replace(' ','_') in _tg0 and c not in _ROOTTAGS0])
+    ck('S20 sweep scoping + heat net intact', 'def sweep_dirs(self' in _src and 'n % 9 == 0 or not dirs' in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
