@@ -1492,6 +1492,7 @@ def _selftest(root):
     ck('S25 containment refusal at lock acquire', ('\u26d4' + ' refused: live butler') in _src)
     ck('S26 scan index per-root only', "scan_index_' + hashlib" in _br and 'scan_index.json' not in _br.split('def _scan_path')[1].split('def ')[0])
     ck('S27 nudge routes to tree-walk resolver + phones follow moves', 'def _phones_by_basename(' in _br and "for _sr in ([] if hit else [f['path']" in _br)
+    ck('S28 learned phone beats extraction', '_phones_by_basename(hit) or phones_of(hit)' in _br)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False

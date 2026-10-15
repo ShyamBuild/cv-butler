@@ -642,7 +642,7 @@ def do_missed(arg, root, say=print, ask=None):
         if hit: break
     if not hit:
         say(f"🤷 no candidate like '{arg}' under {f['display']}"); return
-    phone = _pick_phone(phones_of(hit) or _phones_by_basename(hit), say)
+    phone = _pick_phone(_phones_by_basename(hit) or phones_of(hit), say)
     if not phone:
         say("🤷 no phone found in that CV"); return
     name = _full_name(hit)
@@ -680,7 +680,7 @@ def do_reject(arg, root, say=print, ask=None):
         if hit: break
     if not hit:
         say(f"🤷 no candidate like '{arg}' under {f['display']}"); return
-    phone = _pick_phone(phones_of(hit) or _phones_by_basename(hit), say)
+    phone = _pick_phone(_phones_by_basename(hit) or phones_of(hit), say)
     if not phone:
         say("🤷 no phone found in that CV"); return
     name = _full_name(hit)
@@ -726,7 +726,7 @@ def do_send(arg, root, tpl_words, say=print, ask=None):
         if hit: break
     if not hit:
         say(f"🤷 no candidate like '{arg}'"); return
-    phone = _pick_phone(phones_of(hit) or _phones_by_basename(hit), say)
+    phone = _pick_phone(_phones_by_basename(hit) or phones_of(hit), say)
     if not phone:
         say("🤷 no phone found in that CV"); return
     nm = _full_name(hit)
@@ -1084,7 +1084,7 @@ def do_wa(arg, root, say=print, ask=None):
     msg = ' '.join(toks[ntok:]).strip()
     if not msg:
         say("usage: wa <name> <your message>"); return
-    phone = _pick_phone(phones_of(hit) or _phones_by_basename(hit), say)
+    phone = _pick_phone(_phones_by_basename(hit) or phones_of(hit), say)
     if not phone:
         say("🤷 no phone found in that CV"); return
     try:
