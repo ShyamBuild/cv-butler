@@ -105,7 +105,13 @@ def send_review(phone, text, say=print, ask=None):
             say('✅ sent via WhatsApp Web (autosend)' if sent else '⚠️ send-button not found - click send yourself in the WA window')
             return bool(sent)
         say('📝 message is in the WhatsApp text field - review it in the opened window, then:')
-        c = (ask or input)('   [Enter] I clicked send myself · [x] discard & clear: ').strip().lower()
+        say("📝 message is in the WhatsApp text field - the window STAYS open until you choose:")
+        while True:
+            c = (ask or input)("   [s] I clicked send myself · [x] discard & clear · [q] leave in field & close · [Enter] keep waiting: ").strip().lower()
+            if c == '':
+                say("   …still open - take your time (s / x / q)")
+                continue
+            break
         if c == 'x':
             try:
                 page.keyboard.press('Meta+A'); page.keyboard.press('Backspace')
