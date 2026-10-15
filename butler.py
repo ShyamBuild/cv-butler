@@ -1435,7 +1435,7 @@ def _selftest(root):
         b0 = os.path.splitext(os.path.basename(cands[0]))[0]
         pre = set(os.listdir(POS))
         _sh.copy(cands[0], tmp)
-        B.route(tmp, print)
+        B.route(tmp, lambda _m: None)
         ok4 = not os.path.exists(tmp)
         for f in set(os.listdir(POS)) - pre:
             if f.startswith('zz_') or f == b0 + '.pdf' or re.match(re.escape(b0) + r'_\d+\.pdf$', f):
