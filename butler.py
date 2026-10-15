@@ -15,6 +15,9 @@ for _n in ("pdfminer", "fontTools"):
     _l.setLevel(logging.CRITICAL)
 
 VERSION = "butler v6 (final-rules edition)"
+for _lf in sorted(__import__("glob").glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), "butler_*.lock"))):
+    try: print("   🔒 live lock: " + os.path.basename(_lf) + " -> " + open(_lf).read().strip())
+    except Exception: pass
 INTERACTIVE = False
 def _git_stamp():
     try:
@@ -1470,6 +1473,9 @@ def _selftest(root):
     ck('S19 reconcile adds no company-root tag folders', not [c for c in os.listdir(root) if os.path.isdir(os.path.join(root, c)) and c.lower().replace('\u2013','-').replace(' ','_') in _tg0 and c not in _ROOTTAGS0])
     ck('S20 sweep scoping + heat net intact', 'def sweep_dirs(self' in _src and 'n % 9 == 0 or not dirs' in _src)
     ck('S21 stage ageing wired end-to-end', 'self.slog.observe' in _src and "elif cmd == 'history'" in _br and 'def do_stale(' in _br)
+    ck('S22 fixphone command routed', 'def do_fixphone(' in _br and "cmd == 'fixphone'" in _br)
+    ck('S23 not-on-WhatsApp aborts before gate', "isn't on WhatsApp" in _wa)
+    ck('S24 live locks visible at launch', '🔒 live lock: " +' in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False

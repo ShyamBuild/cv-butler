@@ -581,6 +581,28 @@ def do_stale(arg, root, say=print):
     for age, nm, st, ps in sorted(out, reverse=True):
         say(f'  {age:3d}d · {nm:<24s} · {st} · {ps}')
 
+def do_fixphone(arg, root, say=print):
+    parts = (arg or '').split()
+    if len(parts) < 2: say('usage: fixphone <name or scan#> <10-digit phone>'); return
+    num = re.sub(r'\D', '', parts[-1])
+    if len(num) == 10: num = '91' + num
+    who = ' '.join(parts[:-1])
+    path = None
+    if who.isdigit():
+        path = _scan_path(int(who), root)
+    else:
+        d0 = json.load(open(PHONES_FILE)) if os.path.exists(PHONES_FILE) else {}
+        c = [k for k in d0 if os.path.basename(k).lower().startswith(who.lower())]
+        if not c:
+            c = [os.path.join(dp, f) for dp, dn, fn in os.walk(root) for f in fn if f.lower().startswith(who.lower().rstrip('.'))][:1]
+        path = c[0] if c else None
+    if not path: say(f'no candidate for {who!r}'); return
+    d = json.load(open(PHONES_FILE)) if os.path.exists(PHONES_FILE) else {}
+    e = d.setdefault(path, {'k': '', 'phones': []})
+    e['phones'] = [num]
+    json.dump(d, open(PHONES_FILE, 'w'), indent=2)
+    say(f"📞 learned: {os.path.basename(path)} -> +{num} (overrides PDF from now on)")
+
 def do_missed(arg, root, say=print, ask=None):
     arg = (arg or '').strip()
     f = _read_focus()
@@ -1079,12 +1101,13 @@ def _cli(argv):
     elif cmd == 'nudge': do_send(arg, root, ['nudge'], print)
     elif cmd == 'history': do_history(arg, root, print)
     elif cmd == 'stale': do_stale(arg, root, print)
+    elif cmd == 'fixphone': do_fixphone(arg, root, print)
     elif cmd == 'touch': do_send(arg, root, ['touch'], print)
     elif cmd in ('brief', 'board'): print_briefing(root)
     else: print('cli: missed | wa | jd | nudge | touch | brief  <args>')
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board','history','stale'):
+    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board','history','stale','fixphone'):
         _cli(sys.argv[1:]); raise SystemExit(0)
     LAST = os.path.expanduser("~/.cvtool_last_root")
     args = sys.argv[1:]
@@ -1153,6 +1176,7 @@ if __name__ == "__main__":
             if q.lower().startswith('history '): do_history(q[8:], root); continue
             if q.lower().startswith('history'): do_history(q[7:].strip(), root); continue
             if q.lower().startswith('stale'): do_stale(q[5:].strip(), root); continue
+            if q.lower().startswith('fixphone '): do_fixphone(q[9:], root); continue
             if q.lower().startswith('text '):
                 do_text(q[5:], root); continue
             if q.lower().startswith('reject'):

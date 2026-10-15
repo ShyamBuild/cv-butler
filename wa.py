@@ -97,6 +97,12 @@ def send_review(phone, text, say=print, ask=None):
         if not _goto(page, f"https://web.whatsapp.com/send?phone={digits}", say):
             say('⚠️ chat page did not load - scan QR in the opened window if asked, then retry')
             return False
+        try:
+            if "isn't on WhatsApp" in (page.content() or ''):
+                say('⚠️ WhatsApp says this number is not registered - nothing drafted. Correct it with: fixphone <name> <10-digit>')
+                return False
+        except Exception:
+            pass
         ok_fill = _place_text(page, text, say)
         if not ok_fill:
             say('⚠️ field did not take the text automatically - paste the draft from above into the WhatsApp field yourself, then:')
