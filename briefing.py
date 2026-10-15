@@ -895,6 +895,8 @@ HELP_CARD = """
  focus / focus clear ........ show / forget (+ stop watchers)
  missed <name> .............. missed-call WhatsApp draft
  missed  <number> <Name> .. missed-call template to a pasted number (Naukri tab - no CV needed)
+ history <name>       .. stage transitions for one candidate
+ stale [days]         .. candidates in current stage longer than N days (default 7)
  wa <name> <your words> .... free-text WhatsApp (phone auto-found)
  reject <name> .............. rejection draft, one person
  text <tag> ................. walk a tag folder, draft each
