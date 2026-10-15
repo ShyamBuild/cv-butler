@@ -540,19 +540,17 @@ def _phone_first(arg):
     return d, m.group(2).strip()
 
 def _scan_path(num, root=None):
-    cands = []
-    if root: cands.append(_idx_path(root))
-    cands.append(os.path.join(BASE_DIR, 'scan_index.json'))
-    for c in cands:
-        try:
-            d = json.load(open(c))
-            if root and d.get('root') and os.path.abspath(d['root']) != os.path.abspath(root): continue
-            p = d.get('idx', {}).get(str(num))
-            if p and os.path.exists(p): return p
-        except Exception:
-            pass
+    base = os.path.dirname(os.path.abspath(__file__))
+    names = []
+    if root:
+        names.append('scan_index_' + hashlib.md5(os.path.abspath(root).encode()).hexdigest()[:8] + '.json')
+    for fn in names + sorted(x for x in os.listdir(base) if x.startswith('scan_index_') and x.endswith('.json')):
+        try: d = json.load(open(os.path.join(base, fn)))
+        except Exception: continue
+        if root and os.path.abspath(d.get('root') or '') != os.path.abspath(root): continue
+        hit = (d.get('idx') or {}).get(str(num))
+        if hit and os.path.exists(hit): return hit
     return None
-
 def do_history(arg, root, say=print):
     from butler import StageLog
     if not arg: say('usage: history <name>'); return

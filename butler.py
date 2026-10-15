@@ -1490,6 +1490,7 @@ def _selftest(root):
     ck('S23 not-on-WhatsApp aborts before gate', "isn't on WhatsApp" in _wa)
     ck('S24 live locks visible at launch', '🔒 live lock: " +' in _src)
     ck('S25 containment refusal at lock acquire', ('\u26d4' + ' refused: live butler') in _src)
+    ck('S26 scan index per-root only', "scan_index_' + hashlib" in _br and 'scan_index.json' not in _br.split('def _scan_path')[1].split('def ')[0])
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
