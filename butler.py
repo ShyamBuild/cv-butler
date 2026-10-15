@@ -1283,6 +1283,10 @@ def main():
     print(f"⏱ boot scan {time.time()-_BOOT_T:.1f}s · journal-skipped most of it")
     try:
         B._reconcile_tags(hsay, B.sweep_dirs(n))
+        try:
+            import fitrank; fitrank.tick(B)
+        except Exception:
+            pass
         B._compact_numbers(B.root, print)
     except Exception as _se:
         print('startup-reconcile error:', _se)
@@ -1516,6 +1520,8 @@ def _selftest(root):
     ck('S28 learned phone beats extraction', '_phones_by_basename(hit) or phones_of(hit)' in _br)
     ck('S29 download stability gate', (chr(35) + ' DOWNLOAD-STABILITY-GATE') in _src)
     ck('S30 converter refuses empty sources', ('conversion skipped: ' + 'source is 0 bytes') in _src)
+    ck('S31 fit ranking sidecar engine', os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fitrank.py')) and 'fitrank.tick' in _src)
+    ck('S32 call/next routed', "cmd == 'call'" in _br)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False

@@ -650,6 +650,8 @@ def do_missed(arg, root, say=print, ask=None):
     try:
         import wa
         wa.send_review(phone, text, say, ask=ask)
+        try: import fitrank; fitrank.mark_called(hit)
+        except Exception: pass
     except Exception as e:
         say(f"⚠️ whatsapp failed: {e}")
 
@@ -692,6 +694,8 @@ def do_reject(arg, root, say=print, ask=None):
     try:
         import wa
         wa.send_review(phone, text, say, ask=ask)
+        try: import fitrank; fitrank.mark_called(hit)
+        except Exception: pass
     except Exception as e:
         say(f"⚠️ whatsapp failed: {e}")
 
@@ -740,6 +744,8 @@ def do_send(arg, root, tpl_words, say=print, ask=None):
     try:
         import wa
         wa.send_review(phone, text, say, ask=ask)
+        try: import fitrank; fitrank.mark_called(hit)
+        except Exception: pass
     except Exception as e:
         say(f"⚠️ whatsapp failed: {e}")
 
@@ -806,6 +812,8 @@ def do_text(arg, root, say=print, ask=None):
             try:
                 import wa
                 wa.send_review(phone, text, say, ask=ask)
+                try: import fitrank; fitrank.mark_called(hit)
+                except Exception: pass
             except KeyboardInterrupt:
                 say("\n⏹ stopped - the rest stay untouched"); return
             except Exception as e:
@@ -1112,12 +1120,14 @@ def _cli(argv):
     elif cmd == 'history': do_history(arg, root, print)
     elif cmd == 'stale': do_stale(arg, root, print)
     elif cmd == 'fixphone': do_fixphone(arg, root, print)
+    elif cmd == 'call': import fitrank; fitrank.show(root, arg, 'call', print)
+    elif cmd == 'next': import fitrank; fitrank.show(root, arg, 'next', print)
     elif cmd == 'touch': do_send(arg, root, ['touch'], print)
     elif cmd in ('brief', 'board'): print_briefing(root)
     else: print('cli: missed | wa | jd | nudge | touch | brief  <args>')
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board','history','stale','fixphone'):
+    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board','history','stale','fixphone','call','next'):
         _cli(sys.argv[1:]); raise SystemExit(0)
     LAST = os.path.expanduser("~/.cvtool_last_root")
     args = sys.argv[1:]
@@ -1187,6 +1197,8 @@ if __name__ == "__main__":
             if q.lower().startswith('history'): do_history(q[7:].strip(), root); continue
             if q.lower().startswith('stale'): do_stale(q[5:].strip(), root); continue
             if q.lower().startswith('fixphone '): do_fixphone(q[9:], root); continue
+            if q.lower().startswith('call '): import fitrank; fitrank.show(root, q[5:].strip(), 'call'); continue
+            if q.lower().startswith('next'): import fitrank; fitrank.show(root, q[4:].strip(), 'next'); continue
             if q.lower().startswith('text '):
                 do_text(q[5:], root); continue
             if q.lower().startswith('reject'):
