@@ -336,6 +336,12 @@ def detect_engines():
     return eng
 
 def convert_doc(doc_path, pdf_path, engines):
+    try:
+        if os.path.getsize(doc_path) == 0:
+            print('⚠️ conversion skipped: source is 0 bytes (still downloading?)')
+            return False
+    except Exception:
+        return False
     for name, binp in engines:
         try:
             if name == 'libreoffice':
@@ -999,6 +1005,21 @@ class Butler:
         self._compact_numbers(os.path.dirname(p), say)
 
     def route(self, p, say):
+        # DOWNLOAD-STABILITY-GATE v39
+        try:
+            _bn = os.path.basename(p).lower()
+            if _bn.endswith(('.crdownload', '.part', '.tmp', '.tmp.html', '.download')) or _bn.startswith('unconfirmed'):
+                return
+            _st = os.stat(p)
+            if _st.st_size == 0:
+                return
+            if time.time() - _st.st_mtime < 3.0:
+                time.sleep(2.0)
+                _s2 = os.stat(p)
+                if _s2.st_size != _st.st_size or _s2.st_mtime != _st.st_mtime:
+                    return
+        except Exception:
+            return
         try: self.heat = getattr(self, 'heat', {}); self.heat[self.position_folder_for(p)] = time.time()
         except Exception: pass
         p = os.path.abspath(p)
@@ -1493,6 +1514,8 @@ def _selftest(root):
     ck('S26 scan index per-root only', "scan_index_' + hashlib" in _br and 'scan_index.json' not in _br.split('def _scan_path')[1].split('def ')[0])
     ck('S27 nudge routes to tree-walk resolver + phones follow moves', 'def _phones_by_basename(' in _br and "for _sr in ([] if hit else [f['path']" in _br)
     ck('S28 learned phone beats extraction', '_phones_by_basename(hit) or phones_of(hit)' in _br)
+    ck('S29 download stability gate', (chr(35) + ' DOWNLOAD-STABILITY-GATE') in _src)
+    ck('S30 converter refuses empty sources', ('conversion skipped: ' + 'source is 0 bytes') in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
