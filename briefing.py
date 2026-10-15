@@ -532,6 +532,16 @@ def _idx_path(root):
     import hashlib
     return os.path.join(BASE_DIR, 'scan_index_' + hashlib.md5(os.path.abspath(root).encode()).hexdigest()[:8] + '.json')
 
+def _phones_by_basename(p):
+    try:
+        dd = json.load(open(PHONES_FILE)) if os.path.exists(PHONES_FILE) else {}
+    except Exception:
+        return []
+    b = os.path.basename(p).lower()
+    for k, v in dd.items():
+        if os.path.basename(k).lower() == b: return v.get('phones') or []
+    return []
+
 def _phone_first(arg):
     m = re.match(r'^\s*(\d{10}|\d{12})\b\s*(.*)$', arg or '', re.S)
     if not m: return None, arg
@@ -623,14 +633,16 @@ def do_missed(arg, root, say=print, ask=None):
     hit = _scan_path(arg.strip(), root) if arg.strip().isdigit() else None
     if arg.strip().isdigit() and not hit:
         say(f"🤷 no file at scan number {arg.strip()} in the latest scan"); return
-    for dp, dn, fn in ([] if hit else os.walk(f['path'])):
-        for x in fn:
-            if x.lower().endswith('.pdf') and all(t in x.lower() for t in q.split() if len(t) > 2):
-                hit = os.path.join(dp, x); break
+    for _sr in ([] if hit else [f['path'], os.path.dirname(os.path.dirname(f['path']))]):
+        for dp, dn, fn in os.walk(_sr):
+            for x in fn:
+                if x.lower().endswith('.pdf') and all(t in x.lower() for t in q.split() if len(t) > 2):
+                    hit = os.path.join(dp, x); break
+            if hit: break
         if hit: break
     if not hit:
         say(f"🤷 no candidate like '{arg}' under {f['display']}"); return
-    phone = _pick_phone(phones_of(hit), say)
+    phone = _pick_phone(phones_of(hit) or _phones_by_basename(hit), say)
     if not phone:
         say("🤷 no phone found in that CV"); return
     name = _full_name(hit)
@@ -668,7 +680,7 @@ def do_reject(arg, root, say=print, ask=None):
         if hit: break
     if not hit:
         say(f"🤷 no candidate like '{arg}' under {f['display']}"); return
-    phone = _pick_phone(phones_of(hit), say)
+    phone = _pick_phone(phones_of(hit) or _phones_by_basename(hit), say)
     if not phone:
         say("🤷 no phone found in that CV"); return
     name = _full_name(hit)
@@ -714,7 +726,7 @@ def do_send(arg, root, tpl_words, say=print, ask=None):
         if hit: break
     if not hit:
         say(f"🤷 no candidate like '{arg}'"); return
-    phone = _pick_phone(phones_of(hit), say)
+    phone = _pick_phone(phones_of(hit) or _phones_by_basename(hit), say)
     if not phone:
         say("🤷 no phone found in that CV"); return
     nm = _full_name(hit)
@@ -1072,7 +1084,7 @@ def do_wa(arg, root, say=print, ask=None):
     msg = ' '.join(toks[ntok:]).strip()
     if not msg:
         say("usage: wa <name> <your message>"); return
-    phone = _pick_phone(phones_of(hit), say)
+    phone = _pick_phone(phones_of(hit) or _phones_by_basename(hit), say)
     if not phone:
         say("🤷 no phone found in that CV"); return
     try:
@@ -1096,7 +1108,7 @@ def _cli(argv):
     if cmd == 'missed': do_missed(arg, root, print)
     elif cmd == 'wa': do_wa(arg, root, print)
     elif cmd == 'jd': do_send(arg, root, ['jd shared'], print)
-    elif cmd == 'nudge': do_send(arg, root, ['nudge'], print)
+    elif cmd == 'nudge': do_missed(arg, root, print)
     elif cmd == 'history': do_history(arg, root, print)
     elif cmd == 'stale': do_stale(arg, root, print)
     elif cmd == 'fixphone': do_fixphone(arg, root, print)
