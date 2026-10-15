@@ -72,7 +72,7 @@ pkill -f butler.py || true
 sleep 1
 echo '-- selftest gate (butler paused - no races)'
 OUT="$(cv_env/bin/python3 butler.py --selftest "$ROOT" 2>&1)"
-echo "$OUT" | tail -20
+echo "$OUT" | tail -40
 TWINS="$(twins_check "$ROOT")"
 if echo "$OUT" | grep -q "ALL GREEN" && [ -z "$TWINS" ]; then
   git add -A
