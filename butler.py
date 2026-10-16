@@ -1435,6 +1435,7 @@ def main():
                         import fitrank; fitrank.tick(B)
                         import ledger; ledger.tick(B)
                         import cadence; cadence.process(B, hsay)
+                        import sem; sem.tick(B)
                     except Exception:
                         pass
                 except Exception as _re:
@@ -1546,6 +1547,9 @@ def _selftest(root):
     ck('S44 ledger prunes stale positions', (chr(35) + ' LEDGER-PRUNE') in _led3)
     _wr = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'waread.py')).read() if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'waread.py')) else ''
     ck('S45 recorder is read-only', bool(_wr) and not any(w in _wr for w in ('_click_send', 'insert_text', 'compose-btn-send', 'keyboard.press')))
+    _sem = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sem.py')).read() if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sem.py')) else ''
+    ck('S46 semantic + ghost + client routed', 'def similar(' in _sem and 'def ghost(' in _sem and "cmd == 'ghost'" in _br)
+    ck('S47 ghost reads conversations only', 'conversations.json' in _sem and 'send_review' not in _sem)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
