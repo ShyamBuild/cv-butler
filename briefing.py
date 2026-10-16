@@ -1139,6 +1139,7 @@ def _cli(argv):
     elif cmd == 'similar': import sem; sem.similar(arg, root, print)
     elif cmd == 'ghost': import sem; sem.ghost(arg, root, print)
     elif cmd == 'client': import sem; sem.client(arg, print)
+    elif cmd == 'digest': import ledger; ledger.show_digest(arg, print)
     elif cmd == 'due': import cadence; cadence.show_due(print)
     elif cmd == 'outbox': import cadence; cadence.show_outbox(print)
     elif cmd == 'ack': import cadence; cadence.ack(arg, print)
@@ -1147,7 +1148,7 @@ def _cli(argv):
     else: print('cli: missed | wa | jd | nudge | touch | brief  <args>')
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board','history','stale','fixphone','call','next','case','positions','note','interview','offer','due','outbox','ack','money','value','push','recap','similar','ghost','client'):
+    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board','history','stale','fixphone','call','next','case','positions','note','interview','offer','due','outbox','ack','money','value','push','recap','similar','ghost','client','digest'):
         _cli(sys.argv[1:]); raise SystemExit(0)
     LAST = os.path.expanduser("~/.cvtool_last_root")
     args = sys.argv[1:]
@@ -1231,6 +1232,7 @@ if __name__ == "__main__":
             if q.lower().startswith('similar '): import sem; sem.similar(q[8:].strip(), root); continue
             if q.lower().startswith('ghost'): import sem; sem.ghost(q[5:].strip(), root); continue
             if q.lower().startswith('client '): import sem; sem.client(q[7:].strip()); continue
+            if q.lower().startswith('digest'): import ledger; ledger.show_digest(q[6:].strip()); continue
             if q.lower().startswith('due'): import cadence; cadence.show_due(); continue
             if q.lower().startswith('outbox'): import cadence; cadence.show_outbox(); continue
             if q.lower().startswith('ack '): import cadence; cadence.ack(q[4:].strip()); continue

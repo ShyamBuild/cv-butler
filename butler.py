@@ -1550,6 +1550,10 @@ def _selftest(root):
     _sem = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sem.py')).read() if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'sem.py')) else ''
     ck('S46 semantic + ghost + client routed', 'def similar(' in _sem and 'def ghost(' in _sem and "cmd == 'ghost'" in _br)
     ck('S47 ghost reads conversations only', 'conversations.json' in _sem and 'send_review' not in _sem)
+    _led4 = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ledger.py')).read() if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ledger.py')) else ''
+    ck('S48 digest + bookends', 'def show_digest(' in _led4 and 'interview_eve' in _led4 and "cmd == 'digest'" in _br)
+    _cad2 = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cadence.py')).read() if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cadence.py')) else ''
+    ck('S49 cadence queue accepts due', 'due=None' in _cad2)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
