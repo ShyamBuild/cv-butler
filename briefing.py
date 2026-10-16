@@ -812,7 +812,7 @@ def do_text(arg, root, say=print, ask=None):
             try:
                 import wa
                 wa.send_review(phone, text, say, ask=ask)
-                try: import fitrank; fitrank.mark_called(hit)
+                try: import fitrank; fitrank.mark_called(os.path.join(folder, x))
                 except Exception: pass
             except KeyboardInterrupt:
                 say("\n⏹ stopped - the rest stay untouched"); return

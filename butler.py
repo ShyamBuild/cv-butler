@@ -494,7 +494,6 @@ def get_tags(path):
 
 class StageLog:
     def __init__(self, root):
-        self.slog = StageLog(root)
         self.path = os.path.join(root, 'stage_log.json')
         self.data = {}
         try:
@@ -539,6 +538,7 @@ class Butler:
         except Exception:
             self.locks = set()
         self.lock = threading.Lock()
+        self.slog = StageLog(root)
 
     def _load(self):
         try:
@@ -1282,7 +1282,7 @@ def main():
     print(f"\n✅ Scan complete · ⚙️ {B.stats['converted']} converted · ✏️ {B.stats['renamed']} renamed · 📦 {B.stats['moved']} moved")
     print(f"⏱ boot scan {time.time()-_BOOT_T:.1f}s · journal-skipped most of it")
     try:
-        B._reconcile_tags(hsay, B.sweep_dirs(n))
+        B._reconcile_tags(print)
         try:
             import fitrank; fitrank.tick(B)
             import ledger; ledger.tick(B)
@@ -1430,7 +1430,12 @@ def main():
                 except Exception as _ce:
                     print(f"compact sweep error: {_ce}")
                 try:
-                    B._reconcile_tags(print)
+                    B._reconcile_tags(hsay, B.sweep_dirs(n))
+                    try:
+                        import fitrank; fitrank.tick(B)
+                        import ledger; ledger.tick(B)
+                    except Exception:
+                        pass
                 except Exception as _re:
                     print('reconcile error:', _re)
     except KeyboardInterrupt:
@@ -1525,6 +1530,8 @@ def _selftest(root):
     ck('S32 call/next routed', "cmd == 'call'" in _br)
     ck('S33 fitrank ocr + deep throttle', os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fitrank.py')) and 'budget = 3' in open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fitrank.py')).read())
     ck('S34 ledgers live + routed', os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ledger.py')) and "cmd == 'case'" in _br)
+    ck('S35 heartbeat ticks + scoped reconcile', ('fitrank.' + 'tick(B)') in _src.split('last_hb > 120')[1])
+    ck('S36 StageLog not self-recursive', 'self.slog = StageLog(root)' not in _src.split('class StageLog:')[1].split('class Butler:')[0])
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
