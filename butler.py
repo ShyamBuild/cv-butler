@@ -1565,11 +1565,13 @@ def _selftest(root):
     ck('S51 drafts use position/client truth', 'def _pos_client_for(' in _br and 'def _fmt_tpl(' in _br and "position=f['display']" not in _br)
     ck('S52 client alias command routed', 'def do_clientname(' in _br and "cmd == 'clientname'" in _br)
     _tpl = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa_template.txt')).read() if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa_template.txt')) else ''
-    ck('S53 professional template live', 'Sundeep Rana' in _tpl and '{where_line}' in _tpl)
+    ck('S53 professional template live', 'Sundeep Rana' in _tpl and ('{where}' in _tpl or '{where_line}' in _tpl) and 'where=at' in _br)
     ck('S54 position/location split wired', 'def _split_pos(' in _br and 'def _fmt_tpl(' in _br)
     _td = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
     ck('S55 scenario templates + kind-aware outbox', os.path.isdir(_td) and len([f for f in os.listdir(_td) if f.endswith('.txt')]) >= 9 and '_fmt_tpl(base,' in _cad2)
     ck('S56 log trim + single helper defs', (chr(35) + ' LOG-TRIM') in _src and _br.count('def _pick_model(') == 1)
+    _tm = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates', 'missed.txt')).read() if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates', 'missed.txt')) else ''
+    ck('S57 unified voice + emojis', 'Regards,' in _tm and '📞' in _tm and 'where=at' in _br)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False

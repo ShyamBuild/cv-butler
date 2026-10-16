@@ -1,0 +1,5 @@
+Hi {name}, this is Sundeep Rana from Sunsoft Technology.
+Thanks for your time today.
+Even though the {position} role is not a fit right now, I would love to stay connected - feel free to share referrals or reach out anytime, and I will keep you in mind for matching openings.
+Regards,
+Sundeep Rana

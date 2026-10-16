@@ -1,0 +1,5 @@
+Hi {name}, this is Sundeep Rana from Sunsoft Technology. 👋
+I have shared the job description for the {position} role at {where} on your email. 📄
+Kindly check it, acknowledge receipt, and share your updated CV in PDF format for consideration.
+Regards,
+Sundeep Rana

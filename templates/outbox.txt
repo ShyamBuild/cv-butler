@@ -1,0 +1,5 @@
+Hi {name}, Sundeep Rana here from Sunsoft Technology. ✉️
+I am following up on my last message regarding the {position} role at {where}.
+A quick update from you will help me proceed or close the loop gracefully.
+Regards,
+Sundeep Rana

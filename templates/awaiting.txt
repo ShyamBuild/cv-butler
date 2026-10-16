@@ -1,0 +1,5 @@
+Hi {name}, Sundeep Rana here. ⏰
+A gentle reminder regarding the job description I shared for the {position} role at {where}.
+We are about to submit the first lot of candidates to the client, so kindly acknowledge today if you are interested to proceed.
+Regards,
+Sundeep Rana

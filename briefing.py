@@ -194,8 +194,9 @@ def _fmt_tpl(tpl, hit, f, name):
     pos, cli = _pos_client_for(hit, f)
     title, loc = _split_pos(pos)
     where = f"Company: {cli}" + (f" | Location: {loc}" if loc else "")
+    at = cli + (f", {loc}" if loc else "")
     try:
-        return tpl.format(name=name, position=title, company=cli, location=loc or '-', where_line=where)
+        return tpl.format(name=name, position=title, company=cli, location=loc or '-', where_line=where, where=at)
     except Exception:
         return tpl
 def _pos_client_for(hit, f=None):
@@ -408,9 +409,10 @@ def answer(root, q, say=print):
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FOCUS_FILE = os.path.join(BASE_DIR, "focus.json")
 TPL_FILE = os.path.join(BASE_DIR, "wa_template.txt")
-DEFAULT_TPL = ("Hi {name}, Sundeep Rana (Sunsoft Technology) - tried calling you today.\n"
-"Regarding the {position} role | {where_line}.\n"
-"Please share your updated CV (PDF) here + a good time to reconnect. Thanks!")
+DEFAULT_TPL = ("Hi {name}, Sundeep Rana here from Sunsoft Technology. 📞\n"
+"I tried calling you today regarding the {position} role at {where}, but couldn't reach you.\n"
+"Kindly share your updated CV in PDF format here, along with a good time to reconnect. 🙏\n"
+"Regards,\nSundeep Rana")
 
 def _read_tpl():
     if not os.path.exists(TPL_FILE):

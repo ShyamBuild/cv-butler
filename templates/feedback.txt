@@ -1,0 +1,5 @@
+Hi {name}, Sundeep Rana here. I hope your {position} interview went well! 💬
+Could you kindly share how it went and any feedback you received?
+I will follow up with the client today and keep you posted on next steps. 🤞
+Regards,
+Sundeep Rana
