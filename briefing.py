@@ -1132,6 +1132,9 @@ def _cli(argv):
     elif cmd == 'due': import cadence; cadence.show_due(print)
     elif cmd == 'outbox': import cadence; cadence.show_outbox(print)
     elif cmd == 'ack': import cadence; cadence.ack(arg, print)
+    elif cmd == 'due': import cadence; cadence.show_due(print)
+    elif cmd == 'outbox': import cadence; cadence.show_outbox(print)
+    elif cmd == 'ack': import cadence; cadence.ack(arg, print)
     elif cmd == 'touch': do_send(arg, root, ['touch'], print)
     elif cmd in ('brief', 'board'): print_briefing(root)
     else: print('cli: missed | wa | jd | nudge | touch | brief  <args>')
@@ -1211,6 +1214,9 @@ if __name__ == "__main__":
             if q.lower().startswith('next'): import fitrank; fitrank.show(root, q[4:].strip(), 'next'); continue
             if q.lower().startswith('case '): import ledger; ledger.show_case(q[5:].strip()); continue
             if q.lower().startswith('positions'): import ledger; ledger.show_positions(q[9:].strip()); continue
+            if q.lower().startswith('due'): import cadence; cadence.show_due(); continue
+            if q.lower().startswith('outbox'): import cadence; cadence.show_outbox(); continue
+            if q.lower().startswith('ack '): import cadence; cadence.ack(q[4:].strip()); continue
             if q.lower().startswith('due'): import cadence; cadence.show_due(); continue
             if q.lower().startswith('outbox'): import cadence; cadence.show_outbox(); continue
             if q.lower().startswith('ack '): import cadence; cadence.ack(q[4:].strip()); continue
