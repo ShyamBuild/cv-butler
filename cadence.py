@@ -33,7 +33,7 @@ def process(B, say=lambda m: None):
         for k, rows in slog.data.items():
             if not rows: continue
             st = (rows[-1].get('stage') or '').lower()
-            if (st.startswith('rejected') or st.startswith('closed')) and not any(i.get('kind') == 'reference_ask' and (i.get('name') or '').lower() == k for i in d['items']):
+            if st.startswith('rejected') and not any(i.get('kind') == 'reference_ask' and (i.get('name') or '').lower() == k for i in d['items']):
                 d['items'].append({'kind': 'reference_ask', 'name': k.title(), 'due': now, 'note': rows[-1].get('stage', ''), 'done': False, 'at': now}); ch = True
     except Exception: pass
     due = [i for i in d['items'] if not i['done'] and i['due'] <= now]

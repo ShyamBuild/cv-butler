@@ -672,7 +672,8 @@ def _stage_words(who):
         except Exception:
             pass
         return None
-    if 'rejected' in st or 'closed' in st: return ['rejected']
+    if 'closed' in st: return ['referral']
+    if 'rejected' in st: return ['rejected']
     if 'awaiting jd' in st: return ['awaiting']
     if 'interview' in st and 'cleared' not in st: return ['interview']
     if 'cleared' in st or 'join' in st or 'payment' in st: return ['feedback']
@@ -1291,6 +1292,7 @@ def _cli(argv):
     elif cmd == 'clientname': do_clientname(arg, root, print)
     elif cmd == 'follow': do_missed(arg, root, print, words='AUTO')
     elif cmd == 'tpltest': do_tpltest(arg, root, print)
+    elif cmd == 'refer': do_send(arg, root, ['referral'], print)
     elif cmd == 'due': import cadence; cadence.show_due(print)
     elif cmd == 'outbox': import cadence; cadence.show_outbox(print)
     elif cmd == 'ack': import cadence; cadence.ack(arg, print)
@@ -1299,7 +1301,7 @@ def _cli(argv):
     else: print('cli: missed | wa | jd | nudge | touch | brief  <args>')
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board','history','stale','fixphone','call','next','case','positions','note','interview','offer','due','outbox','ack','money','value','push','recap','similar','ghost','client','digest','summarize','clientname','follow','tpltest'):
+    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board','history','stale','fixphone','call','next','case','positions','note','interview','offer','due','outbox','ack','money','value','push','recap','similar','ghost','client','digest','summarize','clientname','follow','tpltest','refer'):
         _cli(sys.argv[1:]); raise SystemExit(0)
     LAST = os.path.expanduser("~/.cvtool_last_root")
     args = sys.argv[1:]
@@ -1388,6 +1390,7 @@ if __name__ == "__main__":
             if q.lower().startswith('clientname '): do_clientname(q[11:].strip(), root); continue
             if q.lower().startswith('follow '): do_missed(q[7:].strip(), root, words='AUTO'); continue
             if q.lower().startswith('tpltest '): do_tpltest(q[8:].strip(), root); continue
+            if q.lower().startswith('refer '): do_send(q[6:].strip(), root, ['referral']); continue
             if q.lower().startswith('due'): import cadence; cadence.show_due(); continue
             if q.lower().startswith('outbox'): import cadence; cadence.show_outbox(); continue
             if q.lower().startswith('ack '): import cadence; cadence.ack(q[4:].strip()); continue
