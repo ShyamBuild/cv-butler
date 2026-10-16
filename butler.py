@@ -1555,6 +1555,8 @@ def _selftest(root):
     _cad2 = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cadence.py')).read() if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cadence.py')) else ''
     ck('S49 cadence queue accepts due', 'due=None' in _cad2)
     ck('S50 summarize routed', 'def do_summarize(' in _br and "cmd == 'summarize'" in _br)
+    ck('S51 drafts use position/client truth', 'def _pos_client_for(' in _br and 'position=_pos_client_for(hit, f)[0]' in _br)
+    ck('S52 client alias command routed', 'def do_clientname(' in _br and "cmd == 'clientname'" in _br)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False

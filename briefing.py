@@ -133,6 +133,59 @@ def _tags_of(path):
             return tags
         except Exception:
             return []
+CLIENTS_FILE = os.path.join(BASE_DIR, 'clients.json')
+def _clients():
+    try: return json.load(open(CLIENTS_FILE))
+    except Exception: return {}
+def _jd_text_for(pos_path):
+    try:
+        import fitrank
+        sp = fitrank._store(pos_path)
+        if os.path.exists(sp):
+            t = json.load(open(sp)).get('jdtext')
+            if t: return t
+    except Exception: pass
+    return ''
+def _auto_client_full(short, pos_path):
+    head = (_jd_text_for(pos_path) or '')[:600]
+    low = short.lower()
+    for m in re.finditer(r'[A-Z][A-Za-z0-9&.\-]{2,24}(?:\s+[A-Z][A-Za-z0-9&.\-]{2,24}){0,3}', head):
+        run = m.group(0)
+        if low in run.lower():
+            w = run.split()
+            if len(w[0]) > 3: w[0] = w[0].title()
+            return ' '.join(w)
+    return ''
+def _client_full(short_dirname, pos_path):
+    short = re.sub(r'^\d+[\s_-]*', '', short_dirname).strip()
+    m = _clients(); key = re.sub(r'[^a-z]', '', short.lower())
+    if key in m: return m[key]
+    full = _auto_client_full(short, pos_path)
+    if full:
+        m[key] = full
+        try: json.dump(m, open(CLIENTS_FILE, 'w'), indent=2)
+        except Exception: pass
+        return full
+    return short.title()
+def _pos_client_for(hit, f=None):
+    for base in ([os.path.dirname(os.path.abspath(hit))] if hit else []) + ([f['path']] if f and f.get('path') else []):
+        comp = _company_root(base)
+        rel = os.path.relpath(base, comp)
+        parts = [] if rel == '.' else rel.split(os.sep)
+        if len(parts) >= 2:
+            pos_path = os.path.join(comp, parts[0], parts[1])
+            return clean_pos(parts[1]), _client_full(parts[0], pos_path)
+        if len(parts) == 1:
+            pos_path = os.path.join(comp, parts[0])
+            return clean_pos(parts[0]), _client_full(parts[0], pos_path)
+    return 'the discussed role', 'our client'
+def do_clientname(arg, root, say=print):
+    if '=' not in arg: say('usage: clientname <short> = <Full Client Name>'); return
+    q, full = [x.strip() for x in arg.split('=', 1)]
+    m = _clients(); m[re.sub(r'[^a-z]', '', q.lower())] = full
+    json.dump(m, open(CLIENTS_FILE, 'w'), indent=2)
+    say(f'🏢 client alias saved: {q} -> {full}')
+
 def _pos_for(fp, root):
     d = os.path.dirname(fp)
     tagset = {k for k, _, _ in TAGS} | FOCUS_SKIP
@@ -622,7 +675,7 @@ def do_missed(arg, root, say=print, ask=None):
     ph0, rest0 = _phone_first(arg)
     if ph0:
         nm = rest0.title() or 'there'
-        pos = f['display'] if f else clean_pos(os.path.basename(root))
+        pos, cli = _pos_client_for(None, f)
         cli = f['client'] if f else re.sub(r'^\d+[\s_-]*', '', os.path.basename(os.path.dirname(root)))
         text = _tpl_for(['missed']).format(name=nm, position=pos, company=cli)
         try:
@@ -648,7 +701,7 @@ def do_missed(arg, root, say=print, ask=None):
     if not phone:
         say("🤷 no phone found in that CV"); return
     name = _full_name(hit)
-    text = _tpl_for(['missed']).format(name=name, position=f['display'], company=f['client'])
+    text = _tpl_for(['missed']).format(name=name, position=_pos_client_for(hit, f)[0], company=_pos_client_for(hit, f)[1])
     try:
         import wa
         wa.send_review(phone, text, say, ask=ask)
@@ -690,7 +743,7 @@ def do_reject(arg, root, say=print, ask=None):
     name = _full_name(hit)
     tpl = _tpl_for(['rejected'])
     try:
-        text = tpl.format(name=name, position=f['display'], company=f['client'])
+        text = tpl.format(name=name, position=_pos_client_for(hit, f)[0], company=_pos_client_for(hit, f)[1])
     except Exception:
         text = tpl
     try:
@@ -708,7 +761,7 @@ def do_send(arg, root, tpl_words, say=print, ask=None):
     ph0, rest0 = _phone_first(arg)
     if ph0:
         nm = rest0.title() or 'there'
-        pos = f['display'] if f else clean_pos(os.path.basename(root))
+        pos, cli = _pos_client_for(None, f)
         cli = f['client'] if f else re.sub(r'^\d+[\s_-]*', '', os.path.basename(os.path.dirname(root)))
         text = _tpl_for(tpl_words).format(name=nm, position=pos, company=cli)
         try:
@@ -736,7 +789,7 @@ def do_send(arg, root, tpl_words, say=print, ask=None):
     if not phone:
         say("🤷 no phone found in that CV"); return
     nm = _full_name(hit)
-    pos = f['display'] if f else clean_pos(os.path.basename(os.path.dirname(os.path.dirname(hit))))
+    pos, cli = _pos_client_for(None, f)
     cli = f['client'] if f else re.sub(r'^\d+[\s_-]*', '', os.path.basename(os.path.dirname(os.path.dirname(os.path.dirname(hit)))))
     tpl = _tpl_for(tpl_words)
     try:
@@ -799,7 +852,7 @@ def do_text(arg, root, say=print, ask=None):
     tpl = _tpl_for(words)
     for folder in hits:
         pos = clean_pos(os.path.basename(os.path.dirname(folder)))
-        client = re.sub(r'^\d+[\s_-]*', '', os.path.basename(os.path.dirname(os.path.dirname(folder))))
+        client = _client_full(os.path.basename(os.path.dirname(os.path.dirname(folder))), os.path.dirname(os.path.dirname(folder)))
         pdfs = [x for x in sorted(os.listdir(folder)) if x.lower().endswith('.pdf')]
         say(f"\n📨 {os.path.basename(folder)} - {len(pdfs)} candidate(s), one by one:")
         for x in pdfs:
@@ -1189,6 +1242,7 @@ def _cli(argv):
     elif cmd == 'client': import sem; sem.client(arg, print)
     elif cmd == 'digest': import ledger; ledger.show_digest(arg, print)
     elif cmd == 'summarize': do_summarize(arg, root, print)
+    elif cmd == 'clientname': do_clientname(arg, root, print)
     elif cmd == 'due': import cadence; cadence.show_due(print)
     elif cmd == 'outbox': import cadence; cadence.show_outbox(print)
     elif cmd == 'ack': import cadence; cadence.ack(arg, print)
@@ -1197,7 +1251,7 @@ def _cli(argv):
     else: print('cli: missed | wa | jd | nudge | touch | brief  <args>')
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board','history','stale','fixphone','call','next','case','positions','note','interview','offer','due','outbox','ack','money','value','push','recap','similar','ghost','client','digest','summarize'):
+    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board','history','stale','fixphone','call','next','case','positions','note','interview','offer','due','outbox','ack','money','value','push','recap','similar','ghost','client','digest','summarize','clientname'):
         _cli(sys.argv[1:]); raise SystemExit(0)
     LAST = os.path.expanduser("~/.cvtool_last_root")
     args = sys.argv[1:]
@@ -1283,6 +1337,7 @@ if __name__ == "__main__":
             if q.lower().startswith('client '): import sem; sem.client(q[7:].strip()); continue
             if q.lower().startswith('digest'): import ledger; ledger.show_digest(q[6:].strip()); continue
             if q.lower().startswith('summarize '): do_summarize(q[10:].strip(), root); continue
+            if q.lower().startswith('clientname '): do_clientname(q[11:].strip(), root); continue
             if q.lower().startswith('due'): import cadence; cadence.show_due(); continue
             if q.lower().startswith('outbox'): import cadence; cadence.show_outbox(); continue
             if q.lower().startswith('ack '): import cadence; cadence.ack(q[4:].strip()); continue
