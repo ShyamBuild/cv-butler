@@ -1575,6 +1575,7 @@ def _selftest(root):
     ck('S58 nudge speaks awaiting voice', "words=['awaiting', 'confirmation']" in _br and 'def do_missed(arg, root, say=print, ask=None, words=None)' in _br)
     ck('S58 brace-proof drafts', 'class _SafeDict' in _br and 'where=at' in _br)
     ck('S59 nudge speaks awaiting voice', "'nudge': 'awaiting'" in _br and "TPL_DIR, 'awaiting.txt')" in _br)
+    ck('S60 stage-aware follow', 'def _stage_words(' in _br and "cmd == 'follow'" in _br)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False

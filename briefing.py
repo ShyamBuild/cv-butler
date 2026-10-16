@@ -653,6 +653,29 @@ def do_fixphone(arg, root, say=print):
     json.dump(d, open(PHONES_FILE, 'w'), indent=2)
     say(f"📞 learned: {os.path.basename(path)} -> +{num} (overrides PDF from now on)")
 
+def _stage_words(who):
+    import ledger
+    nm = os.path.splitext(os.path.basename(who))[0].lower() if str(who).lower().endswith('.pdf') else re.sub(r'[^a-z]', ' ', str(who).lower()).strip()
+    cs = ledger._load(ledger.CASES).get(nm.replace(' ', ''), {}) or ledger._load(ledger.CASES).get(nm, {})
+    sts = cs.get('stages') or []
+    st = (sts[0].get('stage') or '').lower() if sts else ''
+    if not st: return None
+    if 'rejected' in st or 'closed' in st: return ['rejected']
+    if 'awaiting jd' in st: return ['awaiting']
+    if 'interview' in st and 'cleared' not in st: return ['interview']
+    if 'cleared' in st or 'join' in st or 'payment' in st: return ['feedback']
+    if 'feedback pending' in st or 'ready for manager' in st or 'awaiting cv' in st: return ['outbox']
+    if 'call scheduled' in st: return ['missed']
+    return None
+def _tpl_name(words):
+    words = words or ['missed']
+    try:
+        for f in sorted(os.listdir(TPL_DIR)):
+            stem = os.path.splitext(f)[0].lower()
+            if any(w in stem or stem in w for w in words): return stem
+    except Exception: pass
+    return 'awaiting (fallback)'
+
 def do_missed(arg, root, say=print, ask=None, words=None):
     arg = (arg or '').strip()
     f = _read_focus()
@@ -684,6 +707,9 @@ def do_missed(arg, root, say=print, ask=None, words=None):
         if hit: break
     if not hit:
         say(f"🤷 no candidate like '{arg}' under {f['display']}"); return
+    if words == 'AUTO': words = _stage_words(hit) or ['outbox']
+    elif words: words = _stage_words(hit) or words
+    say(f'   🗣 voice: {_tpl_name(words)}')
     phone = _pick_phone(_phones_by_basename(hit) or phones_of(hit), say)
     if not phone:
         say("🤷 no phone found in that CV"); return
@@ -1233,6 +1259,7 @@ def _cli(argv):
     elif cmd == 'digest': import ledger; ledger.show_digest(arg, print)
     elif cmd == 'summarize': do_summarize(arg, root, print)
     elif cmd == 'clientname': do_clientname(arg, root, print)
+    elif cmd == 'follow': do_missed(arg, root, print, words='AUTO')
     elif cmd == 'due': import cadence; cadence.show_due(print)
     elif cmd == 'outbox': import cadence; cadence.show_outbox(print)
     elif cmd == 'ack': import cadence; cadence.ack(arg, print)
@@ -1241,7 +1268,7 @@ def _cli(argv):
     else: print('cli: missed | wa | jd | nudge | touch | brief  <args>')
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board','history','stale','fixphone','call','next','case','positions','note','interview','offer','due','outbox','ack','money','value','push','recap','similar','ghost','client','digest','summarize','clientname'):
+    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board','history','stale','fixphone','call','next','case','positions','note','interview','offer','due','outbox','ack','money','value','push','recap','similar','ghost','client','digest','summarize','clientname','follow'):
         _cli(sys.argv[1:]); raise SystemExit(0)
     LAST = os.path.expanduser("~/.cvtool_last_root")
     args = sys.argv[1:]
@@ -1328,6 +1355,7 @@ if __name__ == "__main__":
             if q.lower().startswith('digest'): import ledger; ledger.show_digest(q[6:].strip()); continue
             if q.lower().startswith('summarize '): do_summarize(q[10:].strip(), root); continue
             if q.lower().startswith('clientname '): do_clientname(q[11:].strip(), root); continue
+            if q.lower().startswith('follow '): do_missed(q[7:].strip(), root, words='AUTO'); continue
             if q.lower().startswith('due'): import cadence; cadence.show_due(); continue
             if q.lower().startswith('outbox'): import cadence; cadence.show_outbox(); continue
             if q.lower().startswith('ack '): import cadence; cadence.ack(q[4:].strip()); continue
