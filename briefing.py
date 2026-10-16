@@ -190,6 +190,8 @@ def _split_pos(pos):
     for x in locs:
         if x not in seen: seen.append(x)
     return ((title.title() if title else pos), ', '.join(seen))
+class _SafeDict(dict):
+    def __missing__(self, k): return ''
 def _fmt_tpl(tpl, hit, f, name):
     pos, cli = _pos_client_for(hit, f)
     title, loc = _split_pos(pos)
@@ -198,7 +200,7 @@ def _fmt_tpl(tpl, hit, f, name):
     try:
         return tpl.format(name=name, position=title, company=cli, location=loc or '-', where_line=where, where=at)
     except Exception:
-        return tpl
+        return tpl.format_map(_SafeDict(name=name, position=title, company=cli, location=loc or '-', where_line=where, where=at))
 def _pos_client_for(hit, f=None):
     for base in ([os.path.dirname(os.path.abspath(hit))] if hit else []) + ([f['path']] if f and f.get('path') else []):
         comp = _company_root(base)
@@ -698,12 +700,15 @@ def do_missed(arg, root, say=print, ask=None):
 TPL_DIR = os.path.join(BASE_DIR, "templates")
 
 def _tpl_for(words):
+    SYN = {'nudge': 'awaiting', 'reminder': 'awaiting', 'followup': 'outbox', 'follow': 'outbox', 'chase': 'outbox', 'refer': 'reference', 'referral': 'reference', 'goodluck': 'interview', 'wish': 'interview', 'fb': 'feedback'}
+    words = list(words) + [SYN[w] for w in words if w in SYN]
     os.makedirs(TPL_DIR, exist_ok=True)
     for f in sorted(os.listdir(TPL_DIR)):
         stem = os.path.splitext(f)[0].lower()
         if any(w in stem or stem in w for w in words):
             return open(os.path.join(TPL_DIR, f)).read().strip()
-    return _read_tpl()
+    p = os.path.join(TPL_DIR, 'awaiting.txt')
+    return open(p).read().strip() if os.path.exists(p) else _read_tpl()
 
 def do_reject(arg, root, say=print, ask=None):
     f = _read_focus()

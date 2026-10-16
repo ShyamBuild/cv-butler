@@ -1572,6 +1572,8 @@ def _selftest(root):
     ck('S56 log trim + single helper defs', (chr(35) + ' LOG-TRIM') in _src and _br.count('def _pick_model(') == 1)
     _tm = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates', 'missed.txt')).read() if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates', 'missed.txt')) else ''
     ck('S57 unified voice + emojis', 'Regards,' in _tm and '📞' in _tm and 'where=at' in _br)
+    ck('S58 brace-proof drafts', 'class _SafeDict' in _br and 'where=at' in _br)
+    ck('S59 nudge speaks awaiting voice', "'nudge': 'awaiting'" in _br and "TPL_DIR, 'awaiting.txt')" in _br)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
