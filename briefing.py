@@ -1122,12 +1122,17 @@ def _cli(argv):
     elif cmd == 'fixphone': do_fixphone(arg, root, print)
     elif cmd == 'call': import fitrank; fitrank.show(root, arg, 'call', print)
     elif cmd == 'next': import fitrank; fitrank.show(root, arg, 'next', print)
+    elif cmd == 'case': import ledger; ledger.show_case(arg, print)
+    elif cmd == 'positions': import ledger; ledger.show_positions(arg, print)
+    elif cmd == 'note': import ledger; ledger.note(arg, print)
+    elif cmd == 'interview': import ledger; ledger.interview(arg, print)
+    elif cmd == 'offer': import ledger; ledger.offer(arg, print)
     elif cmd == 'touch': do_send(arg, root, ['touch'], print)
     elif cmd in ('brief', 'board'): print_briefing(root)
     else: print('cli: missed | wa | jd | nudge | touch | brief  <args>')
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board','history','stale','fixphone','call','next'):
+    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board','history','stale','fixphone','call','next','case','positions','note','interview','offer'):
         _cli(sys.argv[1:]); raise SystemExit(0)
     LAST = os.path.expanduser("~/.cvtool_last_root")
     args = sys.argv[1:]
@@ -1199,6 +1204,8 @@ if __name__ == "__main__":
             if q.lower().startswith('fixphone '): do_fixphone(q[9:], root); continue
             if q.lower().startswith('call '): import fitrank; fitrank.show(root, q[5:].strip(), 'call'); continue
             if q.lower().startswith('next'): import fitrank; fitrank.show(root, q[4:].strip(), 'next'); continue
+            if q.lower().startswith('case '): import ledger; ledger.show_case(q[5:].strip()); continue
+            if q.lower().startswith('positions'): import ledger; ledger.show_positions(q[9:].strip()); continue
             if q.lower().startswith('text '):
                 do_text(q[5:], root); continue
             if q.lower().startswith('reject'):
