@@ -78,6 +78,8 @@ def phones_of(path):
         except Exception:
             ocr = ''
         if ocr.strip(): ph = phones_in_text(ocr)
+    _lb = _phones_by_basename(path)
+    if _lb: ph = _lb
     store[os.path.abspath(path)] = {'k': k, 'phones': ph}
     try: json.dump(store, open(PHONES_FILE, 'w'))
     except Exception: pass
@@ -1127,12 +1129,15 @@ def _cli(argv):
     elif cmd == 'note': import ledger; ledger.note(arg, print)
     elif cmd == 'interview': import ledger; ledger.interview(arg, print)
     elif cmd == 'offer': import ledger; ledger.offer(arg, print)
+    elif cmd == 'due': import cadence; cadence.show_due(print)
+    elif cmd == 'outbox': import cadence; cadence.show_outbox(print)
+    elif cmd == 'ack': import cadence; cadence.ack(arg, print)
     elif cmd == 'touch': do_send(arg, root, ['touch'], print)
     elif cmd in ('brief', 'board'): print_briefing(root)
     else: print('cli: missed | wa | jd | nudge | touch | brief  <args>')
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board','history','stale','fixphone','call','next','case','positions','note','interview','offer'):
+    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board','history','stale','fixphone','call','next','case','positions','note','interview','offer','due','outbox','ack'):
         _cli(sys.argv[1:]); raise SystemExit(0)
     LAST = os.path.expanduser("~/.cvtool_last_root")
     args = sys.argv[1:]
@@ -1206,6 +1211,9 @@ if __name__ == "__main__":
             if q.lower().startswith('next'): import fitrank; fitrank.show(root, q[4:].strip(), 'next'); continue
             if q.lower().startswith('case '): import ledger; ledger.show_case(q[5:].strip()); continue
             if q.lower().startswith('positions'): import ledger; ledger.show_positions(q[9:].strip()); continue
+            if q.lower().startswith('due'): import cadence; cadence.show_due(); continue
+            if q.lower().startswith('outbox'): import cadence; cadence.show_outbox(); continue
+            if q.lower().startswith('ack '): import cadence; cadence.ack(q[4:].strip()); continue
             if q.lower().startswith('text '):
                 do_text(q[5:], root); continue
             if q.lower().startswith('reject'):

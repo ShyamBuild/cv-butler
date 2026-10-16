@@ -1434,6 +1434,7 @@ def main():
                     try:
                         import fitrank; fitrank.tick(B)
                         import ledger; ledger.tick(B)
+                        import cadence; cadence.process(B, hsay)
                     except Exception:
                         pass
                 except Exception as _re:
@@ -1532,6 +1533,11 @@ def _selftest(root):
     ck('S34 ledgers live + routed', os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ledger.py')) and "cmd == 'case'" in _br)
     ck('S35 heartbeat ticks + scoped reconcile', ('fitrank.' + 'tick(B)') in _src.split('last_hb > 120')[1])
     ck('S36 StageLog not self-recursive', 'self.slog = StageLog(root)' not in _src.split('class StageLog:')[1].split('class Butler:')[0])
+    ck('S37 cadence armed + processed', 'cadence.arm(' in _wa and ('cadence.' + 'process(B') in _src)
+    ck('S38 outbox/due/ack routed', "cmd == 'outbox'" in _br)
+    _led = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ledger.py')).read() if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ledger.py')) else ''
+    ck('S39 ledger hygiene: no utility positions + phone precedence', 'untitled' in _led and 'phone_fixes.json' in _led)
+    ck('S40 learned beats extraction at learn-back', '_lb = _phones_by_basename(path)' in _br)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False

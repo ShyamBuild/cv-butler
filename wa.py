@@ -84,6 +84,14 @@ def _place_text(page, text, say=print):
         page.wait_for_timeout(1200)
     return False
 
+def _arm(phone, text):
+    try:
+        import cadence
+        m = re.match(r"\s*Hi\s+([A-Za-z][A-Za-z .\-]+?),", text or "")
+        cadence.arm(phone, (m.group(1).strip() if m else None))
+    except Exception:
+        pass
+
 def send_review(phone, text, say=print, ask=None):
     digits = re.sub(r'\D', '', str(phone))
     if len(digits) == 10: digits = '91' + digits
@@ -109,6 +117,7 @@ def send_review(phone, text, say=print, ask=None):
         if os.path.exists(AUTOSEND):
             sent = _click_send(page)
             say('✅ sent via WhatsApp Web (autosend)' if sent else '⚠️ send-button not found - click send yourself in the WA window')
+            if sent: _arm(digits, text)
             return bool(sent)
         say('📝 message is in the WhatsApp text field - review it in the opened window, then:')
         say("📝 message is in the WhatsApp text field - the window STAYS open until you choose:")
@@ -126,6 +135,7 @@ def send_review(phone, text, say=print, ask=None):
             say('🗑 discarded - nothing sent')
             return False
         say('✅ sent (you clicked in WhatsApp)')
+        _arm(digits, text)
         return True
     except Exception as e:
         say(f'⚠️ whatsapp failed: {e}')
