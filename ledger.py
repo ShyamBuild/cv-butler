@@ -75,6 +75,11 @@ def tick(B):
             tg = next((k2 for k2 in case_d if re.sub(r'[^a-z]', '', k2) == kk), None)
             if tg and isinstance(vv, list) and vv: case_d[tg]['phones'] = vv
     except Exception: pass
+    # LEDGER-PRUNE v43.1
+    for _kk in list(pos_d):
+        _bl = os.path.basename(_kk).lower()
+        if not os.path.isdir(_kk) or _bl.startswith(('jd', 'fw')) or _bl.startswith('untitled') or _bl in ('converted doc files', 'converted files', 'duplicates', 'previous versions', 'nvites', 'ta_output'):
+            del pos_d[_kk]
     _save(POS, pos_d); _save(CASES, case_d)
 def show_case(arg, say=print):
     d = _load(CASES); k = _n(arg)
@@ -154,6 +159,12 @@ def show_money(arg, say=print):
             est = ctc or (_ctc_for(c['positions'][-1]) if c.get('positions') else None)
             if est: pipe += _p_join(sts[-1]) * incentive_rupees(est)
     say(f'💰 realized (selections with offers): ₹{realized:,.0f} across {n_sel} selection(s)')
+    pos_pipe = 0.0
+    for _pp, _e in _load(POS).items():
+        if _e.get('status') != 'open': continue
+        _c = _ctc_for(_pp)
+        if _c: pos_pipe += sum(_e.get('pipeline', {}).values()) * 0.15 * incentive_rupees(_c)
+    pipe = max(pipe, pos_pipe)
     say(f'📈 pipeline-weighted expected: ₹{pipe:,.0f}')
     say(f'   formula: 50% x 8.33% x CTC = {INC_RATE*100:.2f}% of CTC per joining')
 def show_value(arg, say=print):
@@ -181,6 +192,9 @@ def show_push(arg, say=print):
         sts = [s['stage'].lower() for s in c.get('stages', [])]
         if sts and ('interview scheduled' in sts[-1] or 'interview cleared' in sts[-1]) and not c.get('interviews'):
             acts.append((60, f"log interview date for {c['name']} (stage: {sts[-1]})"))
+    for _pp, _e in _load(POS).items():
+        if _e.get('status') == 'open' and _e.get('idle_days', 0) >= 14 and sum(_e.get('pipeline', {}).values()) == 0:
+            acts.append((50, f"source candidates for {_e['client']} / {_e['title']} - open {_e.get('idle_days')}d with an empty pipeline"))
     if not acts: say('🌤 no high-value pushes right now - work your due list'); return
     say('🚀 top actions by value:')
     for n, (w, t) in enumerate(sorted(acts, reverse=True)[:5], 1):

@@ -1542,6 +1542,8 @@ def _selftest(root):
     _led2 = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ledger.py')).read() if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ledger.py')) else ''
     ck('S42 money brain routed', 'def show_money(' in _led2 and "cmd == 'money'" in _br)
     ck('S43 incentive formula constant', ('INC_RATE = 0.5 * 0.0833') in _led2)
+    _led3 = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ledger.py')).read() if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'ledger.py')) else ''
+    ck('S44 ledger prunes stale positions', (chr(35) + ' LEDGER-PRUNE') in _led3)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
