@@ -1421,6 +1421,13 @@ def main():
                 def hsay(m):
                     if INTERACTIVE: log.info(m)
                     else: print(m)
+                try:
+                    # LOG-TRIM v51
+                    _lp = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'butler_live.log')
+                    if os.path.exists(_lp) and os.path.getsize(_lp) > 5_000_000:
+                        open(_lp, 'w').write(open(_lp, errors='ignore').read()[-500_000:])
+                except Exception:
+                    pass
                 if _git_stamp() != GIT_STAMP:
                     print(f"⚠️ newer committed code exists (git {_git_stamp()}) - type  restart  to run the latest proven version")
                 try:
@@ -1562,6 +1569,7 @@ def _selftest(root):
     ck('S54 position/location split wired', 'def _split_pos(' in _br and 'def _fmt_tpl(' in _br)
     _td = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
     ck('S55 scenario templates + kind-aware outbox', os.path.isdir(_td) and len([f for f in os.listdir(_td) if f.endswith('.txt')]) >= 9 and '_fmt_tpl(base,' in _cad2)
+    ck('S56 log trim + single helper defs', (chr(35) + ' LOG-TRIM') in _src and _br.count('def _pick_model(') == 1)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False

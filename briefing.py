@@ -317,55 +317,6 @@ def keyword_fallback(q):
     if 'closed' in q or 'reject' in q: tags += ['closed - not proceeding', 'rejected by client']
     return {'tags': tags or [k for k, _, _ in TAGS], 'name': None, 'position': None}
 
-def _pick_model(names):
-    for pref in ('7b', '8b', '14b', '32b'):
-        for n in names:
-            if pref in n: return n
-    return names[0]
-
-SYS_BUTLER = ("You are Butler, the recruitment assistant of Sundeep Rana (Sunsoft Technology, India). "
-              "You help with candidates, CVs, client positions, WhatsApp follow-ups and pipeline questions. "
-              "Answer briefly and practically, in the user's style. Use the CONTEXT provided; if the answer "
-              "is not in CONTEXT and not general knowledge, say you don't know. When relevant, mention the "
-              "chat command that performs the action (missed/reject/jd/nudge/touch/text/update/where/phone/dedupe/focus).")
-
-def ask_ollama_stream(messages, say=print):
-    try:
-        with urllib.request.urlopen("http://localhost:11434/api/tags", timeout=5) as r:
-            names = [m['name'] for m in json.loads(r.read().decode()).get('models', []) if 'embed' not in m['name'].lower()]
-        if not names: return False
-        payload = json.dumps({"model": _pick_model(names), "messages": messages, "stream": True}).encode()
-        req = urllib.request.Request("http://localhost:11434/api/chat", data=payload, headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=300) as r:
-            for line in r:
-                try: d = json.loads(line)
-                except Exception: continue
-                tok = (d.get('message') or {}).get('content') or ''
-                if tok: print(tok, end='', flush=True)
-        print()
-        return True
-    except Exception:
-        return False
-
-def build_context(root, q):
-    parts = []
-    try:
-        data = collect(root)
-        counts = {k: len(v) for k, v in data.items() if v}
-        if counts: parts.append("PIPELINE NOW: " + ", ".join(f"{k}={n}" for k, n in counts.items()))
-    except Exception: pass
-    f = _read_focus()
-    if f: parts.append(f"FOCUS: {f['client']} - {f['display']}")
-    try:
-        for h in _hits_for(q, root)[:2]:
-            try:
-                import pdfplumber
-                with pdfplumber.open(h) as pdf: txt = (pdf.pages[0].extract_text() or '')[:1200]
-            except Exception: txt = ''
-            parts.append(f"CANDIDATE FILE: {os.path.relpath(h, root)} | phone: {phone_of(h) or '?'}\nFIRST PAGE:\n{txt}")
-    except Exception: pass
-    return "\n\n".join(parts)
-
 def _company_root(root):
     lr = os.path.expanduser('~/.cvtool_company_root')
     if os.path.exists(lr):
