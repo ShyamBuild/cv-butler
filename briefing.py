@@ -653,7 +653,7 @@ def do_fixphone(arg, root, say=print):
     json.dump(d, open(PHONES_FILE, 'w'), indent=2)
     say(f"📞 learned: {os.path.basename(path)} -> +{num} (overrides PDF from now on)")
 
-def do_missed(arg, root, say=print, ask=None):
+def do_missed(arg, root, say=print, ask=None, words=None):
     arg = (arg or '').strip()
     f = _read_focus()
     if not f:
@@ -664,7 +664,7 @@ def do_missed(arg, root, say=print, ask=None):
         nm = rest0.title() or 'there'
         pos, cli = _pos_client_for(None, f)
         cli = f['client'] if f else re.sub(r'^\d+[\s_-]*', '', os.path.basename(os.path.dirname(root)))
-        text = _fmt_tpl(_tpl_for(['missed']), None, f, nm)
+        text = _fmt_tpl(_tpl_for(words or ['missed']), None, f, nm)
         try:
             import wa
             wa.send_review(ph0, text, say, ask=ask)
@@ -688,7 +688,7 @@ def do_missed(arg, root, say=print, ask=None):
     if not phone:
         say("🤷 no phone found in that CV"); return
     name = _full_name(hit)
-    text = _fmt_tpl(_tpl_for(['missed']), hit, f, name)
+    text = _fmt_tpl(_tpl_for(words or ['missed']), hit, f, name)
     try:
         import wa
         wa.send_review(phone, text, say, ask=ask)
@@ -1209,7 +1209,7 @@ def _cli(argv):
     if cmd == 'missed': do_missed(arg, root, print)
     elif cmd == 'wa': do_wa(arg, root, print)
     elif cmd == 'jd': do_send(arg, root, ['jd shared'], print)
-    elif cmd == 'nudge': do_missed(arg, root, print)
+    elif cmd == 'nudge': do_missed(arg, root, print, words=['awaiting', 'confirmation'])
     elif cmd == 'history': do_history(arg, root, print)
     elif cmd == 'stale': do_stale(arg, root, print)
     elif cmd == 'fixphone': do_fixphone(arg, root, print)
