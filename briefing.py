@@ -964,6 +964,54 @@ def _hits_for(q, root):
                 hits.append(os.path.join(dp, f))
     return hits
 
+def _llm_prose(s):
+    try:
+        with urllib.request.urlopen("http://localhost:11434/api/tags", timeout=5) as r:
+            names = [m['name'] for m in json.loads(r.read().decode()).get('models', []) if 'embed' not in m['name'].lower()]
+        if not names: return None
+        payload = json.dumps({"model": names[0], "messages": [{"role": "user", "content": f"Rewrite these recruiter facts as exactly two client-facing sentences, plain text, no preamble: {s}"}], "stream": False}).encode()
+        req = urllib.request.Request("http://localhost:11434/api/chat", data=payload, headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=60) as r:
+            t = (json.loads(r.read().decode())['message']['content'] or '').strip()
+        return t if 20 < len(t) < 400 else None
+    except Exception:
+        return None
+def do_summarize(arg, root, say=print):
+    q = (arg or '').strip()
+    if not q: say('usage: summarize <candidate name>'); return
+    hits = _hits_for(q, root)
+    if not hits: say(f"🤷 no CV matches '{q}'"); return
+    hit = hits[0]
+    import fitrank, ledger, time as _tm
+    txt = fitrank._text(hit)
+    yrs, des, loc = fitrank._years(txt), fitrank._desig(txt), fitrank._loc(txt)
+    nt, ctc = fitrank._notice(txt), fitrank._ctc(txt)
+    cs = ledger._load(ledger.CASES).get(os.path.splitext(os.path.basename(hit))[0].lower(), {})
+    sts = cs.get('stages') or []
+    stage = sts[0]['stage'] if sts else 'untracked'
+    days = (int(_tm.time()) - sts[0]['at']) // 86400 if sts else 0
+    conv = {}
+    try: conv = json.load(open(os.path.join(BASE_DIR, 'conversations.json')))
+    except Exception: conv = {}
+    phs = cs.get('phones') or phones_of(hit) or ['']
+    din = re.sub(r'\D', '', str(phs[0])) if phs else ''
+    e = conv.get(din) if din else None
+    li = next((m for m in reversed((e or {}).get('messages', [])) if m['dir'] == 'in'), None) if e else None
+    liq = (li['text'][:70] if li else None)
+    desig = ' / '.join(sorted(set(des))[:3]) or 'professional'
+    facts = []
+    if yrs: facts.append(f'{yrs}+ years')
+    if loc: facts.append(', '.join(loc[:2]))
+    if nt: facts.append(f'{nt}-day notice')
+    if ctc: facts.append(f'~{ctc}L')
+    line1 = f"{_full_name(hit)} - {desig} ({', '.join(facts) or 'experience on file'})"
+    line2 = f"Currently {stage} ({days}d) · tier {cs.get('tier') or '?'} · last inbound: " + (f'"{liq}"' if liq else 'none captured')
+    say('📝 client-ready:')
+    say(f'   {line1}.')
+    say(f'   {line2}.')
+    p = _llm_prose(line1 + '. ' + line2)
+    if p: say(f'   polished: {p}')
+
 def do_help(say=print):
     say(HELP_CARD)
 
@@ -1140,6 +1188,7 @@ def _cli(argv):
     elif cmd == 'ghost': import sem; sem.ghost(arg, root, print)
     elif cmd == 'client': import sem; sem.client(arg, print)
     elif cmd == 'digest': import ledger; ledger.show_digest(arg, print)
+    elif cmd == 'summarize': do_summarize(arg, root, print)
     elif cmd == 'due': import cadence; cadence.show_due(print)
     elif cmd == 'outbox': import cadence; cadence.show_outbox(print)
     elif cmd == 'ack': import cadence; cadence.ack(arg, print)
@@ -1148,7 +1197,7 @@ def _cli(argv):
     else: print('cli: missed | wa | jd | nudge | touch | brief  <args>')
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board','history','stale','fixphone','call','next','case','positions','note','interview','offer','due','outbox','ack','money','value','push','recap','similar','ghost','client','digest'):
+    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board','history','stale','fixphone','call','next','case','positions','note','interview','offer','due','outbox','ack','money','value','push','recap','similar','ghost','client','digest','summarize'):
         _cli(sys.argv[1:]); raise SystemExit(0)
     LAST = os.path.expanduser("~/.cvtool_last_root")
     args = sys.argv[1:]
@@ -1233,6 +1282,7 @@ if __name__ == "__main__":
             if q.lower().startswith('ghost'): import sem; sem.ghost(q[5:].strip(), root); continue
             if q.lower().startswith('client '): import sem; sem.client(q[7:].strip()); continue
             if q.lower().startswith('digest'): import ledger; ledger.show_digest(q[6:].strip()); continue
+            if q.lower().startswith('summarize '): do_summarize(q[10:].strip(), root); continue
             if q.lower().startswith('due'): import cadence; cadence.show_due(); continue
             if q.lower().startswith('outbox'): import cadence; cadence.show_outbox(); continue
             if q.lower().startswith('ack '): import cadence; cadence.ack(q[4:].strip()); continue

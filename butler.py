@@ -1554,6 +1554,7 @@ def _selftest(root):
     ck('S48 digest + bookends', 'def show_digest(' in _led4 and 'interview_eve' in _led4 and "cmd == 'digest'" in _br)
     _cad2 = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cadence.py')).read() if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cadence.py')) else ''
     ck('S49 cadence queue accepts due', 'due=None' in _cad2)
+    ck('S50 summarize routed', 'def do_summarize(' in _br and "cmd == 'summarize'" in _br)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
