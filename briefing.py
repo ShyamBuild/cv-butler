@@ -147,6 +147,18 @@ def _jd_text_for(pos_path):
     except Exception: pass
     return ''
 def _auto_client_full(short, pos_path):
+    # filename-first seed v49
+    try:
+        for fn in os.listdir(pos_path):
+            lf = fn.lower()
+            if lf.startswith('jd') or '_jd' in lf or ' jd' in lf or lf.endswith(('.eml', '.msg')):
+                m = re.match(r'^(?:jd|fw|fwd)[\s_\-:]*(.{2,40}?)(?:\s*[-–_|]|\.pdf|\.eml|\.msg)', fn, re.I)
+                if m:
+                    w = m.group(1).strip().split()
+                    if w and len(w[0]) > 3: w[0] = w[0].title()
+                    return ' '.join(w[:4])
+    except Exception:
+        pass
     head = (_jd_text_for(pos_path) or '')[:600]
     low = short.lower()
     for m in re.finditer(r'[A-Z][A-Za-z0-9&.\-]{2,24}(?:\s+[A-Z][A-Za-z0-9&.\-]{2,24}){0,3}', head):
@@ -167,6 +179,25 @@ def _client_full(short_dirname, pos_path):
         except Exception: pass
         return full
     return short.title()
+CITY_WORDS = ['greater noida', 'vikhroli east', 'vikhroli', 'mumbai', 'bengaluru', 'bangalore', 'delhi', 'gurugram', 'gurgaon', 'noida', 'pune', 'chennai', 'hyderabad', 'ahmedabad', 'kolkata', 'jaipur', 'lucknow', 'indore', 'nagpur', 'thane', 'erode', 'coimbatore']
+def _split_pos(pos):
+    low = (pos or '').lower(); locs = []
+    for c in CITY_WORDS:
+        if c in low:
+            locs.append(c.title()); low = low.replace(c, ' ')
+    title = re.sub(r'\s+', ' ', low).strip(' -|,')
+    seen = []
+    for x in locs:
+        if x not in seen: seen.append(x)
+    return ((title.title() if title else pos), ', '.join(seen))
+def _fmt_tpl(tpl, hit, f, name):
+    pos, cli = _pos_client_for(hit, f)
+    title, loc = _split_pos(pos)
+    where = f"Company: {cli}" + (f" | Location: {loc}" if loc else "")
+    try:
+        return tpl.format(name=name, position=title, company=cli, location=loc or '-', where_line=where)
+    except Exception:
+        return tpl
 def _pos_client_for(hit, f=None):
     for base in ([os.path.dirname(os.path.abspath(hit))] if hit else []) + ([f['path']] if f and f.get('path') else []):
         comp = _company_root(base)
@@ -426,8 +457,9 @@ def answer(root, q, say=print):
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FOCUS_FILE = os.path.join(BASE_DIR, "focus.json")
 TPL_FILE = os.path.join(BASE_DIR, "wa_template.txt")
-DEFAULT_TPL = ("Hi {name}, I tried calling you today regarding the {position} opening at "
-               "{company}. Please let me know a good time to connect. - Sunsoft Technology")
+DEFAULT_TPL = ("Hi {name}, Sundeep Rana (Sunsoft Technology) - tried calling you today.\n"
+"Regarding the {position} role | {where_line}.\n"
+"Please share your updated CV (PDF) here + a good time to reconnect. Thanks!")
 
 def _read_tpl():
     if not os.path.exists(TPL_FILE):
@@ -677,7 +709,7 @@ def do_missed(arg, root, say=print, ask=None):
         nm = rest0.title() or 'there'
         pos, cli = _pos_client_for(None, f)
         cli = f['client'] if f else re.sub(r'^\d+[\s_-]*', '', os.path.basename(os.path.dirname(root)))
-        text = _tpl_for(['missed']).format(name=nm, position=pos, company=cli)
+        text = _fmt_tpl(_tpl_for(['missed']), None, f, nm)
         try:
             import wa
             wa.send_review(ph0, text, say, ask=ask)
@@ -701,7 +733,7 @@ def do_missed(arg, root, say=print, ask=None):
     if not phone:
         say("🤷 no phone found in that CV"); return
     name = _full_name(hit)
-    text = _tpl_for(['missed']).format(name=name, position=_pos_client_for(hit, f)[0], company=_pos_client_for(hit, f)[1])
+    text = _fmt_tpl(_tpl_for(['missed']), hit, f, name)
     try:
         import wa
         wa.send_review(phone, text, say, ask=ask)
@@ -743,7 +775,7 @@ def do_reject(arg, root, say=print, ask=None):
     name = _full_name(hit)
     tpl = _tpl_for(['rejected'])
     try:
-        text = tpl.format(name=name, position=_pos_client_for(hit, f)[0], company=_pos_client_for(hit, f)[1])
+        text = _fmt_tpl(tpl, hit, f, name)
     except Exception:
         text = tpl
     try:
@@ -763,7 +795,7 @@ def do_send(arg, root, tpl_words, say=print, ask=None):
         nm = rest0.title() or 'there'
         pos, cli = _pos_client_for(None, f)
         cli = f['client'] if f else re.sub(r'^\d+[\s_-]*', '', os.path.basename(os.path.dirname(root)))
-        text = _tpl_for(tpl_words).format(name=nm, position=pos, company=cli)
+        text = _fmt_tpl(_tpl_for(tpl_words), None, f, nm)
         try:
             import wa
             wa.send_review(ph0, text, say, ask=ask)
@@ -793,7 +825,7 @@ def do_send(arg, root, tpl_words, say=print, ask=None):
     cli = f['client'] if f else re.sub(r'^\d+[\s_-]*', '', os.path.basename(os.path.dirname(os.path.dirname(os.path.dirname(hit)))))
     tpl = _tpl_for(tpl_words)
     try:
-        text = tpl.format(name=nm, position=pos, company=cli)
+        text = _fmt_tpl(tpl, hit, f, nm)
     except Exception:
         text = tpl
     try:
@@ -861,7 +893,7 @@ def do_text(arg, root, say=print, ask=None):
             if not phone:
                 say(f"   ⚠️ {name}: no phone in CV - skipped"); continue
             try:
-                text = tpl.format(name=name, position=pos, company=client)
+                text = _fmt_tpl(tpl, os.path.join(folder, x), f, name)
             except Exception:
                 text = tpl
             try:
