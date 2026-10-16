@@ -1132,6 +1132,9 @@ def _cli(argv):
     elif cmd == 'due': import cadence; cadence.show_due(print)
     elif cmd == 'outbox': import cadence; cadence.run_outbox(root, print)
     elif cmd == 'ack': import cadence; cadence.ack(arg, print)
+    elif cmd == 'money': import ledger; ledger.show_money(arg, print)
+    elif cmd == 'value': import ledger; ledger.show_value(arg, print)
+    elif cmd == 'push': import ledger; ledger.show_push(arg, print)
     elif cmd == 'due': import cadence; cadence.show_due(print)
     elif cmd == 'outbox': import cadence; cadence.show_outbox(print)
     elif cmd == 'ack': import cadence; cadence.ack(arg, print)
@@ -1140,7 +1143,7 @@ def _cli(argv):
     else: print('cli: missed | wa | jd | nudge | touch | brief  <args>')
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board','history','stale','fixphone','call','next','case','positions','note','interview','offer','due','outbox','ack'):
+    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board','history','stale','fixphone','call','next','case','positions','note','interview','offer','due','outbox','ack','money','value','push'):
         _cli(sys.argv[1:]); raise SystemExit(0)
     LAST = os.path.expanduser("~/.cvtool_last_root")
     args = sys.argv[1:]
@@ -1217,6 +1220,9 @@ if __name__ == "__main__":
             if q.lower().startswith('due'): import cadence; cadence.show_due(); continue
             if q.lower().startswith('outbox'): import cadence; cadence.run_outbox(root); continue
             if q.lower().startswith('ack '): import cadence; cadence.ack(q[4:].strip()); continue
+            if q.lower().startswith('money'): import ledger; ledger.show_money(q[5:].strip()); continue
+            if q.lower().startswith('value'): import ledger; ledger.show_value(q[5:].strip()); continue
+            if q.lower().startswith('push'): import ledger; ledger.show_push(q[4:].strip()); continue
             if q.lower().startswith('due'): import cadence; cadence.show_due(); continue
             if q.lower().startswith('outbox'): import cadence; cadence.show_outbox(); continue
             if q.lower().startswith('ack '): import cadence; cadence.ack(q[4:].strip()); continue
