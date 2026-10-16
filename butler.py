@@ -1576,6 +1576,8 @@ def _selftest(root):
     ck('S58 brace-proof drafts', 'class _SafeDict' in _br and 'where=at' in _br)
     ck('S59 nudge speaks awaiting voice', "'nudge': 'awaiting'" in _br and "TPL_DIR, 'awaiting.txt')" in _br)
     ck('S60 stage-aware follow', 'def _stage_words(' in _br and "cmd == 'follow'" in _br)
+    ck('S61 q never counts as sent', 'left in field & window closed' in _wa)
+    ck('S62 tpltest + split hardening', 'def do_tpltest(' in _br and (chr(35) + ' SPLIT-HARD') in _br)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False

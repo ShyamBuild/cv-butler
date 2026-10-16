@@ -181,7 +181,9 @@ def _client_full(short_dirname, pos_path):
     return short.title()
 CITY_WORDS = ['greater noida', 'vikhroli east', 'vikhroli', 'mumbai', 'bengaluru', 'bangalore', 'delhi', 'gurugram', 'gurgaon', 'noida', 'pune', 'chennai', 'hyderabad', 'ahmedabad', 'kolkata', 'jaipur', 'lucknow', 'indore', 'nagpur', 'thane', 'erode', 'coimbatore']
 def _split_pos(pos):
-    low = (pos or '').lower(); locs = []
+    low = (pos or '').lower().replace('|', ' ')  # SPLIT-HARD v56
+    low = re.sub(r'\blocation\b', ' ', low)
+    locs = []
     for c in CITY_WORDS:
         if c in low:
             locs.append(c.title()); low = low.replace(c, ' ')
@@ -659,7 +661,17 @@ def _stage_words(who):
     cs = ledger._load(ledger.CASES).get(nm.replace(' ', ''), {}) or ledger._load(ledger.CASES).get(nm, {})
     sts = cs.get('stages') or []
     st = (sts[0].get('stage') or '').lower() if sts else ''
-    if not st: return None
+    if not st:
+        try:
+            conv = json.load(open(os.path.join(BASE_DIR, 'conversations.json')))
+            for p in (cs.get('phones') or []):
+                e = conv.get(re.sub(r'\D', '', str(p)))
+                if not e: continue
+                outs = [m['text'].lower() for m in e.get('messages', []) if m['dir'] == 'out']
+                if outs and any('not relevant' in t for t in outs[-3:]): return ['rejected']
+        except Exception:
+            pass
+        return None
     if 'rejected' in st or 'closed' in st: return ['rejected']
     if 'awaiting jd' in st: return ['awaiting']
     if 'interview' in st and 'cleared' not in st: return ['interview']
@@ -805,6 +817,7 @@ def do_send(arg, root, tpl_words, say=print, ask=None):
     if not phone:
         say("🤷 no phone found in that CV"); return
     nm = _full_name(hit)
+    say(f'   🗣 voice: {_tpl_name(tpl_words)}')
     pos, cli = _pos_client_for(None, f)
     cli = f['client'] if f else re.sub(r'^\d+[\s_-]*', '', os.path.basename(os.path.dirname(os.path.dirname(os.path.dirname(hit)))))
     tpl = _tpl_for(tpl_words)
@@ -1081,6 +1094,23 @@ def do_summarize(arg, root, say=print):
     p = _llm_prose(line1 + '. ' + line2)
     if p: say(f'   polished: {p}')
 
+def do_tpltest(arg, root, say=print):
+    hits = _hits_for((arg or '').strip(), root)
+    if not hits: say(f'🤷 no CV matches {arg!r}'); return
+    hit = hits[0]
+    pos, cli = _pos_client_for(hit, None)
+    title, loc = _split_pos(pos)
+    at = cli + (f', {loc}' if loc else '')
+    say(f'🧪 path: {os.path.relpath(hit, root)}')
+    say(f'   position raw : {pos}')
+    say(f'   client       : {cli}')
+    say(f'   title        : {title}')
+    say(f'   location     : {loc or "(none found)"}')
+    say(f'   where        : {at}')
+    say('   rendered (awaiting voice):')
+    for ln in _fmt_tpl(_tpl_for(['awaiting']), hit, None, _full_name(hit)).split('\n'):
+        say(f'     {ln}')
+
 def do_help(say=print):
     say(HELP_CARD)
 
@@ -1260,6 +1290,7 @@ def _cli(argv):
     elif cmd == 'summarize': do_summarize(arg, root, print)
     elif cmd == 'clientname': do_clientname(arg, root, print)
     elif cmd == 'follow': do_missed(arg, root, print, words='AUTO')
+    elif cmd == 'tpltest': do_tpltest(arg, root, print)
     elif cmd == 'due': import cadence; cadence.show_due(print)
     elif cmd == 'outbox': import cadence; cadence.show_outbox(print)
     elif cmd == 'ack': import cadence; cadence.ack(arg, print)
@@ -1268,7 +1299,7 @@ def _cli(argv):
     else: print('cli: missed | wa | jd | nudge | touch | brief  <args>')
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board','history','stale','fixphone','call','next','case','positions','note','interview','offer','due','outbox','ack','money','value','push','recap','similar','ghost','client','digest','summarize','clientname','follow'):
+    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board','history','stale','fixphone','call','next','case','positions','note','interview','offer','due','outbox','ack','money','value','push','recap','similar','ghost','client','digest','summarize','clientname','follow','tpltest'):
         _cli(sys.argv[1:]); raise SystemExit(0)
     LAST = os.path.expanduser("~/.cvtool_last_root")
     args = sys.argv[1:]
@@ -1356,6 +1387,7 @@ if __name__ == "__main__":
             if q.lower().startswith('summarize '): do_summarize(q[10:].strip(), root); continue
             if q.lower().startswith('clientname '): do_clientname(q[11:].strip(), root); continue
             if q.lower().startswith('follow '): do_missed(q[7:].strip(), root, words='AUTO'); continue
+            if q.lower().startswith('tpltest '): do_tpltest(q[8:].strip(), root); continue
             if q.lower().startswith('due'): import cadence; cadence.show_due(); continue
             if q.lower().startswith('outbox'): import cadence; cadence.show_outbox(); continue
             if q.lower().startswith('ack '): import cadence; cadence.ack(q[4:].strip()); continue

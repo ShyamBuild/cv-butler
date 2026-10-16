@@ -135,6 +135,9 @@ def send_review(phone, text, say=print, ask=None):
                 pass
             say('🗑 discarded - nothing sent')
             return False
+        if c == 'q':
+            say('📝 left in field & window closed - NOT counted as sent')
+            return False
         say('✅ sent (you clicked in WhatsApp)')
         _arm(digits, text)
         _arm(digits, text)
