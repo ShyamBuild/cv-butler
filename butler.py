@@ -35,6 +35,8 @@ def _settling(p):
     try:
         b = os.path.basename(p).lower()
         if b.endswith(SETTLE_EXTS): return True
+        st = os.stat(p)
+        if st.st_size == 0: return True
         return (time.time() - os.stat(p).st_mtime) < 20
     except Exception:
         return True
@@ -579,6 +581,7 @@ class Butler:
             pass
 
     def _rename(self, old_path, new_name, say, tag):
+        if _settling(old_path): return  # RENAME-GATE v61
         d = os.path.dirname(old_path); ob = os.path.basename(old_path)
         if not os.path.exists(old_path): return
         if new_name == ob: return
@@ -657,6 +660,7 @@ class Butler:
             print(f"⚠️ compact error in {folder}: {e}")
 
     def normalize_suffix(self, p, say):
+        if _settling(p): return p  # NORM-GATE v61
         base = os.path.basename(p)
         if base.lower() in self.locks: return p
         m = (re.match(r'^(.*)_(\d+)\.pdf$', base, re.I)
@@ -874,6 +878,8 @@ class Butler:
         ino = None
         try: ino = os.stat(p).st_ino
         except OSError: pass
+        if ino is not None and getattr(self, 'rcn', {}).get(ino) != base:
+            self.rcn = getattr(self, 'rcn', {}); self.rcn[ino] = base; self.rc[ino] = 0
         if ino is not None and self.rc.get(ino, 0) >= 2:
             return  # loop breaker
 
@@ -1186,7 +1192,9 @@ class Butler:
                     if os.path.abspath(os.path.dirname(fp)) == os.path.abspath(tgt): continue
                     os.makedirs(tgt, exist_ok=True)
                     dst = os.path.join(tgt, f)
-                    if os.path.exists(dst): continue
+                    if os.path.exists(dst):
+                        b2, e2 = os.path.splitext(f); c2 = 1
+                        while os.path.exists(dst): dst = os.path.join(tgt, f"{b2}_{c2}{e2}"); c2 += 1
                     if _settling(fp): continue  # RECONCILE-GATE v60
                     os.rename(fp, dst)
                     with self.lock: self.stats['moved'] += 1
@@ -1630,6 +1638,10 @@ def _selftest(root):
     ck('S66 settle-gate on every mutating door', 'def _settling(' in _src and all(_body.count(m) == 1 for m in (chr(35)+' ROUTE-GATE', chr(35)+' TAGS-GATE', chr(35)+' RECONCILE-GATE')))
     ck('S67 heal sweep + debris archive', 'def _heal(' in _src and 'download_debris' in _src and 'B._heal(hsay)' in _src.split('last_hb > 120')[1])
     ck('S68 selftest opens settle-gates', 'SETTLE_TEST = True' in _src and 'if SETTLE_TEST: return False' in _src)
+    _rg = _src.split('def _reconcile_tags')[1].split('\ndef ')[0]
+    ck('S69 rename hands gated', (chr(35)+' RENAME-GATE') in _src and (chr(35)+' NORM-GATE') in _src)
+    ck('S70 reconcile dedupes instead of skipping', 'while os.path.exists(dst): dst = os.path.join(tgt,' in _rg and 'if os.path.exists(dst): continue' not in _rg)
+    ck('S71 rename breaker resets on name change', 'self.rcn' in _src.split('def handle_pdf')[1].split('def ')[0])
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
