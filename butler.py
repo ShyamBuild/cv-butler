@@ -1726,6 +1726,7 @@ def _selftest(root):
     ck('S80 one ack clock per send', _wa.count('_arm(digits, text)') == 2)
     ck('S82 heal un-disarms rename breaker', (chr(35)+' RC-FRESH') in _src and '< 60: continue  # HEAL-RETRY' in _src)
     ck('S83 renwhy X-ray routed', 'def do_renwhy(' in _br and "cmd == 'renwhy'" in _br)
+    ck('S84 clean_pos strips pipes', (chr(35)+' PIPE-CLEAN') in _br)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False

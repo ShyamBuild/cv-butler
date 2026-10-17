@@ -32,6 +32,7 @@ FOCUS_SKIP = {t for t, _, _ in TAGS} | {'rejected by client', 'closed – not pr
     'converted doc files', 'converted files', 'duplicates', 'nvites', 'ta_output'}
 
 def clean_pos(name):
+    name = (name or '').replace('|', ' ')  # PIPE-CLEAN v67
     n = re.sub(r'^jd[\s_-]+', '', name, flags=re.I)
     n = n.replace('_', ' ').replace('-', ' ')
     n = re.sub(r'\b(pvt\.?|ltd\.?|llp|inc\.?|corp\.?|projects|technologies|solutions|enterprises|international|india)\b', ' ', n, flags=re.I)
