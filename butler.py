@@ -465,6 +465,19 @@ def convert_msg(msg_path, pdf_path, engines):
 
 COLOR_TAGS = {'Red','Orange','Yellow','Green','Blue','Purple','Gray','Grey'}
 TAG_NAMES = {'Rejected by Client','Awaiting JD Confirmation','Awaiting CV Update','Ready for Manager Review','Call Scheduled','Closed – Not Proceeding','Closed - Not Proceeding','Interview Today','Interview Tomorrow','Interview Scheduled','Interview Cleared','Expected to Join','Joined - Payment Pending','Joined – Payment Pending','Feedback Pending','Payment Received','Position Active','Position On Hold','Position Closed'}
+def _tags_of_fast(p):
+    try:
+        import plistlib
+        arr = plistlib.loads(os.getxattr(p, 'com.apple.metadata:_kMDItemUserTags'))
+        out = [str(t).split(chr(10))[0].strip() for t in arr]
+        return [t for t in out if t and t not in COLOR_TAGS]
+    except Exception:
+        return None
+def _has_tag_xattr(p):
+    t = _tags_of_fast(p)
+    if t is None: return False
+    return any(x in TAG_NAMES or x.replace(chr(8211), '-') in TAG_NAMES for x in t)
+
 def _tags_from_plist(path):
     try:
         import plistlib
@@ -1125,6 +1138,7 @@ class Butler:
                 self.handle_pdf(pdf, say)
                 if not getattr(self, '_skip_tags', False): self.handle_tags(pdf, say)
         elif ext == '.pdf':
+            if _has_tag_xattr(p): p = self.handle_tags(p, say) or p  # TAGS-FIRST v63
             p = self.normalize_suffix(p, say)
             self.handle_pdf(p, say)
             if not getattr(self, '_skip_tags', False): self.handle_tags(p, say)
@@ -1147,7 +1161,7 @@ class Butler:
     def handle_tags(self, p, say):
         if _settling(p): return  # TAGS-GATE v60
         if len(os.path.relpath(os.path.dirname(p), self.root).split(os.sep)) < 2: return
-        T = get_tags(p)
+        T = _tags_of_fast(p) or get_tags(p)
         named = [t for t in T if t in TAG_NAMES or t.replace(chr(8211), "-") in TAG_NAMES]
         if not named: return
         tag = named[0]
@@ -1163,6 +1177,7 @@ class Butler:
         os.rename(p, dst)
         with self.lock: self.stats['moved'] += 1
         say(f"\U0001f4c1 [move] {os.path.basename(p)} -> {safe_tag}/")
+        return dst
     def sweep_dirs(self, n):
         now = time.time()
         dirs = []
@@ -1275,6 +1290,7 @@ def main():
     global LLM_MODEL
     LLM_MODEL = get_model()
     B = Butler(root)
+    B._jload()
     B.scanning = True
     # fresh-eyes purge: reset convert fail-counters each run
     _d = getattr(B, 'conv_state', None)
@@ -1317,6 +1333,11 @@ def main():
             with prog['lock']:
                 prog['n'] += 1
                 print(f"🔎 {prog['n']}/{total} · {os.path.basename(p)}", flush=True)
+        try:
+            if not hasattr(B, 'journal'): B._jload()
+            _jk = B._jkey(p)
+            if _jk and B.journal.get(p) == _jk: return  # WORK-DOOR SKIP v63
+        except Exception: pass
         try:
             B.route(p, print)
         except Exception as e:
@@ -1657,6 +1678,8 @@ def _selftest(root):
     ck('S70 reconcile dedupes instead of skipping', 'while os.path.exists(dst): dst = os.path.join(tgt,' in _rg and 'if os.path.exists(dst): continue' not in _rg)
     ck('S71 rename breaker resets on name change', 'self.rcn' in _src.split('def handle_pdf')[1].split('def ')[0])
     ck('S72 settle-fast + pending drain', (chr(35)+' SETTLE-FAST') in _src and (chr(35)+' DRAIN-PENDING') in _src and 'def _drain_pending(' in _src)
+    ck('S73 tags-first filing', 'def _has_tag_xattr(' in _src and (chr(35)+' TAGS-FIRST') in _src and 'def _tags_of_fast(' in _src)
+    ck('S74 worker-door journal skip', (chr(35)+' WORK-DOOR SKIP') in _src and 'B._jload()' in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
