@@ -15,8 +15,22 @@ def _eod_ts(cfg):
     h, m = [int(x) for x in str(cfg['eod_cutoff']).split(':')]
     t = time.localtime()
     return int(datetime.datetime(t.tm_year, t.tm_mon, t.tm_mday, h, m).timestamp())
+def _collapse(d):
+    seen = {}; keep = []
+    for it in d.get('items', []):
+        if it.get('done'):
+            keep.append(it); continue
+        k = (it.get('kind'), (it.get('name') or '').lower())
+        if k in seen:
+            j = seen[k]
+            if (it.get('due') or 0) >= (keep[j].get('due') or 0): keep[j] = it
+            continue
+        seen[k] = len(keep); keep.append(it)
+    d['items'] = keep
+
 def arm(phone, name):
     d = _load(); cfg = _cfg(); now = int(time.time())
+    _collapse(d)
     d['items'].append({'kind': 'ack_check', 'name': name, 'phone': phone, 'due': now + cfg['ack_min'] * 60, 'done': False, 'at': now})
     d['items'].append({'kind': 'eod_nudge', 'name': name, 'phone': phone, 'due': _eod_ts(cfg), 'done': False, 'at': now})
     d['sent_log'].append({'name': name, 'phone': phone, 'at': now})
@@ -27,6 +41,7 @@ def queue(name, kind, note='', due=None):
     _save(d)
 def process(B, say=lambda m: None):
     d = _load(); now = int(time.time()); ch = False
+    _collapse(d)
     try:
         from butler import StageLog
         slog = StageLog(B.root)
@@ -67,6 +82,7 @@ DEF_ACK = "Hi {name}, following up on my last message regarding the {position} o
 DEF_REF = "Hi {name}, thank you for the update. If you know 1-2 colleagues who might fit similar roles, a referral would mean a lot. - Sunsoft Technology"
 def run_outbox(root, say=print, ask=None):
     d = _load(); now = int(time.time())
+    _collapse(d)
     due = [i for i in d['items'] if not i['done'] and i['due'] <= now]
     if not due: say('📭 outbox empty - nothing due right now'); return
     say(f'📤 {len(due)} due follow-up(s):')
