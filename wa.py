@@ -118,7 +118,6 @@ def send_review(phone, text, say=print, ask=None):
             sent = _click_send(page)
             say('✅ sent via WhatsApp Web (autosend)' if sent else '⚠️ send-button not found - click send yourself in the WA window')
             if sent: _arm(digits, text)
-            if sent: _arm(digits, text)
             return bool(sent)
         say('📝 message is in the WhatsApp text field - review it in the opened window, then:')
         say("📝 message is in the WhatsApp text field - the window STAYS open until you choose:")
@@ -139,7 +138,6 @@ def send_review(phone, text, say=print, ask=None):
             say('📝 left in field & window closed - NOT counted as sent')
             return False
         say('✅ sent (you clicked in WhatsApp)')
-        _arm(digits, text)
         _arm(digits, text)
         return True
     except Exception as e:

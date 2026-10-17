@@ -597,6 +597,9 @@ class Butler:
             pass
 
     def _rename(self, old_path, new_name, say, tag):
+        _selfb = os.path.basename(old_path).lower()  # SELF-FREE v65
+        _bn, _be = os.path.splitext(new_name)
+        if (_bn + _be).lower() == _selfb: return  # SELF-FREE v65
         if _settling(old_path): return  # RENAME-GATE v61
         d = os.path.dirname(old_path); ob = os.path.basename(old_path)
         if not os.path.exists(old_path): return
@@ -1017,7 +1020,9 @@ class Butler:
             name = None  # broken-font reading of an already-good name: keep current
         if name and re.sub(r'\s', '', name.lower()) == re.sub(r'\s', '', os.path.splitext(base)[0].lower()):
             name = None  # same letters, only spacing differs: current name is fine
-        if name and f"{name}.pdf" != base:
+        _b0 = os.path.splitext(base)[0]  # SUFFIX-STABLE v65
+        _okb = (not name) or _b0.lower() == name.lower() or bool(re.match(re.escape(name) + r'[_\s]\d+$', _b0, re.I))
+        if name and not _okb:
             if ino is not None: self.rc[ino] = self.rc.get(ino, 0) + 1
             self._rename(p, f"{name}.pdf", say, tag)
         src = getattr(self, '_pending_src', {}).pop(os.path.abspath(p), None)
@@ -1137,8 +1142,9 @@ class Butler:
                 if not bl.endswith(('.pdf', '.doc', '.docx', '.msg', '.eml', '.xlsx')): continue
                 if _settling(fp): continue
                 key = f'{fp}|{st.st_mtime_ns}|{st.st_size}'
-                if self._heal_done.get(f) == key: continue
-                self._heal_done[f] = key
+                prev = self._heal_done.get(f)
+                if prev and prev[0] == key and now - prev[1] < 600: continue  # HEAL-RETRY v65
+                self._heal_done[f] = (key, now)
                 self._route(fp, say)
 
     def _route(self, p, say):
@@ -1158,7 +1164,6 @@ class Butler:
                 self.handle_pdf(pdf, say)
                 if not getattr(self, '_skip_tags', False): self.handle_tags(pdf, say)
         elif ext == '.pdf':
-            if _has_tag_xattr(p): p = self.handle_tags(p, say) or p  # TAGS-FIRST v63
             p = self.normalize_suffix(p, say)
             self.handle_pdf(p, say)
             if not getattr(self, '_skip_tags', False): self.handle_tags(p, say)
@@ -1241,6 +1246,8 @@ class Butler:
                         b2, e2 = os.path.splitext(f); c2 = 1
                         while os.path.exists(dst): dst = os.path.join(tgt, f"{b2}_{c2}{e2}"); c2 += 1
                     if _settling(fp): continue  # RECONCILE-GATE v60
+                    self.handle_pdf(fp, say)  # RENAME-FIRST v65
+                    if not os.path.exists(fp): continue
                     os.rename(fp, dst)
                     with self.lock: self.stats['moved'] += 1
                     say(f"\U0001f4c1 [reconcile] {f} -> {tag}/")
@@ -1706,10 +1713,15 @@ def _selftest(root):
     ck('S70 reconcile dedupes instead of skipping', 'while os.path.exists(dst): dst = os.path.join(tgt,' in _rg and 'if os.path.exists(dst): continue' not in _rg)
     ck('S71 rename breaker resets on name change', 'self.rcn' in _src.split('def handle_pdf')[1].split('def ')[0])
     ck('S72 settle-fast + pending drain', (chr(35)+' SETTLE-FAST') in _src and (chr(35)+' DRAIN-PENDING') in _src and 'def _drain_pending(' in _src)
-    ck('S73 tags-first filing', 'def _has_tag_xattr(' in _src and (chr(35)+' TAGS-FIRST') in _src and 'def _tags_of_fast(' in _src)
+    ck('S73 fast xattr tag reads + protocol order', 'def _has_tag_xattr(' in _src and 'def _tags_of_fast(' in _src and (chr(35)+' TAGS-FIRST') not in _src)
     ck('S74 worker-door journal skip', (chr(35)+' WORK-DOOR SKIP') in _src and 'B._jload()' in _src)
     ck('S75 tag poll catches silent re-tags', 'def _tag_poll(' in _src and (chr(35)+' TAG-POLL') in _src and _src.count(chr(35)+' TAG-POLL') >= 2)
     ck('S76 reconcile reads tags without mdls', _src.split('def _reconcile_tags')[1].split('\ndef ')[0].count('_tags_of_fast(') >= 1)
+    _pdfseg = _src.split("elif ext == '.pdf':")[1].split('elif ext ==')[0]
+    ck('S77 PROTOCOL rename-then-move for CVs', _pdfseg.index('self.handle_pdf(') < _pdfseg.index('self.handle_tags(') and (chr(35)+' TAGS-FIRST') not in _pdfseg)
+    ck('S78 heal retries + reconcile rename-first', (chr(35)+' HEAL-RETRY') in _src and (chr(35)+' RENAME-FIRST') in _src)
+    ck('S79 suffix-stable renames, self slot free', (chr(35)+' SUFFIX-STABLE') in _src and _src.count(chr(35)+' SELF-FREE') >= 2)
+    ck('S80 one ack clock per send', _wa.count('_arm(digits, text)') == 2)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
