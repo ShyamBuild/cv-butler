@@ -1143,8 +1143,10 @@ class Butler:
                 if _settling(fp): continue
                 key = f'{fp}|{st.st_mtime_ns}|{st.st_size}'
                 prev = self._heal_done.get(f)
-                if prev and prev[0] == key and now - prev[1] < 600: continue  # HEAL-RETRY v65
+                if prev and prev[0] == key and now - prev[1] < 60: continue  # HEAL-RETRY v65
                 self._heal_done[f] = (key, now)
+                try: self.rc.pop(os.stat(fp).st_ino, None)  # RC-FRESH v66
+                except Exception: pass
                 self._route(fp, say)
 
     def _route(self, p, say):
@@ -1722,6 +1724,8 @@ def _selftest(root):
     ck('S78 heal retries + reconcile rename-first', (chr(35)+' HEAL-RETRY') in _src and (chr(35)+' RENAME-FIRST') in _src)
     ck('S79 suffix-stable renames, self slot free', (chr(35)+' SUFFIX-STABLE') in _src and _src.count(chr(35)+' SELF-FREE') >= 2)
     ck('S80 one ack clock per send', _wa.count('_arm(digits, text)') == 2)
+    ck('S82 heal un-disarms rename breaker', (chr(35)+' RC-FRESH') in _src and '< 60: continue  # HEAL-RETRY' in _src)
+    ck('S83 renwhy X-ray routed', 'def do_renwhy(' in _br and "cmd == 'renwhy'" in _br)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False

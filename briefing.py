@@ -215,6 +215,22 @@ def _pos_client_for(hit, f=None):
             pos_path = os.path.join(comp, parts[0])
             return clean_pos(parts[0]), _client_full(parts[0], pos_path)
     return 'the discussed role', 'our client'
+def do_renwhy(arg, root, say=print):
+    import butler, fitrank
+    hits = _hits_for((arg or '').strip(), root)
+    if not hits: say(f'🤷 no CV matches {arg!r}'); return
+    p = hits[0]; b = butler.Butler(root); b._jload()
+    log = []
+    b.handle_pdf(p, log.append)
+    say(f'🔎 {os.path.relpath(p, root)}')
+    say(f'   handle_pdf said: {log if log else "(silent = rename refused)"}')
+    try:
+        ino = os.stat(p).st_ino
+        say(f'   rc={b.rc.get(ino)} rcn={getattr(b, "rcn", {}).get(ino)} journal={"yes" if b.journal.get(p) else "no"}')
+    except Exception: pass
+    t = fitrank._text(p)
+    say(f'   text head: {" | ".join(t.split(chr(10))[:3])[:200]}')
+
 def do_clientname(arg, root, say=print):
     if '=' not in arg: say('usage: clientname <short> = <Full Client Name>'); return
     q, full = [x.strip() for x in arg.split('=', 1)]
@@ -1293,6 +1309,7 @@ def _cli(argv):
     elif cmd == 'follow': do_missed(arg, root, print, words='AUTO')
     elif cmd == 'tpltest': do_tpltest(arg, root, print)
     elif cmd == 'refer': do_send(arg, root, ['referral'], print)
+    elif cmd == 'renwhy': do_renwhy(arg, root, print)
     elif cmd == 'due': import cadence; cadence.show_due(print)
     elif cmd == 'outbox': import cadence; cadence.show_outbox(print)
     elif cmd == 'ack': import cadence; cadence.ack(arg, print)
@@ -1301,7 +1318,7 @@ def _cli(argv):
     else: print('cli: missed | wa | jd | nudge | touch | brief  <args>')
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board','history','stale','fixphone','call','next','case','positions','note','interview','offer','due','outbox','ack','money','value','push','recap','similar','ghost','client','digest','summarize','clientname','follow','tpltest','refer'):
+    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board','history','stale','fixphone','call','next','case','positions','note','interview','offer','due','outbox','ack','money','value','push','recap','similar','ghost','client','digest','summarize','clientname','follow','tpltest','refer','renwhy'):
         _cli(sys.argv[1:]); raise SystemExit(0)
     LAST = os.path.expanduser("~/.cvtool_last_root")
     args = sys.argv[1:]
@@ -1394,6 +1411,7 @@ if __name__ == "__main__":
             if q.lower().startswith('follow '): do_missed(q[7:].strip(), root, words='AUTO'); continue
             if q.lower().startswith('tpltest '): do_tpltest(q[8:].strip(), root); continue
             if q.lower().startswith('refer '): do_send(q[6:].strip(), root, ['referral']); continue
+            if q.lower().startswith('renwhy '): do_renwhy(q[7:].strip(), root); continue
             if q.lower().startswith('due'): import cadence; cadence.show_due(); continue
             if q.lower().startswith('outbox'): import cadence; cadence.show_outbox(); continue
             if q.lower().startswith('ack '): import cadence; cadence.ack(q[4:].strip()); continue
