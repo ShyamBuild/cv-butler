@@ -29,6 +29,16 @@ GIT_STAMP = _git_stamp()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOCK_FILE = os.path.join(BASE_DIR, "butler.lock")
+SETTLE_EXTS = ('.crdownload', '.part', '.partial', '.download', '.tmp', '.crdownload ')
+def _settling(p):
+    if SETTLE_TEST: return False
+    try:
+        b = os.path.basename(p).lower()
+        if b.endswith(SETTLE_EXTS): return True
+        return (time.time() - os.stat(p).st_mtime) < 20
+    except Exception:
+        return True
+SETTLE_TEST = False
 CONV_STATE = os.path.join(BASE_DIR, "converter_state.json")
 OCRBIN = os.path.join(BASE_DIR, "cvocr")
 SWIFT_SRC = os.path.join(BASE_DIR, "cvocr.swift")
@@ -1052,6 +1062,36 @@ class Butler:
                 self._jdirty = True
             if acted and not getattr(self, 'scanning', False):
                 say("   👀 back to watching…")
+    def _pend(self, p, say=print):
+        if not hasattr(self, '_pending'): self._pending = {}
+        self._pending[p] = time.time()
+    def _heal(self, say=print):
+        if not hasattr(self, '_pending'): self._pending = {}
+        if not hasattr(self, '_heal_done'): self._heal_done = {}
+        now = time.time()
+        for p in [p for p, t in list(self._pending.items()) if now - t > 20 and os.path.exists(p) and not _settling(p)]:
+            self._pending.pop(p, None)
+            self._route(p, say)
+        deb = os.path.join(BASE_DIR, 'download_debris')
+        for dp, dn, fn in os.walk(self.root):
+            dn[:] = [d for d in dn if not d.startswith('.')]
+            for f in fn:
+                fp = os.path.join(dp, f); bl = f.lower()
+                try: st = os.stat(fp)
+                except OSError: continue
+                if bl.endswith(SETTLE_EXTS) and now - st.st_mtime > 6 * 3600:
+                    os.makedirs(deb, exist_ok=True)
+                    try:
+                        os.rename(fp, os.path.join(deb, f)); say(f'🧹 debris archived: {f}')
+                    except Exception: pass
+                    continue
+                if not bl.endswith(('.pdf', '.doc', '.docx', '.msg', '.eml', '.xlsx')): continue
+                if _settling(fp): continue
+                key = f'{fp}|{st.st_mtime_ns}|{st.st_size}'
+                if self._heal_done.get(f) == key: continue
+                self._heal_done[f] = key
+                self._route(fp, say)
+
     def _route(self, p, say):
         if p.lower().endswith('.tmp.html'):
             try:
@@ -1061,6 +1101,7 @@ class Butler:
             except Exception:
                 pass
             return
+        if _settling(p): self._pend(p, say); return  # ROUTE-GATE v60
         ext = os.path.splitext(p)[1].lower()
         if ext in ('.doc', '.docx', '.msg'):
             pdf = self.handle_convert(p, say)
@@ -1088,6 +1129,7 @@ class Butler:
         return os.path.join(base, tag)
 
     def handle_tags(self, p, say):
+        if _settling(p): return  # TAGS-GATE v60
         if len(os.path.relpath(os.path.dirname(p), self.root).split(os.sep)) < 2: return
         T = get_tags(p)
         named = [t for t in T if t in TAG_NAMES or t.replace(chr(8211), "-") in TAG_NAMES]
@@ -1145,6 +1187,7 @@ class Butler:
                     os.makedirs(tgt, exist_ok=True)
                     dst = os.path.join(tgt, f)
                     if os.path.exists(dst): continue
+                    if _settling(fp): continue  # RECONCILE-GATE v60
                     os.rename(fp, dst)
                     with self.lock: self.stats['moved'] += 1
                     say(f"\U0001f4c1 [reconcile] {f} -> {tag}/")
@@ -1443,6 +1486,7 @@ def main():
                         import ledger; ledger.tick(B)
                         import cadence; cadence.process(B, hsay)
                         import sem; sem.tick(B)
+                        B._heal(hsay)
                     except Exception:
                         pass
                 except Exception as _re:
@@ -1460,6 +1504,7 @@ def main():
 
 def _selftest(root):
     print('SELFTEST START', root, flush=True)
+    global SETTLE_TEST; SETTLE_TEST = True
     import shutil as _sh
     ran = []
     fails = []
@@ -1581,6 +1626,10 @@ def _selftest(root):
     ck('S63 referral voice for closed candidates', os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates', 'referral.txt')) and "cmd == 'refer'" in _br and "'closed' in st: return ['referral']" in _br)
     ck('S64 referral voice not shadowed', "'referral': 'reference'" not in _br and os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates', 'referral.txt')))
     ck('S65 chat ctrl-c graceful', 'except KeyboardInterrupt:' in _br.split('q = input("you> ")')[1][:300])
+    _body = _src.split('def _selftest')[0]
+    ck('S66 settle-gate on every mutating door', 'def _settling(' in _src and all(_body.count(m) == 1 for m in (chr(35)+' ROUTE-GATE', chr(35)+' TAGS-GATE', chr(35)+' RECONCILE-GATE')))
+    ck('S67 heal sweep + debris archive', 'def _heal(' in _src and 'download_debris' in _src and 'B._heal(hsay)' in _src.split('last_hb > 120')[1])
+    ck('S68 selftest opens settle-gates', 'SETTLE_TEST = True' in _src and 'if SETTLE_TEST: return False' in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
