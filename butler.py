@@ -1094,6 +1094,26 @@ class Butler:
             self._pending.pop(p, None)
             self._route(p, say)
 
+    def _tag_poll(self):
+        import zlib as _z
+        if not hasattr(self, '_tagcrc'): self._tagcrc = {}
+        changed = []
+        for dp, dn, fn in os.walk(self.root):
+            dn[:] = [d for d in dn if not d.startswith('.')]
+            for f in fn:
+                if not f.lower().endswith(('.pdf', '.doc', '.docx', '.msg', '.eml', '.xlsx')): continue
+                fp = os.path.join(dp, f)
+                try:
+                    tg = os.getxattr(fp, 'com.apple.metadata:_kMDItemUserTags')
+                except Exception:
+                    tg = b''
+                c = _z.crc32(tg)
+                old = self._tagcrc.get(fp)
+                self._tagcrc[fp] = c
+                if old is not None and old != c: changed.append(fp)
+        if len(self._tagcrc) > 20000: self._tagcrc = {}
+        return changed
+
     def _heal(self, say=print):
         if not hasattr(self, '_pending'): self._pending = {}
         if not hasattr(self, '_heal_done'): self._heal_done = {}
@@ -1208,7 +1228,7 @@ class Butler:
                 for f in fn:
                     if not f.lower().endswith(".pdf"): continue
                     fp = os.path.join(dp, f)
-                    T = get_tags(fp)
+                    T = _tags_of_fast(fp) or get_tags(fp)
                     tag = None
                     for t in T:
                         if _n(t) in known: tag = known[_n(t)]; break
@@ -1481,6 +1501,10 @@ def main():
                 except Exception: pass
                 if getattr(B, '_jdirty', False):
                     B._jsave(); B._jdirty = False
+                if _t.time() - getattr(B, '_last_poll', 0) > 15:  # TAG-POLL v64
+                    B._last_poll = _t.time()
+                    for _cp in B._tag_poll(): ex.submit(work, _cp)
+                    B._heal((lambda m: None) if INTERACTIVE else print)
                 _t.sleep(2); continue   # idle: events drained every tick
             B._last_sweep = _t.time()
             if B._n == 4:
@@ -1491,6 +1515,10 @@ def main():
             for p in paths: ex.submit(work, p)
             try: B._drain_pending(print)  # DRAIN-PENDING v62
             except Exception: pass
+            if _t.time() - getattr(B, '_last_poll', 0) > 15:  # TAG-POLL v64
+                B._last_poll = _t.time()
+                for _cp in B._tag_poll(): ex.submit(work, _cp)
+                B._heal((lambda m: None) if INTERACTIVE else print)
             if time.time() - last_full > 20:
                 last_full = time.time()
                 for dp, dn, fn in os.walk(root):
@@ -1680,6 +1708,8 @@ def _selftest(root):
     ck('S72 settle-fast + pending drain', (chr(35)+' SETTLE-FAST') in _src and (chr(35)+' DRAIN-PENDING') in _src and 'def _drain_pending(' in _src)
     ck('S73 tags-first filing', 'def _has_tag_xattr(' in _src and (chr(35)+' TAGS-FIRST') in _src and 'def _tags_of_fast(' in _src)
     ck('S74 worker-door journal skip', (chr(35)+' WORK-DOOR SKIP') in _src and 'B._jload()' in _src)
+    ck('S75 tag poll catches silent re-tags', 'def _tag_poll(' in _src and (chr(35)+' TAG-POLL') in _src and _src.count(chr(35)+' TAG-POLL') >= 2)
+    ck('S76 reconcile reads tags without mdls', _src.split('def _reconcile_tags')[1].split('\ndef ')[0].count('_tags_of_fast(') >= 1)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
