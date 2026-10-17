@@ -1353,6 +1353,9 @@ if __name__ == "__main__":
                 q = input("you> ").strip()
             except EOFError:
                 break
+            except KeyboardInterrupt:
+                print("\n👋 chat closed - watchers keep running (focus clear stops them)")
+                break
             if not q or q.lower() in ('quit', 'exit', 'q'):
                 try:
                     alive = 0
