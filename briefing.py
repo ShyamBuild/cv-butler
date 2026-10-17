@@ -739,7 +739,7 @@ def do_missed(arg, root, say=print, ask=None, words=None):
 TPL_DIR = os.path.join(BASE_DIR, "templates")
 
 def _tpl_for(words):
-    SYN = {'nudge': 'awaiting', 'reminder': 'awaiting', 'followup': 'outbox', 'follow': 'outbox', 'chase': 'outbox', 'refer': 'reference', 'referral': 'reference', 'goodluck': 'interview', 'wish': 'interview', 'fb': 'feedback'}
+    SYN = {'nudge': 'awaiting', 'reminder': 'awaiting', 'followup': 'outbox', 'follow': 'outbox', 'chase': 'outbox', 'goodluck': 'interview', 'wish': 'interview', 'fb': 'feedback'}
     words = list(words) + [SYN[w] for w in words if w in SYN]
     os.makedirs(TPL_DIR, exist_ok=True)
     for f in sorted(os.listdir(TPL_DIR)):
