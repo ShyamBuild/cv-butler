@@ -37,7 +37,10 @@ def _settling(p):
         if b.endswith(SETTLE_EXTS): return True
         st = os.stat(p)
         if st.st_size == 0: return True
-        return (time.time() - os.stat(p).st_mtime) < 20
+        if (time.time() - st.st_mtime) >= 20: return False
+        time.sleep(1.5)  # SETTLE-FAST v62: stability beats age
+        st2 = os.stat(p)
+        return st2.st_size != st.st_size or st2.st_mtime != st.st_mtime
     except Exception:
         return True
 SETTLE_TEST = False
@@ -1071,6 +1074,13 @@ class Butler:
     def _pend(self, p, say=print):
         if not hasattr(self, '_pending'): self._pending = {}
         self._pending[p] = time.time()
+    def _drain_pending(self, say=print):
+        if not hasattr(self, '_pending'): return
+        now = time.time()
+        for p in [p for p, t in list(self._pending.items()) if now - t > 3 and os.path.exists(p) and not _settling(p)]:
+            self._pending.pop(p, None)
+            self._route(p, say)
+
     def _heal(self, say=print):
         if not hasattr(self, '_pending'): self._pending = {}
         if not hasattr(self, '_heal_done'): self._heal_done = {}
@@ -1446,6 +1456,8 @@ def main():
                 with dlock:
                     _ip = list(dirty); dirty.clear()
                 for p in _ip: ex.submit(work, p)
+                try: B._drain_pending(print)
+                except Exception: pass
                 if getattr(B, '_jdirty', False):
                     B._jsave(); B._jdirty = False
                 _t.sleep(2); continue   # idle: events drained every tick
@@ -1456,6 +1468,8 @@ def main():
             with dlock:
                 paths = list(dirty); dirty.clear()
             for p in paths: ex.submit(work, p)
+            try: B._drain_pending(print)  # DRAIN-PENDING v62
+            except Exception: pass
             if time.time() - last_full > 20:
                 last_full = time.time()
                 for dp, dn, fn in os.walk(root):
@@ -1642,6 +1656,7 @@ def _selftest(root):
     ck('S69 rename hands gated', (chr(35)+' RENAME-GATE') in _src and (chr(35)+' NORM-GATE') in _src)
     ck('S70 reconcile dedupes instead of skipping', 'while os.path.exists(dst): dst = os.path.join(tgt,' in _rg and 'if os.path.exists(dst): continue' not in _rg)
     ck('S71 rename breaker resets on name change', 'self.rcn' in _src.split('def handle_pdf')[1].split('def ')[0])
+    ck('S72 settle-fast + pending drain', (chr(35)+' SETTLE-FAST') in _src and (chr(35)+' DRAIN-PENDING') in _src and 'def _drain_pending(' in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
