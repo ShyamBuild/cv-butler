@@ -29,6 +29,23 @@ GIT_STAMP = _git_stamp()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOCK_FILE = os.path.join(BASE_DIR, "butler.lock")
+def _sniff_ext(p):
+    try:
+        with open(p, 'rb') as f: h = f.read(8)
+    except Exception:
+        return None
+    if h.startswith(b'%PDF'): return '.pdf'
+    if h.startswith(b'PK\x03\x04'):
+        try:
+            import zipfile
+            n = zipfile.ZipFile(p).namelist()
+            if any(x.startswith('word/') for x in n): return '.docx'
+            if any(x.startswith('xl/') for x in n): return '.xlsx'
+        except Exception:
+            return None
+    if h.startswith(b'\xd0\xcf\x11\xe0'): return '.doc'
+    return None
+
 SETTLE_EXTS = ('.crdownload', '.part', '.partial', '.download', '.tmp', '.crdownload ')
 def _settling(p):
     if SETTLE_TEST: return False
@@ -1158,7 +1175,8 @@ class Butler:
                         os.rename(fp, os.path.join(deb, f)); say(f'🧹 debris archived: {f}')
                     except Exception: pass
                     continue
-                if not bl.endswith(('.pdf', '.doc', '.docx', '.msg', '.eml', '.xlsx')): continue
+                if bl.endswith(SETTLE_EXTS): continue
+                if '.' in bl and not bl.endswith(('.pdf', '.doc', '.docx', '.msg', '.eml', '.xlsx')): continue
                 if _settling(fp): continue
                 key = f'{fp}|{st.st_mtime_ns}|{st.st_size}'
                 prev = self._heal_done.get(f)
@@ -1179,6 +1197,15 @@ class Butler:
             return
         if _settling(p): self._pend(p, say); return  # ROUTE-GATE v60
         ext = os.path.splitext(p)[1].lower()
+        if ext not in ('.pdf', '.doc', '.docx', '.msg', '.eml', '.xlsx'):  # SNIFF-EXT v70
+            _se = _sniff_ext(p)
+            if _se:
+                _d = os.path.dirname(p); _b = os.path.splitext(os.path.basename(p))[0] or 'untitled'
+                _c = os.path.join(_d, _b + _se); _n = 1
+                while os.path.exists(_c): _c = os.path.join(_d, f'{_b}_{_n}{_se}'); _n += 1
+                try:
+                    os.rename(p, _c); say(f'🧩 [suffix] {os.path.basename(p)} -> {os.path.basename(_c)}'); p = _c; ext = _se
+                except Exception: pass
         if ext in ('.doc', '.docx', '.msg'):
             pdf = self.handle_convert(p, say)
             if pdf and os.path.exists(pdf):
@@ -1752,6 +1779,7 @@ def _selftest(root):
     ck('S86 cloud snapshot habit', (chr(35)+' SNAPSHOT') in _src and 'B._snapshot(' in _src)
     _sn = 'B._snapshot(' + 'hsay)'; _hl = 'B._heal(' + 'hsay)'
     ck('S87 snapshot call lives in heartbeat', _src.count(_sn) == 1 and _src.rindex(_sn) > _src.rindex(_hl))
+    ck('S88 extension-less files get sniffed', 'def _sniff_ext(' in _src and (chr(35)+' SNIFF-EXT') in _src and _src.count('_sniff_ext(') >= 2)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
