@@ -1155,6 +1155,30 @@ class Butler:
                 try: os.remove(o)
                 except Exception: pass
 
+    def _summary_xlsx(self, p, say=print):  # SUMMARY-CANON v71
+        try:
+            b = os.path.basename(p).lower()
+            if not b.endswith('.xlsx') or b.startswith('~$'): return p
+            import re as _re
+            if _re.match(r'summary(_\d+)?\.xlsx$', b): return p
+            if _settling(p): return p
+            import openpyxl
+            wb = openpyxl.load_workbook(p, read_only=True, data_only=True)
+            ws = wb.active
+            hdr = ' | '.join(str(c.value or '').strip() for c in next(ws.iter_rows(min_row=1, max_row=1)))
+            wb.close()
+            if 'Candidate Name' not in hdr or 'Position' not in hdr: return p
+            d = os.path.dirname(p); n = 0
+            while True:
+                tgt = os.path.join(d, 'Summary.xlsx' if n == 0 else f'Summary_{n}.xlsx')
+                if not os.path.exists(tgt): break
+                n += 1
+                if n > 50: return p
+            os.rename(p, tgt); say(f'📊 [summary] {os.path.basename(p)} -> {os.path.basename(tgt)}')
+            return tgt
+        except Exception:
+            return p
+
     def _heal(self, say=print):
         if not hasattr(self, '_pending'): self._pending = {}
         if not hasattr(self, '_heal_done'): self._heal_done = {}
@@ -1180,7 +1204,7 @@ class Butler:
                 if _settling(fp): continue
                 key = f'{fp}|{st.st_mtime_ns}|{st.st_size}'
                 prev = self._heal_done.get(f)
-                if prev and prev[0] == key and now - prev[1] < 60: continue  # HEAL-RETRY v65
+                if prev and prev[0] == key and now - prev[1] < 30: continue  # HEAL-RETRY v65
                 self._heal_done[f] = (key, now)
                 try: self.rc.pop(os.stat(fp).st_ino, None)  # RC-FRESH v66
                 except Exception: pass
@@ -1213,10 +1237,20 @@ class Butler:
                 if not getattr(self, '_skip_tags', False): self.handle_tags(pdf, say)
         elif ext == '.pdf':
             p = self.normalize_suffix(p, say)
+            _ino = None  # INODE-RELINK v71
+            try: _ino = os.stat(p).st_ino
+            except Exception: pass
+            if _ino is not None and not os.path.exists(p):
+                for _f in os.listdir(os.path.dirname(p)):
+                    _c = os.path.join(os.path.dirname(p), _f)
+                    try:
+                        if os.stat(_c).st_ino == _ino: p = _c; break
+                    except Exception: pass
             self.handle_pdf(p, say)
             if not getattr(self, '_skip_tags', False): self.handle_tags(p, say)
             self._compact_numbers(os.path.dirname(p), say)
         elif ext == '.xlsx':
+            p = self._summary_xlsx(p, say)  # SUMMARY-CALL v71
             self.handle_excel(p, say)
             if not getattr(self, '_skip_tags', False): self.handle_tags(p, say)
             self._compact_numbers(os.path.dirname(p), say)
@@ -1556,7 +1590,7 @@ def main():
                 except Exception: pass
                 if getattr(B, '_jdirty', False):
                     B._jsave(); B._jdirty = False
-                if _t.time() - getattr(B, '_last_poll', 0) > 15:  # TAG-POLL v64
+                if _t.time() - getattr(B, '_last_poll', 0) > 8:  # TAG-POLL v64
                     B._last_poll = _t.time()
                     for _cp in B._tag_poll(): ex.submit(work, _cp)
                     B._heal((lambda m: None) if INTERACTIVE else print)
@@ -1570,7 +1604,7 @@ def main():
             for p in paths: ex.submit(work, p)
             try: B._drain_pending(print)  # DRAIN-PENDING v62
             except Exception: pass
-            if _t.time() - getattr(B, '_last_poll', 0) > 15:  # TAG-POLL v64
+            if _t.time() - getattr(B, '_last_poll', 0) > 8:  # TAG-POLL v64
                 B._last_poll = _t.time()
                 for _cp in B._tag_poll(): ex.submit(work, _cp)
                 B._heal((lambda m: None) if INTERACTIVE else print)
@@ -1772,7 +1806,7 @@ def _selftest(root):
     ck('S78 heal retries + reconcile rename-first', (chr(35)+' HEAL-RETRY') in _src and (chr(35)+' RENAME-FIRST') in _src)
     ck('S79 suffix-stable renames, self slot free', (chr(35)+' SUFFIX-STABLE') in _src and _src.count(chr(35)+' SELF-FREE') >= 2)
     ck('S80 one ack clock per send', _wa.count('_arm(digits, text)') == 2)
-    ck('S82 heal un-disarms rename breaker', (chr(35)+' RC-FRESH') in _src and '< 60: continue  # HEAL-RETRY' in _src)
+    ck('S82 heal un-disarms rename breaker', (chr(35)+' RC-FRESH') in _src and '< 30: continue  # HEAL-RETRY' in _src)
     ck('S83 renwhy X-ray routed', 'def do_renwhy(' in _br and "cmd == 'renwhy'" in _br)
     ck('S84 clean_pos strips pipes', (chr(35)+' PIPE-CLEAN') in _br)
     ck('S85 cadence never queues twins', 'def _collapse(' in _cad2 and _cad2.count('_collapse(d)') >= 3)
@@ -1780,6 +1814,9 @@ def _selftest(root):
     _sn = 'B._snapshot(' + 'hsay)'; _hl = 'B._heal(' + 'hsay)'
     ck('S87 snapshot call lives in heartbeat', _src.count(_sn) == 1 and _src.rindex(_sn) > _src.rindex(_hl))
     ck('S88 extension-less files get sniffed', 'def _sniff_ext(' in _src and (chr(35)+' SNIFF-EXT') in _src and _src.count('_sniff_ext(') >= 2)
+    ck('S89 rename and move in one pass', (chr(35)+' INODE-RELINK') in _src and _src.count('> 8:  ' + chr(35) + ' TAG-POLL') == 2)
+    ck('S90 summary xlsx canon everywhere', (chr(35)+' SUMMARY-CANON') in _src and (chr(35)+' SUMMARY-CALL') in _src and 'def _summary_xlsx(' in _src)
+    ck('S91 stranded retry at thirty seconds', (chr(60)+' 30: continue  '+chr(35)+' HEAL-RETRY') in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
