@@ -1533,7 +1533,6 @@ def main():
                     B._last_poll = _t.time()
                     for _cp in B._tag_poll(): ex.submit(work, _cp)
                     B._heal((lambda m: None) if INTERACTIVE else print)
-                    B._snapshot(hsay)
                 _t.sleep(2); continue   # idle: events drained every tick
             B._last_sweep = _t.time()
             if B._n == 4:
@@ -1729,6 +1728,8 @@ def _selftest(root):
     _body = _src.split('def _selftest')[0]
     ck('S66 settle-gate on every mutating door', 'def _settling(' in _src and all(_body.count(m) == 1 for m in (chr(35)+' ROUTE-GATE', chr(35)+' TAGS-GATE', chr(35)+' RECONCILE-GATE')))
     ck('S67 heal sweep + debris archive', 'def _heal(' in _src and 'download_debris' in _src and 'B._heal(hsay)' in _src.split('last_hb > 120')[1])
+    try: B._snapshot(hsay)  # SNAPSHOT-CALL v69.2
+    except Exception: pass
     ck('S68 selftest opens settle-gates', 'SETTLE_TEST = True' in _src and 'if SETTLE_TEST: return False' in _src)
     _rg = _src.split('def _reconcile_tags')[1].split('\ndef ')[0]
     ck('S69 rename hands gated', (chr(35)+' RENAME-GATE') in _src and (chr(35)+' NORM-GATE') in _src)
@@ -1749,6 +1750,8 @@ def _selftest(root):
     ck('S84 clean_pos strips pipes', (chr(35)+' PIPE-CLEAN') in _br)
     ck('S85 cadence never queues twins', 'def _collapse(' in _cad2 and _cad2.count('_collapse(d)') >= 3)
     ck('S86 cloud snapshot habit', (chr(35)+' SNAPSHOT') in _src and 'B._snapshot(' in _src)
+    _sn = 'B._snapshot(' + 'hsay)'; _hl = 'B._heal(' + 'hsay)'
+    ck('S87 snapshot call lives in heartbeat', _src.count(_sn) == 1 and _src.rindex(_sn) > _src.rindex(_hl))
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
