@@ -1119,6 +1119,25 @@ class Butler:
         if len(self._tagcrc) > 20000: self._tagcrc = {}
         return changed
 
+    def _snapshot(self, say=print):  # SNAPSHOT v69
+        import subprocess, datetime, glob
+        ic = os.path.expanduser('~/Library/Mobile Documents/com~apple~CloudDocs')
+        if not os.path.isdir(ic): return
+        now = datetime.date.today()
+        mind = os.path.join(ic, f'cv-memory-week-{now.isocalendar()[0]}-{now.isocalendar()[1]}.tgz')
+        if now.weekday() == 6 and not os.path.exists(mind):
+            subprocess.run(['tar', '-czf', mind, '--exclude=wa_profile', '--exclude=__pycache__', '--exclude=download_debris', '--exclude=cv_env', '--exclude=archive', '-C', os.path.expanduser('~'), 'CV_Tool', '-C', os.path.join(self.root), 'stage_log.json'], capture_output=True)
+            say(f'☁️ weekly mind snapshot: {os.path.basename(mind)}')
+        tree = os.path.join(ic, f'cv-tree-{now.strftime("%Y-%m")}.tgz')
+        if now.day == 1 and not os.path.exists(tree):
+            subprocess.run(['tar', '-czf', tree, '-C', os.path.dirname(self.root), os.path.basename(self.root)], capture_output=True)
+            say(f'☁️ monthly tree snapshot: {os.path.basename(tree)}')
+        for pat in ('cv-memory-week-*.tgz', 'cv-tree-*.tgz'):
+            old = sorted(glob.glob(os.path.join(ic, pat)))[:-4]
+            for o in old:
+                try: os.remove(o)
+                except Exception: pass
+
     def _heal(self, say=print):
         if not hasattr(self, '_pending'): self._pending = {}
         if not hasattr(self, '_heal_done'): self._heal_done = {}
@@ -1514,6 +1533,7 @@ def main():
                     B._last_poll = _t.time()
                     for _cp in B._tag_poll(): ex.submit(work, _cp)
                     B._heal((lambda m: None) if INTERACTIVE else print)
+                    B._snapshot(hsay)
                 _t.sleep(2); continue   # idle: events drained every tick
             B._last_sweep = _t.time()
             if B._n == 4:
@@ -1728,6 +1748,7 @@ def _selftest(root):
     ck('S83 renwhy X-ray routed', 'def do_renwhy(' in _br and "cmd == 'renwhy'" in _br)
     ck('S84 clean_pos strips pipes', (chr(35)+' PIPE-CLEAN') in _br)
     ck('S85 cadence never queues twins', 'def _collapse(' in _cad2 and _cad2.count('_collapse(d)') >= 3)
+    ck('S86 cloud snapshot habit', (chr(35)+' SNAPSHOT') in _src and 'B._snapshot(' in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
