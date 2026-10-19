@@ -1147,7 +1147,7 @@ class Butler:
         if not hasattr(self, '_tagcrc'): self._tagcrc = {}
         if not hasattr(self, '_tagsets'): self._tagsets = {}
         self._added_tags = {}
-        now = time.time()
+        now = _t.time()
         gap = (now - getattr(self, '_last_poll_ts', 0)) > 300
         self._last_poll_ts = now
         changed = []
@@ -1238,7 +1238,7 @@ class Butler:
         return phs[0]
     def _ad_fire(self, d, txt, v, nm, say):
         import threading
-        self._ad_pending = time.time() + 75
+        self._ad_pending = _t.time() + 75
         say(f'📝 autodraft: {v} -> +{d} ({nm})')
         def _run():
             try:
@@ -1265,20 +1265,20 @@ class Butler:
             try: lg = json.load(open(lp))
             except Exception: lg = {}
             k = f'{d}|{v}'
-            if time.time() - lg.get(k, 0) < 86400: return
+            if _t.time() - lg.get(k, 0) < 86400: return
             nm = _names_by_phone().get(d) or os.path.splitext(os.path.basename(fp))[0]
             try: txt = open(os.path.join(BASE_DIR, 'templates', f'voice_{v}.txt')).read()
             except Exception: say(f'⚠️ autodraft: missing template voice_{v}'); return
             txt = txt.replace('{name}', nm).replace('{position}', pos).replace('{client}', client).replace('{location}', loc)
-            lg[k] = time.time(); json.dump(lg, open(lp, 'w'), indent=1)
+            lg[k] = _t.time(); json.dump(lg, open(lp, 'w'), indent=1)
             if mode == 'dry':
                 say(f'📝 [dry] {v} -> +{d} ({nm}): {txt[:110]}…'); return
-            if getattr(self, '_ad_pending', 0) > time.time():
+            if getattr(self, '_ad_pending', 0) > _t.time():
                 qp = os.path.join(BASE_DIR, 'autodraft_queue.json')
                 try: q = json.load(open(qp))
                 except Exception: q = []
-                q = [x for x in q if time.time() - x.get('at', 0) < 7200]
-                q.append({'phone': d, 'text': txt, 'at': time.time(), 'who': nm, 'voice': v})
+                q = [x for x in q if _t.time() - x.get('at', 0) < 7200]
+                q.append({'phone': d, 'text': txt, 'at': _t.time(), 'who': nm, 'voice': v})
                 json.dump(q, open(qp, 'w'), indent=1)
                 say(f'📝 queued autodraft: {v} -> {nm} (+{d})'); return
             self._ad_fire(d, txt, v, nm, say)
@@ -1298,10 +1298,10 @@ class Butler:
             try: mode = open(os.path.join(BASE_DIR, 'autodraft.flag')).read().strip() or 'auto'
             except Exception: mode = 'auto'
             qp = os.path.join(BASE_DIR, 'autodraft_queue.json')
-            if getattr(self, '_ad_pending', 0) <= time.time():
+            if getattr(self, '_ad_pending', 0) <= _t.time():
                 try: q = json.load(open(qp))
                 except Exception: q = []
-                q = [x for x in q if time.time() - x.get('at', 0) < 7200]
+                q = [x for x in q if _t.time() - x.get('at', 0) < 7200]
                 if q:
                     it = q.pop(0); json.dump(q, open(qp, 'w'), indent=1)
                     self._ad_fire(it['phone'], it['text'], it['voice'], it['who'], say)
@@ -2037,6 +2037,7 @@ def _selftest(root):
     ck('S108 drafts go through the signed wa door', 'wa.send_review(' in _src and 'import wa' in _src)
     ck('S109 autodraft silence explains itself', (chr(35)+' AD-VISIBILITY') in _src and 'no position folder' in _src)
     ck('S110 autodraft log reachable from chat', 'def do_adlog(' in _br and "cmd == 'adlog'" in _br and (chr(35)+' ADLOG') in _br)
+    ck('S111 pulse clock uses the file own alias', _src.split('def _tag_poll')[1].split('return changed')[0].count('time.time()') == 0 and _src.split('def _ad_enabled')[1].split('def _heal')[0].count('time.time()') == 0)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
