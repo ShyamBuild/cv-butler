@@ -1251,7 +1251,7 @@ class Butler:
         try:
             if not os.path.exists(fp) or _settling(fp): return
             rel = os.path.relpath(os.path.dirname(fp), self.root).split(os.sep)
-            if len(rel) < 2: return
+            if len(rel) < 2: say(f'⏭️ autodraft skip (no position folder): {os.path.basename(fp)}'); return
             client, posraw = rel[0], rel[1]
             pos = posraw.split('||')[0].strip().replace('_', ' ')
             loc = posraw.split('||')[1].strip() if '||' in posraw else ''
@@ -1286,7 +1286,14 @@ class Butler:
             say(f'⚠️ autodraft error: {e}')
     def _autodraft_tick(self, say=print):
         try:
-            if not self._ad_enabled(): return
+            try: st = open(os.path.join(BASE_DIR, 'autodraft.flag')).read().strip() or 'auto'
+            except Exception: st = 'auto'
+            if not self._ad_enabled():
+                if getattr(self, '_added_tags', None):
+                    n = sum(len(v) for v in self._added_tags.values())
+                    if n: say(f'🔕 autodraft off (flag={st}) - {n} tag-add(s) ignored')  # AD-VISIBILITY v81.1
+                    self._added_tags = {}
+                return
             mode = 'auto'
             try: mode = open(os.path.join(BASE_DIR, 'autodraft.flag')).read().strip() or 'auto'
             except Exception: mode = 'auto'
@@ -2028,6 +2035,7 @@ def _selftest(root):
     ck('S106 autodraft never sends', '.send(' not in _src.split('def _autodraft_tick')[1].split('def _heal')[0] and '_click_send' not in _src.split('def _autodraft_tick')[1].split('def _heal')[0])
     ck('S107 toggle honoured', 'autodraft.flag' in _src and 'briefing.py chat' in _src and (chr(35)+' AUTODRAFT') in _src)
     ck('S108 drafts go through the signed wa door', 'wa.send_review(' in _src and 'import wa' in _src)
+    ck('S109 autodraft silence explains itself', (chr(35)+' AD-VISIBILITY') in _src and 'no position folder' in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
