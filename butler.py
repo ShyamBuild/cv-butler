@@ -1,3 +1,7 @@
+try:
+    import sys as _sysio; _sysio.stdout.reconfigure(line_buffering=True)  # LOG-FLUSH v81.8
+except Exception:
+    pass
 import os, re, sys, time, logging, logging.handlers, json, subprocess, shutil, threading, urllib.request, urllib.parse
 from concurrent.futures import ThreadPoolExecutor, wait
 from watchdog.observers import Observer
@@ -2072,6 +2076,7 @@ def _selftest(root):
     ck('S113 every tag-add is witnessed', (chr(35)+' TAGADD-LOG') in _src)
     ck('S114 the pulse has a voice', (chr(35)+' PULSE-WITNESS') in _src and (chr(35)+' TICK-WITNESS') in _src)
     ck('S115 tags read through macOS libc', 'def _xattr_raw(' in _src and ('os.get' + 'xattr(') not in _src and (chr(35)+' XATTR-RAW') in _src)
+    ck('S116 the log speaks instantly', (chr(35)+' LOG-FLUSH') in _src and 'line_buffering' in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
