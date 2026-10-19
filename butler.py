@@ -36,6 +36,22 @@ def _names_by_phone():
     except Exception:
         return {}
 
+def _xattr_raw(p, name='com.apple.metadata:_kMDItemUserTags'):  # XATTR-RAW v81.7
+    try:
+        import ctypes
+        lc = ctypes.CDLL('/usr/lib/libc.dylib', use_errno=True)
+        lc.getxattr.restype = ctypes.c_ssize_t
+        lc.getxattr.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint32, ctypes.c_int]
+        pb = p.encode() if isinstance(p, str) else p
+        nb = name.encode() if isinstance(name, str) else name
+        n = lc.getxattr(pb, nb, None, 0, 0, 0)
+        if n <= 0: return b''
+        buf = ctypes.create_string_buffer(n)
+        n2 = lc.getxattr(pb, nb, buf, n, 0, 0)
+        return buf.raw[:n2] if n2 > 0 else b''
+    except Exception:
+        return b''
+
 def _sniff_ext(p):
     try:
         with open(p, 'rb') as f: h = f.read(8)
@@ -492,7 +508,7 @@ TAG_NAMES = {'Rejected by Client','Awaiting JD Confirmation','Awaiting CV Update
 def _tags_of_fast(p):
     try:
         import plistlib
-        arr = plistlib.loads(os.getxattr(p, 'com.apple.metadata:_kMDItemUserTags'))
+        arr = plistlib.loads(_xattr_raw(p, 'com.apple.metadata:_kMDItemUserTags'))
         out = [str(t).split(chr(10))[0].strip() for t in arr]
         return [t for t in out if t and t not in COLOR_TAGS]
     except Exception:
@@ -505,7 +521,7 @@ def _has_tag_xattr(p):
 def _tags_from_plist(path):
     try:
         import plistlib
-        data = os.getxattr(path, 'com.apple.metadata:_kMDItemUserTags')
+        data = _xattr_raw(path, 'com.apple.metadata:_kMDItemUserTags')
         out = []
         def walk(o):
             if isinstance(o, str):
@@ -849,7 +865,7 @@ class Butler:
             import zlib
             st = os.stat(p)
             try:
-                tg = os.getxattr(p, 'com.apple.metadata:_kMDItemUserTags')
+                tg = _xattr_raw(p, 'com.apple.metadata:_kMDItemUserTags')
             except Exception:
                 tg = b''
             return [round(st.st_mtime, 3), st.st_size, zlib.crc32(tg), self.RULES_VERSION, os.path.basename(p).lower()]
@@ -1156,7 +1172,7 @@ class Butler:
             for f in fn:
                 if not f.lower().endswith(('.pdf', '.doc', '.docx', '.msg', '.eml', '.xlsx')): continue
                 fp = os.path.join(dp, f)
-                try: tg = os.getxattr(fp, 'com.apple.metadata:_kMDItemUserTags')
+                try: tg = _xattr_raw(fp, 'com.apple.metadata:_kMDItemUserTags')
                 except Exception: tg = b''
                 c = _z.crc32(tg)
                 old = self._tagcrc.get(fp)
@@ -2055,6 +2071,7 @@ def _selftest(root):
     ck('S112 drafts fire in their own process', (chr(35)+' AD-FIRE v81.5') in _src and 'threading.Thread' not in _src.split('def _ad_fire')[1].split('def _draft_one')[0])
     ck('S113 every tag-add is witnessed', (chr(35)+' TAGADD-LOG') in _src)
     ck('S114 the pulse has a voice', (chr(35)+' PULSE-WITNESS') in _src and (chr(35)+' TICK-WITNESS') in _src)
+    ck('S115 tags read through macOS libc', 'def _xattr_raw(' in _src and ('os.get' + 'xattr(') not in _src and (chr(35)+' XATTR-RAW') in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
