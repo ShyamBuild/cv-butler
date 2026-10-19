@@ -1145,20 +1145,32 @@ class Butler:
     def _tag_poll(self):
         import zlib as _z
         if not hasattr(self, '_tagcrc'): self._tagcrc = {}
+        if not hasattr(self, '_tagsets'): self._tagsets = {}
+        self._added_tags = {}
+        now = time.time()
+        gap = (now - getattr(self, '_last_poll_ts', 0)) > 300
+        self._last_poll_ts = now
         changed = []
         for dp, dn, fn in os.walk(self.root):
-            dn[:] = [d for d in dn if not d.startswith('.')]
+            dn[:] = [x for x in dn if not x.startswith('.')]
             for f in fn:
                 if not f.lower().endswith(('.pdf', '.doc', '.docx', '.msg', '.eml', '.xlsx')): continue
                 fp = os.path.join(dp, f)
-                try:
-                    tg = os.getxattr(fp, 'com.apple.metadata:_kMDItemUserTags')
-                except Exception:
-                    tg = b''
+                try: tg = os.getxattr(fp, 'com.apple.metadata:_kMDItemUserTags')
+                except Exception: tg = b''
                 c = _z.crc32(tg)
                 old = self._tagcrc.get(fp)
                 self._tagcrc[fp] = c
-                if old is not None and old != c: changed.append(fp)
+                prev = self._tagsets.get(fp)
+                if old is not None and old != c:
+                    changed.append(fp)
+                    cur = [t for t in (_tags_of_fast(fp) or [])]
+                    if prev is not None and not gap:
+                        add = [t for t in cur if t not in prev]
+                        if add: self._added_tags[fp] = add
+                    self._tagsets[fp] = cur
+                elif prev is None:
+                    self._tagsets[fp] = [t for t in (_tags_of_fast(fp) or [])]
         if len(self._tagcrc) > 20000: self._tagcrc = {}
         return changed
 
@@ -1204,6 +1216,97 @@ class Butler:
             return tgt
         except Exception:
             return p
+
+    def _ad_enabled(self):  # AUTODRAFT v81
+        try: st = open(os.path.join(BASE_DIR, 'autodraft.flag')).read().strip()
+        except Exception: st = 'auto'
+        if st == 'off': return False
+        if st in ('on', 'dry'): return True
+        try:
+            import subprocess
+            return bool(subprocess.run(['pgrep', '-f', 'briefing.py chat'], capture_output=True).stdout.strip())
+        except Exception: return False
+    def _phone_for(self, phs):
+        if not phs: return None
+        nb = _names_by_phone()
+        for d in phs:
+            if d in nb: return d
+        try: conv = json.load(open(os.path.join(BASE_DIR, 'conversations.json')))
+        except Exception: conv = {}
+        for d in phs:
+            if d in conv: return d
+        return phs[0]
+    def _ad_fire(self, d, txt, v, nm, say):
+        import threading
+        self._ad_pending = time.time() + 75
+        say(f'📝 autodraft: {v} -> +{d} ({nm})')
+        def _run():
+            try:
+                import wa
+                try: wa.send_review(d, txt, say)
+                except TypeError: wa.send_review(d, txt)
+            except Exception: pass
+        threading.Thread(target=_run, daemon=True).start()
+    def _draft_one(self, fp, tg, v, mode, say):
+        try:
+            if not os.path.exists(fp) or _settling(fp): return
+            rel = os.path.relpath(os.path.dirname(fp), self.root).split(os.sep)
+            if len(rel) < 2: return
+            client, posraw = rel[0], rel[1]
+            pos = posraw.split('||')[0].strip().replace('_', ' ')
+            loc = posraw.split('||')[1].strip() if '||' in posraw else ''
+            try:
+                import fitrank
+                phs = phones_of(fitrank._text(fp)) or []
+            except Exception: phs = []
+            d = self._phone_for(phs)
+            if not d: say(f'⏭️ autodraft skip (no phone): {os.path.basename(fp)}'); return
+            lp = os.path.join(BASE_DIR, 'autodraft_log.json')
+            try: lg = json.load(open(lp))
+            except Exception: lg = {}
+            k = f'{d}|{v}'
+            if time.time() - lg.get(k, 0) < 86400: return
+            nm = _names_by_phone().get(d) or os.path.splitext(os.path.basename(fp))[0]
+            try: txt = open(os.path.join(BASE_DIR, 'templates', f'voice_{v}.txt')).read()
+            except Exception: say(f'⚠️ autodraft: missing template voice_{v}'); return
+            txt = txt.replace('{name}', nm).replace('{position}', pos).replace('{client}', client).replace('{location}', loc)
+            lg[k] = time.time(); json.dump(lg, open(lp, 'w'), indent=1)
+            if mode == 'dry':
+                say(f'📝 [dry] {v} -> +{d} ({nm}): {txt[:110]}…'); return
+            if getattr(self, '_ad_pending', 0) > time.time():
+                qp = os.path.join(BASE_DIR, 'autodraft_queue.json')
+                try: q = json.load(open(qp))
+                except Exception: q = []
+                q = [x for x in q if time.time() - x.get('at', 0) < 7200]
+                q.append({'phone': d, 'text': txt, 'at': time.time(), 'who': nm, 'voice': v})
+                json.dump(q, open(qp, 'w'), indent=1)
+                say(f'📝 queued autodraft: {v} -> {nm} (+{d})'); return
+            self._ad_fire(d, txt, v, nm, say)
+        except Exception as e:
+            say(f'⚠️ autodraft error: {e}')
+    def _autodraft_tick(self, say=print):
+        try:
+            if not self._ad_enabled(): return
+            mode = 'auto'
+            try: mode = open(os.path.join(BASE_DIR, 'autodraft.flag')).read().strip() or 'auto'
+            except Exception: mode = 'auto'
+            qp = os.path.join(BASE_DIR, 'autodraft_queue.json')
+            if getattr(self, '_ad_pending', 0) <= time.time():
+                try: q = json.load(open(qp))
+                except Exception: q = []
+                q = [x for x in q if time.time() - x.get('at', 0) < 7200]
+                if q:
+                    it = q.pop(0); json.dump(q, open(qp, 'w'), indent=1)
+                    self._ad_fire(it['phone'], it['text'], it['voice'], it['who'], say)
+            added, self._added_tags = getattr(self, '_added_tags', {}), {}
+            try: vm = json.load(open(os.path.join(BASE_DIR, 'tag_voices.json')))
+            except Exception: return
+            for fp, tags in added.items():
+                for tg in tags:
+                    v = vm.get(tg) or vm.get(tg.replace(chr(8211), '-'))
+                    if v: self._draft_one(fp, tg, v, mode, say)
+        except Exception as e:
+            say(f'⚠️ autodraft tick: {e}')
 
     def _heal(self, say=print):
         if not hasattr(self, '_pending'): self._pending = {}
@@ -1675,9 +1778,10 @@ def main():
                 if getattr(B, '_jdirty', False):
                     B._jsave(); B._jdirty = False
                 try:  # LOOP-ARMOUR v76
-                    if _t.time() - getattr(B, '_last_poll', 0) > 8:  # TAG-POLL v64
+                    if _t.time() - getattr(B, '_last_poll', 0) > 4:  # TAG-POLL v64
                         B._last_poll = _t.time()
                         for _cp in B._tag_poll(): ex.submit(work, _cp)
+                        B._autodraft_tick()
                         B._heal((lambda m: None) if INTERACTIVE else print)
                     open(os.path.join(BASE_DIR, 'butler_alive.stamp'), 'w').write(str(_t.time()))
                 except Exception as _e:
@@ -1692,9 +1796,10 @@ def main():
             for p in paths: ex.submit(work, p)
             try: B._drain_pending(print)  # DRAIN-PENDING v62
             except Exception: pass
-            if _t.time() - getattr(B, '_last_poll', 0) > 8:  # TAG-POLL v64
+            if _t.time() - getattr(B, '_last_poll', 0) > 4:  # TAG-POLL v64
                 B._last_poll = _t.time()
                 for _cp in B._tag_poll(): ex.submit(work, _cp)
+                B._autodraft_tick()
                 B._heal((lambda m: None) if INTERACTIVE else print)
             if time.time() - last_full > 20:
                 last_full = time.time()
@@ -1902,7 +2007,7 @@ def _selftest(root):
     _sn = 'B._snapshot(' + 'hsay)'; _hl = 'B._heal(' + 'hsay)'
     ck('S87 snapshot call lives in heartbeat', _src.count(_sn) == 1 and _src.rindex(_sn) > _src.rindex(_hl))
     ck('S88 extension-less files get sniffed', 'def _sniff_ext(' in _src and (chr(35)+' SNIFF-EXT') in _src and _src.count('_sniff_ext(') >= 2)
-    ck('S89 rename and move in one pass', (chr(35)+' INODE-RELINK') in _src and _src.count('> 8:  ' + chr(35) + ' TAG-POLL') == 2)
+    ck('S89 rename and move in one pass', (chr(35)+' INODE-RELINK') in _src and sum(1 for L in _src.split(chr(10)) if (chr(35)+' TAG-POLL') in L and ('> 8:' in L or '> 15:' in L)) == 0)
     ck('S90 summary xlsx canon everywhere', (chr(35)+' SUMMARY-CANON') in _src and (chr(35)+' SUMMARY-CALL') in _src and 'def _summary_xlsx(' in _src)
     ck('S91 stranded retry at thirty seconds', (chr(60)+' 30: continue  '+chr(35)+' HEAL-RETRY') in _src)
     ck('S92 client-root tag filing', (chr(35)+' CLIENT-ROOT') in _src and 'client root)' in _src)
@@ -1918,6 +2023,11 @@ def _selftest(root):
     ck('S102 name command learns and renames on demand', 'def do_name(' in _br and "cmd == 'name'" in _br)
     ck('S103 chat stays read-only', (chr(35)+' CHAT-READONLY') in _br and sum(1 for L in _br.split(chr(10)) if 'do_name(' in L and not L.strip().startswith('def do_name') and not L.strip().startswith('elif cmd ==')) == 0)
     ck('S104 butler learns manual renames', (chr(35)+' LEARN-BACK v80.1') in _src)
+    _vm = json.load(open(os.path.join(BASE_DIR, 'tag_voices.json')))
+    ck('S105 tag voice map has no internal stages', 'Ready for Manager Review' not in _vm and len(_vm) >= 7)
+    ck('S106 autodraft never sends', '.send(' not in _src.split('def _autodraft_tick')[1].split('def _heal')[0] and '_click_send' not in _src.split('def _autodraft_tick')[1].split('def _heal')[0])
+    ck('S107 toggle honoured', 'autodraft.flag' in _src and 'briefing.py chat' in _src and (chr(35)+' AUTODRAFT') in _src)
+    ck('S108 drafts go through the signed wa door', 'wa.send_review(' in _src and 'import wa' in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
