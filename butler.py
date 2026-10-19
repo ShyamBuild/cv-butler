@@ -22,7 +22,7 @@ VERSION = "butler v6 (final-rules edition)"
 for _lf in sorted(__import__("glob").glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), "butler_*.lock"))):
     try: print("   🔒 live lock: " + os.path.basename(_lf) + " -> " + open(_lf).read().strip())
     except Exception: pass
-INTERACTIVE = False
+INTERACTIVE = sys.stdin.isatty() and sys.stdout.isatty()  # HEADLESS-FIX v81.9: a log-file stdout means headless; loop, do not listen
 def _git_stamp():
     try:
         r = subprocess.run(['git', '-C', os.path.dirname(os.path.abspath(__file__)), 'rev-parse', '--short', 'HEAD'], capture_output=True, text=True, timeout=5)
@@ -2077,6 +2077,7 @@ def _selftest(root):
     ck('S114 the pulse has a voice', (chr(35)+' PULSE-WITNESS') in _src and (chr(35)+' TICK-WITNESS') in _src)
     ck('S115 tags read through macOS libc', 'def _xattr_raw(' in _src and ('os.get' + 'xattr(') not in _src and (chr(35)+' XATTR-RAW') in _src)
     ck('S116 the log speaks instantly', (chr(35)+' LOG-FLUSH') in _src and 'line_buffering' in _src)
+    ck('S117 headless butler loops instead of listening', (chr(35)+' HEADLESS-FIX') in _src and 'sys.stdout.isatty()' in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
