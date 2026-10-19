@@ -1645,10 +1645,14 @@ def main():
                 except Exception: pass
                 if getattr(B, '_jdirty', False):
                     B._jsave(); B._jdirty = False
-                if _t.time() - getattr(B, '_last_poll', 0) > 8:  # TAG-POLL v64
-                    B._last_poll = _t.time()
-                    for _cp in B._tag_poll(): ex.submit(work, _cp)
-                    B._heal((lambda m: None) if INTERACTIVE else print)
+                try:  # LOOP-ARMOUR v76
+                    if _t.time() - getattr(B, '_last_poll', 0) > 8:  # TAG-POLL v64
+                        B._last_poll = _t.time()
+                        for _cp in B._tag_poll(): ex.submit(work, _cp)
+                        B._heal((lambda m: None) if INTERACTIVE else print)
+                    open(os.path.join(BASE_DIR, 'butler_alive.stamp'), 'w').write(str(_t.time()))
+                except Exception as _e:
+                    print(f'⚠️ pulse skipped: {_e}', flush=True)
                 _t.sleep(2); continue   # idle: events drained every tick
             B._last_sweep = _t.time()
             if B._n == 4:
@@ -1878,6 +1882,7 @@ def _selftest(root):
     ck('S95 tag-skip is per-call not per-instance', 'skip_tags=None' in _src and _src.count('skip_tags=False') >= 2 and (chr(35)+' SKIP-FIX') in _src)
     ck('S96 tag-truth filing, no whitelist', (chr(35)+' TAG-TRUTH') in _src)
     ck('S97 heal and drain read tags per call', _src.count('skip_tags=False') >= 2)
+    ck('S98 pulse cannot kill the watcher', (chr(35)+' LOOP-ARMOUR') in _src and 'butler_alive.stamp' in _src and 'pulse skipped' in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
