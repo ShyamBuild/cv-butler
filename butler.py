@@ -1281,7 +1281,7 @@ class Butler:
             nm = re.sub(r'[/\\:]', '-', (t or '').split(chr(10))[0].strip())
             if not nm or nm in ('Red', 'Orange', 'Yellow', 'Green', 'Blue', 'Purple', 'Gray', 'Grey'): continue
             d0 = os.path.dirname(p)
-            if os.path.basename(d0) == nm: continue
+            if os.path.basename(d0) == nm: return  # HOME v78
             base = d0 if len(os.path.relpath(d0, self.root).split(os.sep)) <= 2 else os.path.dirname(d0)
             tgt = os.path.join(base, nm)
             os.makedirs(tgt, exist_ok=True)
@@ -1292,6 +1292,7 @@ class Butler:
             try:
                 os.rename(p, dst); say(f'📁 [move] {os.path.basename(p)} -> {nm}/'); return
             except Exception: return
+        return  # TAG-TRUTH-AUTHORITATIVE v78
         if len(os.path.relpath(os.path.dirname(p), self.root).split(os.sep)) < 2:  # CLIENT-ROOT v73
             for t in ((_tags_of_fast(p) or get_tags(p)) or []):
                 tt = t.replace(chr(8211), '-')
@@ -1886,6 +1887,7 @@ def _selftest(root):
     ck('S97 heal and drain read tags per call', _src.count('skip_tags=False') >= 2)
     ck('S98 pulse cannot kill the watcher', (chr(35)+' LOOP-ARMOUR') in _src and 'butler_alive.stamp' in _src and 'pulse skipped' in _src)
     ck('S99 reconcile never nests a stage in itself', (chr(35)+' ALREADY-FILED') in _src and _src.split('def _reconcile_tags')[1].split('\ndef ')[0].count(chr(35)+' ALREADY-FILED') == 1)
+    ck('S100 tag-truth is the only filing voice', (chr(35)+' HOME v78') in _src and (chr(35)+' TAG-TRUTH-AUTHORITATIVE') in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
