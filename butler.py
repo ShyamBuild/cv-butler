@@ -1172,6 +1172,7 @@ class Butler:
                 elif prev is None:
                     self._tagsets[fp] = [t for t in (_tags_of_fast(fp) or [])]
         if len(self._tagcrc) > 20000: self._tagcrc = {}
+        if changed: print(f'🩺 poll changed={len(changed)} added={len(getattr(self, chr(95)+chr(97)+chr(100)+chr(100)+chr(101)+chr(100)+chr(95)+chr(116)+chr(97)+chr(103)+chr(115), {}))}', flush=True)  # PULSE-WITNESS v81.6
         return changed
 
     def _snapshot(self, say=print):  # SNAPSHOT v69
@@ -1316,6 +1317,10 @@ class Butler:
             added, self._added_tags = getattr(self, '_added_tags', {}), {}
             try: vm = json.load(open(os.path.join(BASE_DIR, 'tag_voices.json')))
             except Exception: return
+            if not hasattr(self, '_ad_lastlog'): self._ad_lastlog = 0
+            if added or q or _t.time() - self._ad_lastlog > 300:
+                self._ad_lastlog = _t.time()
+                say(f'🩺 autodraft tick: enabled={self._ad_enabled()} mode={mode} adds={len(added)} queue={len(q)}')  # TICK-WITNESS v81.6
             for fp, tags in added.items():
                 for tg in tags:
                     v = vm.get(tg) or vm.get(tg.replace(chr(8211), '-'))
@@ -2049,6 +2054,7 @@ def _selftest(root):
     ck('S111 pulse clock uses the file own alias', _src.split('def _tag_poll')[1].split('return changed')[0].count('time.time()') == 0 and _src.split('def _ad_enabled')[1].split('def _heal')[0].count('time.time()') == 0)
     ck('S112 drafts fire in their own process', (chr(35)+' AD-FIRE v81.5') in _src and 'threading.Thread' not in _src.split('def _ad_fire')[1].split('def _draft_one')[0])
     ck('S113 every tag-add is witnessed', (chr(35)+' TAGADD-LOG') in _src)
+    ck('S114 the pulse has a voice', (chr(35)+' PULSE-WITNESS') in _src and (chr(35)+' TICK-WITNESS') in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
