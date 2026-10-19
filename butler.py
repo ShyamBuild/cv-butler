@@ -1114,7 +1114,7 @@ class Butler:
         now = time.time()
         for p in [p for p, t in list(self._pending.items()) if now - t > 3 and os.path.exists(p) and not _settling(p)]:
             self._pending.pop(p, None)
-            self._route(p, say)
+            self._route(p, say, skip_tags=False)
 
     def _tag_poll(self):
         import zlib as _z
@@ -1185,7 +1185,7 @@ class Butler:
         now = time.time()
         for p in [p for p, t in list(self._pending.items()) if now - t > 20 and os.path.exists(p) and not _settling(p)]:
             self._pending.pop(p, None)
-            self._route(p, say)
+            self._route(p, say, skip_tags=False)
         deb = os.path.join(BASE_DIR, 'download_debris')
         for dp, dn, fn in os.walk(self.root):
             dn[:] = [d for d in dn if not d.startswith('.')]
@@ -1216,9 +1216,10 @@ class Butler:
                         try:
                             os.rename(fp, _nb); say(f'🧩 [suffix] {os.path.basename(fp)} -> {os.path.basename(_nb)}'); fp = _nb; bl = os.path.basename(_nb).lower()
                         except Exception: continue
-                self._route(fp, say)
+                self._route(fp, say, skip_tags=False)
 
-    def _route(self, p, say):
+    def _route(self, p, say, skip_tags=None):
+        sk = skip_tags if skip_tags is not None else getattr(self, '_skip_tags', False)  # SKIP-FIX v74
         if p.lower().endswith('.tmp.html'):
             try:
                 if time.time() - os.path.getmtime(p) > 600:
@@ -1255,7 +1256,7 @@ class Butler:
                         if os.stat(_c).st_ino == _ino: p = _c; break
                     except Exception: pass
             self.handle_pdf(p, say)
-            if not getattr(self, '_skip_tags', False): self.handle_tags(p, say)
+            if not sk: self.handle_tags(p, say)
             self._compact_numbers(os.path.dirname(p), say)
         elif ext == '.xlsx':
             p = self._summary_xlsx(p, say)  # SUMMARY-CALL v71
@@ -1275,6 +1276,22 @@ class Butler:
 
     def handle_tags(self, p, say):
         if _settling(p): return  # TAGS-GATE v60
+        T = _tags_of_fast(p) or get_tags(p) or []  # TAG-TRUTH v75: read, assume nothing
+        for t in T:
+            nm = re.sub(r'[/\\:]', '-', (t or '').split(chr(10))[0].strip())
+            if not nm or nm in ('Red', 'Orange', 'Yellow', 'Green', 'Blue', 'Purple', 'Gray', 'Grey'): continue
+            d0 = os.path.dirname(p)
+            if os.path.basename(d0) == nm: continue
+            base = d0 if len(os.path.relpath(d0, self.root).split(os.sep)) <= 2 else os.path.dirname(d0)
+            tgt = os.path.join(base, nm)
+            os.makedirs(tgt, exist_ok=True)
+            dst = os.path.join(tgt, os.path.basename(p)); c = 1
+            b2, e2 = os.path.splitext(os.path.basename(p))
+            while os.path.exists(dst): dst = os.path.join(tgt, f'{b2}_{c}{e2}'); c += 1
+            if _settling(p): return
+            try:
+                os.rename(p, dst); say(f'📁 [move] {os.path.basename(p)} -> {nm}/'); return
+            except Exception: return
         if len(os.path.relpath(os.path.dirname(p), self.root).split(os.sep)) < 2:  # CLIENT-ROOT v73
             for t in ((_tags_of_fast(p) or get_tags(p)) or []):
                 tt = t.replace(chr(8211), '-')
@@ -1857,7 +1874,10 @@ def _selftest(root):
     ck('S91 stranded retry at thirty seconds', (chr(60)+' 30: continue  '+chr(35)+' HEAL-RETRY') in _src)
     ck('S92 client-root tag filing', (chr(35)+' CLIENT-ROOT') in _src and 'client root)' in _src)
     ck('S93 heal sniffs extension-less files', (chr(35)+' HEAL-SNIFF') in _src and _src.count('_sniff_ext(') >= 3)
-    ck('S94 client-root block on live path', _src.index(chr(35)+' CLIENT-ROOT v73') < _src.index('def handle_tags') + 900 and _src.index(chr(35)+' CLIENT-ROOT v73') < _src.split(chr(35)+' CLIENT-ROOT v73')[0].count('return') * 0 + _src.index('split(os.sep)) < 2: return'))
+    ck('S94 client-root block on live path', _src.index('def handle_tags') < _src.index(chr(35)+' CLIENT-ROOT v73') < _src.index('split(os.sep)) < 2: return'))
+    ck('S95 tag-skip is per-call not per-instance', 'skip_tags=None' in _src and _src.count('skip_tags=False') >= 2 and (chr(35)+' SKIP-FIX') in _src)
+    ck('S96 tag-truth filing, no whitelist', (chr(35)+' TAG-TRUTH') in _src)
+    ck('S97 heal and drain read tags per call', _src.count('skip_tags=False') >= 2)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
