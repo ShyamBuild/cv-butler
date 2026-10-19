@@ -1236,20 +1236,28 @@ class Butler:
         for d in phs:
             if d in conv: return d
         return phs[0]
-    def _ad_fire(self, d, txt, v, nm, say):
-        import threading
+    def _ad_fire(self, d, txt, v, nm, say):  # AD-FIRE v81.5 (subprocess: playwright needs a main thread)
+        import subprocess, sys
         self._ad_pending = _t.time() + 75
         say(f'📝 autodraft: {v} -> +{d} ({nm})')
-        def _run():
-            try:
-                import wa
-                try: wa.send_review(d, txt, say)
-                except TypeError: wa.send_review(d, txt)
-            except Exception: pass
-        threading.Thread(target=_run, daemon=True).start()
+        try:
+            tf = os.path.join(BASE_DIR, 'ad_draft.txt')
+            open(tf, 'w').write(txt)
+            lf = open(os.path.join(BASE_DIR, 'ad_fire.log'), 'a')
+            subprocess.Popen([sys.executable, '-c', 'import wa, sys; wa.send_review(sys.argv[1], open(sys.argv[2]).read(), print)', d, tf], cwd=BASE_DIR, stdout=lf, stderr=subprocess.STDOUT)
+        except Exception as e:
+            say(f'⚠️ autodraft fire failed: {e}')
+
     def _draft_one(self, fp, tg, v, mode, say):
         try:
-            if not os.path.exists(fp) or _settling(fp): say(f'⏭️ autodraft skip (moved or settling): {os.path.basename(fp)}'); return
+            if not os.path.exists(fp):
+                hit = None
+                for dp, dn, fn in os.walk(self.root):
+                    dn[:] = [x for x in dn if not x.startswith('.')]
+                    if os.path.basename(fp) in fn: hit = os.path.join(dp, os.path.basename(fp)); break
+                if not hit: say(f'⏭️ autodraft skip (gone): {os.path.basename(fp)}'); return
+                fp = hit
+            if _settling(fp): say(f'⏭️ autodraft skip (settling): {os.path.basename(fp)}'); return
             rel = os.path.relpath(os.path.dirname(fp), self.root).split(os.sep)
             if len(rel) < 2: say(f'⏭️ autodraft skip (no position folder): {os.path.basename(fp)}'); return
             client, posraw = rel[0], rel[1]
@@ -1311,6 +1319,7 @@ class Butler:
             for fp, tags in added.items():
                 for tg in tags:
                     v = vm.get(tg) or vm.get(tg.replace(chr(8211), '-'))
+                    say(f'🏷️ tag-add: {os.path.basename(fp)} +{tg}')  # TAGADD-LOG v81.5
                     if v: self._draft_one(fp, tg, v, mode, say)
         except Exception as e:
             say(f'⚠️ autodraft tick: {e}')
@@ -2038,6 +2047,8 @@ def _selftest(root):
     ck('S109 autodraft silence explains itself', (chr(35)+' AD-VISIBILITY') in _src and 'no position folder' in _src)
     ck('S110 autodraft log reachable from chat', 'def do_adlog(' in _br and "cmd == 'adlog'" in _br and (chr(35)+' ADLOG') in _br)
     ck('S111 pulse clock uses the file own alias', _src.split('def _tag_poll')[1].split('return changed')[0].count('time.time()') == 0 and _src.split('def _ad_enabled')[1].split('def _heal')[0].count('time.time()') == 0)
+    ck('S112 drafts fire in their own process', (chr(35)+' AD-FIRE v81.5') in _src and 'threading.Thread' not in _src.split('def _ad_fire')[1].split('def _draft_one')[0])
+    ck('S113 every tag-add is witnessed', (chr(35)+' TAGADD-LOG') in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
