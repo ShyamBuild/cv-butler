@@ -1275,6 +1275,21 @@ class Butler:
 
     def handle_tags(self, p, say):
         if _settling(p): return  # TAGS-GATE v60
+        if len(os.path.relpath(os.path.dirname(p), self.root).split(os.sep)) < 2:  # CLIENT-ROOT v73
+            for t in ((_tags_of_fast(p) or get_tags(p)) or []):
+                tt = t.replace(chr(8211), '-')
+                if tt in TAG_NAMES or t in TAG_NAMES:
+                    nm = re.sub(r'[/\\:]', '-', tt)
+                    tgt = os.path.join(os.path.dirname(p), nm)
+                    os.makedirs(tgt, exist_ok=True)
+                    dst = os.path.join(tgt, os.path.basename(p)); c = 1
+                    b2, e2 = os.path.splitext(os.path.basename(p))
+                    while os.path.exists(dst): dst = os.path.join(tgt, f'{b2}_{c}{e2}'); c += 1
+                    if _settling(p): return
+                    try:
+                        os.rename(p, dst); say(f'📁 [move] {os.path.basename(p)} -> {nm}/ (client root)')
+                    except Exception: pass
+                    return
         if len(os.path.relpath(os.path.dirname(p), self.root).split(os.sep)) < 2: return
         T = _tags_of_fast(p) or get_tags(p)
         if len(os.path.relpath(os.path.dirname(p), self.root).split(os.sep)) < 2:  # CLIENT-ROOT v72
@@ -1842,6 +1857,7 @@ def _selftest(root):
     ck('S91 stranded retry at thirty seconds', (chr(60)+' 30: continue  '+chr(35)+' HEAL-RETRY') in _src)
     ck('S92 client-root tag filing', (chr(35)+' CLIENT-ROOT') in _src and 'client root)' in _src)
     ck('S93 heal sniffs extension-less files', (chr(35)+' HEAL-SNIFF') in _src and _src.count('_sniff_ext(') >= 3)
+    ck('S94 client-root block on live path', _src.index(chr(35)+' CLIENT-ROOT v73') < _src.index('def handle_tags') + 900 and _src.index(chr(35)+' CLIENT-ROOT v73') < _src.split(chr(35)+' CLIENT-ROOT v73')[0].count('return') * 0 + _src.index('split(os.sep)) < 2: return'))
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
