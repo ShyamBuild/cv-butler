@@ -216,6 +216,17 @@ def _pos_client_for(hit, f=None):
             pos_path = os.path.join(comp, parts[0])
             return clean_pos(parts[0]), _client_full(parts[0], pos_path)
     return 'the discussed role', 'our client'
+def do_adlog(arg, root, say=print):  # ADLOG v81.2 (read-only)
+    n = 10
+    try: n = max(1, int((arg or '').strip()))
+    except Exception: pass
+    p = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'butler_live.log')
+    try: lines = open(p, encoding='utf-8', errors='replace').read().splitlines()
+    except Exception: say('📭 no butler log yet'); return
+    hits = [x for x in lines if 'autodraft' in x.lower()][-n:]
+    if not hits: say('📭 no autodraft lines yet - tag a file and watch this space'); return
+    for x in hits: say(x)
+
 def do_renwhy(arg, root, say=print):
     import butler, fitrank
     hits = _hits_for((arg or '').strip(), root)
@@ -1312,6 +1323,7 @@ def _cli(argv):
     elif cmd == 'refer': do_send(arg, root, ['referral'], print)
     elif cmd == 'renwhy': do_renwhy(arg, root, print)
     elif cmd == 'name': do_name(arg, root, print)
+    elif cmd == 'adlog': do_adlog(arg, root, print)
     elif cmd == 'due': import cadence; cadence.show_due(print)
     elif cmd == 'outbox': import cadence; cadence.show_outbox(print)
     elif cmd == 'ack': import cadence; cadence.ack(arg, print)
@@ -1320,7 +1332,7 @@ def _cli(argv):
     else: print('cli: missed | wa | jd | nudge | touch | brief  <args>')
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board','history','stale','fixphone','call','next','case','positions','note','interview','offer','due','outbox','ack','money','value','push','recap','similar','ghost','client','digest','summarize','clientname','follow','tpltest','refer','renwhy','name'):
+    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board','history','stale','fixphone','call','next','case','positions','note','interview','offer','due','outbox','ack','money','value','push','recap','similar','ghost','client','digest','summarize','clientname','follow','tpltest','refer','renwhy','name','adlog'):
         _cli(sys.argv[1:]); raise SystemExit(0)
     LAST = os.path.expanduser("~/.cvtool_last_root")
     args = sys.argv[1:]
@@ -1415,6 +1427,7 @@ if __name__ == "__main__":
             if q.lower().startswith('refer '): do_send(q[6:].strip(), root, ['referral']); continue
             if q.lower().startswith('renwhy '): do_renwhy(q[7:].strip(), root); continue
             if q.lower().startswith('name '): print('📖 chat is read-only - run: briefing.py name <phone-or-word> <Name>'); continue  # CHAT-READONLY v80
+            if q.lower().startswith('adlog'): do_adlog(q[5:].strip(), root); continue
             if q.lower().startswith('due'): import cadence; cadence.show_due(); continue
             if q.lower().startswith('outbox'): import cadence; cadence.show_outbox(); continue
             if q.lower().startswith('ack '): import cadence; cadence.ack(q[4:].strip()); continue

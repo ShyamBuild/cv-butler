@@ -1249,7 +1249,7 @@ class Butler:
         threading.Thread(target=_run, daemon=True).start()
     def _draft_one(self, fp, tg, v, mode, say):
         try:
-            if not os.path.exists(fp) or _settling(fp): return
+            if not os.path.exists(fp) or _settling(fp): say(f'⏭️ autodraft skip (moved or settling): {os.path.basename(fp)}'); return
             rel = os.path.relpath(os.path.dirname(fp), self.root).split(os.sep)
             if len(rel) < 2: say(f'⏭️ autodraft skip (no position folder): {os.path.basename(fp)}'); return
             client, posraw = rel[0], rel[1]
@@ -2036,6 +2036,7 @@ def _selftest(root):
     ck('S107 toggle honoured', 'autodraft.flag' in _src and 'briefing.py chat' in _src and (chr(35)+' AUTODRAFT') in _src)
     ck('S108 drafts go through the signed wa door', 'wa.send_review(' in _src and 'import wa' in _src)
     ck('S109 autodraft silence explains itself', (chr(35)+' AD-VISIBILITY') in _src and 'no position folder' in _src)
+    ck('S110 autodraft log reachable from chat', 'def do_adlog(' in _br and "cmd == 'adlog'" in _br and (chr(35)+' ADLOG') in _br)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
