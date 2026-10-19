@@ -1371,6 +1371,8 @@ class Butler:
                     if not f.lower().endswith(".pdf"): continue
                     fp = os.path.join(dp, f)
                     T = _tags_of_fast(fp) or get_tags(fp)
+                    _here = os.path.basename(os.path.dirname(fp))  # ALREADY-FILED v77
+                    if _here and _here in [re.sub(r'[/\\:]', '-', (x or '').split(chr(10))[0].strip()) for x in (T or [])]: continue
                     tag = None
                     for t in T:
                         if _n(t) in known: tag = known[_n(t)]; break
@@ -1883,6 +1885,7 @@ def _selftest(root):
     ck('S96 tag-truth filing, no whitelist', (chr(35)+' TAG-TRUTH') in _src)
     ck('S97 heal and drain read tags per call', _src.count('skip_tags=False') >= 2)
     ck('S98 pulse cannot kill the watcher', (chr(35)+' LOOP-ARMOUR') in _src and 'butler_alive.stamp' in _src and 'pulse skipped' in _src)
+    ck('S99 reconcile never nests a stage in itself', (chr(35)+' ALREADY-FILED') in _src and _src.split('def _reconcile_tags')[1].split('\ndef ')[0].count(chr(35)+' ALREADY-FILED') == 1)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
