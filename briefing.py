@@ -1414,7 +1414,7 @@ if __name__ == "__main__":
             if q.lower().startswith('tpltest '): do_tpltest(q[8:].strip(), root); continue
             if q.lower().startswith('refer '): do_send(q[6:].strip(), root, ['referral']); continue
             if q.lower().startswith('renwhy '): do_renwhy(q[7:].strip(), root); continue
-            if q.lower().startswith('name '): do_name(q[5:].strip(), root); continue
+            if q.lower().startswith('name '): print('📖 chat is read-only - run: briefing.py name <phone-or-word> <Name>'); continue  # CHAT-READONLY v80
             if q.lower().startswith('due'): import cadence; cadence.show_due(); continue
             if q.lower().startswith('outbox'): import cadence; cadence.show_outbox(); continue
             if q.lower().startswith('ack '): import cadence; cadence.ack(q[4:].strip()); continue
@@ -1429,7 +1429,7 @@ if __name__ == "__main__":
             if q.lower().startswith('touch '):
                 do_send(q[6:], root, ['keep', 'touch']); continue
             if q.lower().startswith('name '):
-                do_name(q[5:], root); continue
+                if q.lower().startswith('name '): print('📖 chat is read-only - run: briefing.py name <phone-or-word> <Name>'); continue  # CHAT-READONLY v80
             if q.lower() == 'template':
                 print("📝 " + _read_tpl())
                 print(f"   (to change it, edit: {TPL_FILE})")

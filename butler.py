@@ -1045,15 +1045,24 @@ class Butler:
         if name and re.sub(r'\s', '', name.lower()) == re.sub(r'\s', '', os.path.splitext(base)[0].lower()):
             name = None  # same letters, only spacing differs: current name is fine
         _nbm = _names_by_phone()  # NAME-BY-PHONE v79
-        _nb = ''
-        if _nbm:
+        _st0 = os.path.splitext(base)[0]
+        _phs = []
+        if name and (_nbm or _st0 != name):
             try:
                 import fitrank as _fr
-                for _d in (phones_of(_fr._text(p)) or []):
-                    if _d in _nbm: _nb = _nbm[_d]; break
+                _phs = phones_of(_fr._text(p)) or []
             except Exception:
-                _nb = ''
-        if _nb: name = _nb
+                _phs = []
+        if _nbm:
+            for _d in _phs:
+                if _d in _nbm: name = _nbm[_d]; break
+        if name and _phs and _st0 != name and len(_st0.split()) >= 2 and all(w[:1].isupper() for w in _st0.split() if w):  # LEARN-BACK v80.1
+            for _d in _phs: _nbm[_d] = _st0
+            try:
+                import json as _j2
+                _j2.dump(_nbm, open(os.path.join(BASE_DIR, 'names_by_phone.json'), 'w'), indent=1)
+            except Exception: pass
+            name = _st0
         _b0 = os.path.splitext(base)[0]  # SUFFIX-STABLE v65
         _okb = (not name) or _b0.lower() == name.lower() or bool(re.match(re.escape(name) + r'[_\s]\d+$', _b0, re.I))
         if name and not _okb:
@@ -1907,6 +1916,8 @@ def _selftest(root):
     ck('S100 tag-truth is the only filing voice', (chr(35)+' HOME v78') in _src and (chr(35)+' TAG-TRUTH-AUTHORITATIVE') in _src)
     ck('S101 learned names beat document names', 'def _names_by_phone(' in _src and (chr(35)+' NAME-BY-PHONE') in _src and 'import fitrank as _fr' in _src)
     ck('S102 name command learns and renames on demand', 'def do_name(' in _br and "cmd == 'name'" in _br)
+    ck('S103 chat stays read-only', (chr(35)+' CHAT-READONLY') in _br and sum(1 for L in _br.split(chr(10)) if 'do_name(' in L and not L.strip().startswith('def do_name') and not L.strip().startswith('elif cmd ==')) == 0)
+    ck('S104 butler learns manual renames', (chr(35)+' LEARN-BACK v80.1') in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
