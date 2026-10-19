@@ -29,6 +29,13 @@ GIT_STAMP = _git_stamp()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOCK_FILE = os.path.join(BASE_DIR, "butler.lock")
+def _names_by_phone():
+    try:
+        import json as _j
+        return _j.load(open(os.path.join(BASE_DIR, 'names_by_phone.json')))
+    except Exception:
+        return {}
+
 def _sniff_ext(p):
     try:
         with open(p, 'rb') as f: h = f.read(8)
@@ -1037,6 +1044,16 @@ class Butler:
             name = None  # broken-font reading of an already-good name: keep current
         if name and re.sub(r'\s', '', name.lower()) == re.sub(r'\s', '', os.path.splitext(base)[0].lower()):
             name = None  # same letters, only spacing differs: current name is fine
+        _nbm = _names_by_phone()  # NAME-BY-PHONE v79
+        _nb = ''
+        if _nbm:
+            try:
+                import fitrank as _fr
+                for _d in (phones_of(_fr._text(p)) or []):
+                    if _d in _nbm: _nb = _nbm[_d]; break
+            except Exception:
+                _nb = ''
+        if _nb: name = _nb
         _b0 = os.path.splitext(base)[0]  # SUFFIX-STABLE v65
         _okb = (not name) or _b0.lower() == name.lower() or bool(re.match(re.escape(name) + r'[_\s]\d+$', _b0, re.I))
         if name and not _okb:
@@ -1888,6 +1905,8 @@ def _selftest(root):
     ck('S98 pulse cannot kill the watcher', (chr(35)+' LOOP-ARMOUR') in _src and 'butler_alive.stamp' in _src and 'pulse skipped' in _src)
     ck('S99 reconcile never nests a stage in itself', (chr(35)+' ALREADY-FILED') in _src and _src.split('def _reconcile_tags')[1].split('\ndef ')[0].count(chr(35)+' ALREADY-FILED') == 1)
     ck('S100 tag-truth is the only filing voice', (chr(35)+' HOME v78') in _src and (chr(35)+' TAG-TRUTH-AUTHORITATIVE') in _src)
+    ck('S101 learned names beat document names', 'def _names_by_phone(' in _src and (chr(35)+' NAME-BY-PHONE') in _src and 'import fitrank as _fr' in _src)
+    ck('S102 name command learns and renames on demand', 'def do_name(' in _br and "cmd == 'name'" in _br)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
