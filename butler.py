@@ -1206,10 +1206,8 @@ class Butler:
                     changed.append(fp)
                     self._tag_kind[fp] = 'set' if oldc != c else 'ctime'  # KIND v81.26
                     cur = [t for t in (_tags_of_fast(fp) or [])]
-                    if prev is not None and not gap:
-                        add = [t for t in cur if t not in prev]
-                        if not add and cur: add = list(cur)  # RETOUCH v81.19: a re-applied tag is an event, even inside one poll window
-                        if add: self._added_tags[fp] = add
+                    add = list(cur) if cur else []  # RETOUCH v81.19 + EVERY-TAG-EVENT v81.30: any observed tag/ctime change drafts every tag currently on the file
+                    if add: self._added_tags[fp] = add
                     self._tagsets[fp] = cur
         if len(self._tagcrc) > 20000: self._tagcrc = {}
         if changed: print(f'🩺 poll changed={len(changed)} added={len(getattr(self, chr(95)+chr(97)+chr(100)+chr(100)+chr(101)+chr(100)+chr(95)+chr(116)+chr(97)+chr(103)+chr(115), {}))}', flush=True)  # PULSE-WITNESS v81.6
@@ -1343,8 +1341,8 @@ class Butler:
             try: lg = json.load(open(lp))
             except Exception: lg = {}
             k = f'{fp}|{tg}'  # 60s debounce per file+tag, replaces 24h cooldown
-            if time.time() - lg.get(k, 0) < 60: return
-            if kind == 'ctime' and not self._ad_fidget() and time.time() - lg.get(f'{fp}|{tg}', 0) < 21600: say(f'⏭️ autodraft: {os.path.basename(fp)} +{tg} already handled this round (sent or closed) - remove+add the tag to re-draft'); return  # DONE-MARK v81.26
+            if False and time.time() - lg.get(k, 0) < 60: return  # NEUTER-DEBOUNCE v81.30 (user spec: every tag action is a new event)
+            if False and kind == 'ctime': pass  # NEUTER-DONEMARK v81.30 (every tag action is a new event)
             nm = _names_by_phone().get(d) or os.path.splitext(os.path.basename(fp))[0]
             try: txt = open(os.path.join(BASE_DIR, 'templates', f'voice_{v}.txt')).read()
             except Exception: say(f'⚠️ autodraft: missing template voice_{v}'); return
