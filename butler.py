@@ -1266,6 +1266,12 @@ class Butler:
         for d in phs:
             if d in conv: return d
         return phs[0]
+    def _ad_busy(self):  # SEND-AWARE v81.24: the queue advances on your actual send
+        try: st = json.load(open(os.path.join(BASE_DIR, 'ad_state.json')))
+        except Exception: return getattr(self, '_ad_pending', 0) > time.time()
+        if st.get('state') == 'waiting': return time.time() - st.get('ts', 0) < 1900
+        return False
+
     def _ad_fire(self, d, txt, v, nm, say):  # AD-FIRE v81.5 (subprocess: playwright needs a main thread)
         import subprocess, sys
         self._ad_pending = time.time() + 75
@@ -1274,7 +1280,7 @@ class Butler:
             tf = os.path.join(BASE_DIR, 'ad_draft.txt')
             open(tf, 'w').write(txt)
             lf = open(os.path.join(BASE_DIR, 'ad_fire.log'), 'a')
-            subprocess.Popen([sys.executable, '-c', 'import wa, sys; wa.send_review(sys.argv[1], open(sys.argv[2]).read(), print)', d, tf], cwd=BASE_DIR, stdout=lf, stderr=subprocess.STDOUT)
+            subprocess.Popen([sys.executable, os.path.join(BASE_DIR, 'ad_wait.py'), d, tf], cwd=BASE_DIR, stdout=lf, stderr=subprocess.STDOUT)  # WA-WAIT v81.24: the window lives until your send empties the field
         except Exception as e:
             say(f'⚠️ autodraft fire failed: {e}')
 
@@ -1310,7 +1316,7 @@ class Butler:
             lg[k] = time.time(); json.dump(lg, open(lp, 'w'), indent=1)
             if mode == 'dry':
                 say(f'📝 [dry] {v} -> +{d} ({nm}): {txt[:110]}…'); return
-            if getattr(self, '_ad_pending', 0) > time.time():
+            if self._ad_busy():
                 qp = os.path.join(BASE_DIR, 'autodraft_queue.json')
                 try: q = json.load(open(qp))
                 except Exception: q = []
@@ -1343,7 +1349,7 @@ class Butler:
             try: mode = open(os.path.join(BASE_DIR, 'autodraft.flag')).read().strip() or 'auto'
             except Exception: mode = 'auto'
             qp = os.path.join(BASE_DIR, 'autodraft_queue.json')
-            if getattr(self, '_ad_pending', 0) <= time.time():
+            if not self._ad_busy():
                 try: q = json.load(open(qp))
                 except Exception: q = []
                 q = [x for x in q if time.time() - x.get('at', 0) < 7200]
@@ -2125,6 +2131,8 @@ def _selftest(root):
     ck('S124 phones read from the path, not from prose', 'phones_of(fp)' in _src and ('phones_of(fitrank' + '._text') not in _src and ('phones_of(_fr' + '._text') not in _src)
     ck('S125 re-apply and multi-number draft', (chr(35)+' RETOUCH') in _src and (chr(35)+' MULTI-NUM') in _src)
     ck('S126 the poll sees trace-less tag edits', (chr(35)+' CTIME-EYE') in _src and 'st_ctime' in _src)
+    ck('S127 the window waits for your thumb', (chr(35)+' WA-WAIT v81.24') in _src and os.path.exists(os.path.join(BASE_DIR, 'ad_wait.py')))
+    ck('S128 the queue advances on your send', (chr(35)+' SEND-AWARE') in _src and 'ad_state.json' in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
