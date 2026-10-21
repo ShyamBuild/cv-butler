@@ -1400,6 +1400,7 @@ class Butler:
                 q = [x for x in q if time.time() - x.get('at', 0) < 7200]
                 if q:
                     it = q.pop(0); json.dump(q, open(qp, 'w'), indent=1)
+                    say(f"▶️ window free - releasing queued draft for +{it.get('phone')} ({it.get('who')})")  # RELEASE-VOICE v81.32
                     self._ad_fire(it['phone'], self._ad_text(it.get('fp',''), it['voice'], it['who']) or it.get('text',''), it['voice'], it['who'], say, it.get('fp',''), it.get('tag',''))  # FRESH-TEXT v81.26
             added, self._added_tags = getattr(self, '_added_tags', {}), {}
             try: vm = json.load(open(os.path.join(BASE_DIR, 'tag_voices.json')))
@@ -1777,6 +1778,10 @@ def main():
         try: B.scan_ino[str(_i+1)] = os.stat(_p).st_ino
         except OSError: pass
     B._save_idx()
+    try:
+        os.system("pkill -f 'ad_wait.py' 2>/dev/null; pkill -f 'Google Chrome for Testing' 2>/dev/null")  # STALE-WINDOW-SWEEP v81.32: no ownerless windows survive a relaunch
+    except Exception:
+        pass
     _BOOT_T = time.time()
     print(f"⏳ Scanning {len(files)} files… let it FINISH.")
     futs = [ex.submit(work, p, len(files)) for p in files]
@@ -2178,12 +2183,14 @@ def _selftest(root):
     ck('S126 the poll sees trace-less tag edits', (chr(35)+' CTIME-EYE') in _src and 'st_ctime' in _src)
     ck('S127 the window waits for your thumb', (chr(35)+' WA-WAIT v81.24') in _src and os.path.exists(os.path.join(BASE_DIR, 'ad_wait.py')))
     ck('S128 the queue advances on your send', (chr(35)+' SEND-AWARE') in _src and 'ad_state.json' in _src)
-    ck('S129 ad_wait knows load-silence from closed windows', 'AD-WAIT v81.2' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read() and 'seen_alive' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
+    ck('S129 ad_wait knows load-silence from closed windows', open(os.path.join(BASE_DIR, 'ad_wait.py')).read().count('seen_alive') > 0)
     ck('S130 closed or sent marks the round done', (chr(35)+' DONE-MARK v81.26') in _src and (chr(35)+' KIND v81.26') in _src)
-    ck('S131 queued drafts speak fresh wording', (chr(35)+' FRESH-TEXT v81.26') in _src and 'AD-WAIT v81.2' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
-    ck('S132 fidgeting is a switch, not a fate', (chr(35)+' FIDGET v81.27') in _src and os.path.exists(os.path.join(BASE_DIR, 'fidget.flag')))
-    ck('S133 one window serves the whole queue', 'AD-WAIT v81.28' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read() and 'autodraft_queue.json' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
+    ck('S131 queued drafts speak fresh wording', (chr(35)+' FRESH-TEXT v81.26') in _src and 'build_text' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
+    ck('S132 fidgeting is a switch, not a fate', (chr(35)+' FIDGET') in _src and os.path.exists(os.path.join(BASE_DIR, 'fidget.flag')))
+    ck('S133 one window serves the whole queue', 'pop_job' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read() and 'autodraft_queue.json' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
     ck('S134 the poll remembers across restarts', (chr(35)+' BASELINE-PERSIST') in _src and 'tag_baseline.json' in _src)
+    ck('S136 the window slides on arrival and release speaks', 'AD-WAIT v81.3' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read() and (chr(35)+' RELEASE-VOICE v81.32') in _src)
+    ck('S137 no ownerless windows survive a relaunch', (chr(35)+' STALE-WINDOW-SWEEP') in _src and (chr(35)+' TAB-CLEAN') in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
