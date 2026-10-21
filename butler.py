@@ -1667,7 +1667,6 @@ def main():
                 print(f'⚠️ pulse thread: {e}', flush=True)
             _t.sleep(2)
     import threading as _th
-    _th.Thread(target=_pulse_loop, daemon=True).start()
 
     dirty = set(); dlock = threading.Lock()
     class H(FileSystemEventHandler):
@@ -1833,6 +1832,7 @@ def main():
                     except Exception as e: print(f"⚠️ {e}")
         _th.Thread(target=_console, args=(tty,), daemon=True).start()
         print("   💬 type here: chat · focus · learn · missed/wa/jd/nudge/touch/text <name or scan-#> · status · restart · stop")
+    _th.Thread(target=_pulse_loop, daemon=True).start()  # PULSE-START-LATE v81.15: born after every name it closes over exists
     _console_start()
 
     last_full = time.time(); last_hb = time.time(); last_clean = time.time(); n = 0
@@ -2110,8 +2110,8 @@ def _selftest(root):
     ck('S117 headless butler loops instead of listening', (chr(35)+' HEADLESS-FIX') in _src and 'sys.stdout.isatty()' in _src)
     ck('S118 the REPL cannot park or kill the loop', (chr(35)+' HEADLESS-INPUT') in _src and 'builtins' in _src)
     ck('S119 the REPL door keys on INTERACTIVE', (chr(35)+' REPL-GATE v81.12') in _src and ('if sys.stdin' + '.isatty():') not in _src)
-    ck('S120 the pulse owns its own thread', (chr(35)+' PULSE-THREAD') in _src and 'Thread(target=_pulse_loop' in _src)
     ck('S121 the pulse thread owns its clock', (chr(35)+' PULSE-CLOCK') in _src and 'pulse thread armed' in _src)
+    ck('S122 exactly one late pulse start', _src.count('Thread(target=' + '_pulse_loop') == 1 and (chr(35)+' PULSE-START-LATE') in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
