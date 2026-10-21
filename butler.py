@@ -1076,8 +1076,7 @@ class Butler:
         _phs = []
         if name and (_nbm or _st0 != name):
             try:
-                import fitrank as _fr
-                _phs = phones_of(_fr._text(p)) or []
+                _phs = phones_of(p) or []
             except Exception:
                 _phs = []
         if _nbm:
@@ -1194,6 +1193,7 @@ class Butler:
                     cur = [t for t in (_tags_of_fast(fp) or [])]
                     if prev is not None and not gap:
                         add = [t for t in cur if t not in prev]
+                        if not add and cur: add = list(cur)  # RETOUCH v81.19: a re-applied tag is an event, even inside one poll window
                         if add: self._added_tags[fp] = add
                     self._tagsets[fp] = cur
                 elif prev is None:
@@ -1292,16 +1292,15 @@ class Butler:
             pos = posraw.split('||')[0].strip().replace('_', ' ')
             loc = posraw.split('||')[1].strip() if '||' in posraw else ''
             try:
-                import fitrank
-                phs = phones_of(fitrank._text(fp)) or []
+                phs = phones_of(fp) or []
             except Exception: phs = []
             d = self._phone_for(phs)
             if not d: say(f'⏭️ autodraft skip (no phone): {os.path.basename(fp)}'); return
             lp = os.path.join(BASE_DIR, 'autodraft_log.json')
             try: lg = json.load(open(lp))
             except Exception: lg = {}
-            k = f'{d}|{v}'
-            if time.time() - lg.get(k, 0) < 86400: return
+            k = f'{fp}|{tg}'  # 60s debounce per file+tag, replaces 24h cooldown
+            if time.time() - lg.get(k, 0) < 60: return
             nm = _names_by_phone().get(d) or os.path.splitext(os.path.basename(fp))[0]
             try: txt = open(os.path.join(BASE_DIR, 'templates', f'voice_{v}.txt')).read()
             except Exception: say(f'⚠️ autodraft: missing template voice_{v}'); return
@@ -1318,6 +1317,14 @@ class Butler:
                 json.dump(q, open(qp, 'w'), indent=1)
                 say(f'📝 queued autodraft: {v} -> {nm} (+{d})'); return
             self._ad_fire(d, txt, v, nm, say)
+            for _d2 in phs:  # MULTI-NUM v81.19: every number in the CV gets its own draft
+                if _d2 == d: continue
+                try: q2 = json.load(open(os.path.join(BASE_DIR, 'autodraft_queue.json')))
+                except Exception: q2 = []
+                q2 = [x for x in q2 if time.time() - x.get('at', 0) < 7200]
+                q2.append({'phone': _d2, 'text': txt, 'at': time.time(), 'who': nm, 'voice': v})
+                json.dump(q2, open(os.path.join(BASE_DIR, 'autodraft_queue.json'), 'w'), indent=1)
+                say(f'📝 queued autodraft (extra number +{_d2}): {nm}')
         except Exception as e:
             say(f'⚠️ autodraft error: {e}')
     def _autodraft_tick(self, say=print):
@@ -2113,6 +2120,8 @@ def _selftest(root):
     ck('S121 the pulse thread owns its clock', (chr(35)+' PULSE-CLOCK') in _src and 'pulse thread armed' in _src)
     ck('S122 exactly one late pulse start', _src.count('Thread(target=' + '_pulse_loop') == 1 and (chr(35)+' PULSE-START-LATE') in _src)
     ck('S123 no ghost clock alias', ('_t' + '.time()') not in _src and ('_t' + '.sleep(') not in _src)
+    ck('S124 phones read from the path, not from prose', 'phones_of(fp)' in _src and ('phones_of(fitrank' + '._text') not in _src and ('phones_of(_fr' + '._text') not in _src)
+    ck('S125 re-apply and multi-number draft', (chr(35)+' RETOUCH') in _src and (chr(35)+' MULTI-NUM') in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
