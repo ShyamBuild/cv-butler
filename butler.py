@@ -1647,6 +1647,8 @@ def main():
 
     ex = ThreadPoolExecutor(max_workers=4)
     def _pulse_loop():  # PULSE-THREAD v81.13: the pulse lives in no branch's custody
+        import time as _t  # PULSE-CLOCK v81.14: the thread owns its clock; no enclosing cell may starve it
+        print('🩺 pulse thread armed', flush=True)
         while True:
             try:
                 if _t.time() - getattr(B, '_last_poll', 0) > 4:
@@ -2109,6 +2111,7 @@ def _selftest(root):
     ck('S118 the REPL cannot park or kill the loop', (chr(35)+' HEADLESS-INPUT') in _src and 'builtins' in _src)
     ck('S119 the REPL door keys on INTERACTIVE', (chr(35)+' REPL-GATE v81.12') in _src and ('if sys.stdin' + '.isatty():') not in _src)
     ck('S120 the pulse owns its own thread', (chr(35)+' PULSE-THREAD') in _src and 'Thread(target=_pulse_loop' in _src)
+    ck('S121 the pulse thread owns its clock', (chr(35)+' PULSE-CLOCK') in _src and 'pulse thread armed' in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
