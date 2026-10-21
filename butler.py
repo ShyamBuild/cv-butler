@@ -1173,6 +1173,15 @@ class Butler:
         if not hasattr(self, '_tagcrc'): self._tagcrc = {}
         if not hasattr(self, '_tagct'): self._tagct = {}
         if not hasattr(self, '_tag_kind'): self._tag_kind = {}
+        if not getattr(self, '_bp_loaded', False):  # BASELINE-PERSIST v81.29: remember tags across restarts
+            self._bp_loaded = True
+            try:
+                _bl = json.load(open(os.path.join(BASE_DIR, 'tag_baseline.json')))
+                for _p, _v in _bl.items():
+                    self._tagcrc[_p] = _v[0]; self._tagct[_p] = _v[1]; self._tagsets[_p] = _v[2]
+                if _bl: print(f'🧠 tag baseline restored: {len(_bl)} files remembered across restart', flush=True)
+            except Exception:
+                pass
         if not hasattr(self, '_tagsets'): self._tagsets = {}
         self._added_tags = {}
         now = time.time()
@@ -1204,6 +1213,12 @@ class Butler:
                     self._tagsets[fp] = cur
         if len(self._tagcrc) > 20000: self._tagcrc = {}
         if changed: print(f'🩺 poll changed={len(changed)} added={len(getattr(self, chr(95)+chr(97)+chr(100)+chr(100)+chr(101)+chr(100)+chr(95)+chr(116)+chr(97)+chr(103)+chr(115), {}))}', flush=True)  # PULSE-WITNESS v81.6
+        self._bp_n = getattr(self, '_bp_n', 0) + 1
+        if self._bp_n % 15 == 1:
+            try:
+                json.dump({p: [self._tagcrc.get(p), self._tagct.get(p), self._tagsets.get(p)] for p in self._tagcrc}, open(os.path.join(BASE_DIR, 'tag_baseline.json'), 'w'))
+            except Exception:
+                pass
         return changed
 
     def _snapshot(self, say=print):  # SNAPSHOT v69
@@ -2170,6 +2185,7 @@ def _selftest(root):
     ck('S131 queued drafts speak fresh wording', (chr(35)+' FRESH-TEXT v81.26') in _src and 'AD-WAIT v81.2' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
     ck('S132 fidgeting is a switch, not a fate', (chr(35)+' FIDGET v81.27') in _src and os.path.exists(os.path.join(BASE_DIR, 'fidget.flag')))
     ck('S133 one window serves the whole queue', 'AD-WAIT v81.28' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read() and 'autodraft_queue.json' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
+    ck('S134 the poll remembers across restarts', (chr(35)+' BASELINE-PERSIST') in _src and 'tag_baseline.json' in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
