@@ -1344,7 +1344,7 @@ class Butler:
                 q = [x for x in q if time.time() - x.get('at', 0) < 7200]
                 q.append({'phone': d, 'text': txt, 'at': time.time(), 'who': nm, 'voice': v, 'fp': fp, 'tag': tg})
                 json.dump(q, open(qp, 'w'), indent=1)
-                say(f'📝 queued autodraft: {v} -> {nm} (+{d})'); return
+                say(f'📝 queued autodraft: {v} -> {nm} (+{d}) - slides into the open window the moment you send'); return
             self._ad_fire(d, txt, v, nm, say, fp, tg)
             for _d2 in phs:  # MULTI-NUM v81.19: every number in the CV gets its own draft
                 if _d2 == d: continue
@@ -2169,6 +2169,7 @@ def _selftest(root):
     ck('S130 closed or sent marks the round done', (chr(35)+' DONE-MARK v81.26') in _src and (chr(35)+' KIND v81.26') in _src)
     ck('S131 queued drafts speak fresh wording', (chr(35)+' FRESH-TEXT v81.26') in _src and 'AD-WAIT v81.2' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
     ck('S132 fidgeting is a switch, not a fate', (chr(35)+' FIDGET v81.27') in _src and os.path.exists(os.path.join(BASE_DIR, 'fidget.flag')))
+    ck('S133 one window serves the whole queue', 'AD-WAIT v81.28' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read() and 'autodraft_queue.json' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
