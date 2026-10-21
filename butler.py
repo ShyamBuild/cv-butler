@@ -26,7 +26,7 @@ INTERACTIVE = sys.stdin.isatty() and sys.stdout.isatty()  # HEADLESS-FIX v81.9: 
 if not INTERACTIVE:
     import builtins as _bi
     def _headless_input(prompt=''):
-        _t.sleep(2)
+        time.sleep(2)
         return ''
     _bi.input = _headless_input  # HEADLESS-INPUT v81.11: no prompt may park or kill a headless loop
 
@@ -1174,7 +1174,7 @@ class Butler:
         if not hasattr(self, '_tagcrc'): self._tagcrc = {}
         if not hasattr(self, '_tagsets'): self._tagsets = {}
         self._added_tags = {}
-        now = _t.time()
+        now = time.time()
         gap = (now - getattr(self, '_last_poll_ts', 0)) > 300
         self._last_poll_ts = now
         changed = []
@@ -1266,7 +1266,7 @@ class Butler:
         return phs[0]
     def _ad_fire(self, d, txt, v, nm, say):  # AD-FIRE v81.5 (subprocess: playwright needs a main thread)
         import subprocess, sys
-        self._ad_pending = _t.time() + 75
+        self._ad_pending = time.time() + 75
         say(f'📝 autodraft: {v} -> +{d} ({nm})')
         try:
             tf = os.path.join(BASE_DIR, 'ad_draft.txt')
@@ -1301,20 +1301,20 @@ class Butler:
             try: lg = json.load(open(lp))
             except Exception: lg = {}
             k = f'{d}|{v}'
-            if _t.time() - lg.get(k, 0) < 86400: return
+            if time.time() - lg.get(k, 0) < 86400: return
             nm = _names_by_phone().get(d) or os.path.splitext(os.path.basename(fp))[0]
             try: txt = open(os.path.join(BASE_DIR, 'templates', f'voice_{v}.txt')).read()
             except Exception: say(f'⚠️ autodraft: missing template voice_{v}'); return
             txt = txt.replace('{name}', nm).replace('{position}', pos).replace('{client}', client).replace('{location}', loc)
-            lg[k] = _t.time(); json.dump(lg, open(lp, 'w'), indent=1)
+            lg[k] = time.time(); json.dump(lg, open(lp, 'w'), indent=1)
             if mode == 'dry':
                 say(f'📝 [dry] {v} -> +{d} ({nm}): {txt[:110]}…'); return
-            if getattr(self, '_ad_pending', 0) > _t.time():
+            if getattr(self, '_ad_pending', 0) > time.time():
                 qp = os.path.join(BASE_DIR, 'autodraft_queue.json')
                 try: q = json.load(open(qp))
                 except Exception: q = []
-                q = [x for x in q if _t.time() - x.get('at', 0) < 7200]
-                q.append({'phone': d, 'text': txt, 'at': _t.time(), 'who': nm, 'voice': v})
+                q = [x for x in q if time.time() - x.get('at', 0) < 7200]
+                q.append({'phone': d, 'text': txt, 'at': time.time(), 'who': nm, 'voice': v})
                 json.dump(q, open(qp, 'w'), indent=1)
                 say(f'📝 queued autodraft: {v} -> {nm} (+{d})'); return
             self._ad_fire(d, txt, v, nm, say)
@@ -1334,10 +1334,10 @@ class Butler:
             try: mode = open(os.path.join(BASE_DIR, 'autodraft.flag')).read().strip() or 'auto'
             except Exception: mode = 'auto'
             qp = os.path.join(BASE_DIR, 'autodraft_queue.json')
-            if getattr(self, '_ad_pending', 0) <= _t.time():
+            if getattr(self, '_ad_pending', 0) <= time.time():
                 try: q = json.load(open(qp))
                 except Exception: q = []
-                q = [x for x in q if _t.time() - x.get('at', 0) < 7200]
+                q = [x for x in q if time.time() - x.get('at', 0) < 7200]
                 if q:
                     it = q.pop(0); json.dump(q, open(qp, 'w'), indent=1)
                     self._ad_fire(it['phone'], it['text'], it['voice'], it['who'], say)
@@ -1345,8 +1345,8 @@ class Butler:
             try: vm = json.load(open(os.path.join(BASE_DIR, 'tag_voices.json')))
             except Exception: return
             if not hasattr(self, '_ad_lastlog'): self._ad_lastlog = 0
-            if added or q or _t.time() - self._ad_lastlog > 300:
-                self._ad_lastlog = _t.time()
+            if added or q or time.time() - self._ad_lastlog > 300:
+                self._ad_lastlog = time.time()
                 say(f'🩺 autodraft tick: enabled={self._ad_enabled()} mode={mode} adds={len(added)} queue={len(q)}')  # TICK-WITNESS v81.6
             for fp, tags in added.items():
                 for tg in tags:
@@ -1651,21 +1651,21 @@ def main():
         print('🩺 pulse thread armed', flush=True)
         while True:
             try:
-                if _t.time() - getattr(B, '_last_poll', 0) > 4:
-                    B._last_poll = _t.time()
+                if time.time() - getattr(B, '_last_poll', 0) > 4:
+                    B._last_poll = time.time()
                     for _cp in B._tag_poll(): ex.submit(work, _cp)
                     B._autodraft_tick()
-                if _t.time() - getattr(B, '_last_hb_t', 0) > 120:
-                    B._last_hb_t = _t.time()
+                if time.time() - getattr(B, '_last_hb_t', 0) > 120:
+                    B._last_hb_t = time.time()
                     try: B._heal(print)
                     except Exception: pass
-                if _t.time() - getattr(B, '_last_snap_t', 0) > 3600:
-                    B._last_snap_t = _t.time()
+                if time.time() - getattr(B, '_last_snap_t', 0) > 3600:
+                    B._last_snap_t = time.time()
                     try: B._snapshot(print)
                     except Exception: pass
             except Exception as e:
                 print(f'⚠️ pulse thread: {e}', flush=True)
-            _t.sleep(2)
+            time.sleep(2)
     import threading as _th
 
     dirty = set(); dlock = threading.Lock()
@@ -1840,7 +1840,7 @@ def main():
         while True:
             import time as _t
             B._n = getattr(B, '_n', 0) + 1
-            if B._n > 3 and (_t.time() - getattr(B, '_last_sweep', 0)) < 120:
+            if B._n > 3 and (time.time() - getattr(B, '_last_sweep', 0)) < 120:
                 with dlock:
                     _ip = list(dirty); dirty.clear()
                 for p in _ip: ex.submit(work, p)
@@ -1849,16 +1849,16 @@ def main():
                 if getattr(B, '_jdirty', False):
                     B._jsave(); B._jdirty = False
                 try:  # LOOP-ARMOUR v76
-                    if _t.time() - getattr(B, '_last_poll', 0) > 4:  # TAG-POLL v64
-                        B._last_poll = _t.time()
+                    if time.time() - getattr(B, '_last_poll', 0) > 4:  # TAG-POLL v64
+                        B._last_poll = time.time()
                         for _cp in B._tag_poll(): ex.submit(work, _cp)
                         B._autodraft_tick()
                         B._heal((lambda m: None) if INTERACTIVE else print)
-                    open(os.path.join(BASE_DIR, 'butler_alive.stamp'), 'w').write(str(_t.time()))
+                    open(os.path.join(BASE_DIR, 'butler_alive.stamp'), 'w').write(str(time.time()))
                 except Exception as _e:
                     print(f'⚠️ pulse skipped: {_e}', flush=True)
-                _t.sleep(2); continue   # idle: events drained every tick
-            B._last_sweep = _t.time()
+                time.sleep(2); continue   # idle: events drained every tick
+            B._last_sweep = time.time()
             if B._n == 4:
                 print('😴 idle mode: event-driven now · safety sweep every 10 min')
             time.sleep(1)
@@ -1867,8 +1867,8 @@ def main():
             for p in paths: ex.submit(work, p)
             try: B._drain_pending(print)  # DRAIN-PENDING v62
             except Exception: pass
-            if _t.time() - getattr(B, '_last_poll', 0) > 4:  # TAG-POLL v64
-                B._last_poll = _t.time()
+            if time.time() - getattr(B, '_last_poll', 0) > 4:  # TAG-POLL v64
+                B._last_poll = time.time()
                 for _cp in B._tag_poll(): ex.submit(work, _cp)
                 B._autodraft_tick()
                 B._heal((lambda m: None) if INTERACTIVE else print)
@@ -2101,7 +2101,7 @@ def _selftest(root):
     ck('S108 drafts go through the signed wa door', 'wa.send_review(' in _src and 'import wa' in _src)
     ck('S109 autodraft silence explains itself', (chr(35)+' AD-VISIBILITY') in _src and 'no position folder' in _src)
     ck('S110 autodraft log reachable from chat', 'def do_adlog(' in _br and "cmd == 'adlog'" in _br and (chr(35)+' ADLOG') in _br)
-    ck('S111 pulse clock uses the file own alias', _src.split('def _tag_poll')[1].split('return changed')[0].count('time.time()') == 0 and _src.split('def _ad_enabled')[1].split('def _heal')[0].count('time.time()') == 0)
+    ck('S111 pulse clock uses the module global clock', ('_t' + '.time()') not in _src and 'import time' in _src)
     ck('S112 drafts fire in their own process', (chr(35)+' AD-FIRE v81.5') in _src and 'threading.Thread' not in _src.split('def _ad_fire')[1].split('def _draft_one')[0])
     ck('S113 every tag-add is witnessed', (chr(35)+' TAGADD-LOG') in _src)
     ck('S114 the pulse has a voice', (chr(35)+' PULSE-WITNESS') in _src and (chr(35)+' TICK-WITNESS') in _src)
@@ -2112,6 +2112,7 @@ def _selftest(root):
     ck('S119 the REPL door keys on INTERACTIVE', (chr(35)+' REPL-GATE v81.12') in _src and ('if sys.stdin' + '.isatty():') not in _src)
     ck('S121 the pulse thread owns its clock', (chr(35)+' PULSE-CLOCK') in _src and 'pulse thread armed' in _src)
     ck('S122 exactly one late pulse start', _src.count('Thread(target=' + '_pulse_loop') == 1 and (chr(35)+' PULSE-START-LATE') in _src)
+    ck('S123 no ghost clock alias', ('_t' + '.time()') not in _src and ('_t' + '.sleep(') not in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
