@@ -1582,7 +1582,7 @@ def main():
     if len(sys.argv) > 1:
         root = os.path.normpath(os.path.expanduser(sys.argv[1]))
     else:
-        if sys.stdin.isatty():
+        if INTERACTIVE:  # REPL-GATE v81.12: only a real terminal gets the REPL; a log-file stdout walks to the watcher
             print("\nDRAG & DROP your working folder, then press Return:")
             root = input("> ")
         else:
@@ -2086,6 +2086,7 @@ def _selftest(root):
     ck('S116 the log speaks instantly', (chr(35)+' LOG-FLUSH') in _src and 'line_buffering' in _src)
     ck('S117 headless butler loops instead of listening', (chr(35)+' HEADLESS-FIX') in _src and 'sys.stdout.isatty()' in _src)
     ck('S118 the REPL cannot park or kill the loop', (chr(35)+' HEADLESS-INPUT') in _src and 'builtins' in _src)
+    ck('S119 the REPL door keys on INTERACTIVE', (chr(35)+' REPL-GATE v81.12') in _src and ('if sys.stdin' + '.isatty():') not in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
