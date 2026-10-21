@@ -1171,6 +1171,7 @@ class Butler:
     def _tag_poll(self):
         import zlib as _z
         if not hasattr(self, '_tagcrc'): self._tagcrc = {}
+        if not hasattr(self, '_tagct'): self._tagct = {}
         if not hasattr(self, '_tagsets'): self._tagsets = {}
         self._added_tags = {}
         now = time.time()
@@ -1182,13 +1183,16 @@ class Butler:
             for f in fn:
                 if not f.lower().endswith(('.pdf', '.doc', '.docx', '.msg', '.eml', '.xlsx')): continue
                 fp = os.path.join(dp, f)
-                try: tg = _xattr_raw(fp, 'com.apple.metadata:_kMDItemUserTags')
-                except Exception: tg = b''
+                try: st = os.stat(fp).st_ctime  # CTIME-EYE v81.20: tag writes bump ctime even when the set returns to baseline
+                except OSError: st = 0
+                tg = _xattr_raw(fp)
                 c = _z.crc32(tg)
-                old = self._tagcrc.get(fp)
-                self._tagcrc[fp] = c
+                oldc = self._tagcrc.get(fp); oldt = self._tagct.get(fp)
+                self._tagcrc[fp] = c; self._tagct[fp] = st
                 prev = self._tagsets.get(fp)
-                if old is not None and old != c:
+                if oldc is None and oldt is None:
+                    self._tagsets[fp] = [t for t in (_tags_of_fast(fp) or [])]
+                elif oldc != c or oldt != st:
                     changed.append(fp)
                     cur = [t for t in (_tags_of_fast(fp) or [])]
                     if prev is not None and not gap:
@@ -1196,8 +1200,6 @@ class Butler:
                         if not add and cur: add = list(cur)  # RETOUCH v81.19: a re-applied tag is an event, even inside one poll window
                         if add: self._added_tags[fp] = add
                     self._tagsets[fp] = cur
-                elif prev is None:
-                    self._tagsets[fp] = [t for t in (_tags_of_fast(fp) or [])]
         if len(self._tagcrc) > 20000: self._tagcrc = {}
         if changed: print(f'🩺 poll changed={len(changed)} added={len(getattr(self, chr(95)+chr(97)+chr(100)+chr(100)+chr(101)+chr(100)+chr(95)+chr(116)+chr(97)+chr(103)+chr(115), {}))}', flush=True)  # PULSE-WITNESS v81.6
         return changed
@@ -2122,6 +2124,7 @@ def _selftest(root):
     ck('S123 no ghost clock alias', ('_t' + '.time()') not in _src and ('_t' + '.sleep(') not in _src)
     ck('S124 phones read from the path, not from prose', 'phones_of(fp)' in _src and ('phones_of(fitrank' + '._text') not in _src and ('phones_of(_fr' + '._text') not in _src)
     ck('S125 re-apply and multi-number draft', (chr(35)+' RETOUCH') in _src and (chr(35)+' MULTI-NUM') in _src)
+    ck('S126 the poll sees trace-less tag edits', (chr(35)+' CTIME-EYE') in _src and 'st_ctime' in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
