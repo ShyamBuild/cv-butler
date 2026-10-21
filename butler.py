@@ -1172,6 +1172,7 @@ class Butler:
         import zlib as _z
         if not hasattr(self, '_tagcrc'): self._tagcrc = {}
         if not hasattr(self, '_tagct'): self._tagct = {}
+        if not hasattr(self, '_tag_kind'): self._tag_kind = {}
         if not hasattr(self, '_tagsets'): self._tagsets = {}
         self._added_tags = {}
         now = time.time()
@@ -1194,6 +1195,7 @@ class Butler:
                     self._tagsets[fp] = [t for t in (_tags_of_fast(fp) or [])]
                 elif oldc != c or oldt != st:
                     changed.append(fp)
+                    self._tag_kind[fp] = 'set' if oldc != c else 'ctime'  # KIND v81.26
                     cur = [t for t in (_tags_of_fast(fp) or [])]
                     if prev is not None and not gap:
                         add = [t for t in cur if t not in prev]
@@ -1266,13 +1268,17 @@ class Butler:
         for d in phs:
             if d in conv: return d
         return phs[0]
+    def _ad_fidget(self):  # FIDGET v81.27: testing switch - filesystem fidgeting re-drafts on demand
+        try: return open(os.path.join(BASE_DIR, 'fidget.flag')).read().strip() == 'on'
+        except Exception: return False
+
     def _ad_busy(self):  # SEND-AWARE v81.24: the queue advances on your actual send
         try: st = json.load(open(os.path.join(BASE_DIR, 'ad_state.json')))
         except Exception: return getattr(self, '_ad_pending', 0) > time.time()
         if st.get('state') == 'waiting': return time.time() - st.get('ts', 0) < 1900
         return False
 
-    def _ad_fire(self, d, txt, v, nm, say):  # AD-FIRE v81.5 (subprocess: playwright needs a main thread)
+    def _ad_fire(self, d, txt, v, nm, say, fp='', tg=''):  # AD-FIRE v81.5 (subprocess: playwright needs a main thread)
         import subprocess, sys
         self._ad_pending = time.time() + 75
         say(f'📝 autodraft: {v} -> +{d} ({nm})')
@@ -1280,11 +1286,25 @@ class Butler:
             tf = os.path.join(BASE_DIR, 'ad_draft.txt')
             open(tf, 'w').write(txt)
             lf = open(os.path.join(BASE_DIR, 'ad_fire.log'), 'a')
+            try: json.dump({'fp': fp, 'tag': tg, 'phone': d, 'voice': v}, open(os.path.join(BASE_DIR, 'ad_meta.json'), 'w'))
+            except Exception: pass
             subprocess.Popen([sys.executable, os.path.join(BASE_DIR, 'ad_wait.py'), d, tf], cwd=BASE_DIR, stdout=lf, stderr=subprocess.STDOUT)  # WA-WAIT v81.24: the window lives until your send empties the field
         except Exception as e:
             say(f'⚠️ autodraft fire failed: {e}')
 
-    def _draft_one(self, fp, tg, v, mode, say):
+    def _ad_text(self, fp, v, nm):  # FRESH-TEXT v81.26: queued drafts rebuild wording at fire time
+        try:
+            rel = os.path.relpath(os.path.dirname(fp), self.root).split(os.sep) if fp else []
+            if len(rel) < 2: return None
+            client, posraw = rel[0], rel[1]
+            pos = posraw.split('||')[0].strip().replace('_', ' ')
+            loc = posraw.split('||')[1].strip() if '||' in posraw else ''
+            t = open(os.path.join(BASE_DIR, 'templates', f'voice_{v}.txt')).read()
+            return t.replace('{name}', nm).replace('{position}', pos).replace('{client}', client).replace('{location}', loc)
+        except Exception:
+            return None
+
+    def _draft_one(self, fp, tg, v, mode, say, kind='set'):
         try:
             if not os.path.exists(fp):
                 hit = None
@@ -1309,6 +1329,7 @@ class Butler:
             except Exception: lg = {}
             k = f'{fp}|{tg}'  # 60s debounce per file+tag, replaces 24h cooldown
             if time.time() - lg.get(k, 0) < 60: return
+            if kind == 'ctime' and not self._ad_fidget() and time.time() - lg.get(f'{fp}|{tg}', 0) < 21600: say(f'⏭️ autodraft: {os.path.basename(fp)} +{tg} already handled this round (sent or closed) - remove+add the tag to re-draft'); return  # DONE-MARK v81.26
             nm = _names_by_phone().get(d) or os.path.splitext(os.path.basename(fp))[0]
             try: txt = open(os.path.join(BASE_DIR, 'templates', f'voice_{v}.txt')).read()
             except Exception: say(f'⚠️ autodraft: missing template voice_{v}'); return
@@ -1321,16 +1342,16 @@ class Butler:
                 try: q = json.load(open(qp))
                 except Exception: q = []
                 q = [x for x in q if time.time() - x.get('at', 0) < 7200]
-                q.append({'phone': d, 'text': txt, 'at': time.time(), 'who': nm, 'voice': v})
+                q.append({'phone': d, 'text': txt, 'at': time.time(), 'who': nm, 'voice': v, 'fp': fp, 'tag': tg})
                 json.dump(q, open(qp, 'w'), indent=1)
                 say(f'📝 queued autodraft: {v} -> {nm} (+{d})'); return
-            self._ad_fire(d, txt, v, nm, say)
+            self._ad_fire(d, txt, v, nm, say, fp, tg)
             for _d2 in phs:  # MULTI-NUM v81.19: every number in the CV gets its own draft
                 if _d2 == d: continue
                 try: q2 = json.load(open(os.path.join(BASE_DIR, 'autodraft_queue.json')))
                 except Exception: q2 = []
                 q2 = [x for x in q2 if time.time() - x.get('at', 0) < 7200]
-                q2.append({'phone': _d2, 'text': txt, 'at': time.time(), 'who': nm, 'voice': v})
+                q2.append({'phone': _d2, 'text': txt, 'at': time.time(), 'who': nm, 'voice': v, 'fp': fp, 'tag': tg})
                 json.dump(q2, open(os.path.join(BASE_DIR, 'autodraft_queue.json'), 'w'), indent=1)
                 say(f'📝 queued autodraft (extra number +{_d2}): {nm}')
         except Exception as e:
@@ -1348,6 +1369,17 @@ class Butler:
             mode = 'auto'
             try: mode = open(os.path.join(BASE_DIR, 'autodraft.flag')).read().strip() or 'auto'
             except Exception: mode = 'auto'
+            try: stt = json.load(open(os.path.join(BASE_DIR, 'ad_state.json')))
+            except Exception: stt = {}
+            if stt.get('state') in ('sent', 'retired') and stt.get('meta') and getattr(self, '_ad_done_seen', 0) != stt.get('ts'):
+                self._ad_done_seen = stt.get('ts')
+                m = stt['meta']
+                lp2 = os.path.join(BASE_DIR, 'autodraft_log.json')
+                try: lg2 = json.load(open(lp2))
+                except Exception: lg2 = {}
+                lg2[str(m.get('fp')) + '|' + str(m.get('tag'))] = time.time()
+                json.dump(lg2, open(lp2, 'w'), indent=1)
+                say('📬 draft round closed (' + str(stt.get('state')) + ') for ' + str(m.get('tag')) + ' - noted done this round')  # DONE-MARK v81.26
             qp = os.path.join(BASE_DIR, 'autodraft_queue.json')
             if not self._ad_busy():
                 try: q = json.load(open(qp))
@@ -1355,7 +1387,7 @@ class Butler:
                 q = [x for x in q if time.time() - x.get('at', 0) < 7200]
                 if q:
                     it = q.pop(0); json.dump(q, open(qp, 'w'), indent=1)
-                    self._ad_fire(it['phone'], it['text'], it['voice'], it['who'], say)
+                    self._ad_fire(it['phone'], self._ad_text(it.get('fp',''), it['voice'], it['who']) or it.get('text',''), it['voice'], it['who'], say, it.get('fp',''), it.get('tag',''))  # FRESH-TEXT v81.26
             added, self._added_tags = getattr(self, '_added_tags', {}), {}
             try: vm = json.load(open(os.path.join(BASE_DIR, 'tag_voices.json')))
             except Exception: return
@@ -1367,7 +1399,7 @@ class Butler:
                 for tg in tags:
                     v = vm.get(tg) or vm.get(tg.replace(chr(8211), '-'))
                     say(f'🏷️ tag-add: {os.path.basename(fp)} +{tg}')  # TAGADD-LOG v81.5
-                    if v: self._draft_one(fp, tg, v, mode, say)
+                    if v: self._draft_one(fp, tg, v, mode, say, getattr(self, '_tag_kind', {}).get(fp, 'set'))
         except Exception as e:
             say(f'⚠️ autodraft tick: {e}')
 
@@ -2133,7 +2165,10 @@ def _selftest(root):
     ck('S126 the poll sees trace-less tag edits', (chr(35)+' CTIME-EYE') in _src and 'st_ctime' in _src)
     ck('S127 the window waits for your thumb', (chr(35)+' WA-WAIT v81.24') in _src and os.path.exists(os.path.join(BASE_DIR, 'ad_wait.py')))
     ck('S128 the queue advances on your send', (chr(35)+' SEND-AWARE') in _src and 'ad_state.json' in _src)
-    ck('S129 ad_wait knows load-silence from closed windows', 'AD-WAIT v81.25' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
+    ck('S129 ad_wait knows load-silence from closed windows', 'AD-WAIT v81.2' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read() and 'seen_alive' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
+    ck('S130 closed or sent marks the round done', (chr(35)+' DONE-MARK v81.26') in _src and (chr(35)+' KIND v81.26') in _src)
+    ck('S131 queued drafts speak fresh wording', (chr(35)+' FRESH-TEXT v81.26') in _src and 'AD-WAIT v81.2' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
+    ck('S132 fidgeting is a switch, not a fate', (chr(35)+' FIDGET v81.27') in _src and os.path.exists(os.path.join(BASE_DIR, 'fidget.flag')))
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
