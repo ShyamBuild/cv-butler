@@ -1646,6 +1646,27 @@ def main():
     briefing.print_briefing(root)
 
     ex = ThreadPoolExecutor(max_workers=4)
+    def _pulse_loop():  # PULSE-THREAD v81.13: the pulse lives in no branch's custody
+        while True:
+            try:
+                if _t.time() - getattr(B, '_last_poll', 0) > 4:
+                    B._last_poll = _t.time()
+                    for _cp in B._tag_poll(): ex.submit(work, _cp)
+                    B._autodraft_tick()
+                if _t.time() - getattr(B, '_last_hb_t', 0) > 120:
+                    B._last_hb_t = _t.time()
+                    try: B._heal(print)
+                    except Exception: pass
+                if _t.time() - getattr(B, '_last_snap_t', 0) > 3600:
+                    B._last_snap_t = _t.time()
+                    try: B._snapshot(print)
+                    except Exception: pass
+            except Exception as e:
+                print(f'⚠️ pulse thread: {e}', flush=True)
+            _t.sleep(2)
+    import threading as _th
+    _th.Thread(target=_pulse_loop, daemon=True).start()
+
     dirty = set(); dlock = threading.Lock()
     class H(FileSystemEventHandler):
         def _add(self, p):
@@ -2087,6 +2108,7 @@ def _selftest(root):
     ck('S117 headless butler loops instead of listening', (chr(35)+' HEADLESS-FIX') in _src and 'sys.stdout.isatty()' in _src)
     ck('S118 the REPL cannot park or kill the loop', (chr(35)+' HEADLESS-INPUT') in _src and 'builtins' in _src)
     ck('S119 the REPL door keys on INTERACTIVE', (chr(35)+' REPL-GATE v81.12') in _src and ('if sys.stdin' + '.isatty():') not in _src)
+    ck('S120 the pulse owns its own thread', (chr(35)+' PULSE-THREAD') in _src and 'Thread(target=_pulse_loop' in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
