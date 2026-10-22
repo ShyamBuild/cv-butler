@@ -1405,6 +1405,7 @@ class Butler:
                 json.dump(lg2, open(lp2, 'w'), indent=1)
                 say('📬 draft round closed (' + str(stt.get('state')) + ') for ' + str(m.get('tag')) + ' - noted done this round')  # DONE-MARK v81.26
             qp = os.path.join(BASE_DIR, 'autodraft_queue.json')
+            q = []  # Q-INIT v81.40: the witness may read the queue even when the release gate skips
             if not self._ad_busy() and self._ad_claim():
                 try: q = json.load(open(qp))
                 except Exception: q = []
@@ -2216,6 +2217,8 @@ def _selftest(root):
     ck('S141 the window opens in seconds, not a minute', os.path.exists(os.path.join(BASE_DIR, 'wa_warm.py')) and 'connect_over_cdp' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
     ck('S142 stale field text is cleared before placement', 'CLEAR-BEFORE-PLACE v81.37' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
     ck('S143 only ownerless browsers are swept', (chr(35)+' OWNER-AWARE v81.38') in _src and 'wa_warm.py' in _src)
+    ck('S144 the tick never dies on an uninitialised queue', (chr(35)+' Q-INIT v81.40') in _src)
+    ck('S145 one owned warm browser, self-healing', (chr(35)+' WARM-RETRY v81.40') in open(os.path.join(BASE_DIR, 'ad_wait.py')).read() and 'is_connected' in open(os.path.join(BASE_DIR, 'wa_warm.py')).read())
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
