@@ -1790,11 +1790,15 @@ def main():
         except OSError: pass
     B._save_idx()
     try:
-        os.system("pkill -f 'ad_wait.py' 2>/dev/null; pkill -f 'Google Chrome for Testing' 2>/dev/null")  # STALE-WINDOW-SWEEP v81.32: no ownerless windows survive a relaunch
+        os.system("pkill -f 'ad_wait.py' 2>/dev/null")  # STALE-WINDOW-SWEEP v81.32: watchers retire; the warm browser lives on
         try:
             json.dump({'state': 'retired', 'ts': time.time()}, open(os.path.join(BASE_DIR, 'ad_state.json'), 'w'))  # SWEEP-RESET v81.34
         except Exception:
             pass
+            try:
+                subprocess.Popen([sys.executable, os.path.join(BASE_DIR, 'wa_warm.py'), 'ensure'], cwd=BASE_DIR, stdout=open(os.path.join(BASE_DIR, 'wa_warm.log'), 'a'), stderr=subprocess.STDOUT, start_new_session=True)  # WA-WARM v81.37
+            except Exception:
+                pass
     except Exception:
         pass
     _BOOT_T = time.time()
@@ -2209,6 +2213,8 @@ def _selftest(root):
     ck('S138 a dead watcher never blocks the queue', (chr(35)+' PID-ALIVE v81.34') in _src and (chr(35)+' SWEEP-RESET v81.34') in _src and 'os.getpid()' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
     ck('S139 one fire per tick, no profile races', (chr(35)+' HELD v81.35') in _src and ('self._ad_held = time.time() ' + '+ 90') in _src)
     ck('S140 one release per state change', (chr(35)+' SINGLE-FLIGHT v81.35') in _src and ('def _ad_' + 'claim') in _src)
+    ck('S141 the window opens in seconds, not a minute', os.path.exists(os.path.join(BASE_DIR, 'wa_warm.py')) and 'connect_over_cdp' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
+    ck('S142 stale field text is cleared before placement', 'CLEAR-BEFORE-PLACE v81.37' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
