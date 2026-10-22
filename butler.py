@@ -1790,7 +1790,7 @@ def main():
         except OSError: pass
     B._save_idx()
     try:
-        os.system("pkill -f 'ad_wait.py' 2>/dev/null")  # STALE-WINDOW-SWEEP v81.32: watchers retire; the warm browser lives on
+        os.system("pkill -f 'ad_wait.py' 2>/dev/null; pgrep -f 'wa_warm.py' >/dev/null 2>&1 || pkill -f 'Google Chrome for Testing' 2>/dev/null")  # STALE-WINDOW-SWEEP v81.32: zombies die, owned warm browser lives # OWNER-AWARE v81.38
         try:
             json.dump({'state': 'retired', 'ts': time.time()}, open(os.path.join(BASE_DIR, 'ad_state.json'), 'w'))  # SWEEP-RESET v81.34
         except Exception:
@@ -2215,6 +2215,7 @@ def _selftest(root):
     ck('S140 one release per state change', (chr(35)+' SINGLE-FLIGHT v81.35') in _src and ('def _ad_' + 'claim') in _src)
     ck('S141 the window opens in seconds, not a minute', os.path.exists(os.path.join(BASE_DIR, 'wa_warm.py')) and 'connect_over_cdp' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
     ck('S142 stale field text is cleared before placement', 'CLEAR-BEFORE-PLACE v81.37' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
+    ck('S143 only ownerless browsers are swept', (chr(35)+' OWNER-AWARE v81.38') in _src and 'wa_warm.py' in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
