@@ -1285,10 +1285,20 @@ class Butler:
         try: return open(os.path.join(BASE_DIR, 'fidget.flag')).read().strip() == 'on'
         except Exception: return False
 
+    def _ad_claim(self):  # SINGLE-FLIGHT v81.35: one release per state change; two tick callers, one queue
+        now = time.time()
+        if now - getattr(self, '_ad_last_release', 0) < 8: return False
+        self._ad_last_release = now
+        return True
+
     def _ad_busy(self):  # SEND-AWARE v81.24: the queue advances on your actual send
         try: st = json.load(open(os.path.join(BASE_DIR, 'ad_state.json')))
         except Exception: return getattr(self, '_ad_pending', 0) > time.time()
-        if st.get('state') == 'waiting': return time.time() - st.get('ts', 0) < 1900
+        if getattr(self, '_ad_held', 0) > time.time(): return True  # HELD v81.35: one fire per tick, decided synchronously
+        if st.get('state') == 'waiting':  # PID-ALIVE v81.34: a killed watcher is not a busy window
+            try: os.kill(int(st.get('pid', 0)), 0)
+            except Exception: return False
+            return time.time() - st.get('ts', 0) < 1900
         return False
 
     def _ad_fire(self, d, txt, v, nm, say, fp='', tg=''):  # AD-FIRE v81.5 (subprocess: playwright needs a main thread)
@@ -1301,6 +1311,7 @@ class Butler:
             lf = open(os.path.join(BASE_DIR, 'ad_fire.log'), 'a')
             try: json.dump({'fp': fp, 'tag': tg, 'phone': d, 'voice': v}, open(os.path.join(BASE_DIR, 'ad_meta.json'), 'w'))
             except Exception: pass
+            self._ad_held = time.time() + 90  # HELD v81.35: mark the window held before the child can speak
             subprocess.Popen([sys.executable, os.path.join(BASE_DIR, 'ad_wait.py'), d, tf], cwd=BASE_DIR, stdout=lf, stderr=subprocess.STDOUT)  # WA-WAIT v81.24: the window lives until your send empties the field
         except Exception as e:
             say(f'⚠️ autodraft fire failed: {e}')
@@ -1394,7 +1405,7 @@ class Butler:
                 json.dump(lg2, open(lp2, 'w'), indent=1)
                 say('📬 draft round closed (' + str(stt.get('state')) + ') for ' + str(m.get('tag')) + ' - noted done this round')  # DONE-MARK v81.26
             qp = os.path.join(BASE_DIR, 'autodraft_queue.json')
-            if not self._ad_busy():
+            if not self._ad_busy() and self._ad_claim():
                 try: q = json.load(open(qp))
                 except Exception: q = []
                 q = [x for x in q if time.time() - x.get('at', 0) < 7200]
@@ -1780,6 +1791,10 @@ def main():
     B._save_idx()
     try:
         os.system("pkill -f 'ad_wait.py' 2>/dev/null; pkill -f 'Google Chrome for Testing' 2>/dev/null")  # STALE-WINDOW-SWEEP v81.32: no ownerless windows survive a relaunch
+        try:
+            json.dump({'state': 'retired', 'ts': time.time()}, open(os.path.join(BASE_DIR, 'ad_state.json'), 'w'))  # SWEEP-RESET v81.34
+        except Exception:
+            pass
     except Exception:
         pass
     _BOOT_T = time.time()
@@ -2191,6 +2206,9 @@ def _selftest(root):
     ck('S134 the poll remembers across restarts', (chr(35)+' BASELINE-PERSIST') in _src and 'tag_baseline.json' in _src)
     ck('S136 the window slides on arrival and release speaks', 'AD-WAIT v81.3' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read() and (chr(35)+' RELEASE-VOICE v81.32') in _src)
     ck('S137 no ownerless windows survive a relaunch', (chr(35)+' STALE-WINDOW-SWEEP') in _src and (chr(35)+' TAB-CLEAN') in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
+    ck('S138 a dead watcher never blocks the queue', (chr(35)+' PID-ALIVE v81.34') in _src and (chr(35)+' SWEEP-RESET v81.34') in _src and 'os.getpid()' in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
+    ck('S139 one fire per tick, no profile races', (chr(35)+' HELD v81.35') in _src and ('self._ad_held = time.time() ' + '+ 90') in _src)
+    ck('S140 one release per state change', (chr(35)+' SINGLE-FLIGHT v81.35') in _src and ('def _ad_' + 'claim') in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
