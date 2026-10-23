@@ -2249,6 +2249,7 @@ def _selftest(root):
     ck('S149 no doubled drafts', (chr(35)+' DEDUPE v81.44') in _src and (chr(35)+' CLEAR-IN-SLIDE v81.44') in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
     ck('S150 the keeper may die but may not flicker', (chr(35)+' BREAKER v81.45') in open(os.path.join(BASE_DIR, 'wa_warm.py')).read() and (chr(35)+' WARM-SUPERVISOR v81.45') in _src)
     ck('S151 stale jobs expire and the field dedupes', (chr(35)+' STALE-JOB-PRUNE v81.45') in _src and (chr(35)+' DEDUPE-FIELD v81.45') in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
+    ck('S152 the keeper probes closure instead of assuming an API', 'browser.is_connected' not in open(os.path.join(BASE_DIR, 'wa_warm.py')).read() and (chr(35)+' CLOSE-WATCH v81.46') in open(os.path.join(BASE_DIR, 'wa_warm.py')).read())
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
