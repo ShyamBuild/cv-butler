@@ -1308,8 +1308,8 @@ class Butler:
                 try:
                     os.rename(srcp, dst); n += 1
                     say(f'✏️ [rename-clean] {f} -> {clean + ext}')
-                except Exception:
-                    pass
+                except Exception as _rce2:
+                    say(f'⚠️[rename-clean] could not rename {f}: {_rce2}')  # RENAME-LOUD v81.51: a failed heal is a wound, not a silence
         return n
 
     def _ad_busy(self):  # SEND-AWARE v81.24: the queue advances on your actual send
@@ -2278,6 +2278,7 @@ def _selftest(root):
     ck('S160 chat rides the warm door, never fights it', 'WARM-CLIENT v81.47' in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S161 connected clients close only their page', 'via_cdp and page is not None: page.close()' in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S162 scars born in a scan are cleaned in the same scan', (chr(35)+' DASH-CLEAN-PASS2 v81.50') in _src and (chr(35)+' DASH-2 v81.50') in _src)
+    ck('S163 a failed rename speaks its reason', (chr(35)+' RENAME-LOUD v81.51') in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
