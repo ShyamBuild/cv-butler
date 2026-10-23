@@ -99,8 +99,16 @@ def send_review(phone, text, say=print, ask=None):
     pw = sync_playwright().start()
     browser = None
     page = None
+    via_cdp = False
     try:
-        browser = pw.chromium.launch_persistent_context(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa_profile'), headless=False, no_viewport=True)
+        try:
+            browser = pw.chromium.connect_over_cdp('http://127.0.0.1:9222')  # WARM-CLIENT v81.47: chat rides the owned warm browser; the profile is never fought over again
+            ctx = browser.contexts[0] if browser.contexts else browser.new_context()
+            page = ctx.new_page()
+            via_cdp = True
+        except Exception:
+            browser = pw.chromium.launch_persistent_context(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa_profile'), headless=False, no_viewport=True)
+            page = browser.pages[0] if browser.pages else browser.new_page()
         page = browser.pages[0] if browser.pages else browser.new_page()
         if not _goto(page, f"https://web.whatsapp.com/send?phone={digits}", say):
             say('⚠️ chat page did not load - scan QR in the opened window if asked, then retry')
@@ -145,7 +153,8 @@ def send_review(phone, text, say=print, ask=None):
         return False
     finally:
         try:
-            if browser is not None: browser.close()
+            if via_cdp and page is not None: page.close()
+            elif browser is not None: browser.close()
         except Exception:
             pass
         try:

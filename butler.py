@@ -2273,6 +2273,8 @@ def _selftest(root):
     ck('S151 stale jobs expire and the field dedupes', (chr(35)+' STALE-JOB-PRUNE v81.45') in _src and (chr(35)+' DEDUPE-FIELD v81.45') in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
     ck('S152 the keeper probes closure instead of assuming an API', 'browser.is_connected' not in open(os.path.join(BASE_DIR, 'wa_warm.py')).read() and (chr(35)+' CLOSE-WATCH v81.46') in open(os.path.join(BASE_DIR, 'wa_warm.py')).read())
     ck('S153 download scars are stripped from names', (chr(35)+' DASH-CLEAN v81.48') in _src and 'rename-clean' in _src)
+    ck('S160 chat rides the warm door, never fights it', 'WARM-CLIENT v81.47' in open(os.path.join(BASE_DIR, 'wa.py')).read())
+    ck('S161 connected clients close only their page', 'via_cdp and page is not None: page.close()' in open(os.path.join(BASE_DIR, 'wa.py')).read())
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
