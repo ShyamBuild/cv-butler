@@ -1291,6 +1291,27 @@ class Butler:
         self._ad_last_release = now
         return True
 
+    def _rename_clean(self, say=print):  # DASH-CLEAN v81.48: download scars are not part of a person's name
+        n = 0
+        for dp, dn, fn in os.walk(self.root):
+            dn[:] = [x for x in dn if not x.startswith('.')]
+            for f in fn:
+                if not f.lower().endswith(('.pdf', '.doc', '.docx')): continue
+                stem, ext = os.path.splitext(f)
+                if '---' not in stem: continue
+                clean = re.sub(r'\s*-{3,}\s*', ' ', stem).strip()
+                clean = re.sub(r'\s{2,}', ' ', clean)
+                if clean.replace('.', '').replace(' ', '').isupper(): clean = clean.title()
+                if not clean or clean == stem: continue
+                srcp = os.path.join(dp, f); dst = os.path.join(dp, clean + ext)
+                if os.path.exists(dst): continue
+                try:
+                    os.rename(srcp, dst); n += 1
+                    say(f'✏️ [rename-clean] {f} -> {clean + ext}')
+                except Exception:
+                    pass
+        return n
+
     def _ad_busy(self):  # SEND-AWARE v81.24: the queue advances on your actual send
         try: st = json.load(open(os.path.join(BASE_DIR, 'ad_state.json')))
         except Exception: return getattr(self, '_ad_pending', 0) > time.time()
@@ -1836,6 +1857,7 @@ def main():
     except KeyboardInterrupt:
         print("\n⛔ Stopped early — progress kept.")
         obs.stop(); sys.exit(0)
+    self._rename_clean()
     print(f"\n✅ Scan complete · ⚙️ {B.stats['converted']} converted · ✏️ {B.stats['renamed']} renamed · 📦 {B.stats['moved']} moved")
     print(f"⏱ boot scan {time.time()-_BOOT_T:.1f}s · journal-skipped most of it")
     try:
@@ -2250,6 +2272,7 @@ def _selftest(root):
     ck('S150 the keeper may die but may not flicker', (chr(35)+' BREAKER v81.45') in open(os.path.join(BASE_DIR, 'wa_warm.py')).read() and (chr(35)+' WARM-SUPERVISOR v81.45') in _src)
     ck('S151 stale jobs expire and the field dedupes', (chr(35)+' STALE-JOB-PRUNE v81.45') in _src and (chr(35)+' DEDUPE-FIELD v81.45') in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
     ck('S152 the keeper probes closure instead of assuming an API', 'browser.is_connected' not in open(os.path.join(BASE_DIR, 'wa_warm.py')).read() and (chr(35)+' CLOSE-WATCH v81.46') in open(os.path.join(BASE_DIR, 'wa_warm.py')).read())
+    ck('S153 download scars are stripped from names', (chr(35)+' DASH-CLEAN v81.48') in _src and 'rename-clean' in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
