@@ -1298,13 +1298,13 @@ class Butler:
             for f in fn:
                 if not f.lower().endswith(('.pdf', '.doc', '.docx')): continue
                 stem, ext = os.path.splitext(f)
-                if '---' not in stem: continue
-                clean = re.sub(r'\s*-{3,}\s*', ' ', stem).strip()
+                if '--' not in stem: continue  # DASH-2 v81.50: two-dash scars are scars too
+                clean = re.sub(r'\s*-{2,}\s*', ' ', stem).strip()
                 clean = re.sub(r'\s{2,}', ' ', clean)
                 if clean.replace('.', '').replace(' ', '').isupper(): clean = clean.title()
                 if not clean or clean == stem: continue
                 srcp = os.path.join(dp, f); dst = os.path.join(dp, clean + ext)
-                if os.path.exists(dst): continue
+                if os.path.exists(dst): say(f'⏭️[rename-clean] {f} keeps its scars - a clean {clean + ext} already exists'); continue
                 try:
                     os.rename(srcp, dst); n += 1
                     say(f'✏️ [rename-clean] {f} -> {clean + ext}')
@@ -1859,6 +1859,8 @@ def main():
         obs.stop(); sys.exit(0)
     self._rename_clean()
     print(f"\n✅ Scan complete · ⚙️ {B.stats['converted']} converted · ✏️ {B.stats['renamed']} renamed · 📦 {B.stats['moved']} moved")
+    try: B._rename_clean()  # DASH-CLEAN-PASS2 v81.50: pdfs born from scarred sources during this scan are cleaned in this boot
+    except Exception as _rc2e: print(f'⚠️ rename-clean pass 2 skipped: {_rc2e}', flush=True)
     print(f"⏱ boot scan {time.time()-_BOOT_T:.1f}s · journal-skipped most of it")
     try:
         B._reconcile_tags(print)
@@ -2275,6 +2277,7 @@ def _selftest(root):
     ck('S153 download scars are stripped from names', (chr(35)+' DASH-CLEAN v81.48') in _src and 'rename-clean' in _src)
     ck('S160 chat rides the warm door, never fights it', 'WARM-CLIENT v81.47' in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S161 connected clients close only their page', 'via_cdp and page is not None: page.close()' in open(os.path.join(BASE_DIR, 'wa.py')).read())
+    ck('S162 scars born in a scan are cleaned in the same scan', (chr(35)+' DASH-CLEAN-PASS2 v81.50') in _src and (chr(35)+' DASH-2 v81.50') in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
