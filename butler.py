@@ -1408,6 +1408,12 @@ class Butler:
                 say('📬 draft round closed (' + str(stt.get('state')) + ') for ' + str(m.get('tag')) + ' - noted done this round')  # DONE-MARK v81.26
             qp = os.path.join(BASE_DIR, 'autodraft_queue.json')
             q = []  # Q-INIT v81.40: the witness may read the queue even when the release gate skips
+            try:
+                _q0 = json.load(open(qp)); _q1 = [x for x in _q0 if time.time() - x.get('at', 0) < 900]
+                if len(_q1) != len(_q0): say(f'🗑 pruned {len(_q0) - len(_q1)} stale queued draft(s) older than 15 min')
+                json.dump(_q1, open(qp, 'w'), indent=1)  # STALE-JOB-PRUNE v81.45: nameless old intent expires
+            except Exception:
+                pass
             if not self._ad_busy() and self._ad_claim():
                 try: q = json.load(open(qp))
                 except Exception: q = []
@@ -1745,7 +1751,13 @@ def main():
                 try:
                     _cl = os.path.join(BASE_DIR, 'wa_warm_closed.ts')
                     _rc = os.path.exists(_cl) and time.time() - os.stat(_cl).st_mtime < 600
-                    if not _rc and os.system("pgrep -f 'wa_warm.py' >/dev/null 2>&1") != 0:
+                    _sa = False
+                    try:
+                        import socket as _sk; _sx = _sk.create_connection(('127.0.0.1', 9222), timeout=2); _sx.close(); _sa = True  # WARM-SUPERVISOR v81.45: the port, not the process, is the truth
+                    except Exception:
+                        _sa = False
+                    _pa = os.system("pgrep -f 'wa_warm.py' >/dev/null 2>&1") == 0
+                    if not _rc and not _sa and not _pa:
                         subprocess.Popen([sys.executable, os.path.join(BASE_DIR, 'wa_warm.py'), 'ensure'], cwd=BASE_DIR, stdout=open(os.path.join(BASE_DIR, 'wa_warm.log'), 'a'), stderr=subprocess.STDOUT, start_new_session=True)
                         print('\U0001f525 warm keepalive: relaunching wa_warm', flush=True)
                 except Exception:
@@ -2235,6 +2247,8 @@ def _selftest(root):
     ck('S147 the warm browser is kept alive unless you closed it', (chr(35)+' WARM-KEEPALIVE v81.44') in _src and 'wa_warm_closed.ts' in open(os.path.join(BASE_DIR, 'wa_warm.py')).read())
     ck('S148 ctime-only touches are quiet unless fidget is on', (chr(35)+' KIND-RESPECT v81.44') in _src)
     ck('S149 no doubled drafts', (chr(35)+' DEDUPE v81.44') in _src and (chr(35)+' CLEAR-IN-SLIDE v81.44') in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
+    ck('S150 the keeper may die but may not flicker', (chr(35)+' BREAKER v81.45') in open(os.path.join(BASE_DIR, 'wa_warm.py')).read() and (chr(35)+' WARM-SUPERVISOR v81.45') in _src)
+    ck('S151 stale jobs expire and the field dedupes', (chr(35)+' STALE-JOB-PRUNE v81.45') in _src and (chr(35)+' DEDUPE-FIELD v81.45') in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
