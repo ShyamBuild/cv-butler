@@ -1354,6 +1354,7 @@ class Butler:
             k = f'{fp}|{tg}'  # 60s debounce per file+tag, replaces 24h cooldown
             if False and time.time() - lg.get(k, 0) < 60: return  # NEUTER-DEBOUNCE v81.30 (user spec: every tag action is a new event)
             if False and kind == 'ctime': pass  # NEUTER-DONEMARK v81.30 (every tag action is a new event)
+            if kind == 'ctime' and not self._ad_fidget(): say(f'⏭️ autodraft: {os.path.basename(fp)} +{tg} ctime-only touch (Finder preview/index), not a tag action - fidget.flag on drafts these'); return  # KIND-RESPECT v81.44
             nm = _names_by_phone().get(d) or os.path.splitext(os.path.basename(fp))[0]
             try: txt = open(os.path.join(BASE_DIR, 'templates', f'voice_{v}.txt')).read()
             except Exception: say(f'⚠️ autodraft: missing template voice_{v}'); return
@@ -1366,7 +1367,8 @@ class Butler:
                 try: q = json.load(open(qp))
                 except Exception: q = []
                 q = [x for x in q if time.time() - x.get('at', 0) < 7200]
-                q.append({'phone': d, 'text': txt, 'at': time.time(), 'who': nm, 'voice': v, 'fp': fp, 'tag': tg})
+                if not any(_x.get('phone') == d and _x.get('who') == nm for _x in q):  # DEDUPE v81.44: one queued draft per candidate
+                    q.append({'phone': d, 'text': txt, 'at': time.time(), 'who': nm, 'voice': v, 'fp': fp, 'tag': tg})
                 json.dump(q, open(qp, 'w'), indent=1)
                 say(f'📝 queued autodraft: {v} -> {nm} (+{d}) - slides into the open window the moment you send'); return
             self._ad_fire(d, txt, v, nm, say, fp, tg)
@@ -1738,6 +1740,16 @@ def main():
                     except Exception: pass
             except Exception as e:
                 print(f'⚠️ pulse thread: {e}', flush=True)
+            if time.time() - getattr(B, '_warm_keep', 0) > 60:  # WARM-KEEPALIVE v81.44: the keeper is respawned unless you closed it yourself
+                B._warm_keep = time.time()
+                try:
+                    _cl = os.path.join(BASE_DIR, 'wa_warm_closed.ts')
+                    _rc = os.path.exists(_cl) and time.time() - os.stat(_cl).st_mtime < 600
+                    if not _rc and os.system("pgrep -f 'wa_warm.py' >/dev/null 2>&1") != 0:
+                        subprocess.Popen([sys.executable, os.path.join(BASE_DIR, 'wa_warm.py'), 'ensure'], cwd=BASE_DIR, stdout=open(os.path.join(BASE_DIR, 'wa_warm.log'), 'a'), stderr=subprocess.STDOUT, start_new_session=True)
+                        print('\U0001f525 warm keepalive: relaunching wa_warm', flush=True)
+                except Exception:
+                    pass
             time.sleep(2)
     import threading as _th
 
@@ -2220,6 +2232,9 @@ def _selftest(root):
     ck('S144 the tick never dies on an uninitialised queue', (chr(35)+' Q-INIT v81.40') in _src)
     ck('S145 one owned warm browser, self-healing', (chr(35)+' WARM-RETRY v81.40') in open(os.path.join(BASE_DIR, 'ad_wait.py')).read() and 'is_connected' in open(os.path.join(BASE_DIR, 'wa_warm.py')).read())
     ck('S146 your close is honoured for ten minutes', 'WARM-COOLDOWN v81.41' in open(os.path.join(BASE_DIR, 'wa_warm.py')).read() and (chr(35)+' FAST-FALLBACK v81.41') in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
+    ck('S147 the warm browser is kept alive unless you closed it', (chr(35)+' WARM-KEEPALIVE v81.44') in _src and 'wa_warm_closed.ts' in open(os.path.join(BASE_DIR, 'wa_warm.py')).read())
+    ck('S148 ctime-only touches are quiet unless fidget is on', (chr(35)+' KIND-RESPECT v81.44') in _src)
+    ck('S149 no doubled drafts', (chr(35)+' DEDUPE v81.44') in _src and (chr(35)+' CLEAR-IN-SLIDE v81.44') in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
