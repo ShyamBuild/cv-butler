@@ -1404,6 +1404,13 @@ class Butler:
         except Exception as e:
             say(f'⚠️ autodraft error: {e}')
     def _autodraft_tick(self, say=print):
+        if not getattr(self, '_rc_boot', False):  # RENAME-IN-TICK v81.52: the heal runs where every mode actually executes
+            self._rc_boot = True
+            try:
+                _rn = self._rename_clean()
+                if _rn: print(f'✏️[rename-clean] boot pass renamed {_rn} file(s)', flush=True)
+            except Exception as _rce3:
+                print(f'⚠️[rename-clean] boot pass skipped: {_rce3}', flush=True)
         try:
             try: st = open(os.path.join(BASE_DIR, 'autodraft.flag')).read().strip() or 'auto'
             except Exception: st = 'auto'
@@ -2279,6 +2286,7 @@ def _selftest(root):
     ck('S161 connected clients close only their page', 'via_cdp and page is not None: page.close()' in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S162 scars born in a scan are cleaned in the same scan', (chr(35)+' DASH-CLEAN-PASS2 v81.50') in _src and (chr(35)+' DASH-2 v81.50') in _src)
     ck('S163 a failed rename speaks its reason', (chr(35)+' RENAME-LOUD v81.51') in _src)
+    ck('S164 the heal runs in every mode', (chr(35)+' RENAME-IN-TICK v81.52') in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
