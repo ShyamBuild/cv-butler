@@ -101,7 +101,7 @@ SWIFT_SRC = os.path.join(BASE_DIR, "cvocr.swift")
 OCR_SEM = threading.Semaphore(2)
 CONV_SEM = threading.Semaphore(1)   # LibreOffice/Chrome are single-instance: conversions go one at a time
 PHONES_FILE = os.path.join(BASE_DIR, "phones.json")
-PHONE_RE = re.compile(r'(?:\+?91[\s\-\.]?)?([6-9](?:[\s\-\.]?\d){9})')
+PHONE_RE = re.compile(r'(?:\+?91[ \-\.]?)?(?<!\d)([6-9](?:[ \-\.]?\d){9})(?!\d)')  # PINCODE-SAFE v81.58: separators never cross a newline; digits bounded both sides
 def phones_in_text(t):
     out = []
     for m in PHONE_RE.finditer(t or ''):
@@ -112,7 +112,7 @@ def phones_of(p):
     try: store = json.load(open(PHONES_FILE))
     except Exception: store = {}
     try:
-        st = os.stat(p); k = f"{st.st_ino}|{st.st_mtime}|{st.st_size}"
+        st = os.stat(p); k = f"v2|{st.st_ino}|{st.st_mtime}|{st.st_size}"  # CACHE-SALT v81.58: a cured extractor never trusts the poisoned cache
     except OSError:
         return []
     e = store.get(os.path.abspath(p))
@@ -2293,6 +2293,7 @@ def _selftest(root):
     ck('S165 main never speaks self', not any(x.startswith('    self.') and not x.startswith('     ') for x in _src.split(chr(10))))
     ck('S166 the butler never removes a directory of yours', all(('tmp' in x.lower() or 'temp' in x.lower()) for x in _src.split(chr(10)) if ('rmdir(' in x or 'rmtree' in x) and 'ck(' not in x and not x.strip().startswith(chr(35))))  # S166-SCOPED v81.55: temp hygiene allowed, your folders never
     ck('S167 the shared door is never queried like an owned one', '_door = pw.chromium.connect_over_cdp' in open(os.path.join(BASE_DIR, 'wa.py')).read() and 'browser = None' in open(os.path.join(BASE_DIR, 'wa.py')).read())  # behaviour-pinned, version-free
+    ck('S168 pincodes never lend digits to phones', phones_in_text('Chennai, India 600050\n9597850419\n') == ['9597850419'] and phones_in_text('600050\n9597850419') == ['9597850419'])
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
