@@ -749,6 +749,26 @@ def do_missed(arg, root, say=print, ask=None, words=None):
     hit = _scan_path(arg.strip(), root) if arg.strip().isdigit() else None
     if arg.strip().isdigit() and not hit:
         say(f"🤷 no file at scan number {arg.strip()} in the latest scan"); return
+    _qt = [t for t in q.split()]  # STRICT-RESOLVE v81.75: exact stem, equal token-sets, or whole words only; several humans means a question, never a guess
+    _strict = []
+    for _sr2 in [f['path'], os.path.dirname(os.path.dirname(f['path']))]:
+        for dp, dn, fn in os.walk(_sr2):
+            for x in fn:
+                if not x.lower().endswith('.pdf'): continue
+                _xs = os.path.splitext(x)[0].lower().replace('_', ' ')
+                if _xs == q or sorted(_xs.split()) == sorted(_qt) or all(t in _xs.split() for t in _qt):
+                    _strict.append(os.path.join(dp, x))
+    if len(_strict) == 1:
+        hit = _strict[0]
+    elif len(_strict) > 1:
+        say('🪪 several candidates wear that name - pick the human by email:')
+        for _n, _c in enumerate(_strict, 1):
+            try: _em = (butler.emails_of(_c) or ['none readable'])[0]
+            except Exception: _em = 'none readable'
+            say(f'   {_n}) {os.path.basename(_c)} · {_em} · {os.path.basename(os.path.dirname(os.path.dirname(_c)))}')
+        try: hit = _strict[int(input('   pick #: ').strip()) - 1]
+        except Exception: say('🤷 pick skipped'); hit = None
+
     for _sr in ([] if hit else [f['path'], os.path.dirname(os.path.dirname(f['path']))]):
         for dp, dn, fn in os.walk(_sr):
             for x in fn:

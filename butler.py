@@ -132,6 +132,13 @@ def emails_in_text(t):  # EMAIL-WITNESS v81.64: the second anchor, unique to a p
         if m.group(0) not in out: out.append(m.group(0))
     return out
 
+def emails_of(p):  # EMAIL-OF v81.74: the picker confirms humans by email, the anchor the master chose
+    try:
+        with pdfplumber.open(p) as pdf:
+            return emails_in_text("\n".join((pg.extract_text() or '') for pg in pdf.pages))
+    except Exception:
+        return []
+
 def teach_phone(name, digits):  # TEACH-CLI v81.64: the master's word is the paper of last resort
     d = re.sub(r'\D', '', str(digits))
     p = os.path.join(BASE_DIR, 'phones_taught.json')
@@ -162,7 +169,12 @@ def phones_of(p):  # TAUGHT v81.63: a taught number beats extraction; empty resu
     except Exception: taught = {}
     stem = os.path.splitext(os.path.basename(ap))[0].lower()
     for tk, tv in taught.items():
-        if tk and (tk == stem or all(w in stem for w in tk.split())):
+        if tk and (tk == stem or sorted(tk.split()) == sorted(stem.split())):  # EXACT-TEACH v81.73: a token is a whole word or nothing; 'a' inside 'sharma' is not identity
+            _em = ''
+            try:
+                with pdfplumber.open(ap) as _pf: _em = (emails_in_text('\n'.join((pg.extract_text() or '') for pg in _pf.pages)) or [''])[0]
+            except Exception: pass
+            print(f'\U0001faaa {os.path.basename(ap)} · email: {_em or "none readable"} · taught for "{tk}" -> {tv}', flush=True)  # IDENTITY-FIRST v81.73: file and email before any number is used
             print(f'\U0001f4da taught number in use for {os.path.basename(ap)}', flush=True)  # TAUGHT-ECHO v81.67
             return [re.sub(r'\D', '', str(tv))]
     try: store = json.load(open(PHONES_FILE))
@@ -176,13 +188,14 @@ def phones_of(p):  # TAUGHT v81.63: a taught number beats extraction; empty resu
     txt = ''
     try:
         with pdfplumber.open(p) as pdf:
-            txt = "\n".join((pg.extract_text() or '') for pg in pdf.pages[:2])
+            txt = "\n".join((pg.extract_text() or '') for pg in pdf.pages)
     except Exception: pass
     ph = phones_in_text(txt)
     if not ph:
         ocr = extract_text_ocr(p)
         if ocr.strip(): ph = phones_in_text(ocr)
-    em = emails_in_text(txt)  # EMAIL-ALWAYS v81.67: the second anchor is shown whenever the phone is fetched
+    em = emails_in_text(txt)  # IDENTITY-FIRST-EXTRACT v81.73: file, email and source before the window opens
+    if ph: print(f'\U0001faaa {os.path.basename(ap)} · email: {em[0] if em else "none readable"} · phone extracted: {ph[0]}', flush=True)
     if ph and em: print(f'\U0001f4e7 {os.path.basename(ap)} · {em[0]}', flush=True)
     if ph:
         store[ap] = {'k': k, 'phones': ph}
@@ -2370,6 +2383,11 @@ def _selftest(root):
     ck('S176 the gate shows every red line before the window', 'GATE-LOUD v81.69' in open(os.path.join(BASE_DIR, 'ship.sh')).read())
     ck('S177 the REPL can name the butler it teaches through', any(x.startswith('import butler') for x in open(os.path.join(BASE_DIR, 'briefing.py')).read().split(chr(10))))
     ck('S178 every voice asks the same clerk', 'def _phones_of_local(' in _br and 'butler.phones_of(path)' in _br)
+    ck('S179 a taught key is whole tokens or nothing', 'sorted(tk.split()) == sorted(stem.split())' in _src and ('all(w in stem for w in tk.sp'+'lit())') not in _src)
+    ck('S180 the whole paper is read, not an excerpt', ('txt = ' + chr(34) + chr(92) + 'n' + chr(34) + '.join((pg.extract_text() or ' + chr(39) + chr(39) + ') for pg in pdf.pages)') in _src)  # clerk-scoped: other readers may skim, the phone clerk may not
+    ck('S181 identity speaks before any number is used', (chr(35)+' IDENTITY-FIRST v81.73') in _src and (chr(35)+' IDENTITY-FIRST-EXTRACT v81.73') in _src)
+    ck('S182 several humans become a question, never a guess', (chr(35)+' STRICT-RESOLVE v81.75') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and 'pick the human by email' in open(os.path.join(BASE_DIR, 'briefing.py')).read())
+    ck('S183 the picker reads emails from the paper', 'def emails_of(' in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
