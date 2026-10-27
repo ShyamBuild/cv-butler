@@ -2352,9 +2352,9 @@ def _selftest(root):
     return True
 
 if __name__ == '__main__':
+    if len(sys.argv) > 2 and sys.argv[1] == 'teach':  # TEACH-CLI v81.65: first word at the door, before any folder argument is imagined
+        print('taught:', ' '.join(sys.argv[2:-1]), '->', teach_phone(' '.join(sys.argv[2:-1]), sys.argv[-1]), flush=True)
+        sys.exit(0)
     if len(sys.argv) > 2 and sys.argv[1] == '--selftest':
-        if len(sys.argv) > 2 and sys.argv[1] == 'teach':  # TEACH-CLI v81.64
-            print('taught:', ' '.join(sys.argv[2:-1]), '->', teach_phone(' '.join(sys.argv[2:-1]), sys.argv[-1]))
-            sys.exit(0)
         sys.exit(0 if _selftest(sys.argv[2]) else 1)
     main()
