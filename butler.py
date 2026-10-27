@@ -2291,6 +2291,8 @@ def _selftest(root):
     ck('S163 a failed rename speaks its reason', (chr(35)+' RENAME-LOUD v81.51') in _src)
     ck('S164 the heal runs in every mode', (chr(35)+' RENAME-IN-TICK v81.52') in _src)
     ck('S165 main never speaks self', not any(x.startswith('    self.') and not x.startswith('     ') for x in _src.split(chr(10))))
+    ck('S166 the butler never removes a directory of yours', all(('tmp' in x.lower() or 'temp' in x.lower()) for x in _src.split(chr(10)) if ('rmdir(' in x or 'rmtree' in x) and 'ck(' not in x and not x.strip().startswith(chr(35))))  # S166-SCOPED v81.55: temp hygiene allowed, your folders never
+    ck('S167 the shared door is never queried like an owned one', '_door = pw.chromium.connect_over_cdp' in open(os.path.join(BASE_DIR, 'wa.py')).read() and 'browser = None' in open(os.path.join(BASE_DIR, 'wa.py')).read())  # behaviour-pinned, version-free
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
