@@ -75,6 +75,7 @@ pkill -f butler.py || true
 sleep 1
 echo '-- selftest gate (butler paused - no races)'
 OUT="$(cv_env/bin/python3 butler.py --selftest "$ROOT" 2>&1)"
+echo "$OUT" | grep "FAIL\|SKILLS MISSING" | head -10  # GATE-LOUD v81.69: every red line before the window
 echo "$OUT" | tail -40
 TWINS="$(twins_check "$ROOT")"
 if echo "$OUT" | grep -q "ALL GREEN" && [ -z "$TWINS" ]; then

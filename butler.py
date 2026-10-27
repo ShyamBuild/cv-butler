@@ -141,6 +141,21 @@ def teach_phone(name, digits):  # TEACH-CLI v81.64: the master's word is the pap
     json.dump(s, open(p, 'w'), indent=1)
     return d
 
+def listen_teach(q):  # LISTEN-FN v81.69: the master's bare ten digits, within five minutes of a confession, are the lesson
+    try:
+        _qd = (q or '').replace(' ', '')
+        if not (_qd.isdigit() and len(_qd) in (10, 12)): return None
+        _lp = os.path.join(BASE_DIR, 'last_nophone.json')
+        if not os.path.exists(_lp): return None
+        _st = json.load(open(_lp))
+        if time.time() - _st.get('ts', 0) > 600: return None
+        _dg = teach_phone(_st.get('stem', _qd), _qd)
+        print(f'\U0001f4da taught {_st.get("stem")} -> {_dg} - say missed {_st.get("stem")} again to draft on it now', flush=True)
+        return _dg
+    except Exception as _te:
+        print(f'⚠️ teach-listen skipped: {_te}', flush=True)
+        return None
+
 def phones_of(p):  # TAUGHT v81.63: a taught number beats extraction; empty results are never cached; identity is spoken when nothing is found
     ap = os.path.abspath(p)
     try: taught = json.load(open(os.path.join(BASE_DIR, 'phones_taught.json')))
@@ -148,6 +163,7 @@ def phones_of(p):  # TAUGHT v81.63: a taught number beats extraction; empty resu
     stem = os.path.splitext(os.path.basename(ap))[0].lower()
     for tk, tv in taught.items():
         if tk and (tk == stem or all(w in stem for w in tk.split())):
+            print(f'\U0001f4da taught number in use for {os.path.basename(ap)}', flush=True)  # TAUGHT-ECHO v81.67
             return [re.sub(r'\D', '', str(tv))]
     try: store = json.load(open(PHONES_FILE))
     except Exception: store = {}
@@ -166,12 +182,16 @@ def phones_of(p):  # TAUGHT v81.63: a taught number beats extraction; empty resu
     if not ph:
         ocr = extract_text_ocr(p)
         if ocr.strip(): ph = phones_in_text(ocr)
+    em = emails_in_text(txt)  # EMAIL-ALWAYS v81.67: the second anchor is shown whenever the phone is fetched
+    if ph and em: print(f'\U0001f4e7 {os.path.basename(ap)} · {em[0]}', flush=True)
     if ph:
         store[ap] = {'k': k, 'phones': ph}
         try: json.dump(store, open(PHONES_FILE, 'w'))
         except Exception: pass
     else:
         print(f'\U0001f937 we are talking about {os.path.basename(ap)} · email: {emails_in_text(txt or ocr)[0] if emails_in_text(txt or ocr) else "none readable"} - no phone readable in it; teach me: python3 butler.py teach <name> <digits>', flush=True)
+        try: json.dump({'stem': stem, 'ts': time.time()}, open(os.path.join(BASE_DIR, 'last_nophone.json'), 'w'))  # LISTEN-STATE v81.67: the confession leaves an address the REPL can listen at
+        except Exception: pass
     return ph
 
 _h = logging.handlers.RotatingFileHandler(os.path.join(BASE_DIR, "butler.log"), maxBytes=1_000_000, backupCount=3)
@@ -2345,6 +2365,9 @@ def _selftest(root):
     ck('S171 a taught number beats extraction and empty is never cached', 'phones_taught.json' in _src and (chr(35)+' TAUGHT v81.63') in _src and 'v3|' in _src)
     ck('S172 the email speaks when the phone is silent', emails_in_text('Lokesh A · lokeshmechanical23@gmail.com · 9360566513') == ['lokeshmechanical23@gmail.com'])
     ck('S173 the master can teach a number from any terminal', 'def teach_phone(' in _src and (chr(35)+' TEACH-CLI v81.64') in _src)
+    ck('S174 the teach verb stands before the door', any(L[j].strip() == "if __name__ == '__main__':" and (chr(35)+' TEACH-CLI v81.65') in L[j+1] for j in range(len(L)-1)) if (L := _src.split(chr(10))) else False)  # adjacency-pinned
+    ck('S175 silence teaches nothing, digits teach once', (chr(35)+' LISTEN-STATE v81.67') in _src and (chr(35)+' LISTEN v81.67') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
+    ck('S176 the gate shows every red line before the window', 'GATE-LOUD v81.69' in open(os.path.join(BASE_DIR, 'ship.sh')).read())
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False

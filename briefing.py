@@ -1382,6 +1382,7 @@ if __name__ == "__main__":
         while True:
             try:
                 q = input("you> ").strip()
+                if butler.listen_teach(q): continue  # LISTEN v81.67: after a no-phone confession, the master's bare ten digits are the lesson
             except EOFError:
                 break
             except KeyboardInterrupt:
