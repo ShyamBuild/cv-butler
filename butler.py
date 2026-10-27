@@ -108,6 +108,23 @@ def phones_in_text(t):
         d = re.sub(r'\D', '', m.group(1))
         if d not in out: out.append(d)
     return out
+def _clean_stem(stem):  # SCAR-WIDE v81.59 + v81.62: brackets, portal glue, resume-words and date-stamps are download scars too
+    s = re.sub(r'\[[^\]]*\]', ' ', stem)
+    s = re.sub(r'\(\d+\)', ' ', s)
+    s = re.sub(r'^(naukri|linkedin|indeed|shine|monster|cutshort)[_\-]', '', s, flags=re.I)
+    s = re.sub(r'\s*-{2,}\s*', ' ', s)
+    for _i in (0, 1):
+        s = re.sub(r'\b(resume|updated|copy|final|cv)\b', ' ', s, flags=re.I)
+        s = re.sub(r'\d{2}\.\d{2}\.\d{4}', ' ', s)
+        s = re.sub(r'[_\-]\d{2,4}(?=$|\s)', ' ', s)
+        s = re.sub(r'_{2,}', ' ', s)
+        s = re.sub(r'(?<=[A-Za-z0-9])_(?=[A-Za-z0-9])', ' ', s)
+        s = re.sub(r'\s[_\-\.]|[_\-\.]\s', ' ', s)
+        s = re.sub(r'\s{2,}', ' ', s)
+    s = s.strip(' ._-')
+    if s.replace('.', '').replace(' ', '').isupper(): s = s.title()
+    return s
+
 def phones_of(p):
     try: store = json.load(open(PHONES_FILE))
     except Exception: store = {}
@@ -1298,8 +1315,9 @@ class Butler:
             for f in fn:
                 if not f.lower().endswith(('.pdf', '.doc', '.docx')): continue
                 stem, ext = os.path.splitext(f)
-                if '--' not in stem: continue  # DASH-2 v81.50: two-dash scars are scars too
-                clean = re.sub(r'\s*-{2,}\s*', ' ', stem).strip()
+                _sc = bool(re.search(r'--|\[|\(|[A-Za-z]_[A-Za-z0-9]|\d{2}\.\d{2}\.\d{4}', stem)) or bool(re.search(r'\b(resume|updated|copy|final|cv)\b', stem, re.I))
+                if not _sc: continue  # DASH-2 v81.50 + SCAR-WIDE v81.59 gate: any visible scar fires the heal
+                clean = _clean_stem(stem)
                 clean = re.sub(r'\s{2,}', ' ', clean)
                 if clean.replace('.', '').replace(' ', '').isupper(): clean = clean.title()
                 if not clean or clean == stem: continue
@@ -2294,6 +2312,7 @@ def _selftest(root):
     ck('S166 the butler never removes a directory of yours', all(('tmp' in x.lower() or 'temp' in x.lower()) for x in _src.split(chr(10)) if ('rmdir(' in x or 'rmtree' in x) and 'ck(' not in x and not x.strip().startswith(chr(35))))  # S166-SCOPED v81.55: temp hygiene allowed, your folders never
     ck('S167 the shared door is never queried like an owned one', '_door = pw.chromium.connect_over_cdp' in open(os.path.join(BASE_DIR, 'wa.py')).read() and 'browser = None' in open(os.path.join(BASE_DIR, 'wa.py')).read())  # behaviour-pinned, version-free
     ck('S168 pincodes never lend digits to phones', phones_in_text('Chennai, India 600050\n9597850419\n') == ['9597850419'] and phones_in_text('600050\n9597850419') == ['9597850419'])
+    ck('S169 brackets and portal glue are scars too', _clean_stem('Naukri_Himagirisha[3y_9m]') == 'Himagirisha' and _clean_stem('Resume Sanjeev Kumar Updated_12.08.2026') == 'Sanjeev Kumar' and _clean_stem('Prateek Tyagi_CV_2026') == 'Prateek Tyagi' and _clean_stem('Praveenkumar K') == 'Praveenkumar K')
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
