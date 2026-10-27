@@ -52,7 +52,16 @@ def phones_in_text(t):
         d = re.sub(r'\D', '', m.group(1))
         if d not in out: out.append(d)
     return out
-def phones_of(path):
+def phones_of(path):  # ONE-CLERK v81.72: every voice asks the butler's clerk - taught book, email witness, OCR, confession, all of it
+    _lb = _phones_by_basename(path)
+    if _lb: return _lb
+    try:
+        _bp = butler.phones_of(path)
+        if _bp: return _bp
+    except Exception: pass
+    return _phones_of_local(path)
+
+def _phones_of_local(path):  # ONE-CLERK v81.72: the old clerk, kept as last resort only
     _ov = _fix_load().get(re.sub(r'[^a-z]', '', os.path.splitext(os.path.basename(path))[0].lower()))
     if _ov: return _ov if isinstance(_ov, list) else [_ov]
     try: store = json.load(open(PHONES_FILE))
