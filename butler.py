@@ -126,6 +126,21 @@ def _clean_stem(stem):  # SCAR-WIDE v81.59 + v81.62: brackets, portal glue, resu
     if s.replace('.', '').replace(' ', '').isupper(): s = s.title()
     return s
 
+def emails_in_text(t):  # EMAIL-WITNESS v81.64: the second anchor, unique to a person and readable at a glance
+    out = []
+    for m in re.finditer(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}', t or ''):
+        if m.group(0) not in out: out.append(m.group(0))
+    return out
+
+def teach_phone(name, digits):  # TEACH-CLI v81.64: the master's word is the paper of last resort
+    d = re.sub(r'\D', '', str(digits))
+    p = os.path.join(BASE_DIR, 'phones_taught.json')
+    try: s = json.load(open(p))
+    except Exception: s = {}
+    s[name.strip().lower()] = d
+    json.dump(s, open(p, 'w'), indent=1)
+    return d
+
 def phones_of(p):  # TAUGHT v81.63: a taught number beats extraction; empty results are never cached; identity is spoken when nothing is found
     ap = os.path.abspath(p)
     try: taught = json.load(open(os.path.join(BASE_DIR, 'phones_taught.json')))
@@ -156,7 +171,7 @@ def phones_of(p):  # TAUGHT v81.63: a taught number beats extraction; empty resu
         try: json.dump(store, open(PHONES_FILE, 'w'))
         except Exception: pass
     else:
-        print(f'\U0001f937 we are talking about {os.path.basename(ap)} - no phone readable in it; teach me: phones_taught.json', flush=True)
+        print(f'\U0001f937 we are talking about {os.path.basename(ap)} · email: {emails_in_text(txt or ocr)[0] if emails_in_text(txt or ocr) else "none readable"} - no phone readable in it; teach me: python3 butler.py teach <name> <digits>', flush=True)
     return ph
 
 _h = logging.handlers.RotatingFileHandler(os.path.join(BASE_DIR, "butler.log"), maxBytes=1_000_000, backupCount=3)
@@ -2328,6 +2343,8 @@ def _selftest(root):
     ck('S169 brackets and portal glue are scars too', _clean_stem('Naukri_Himagirisha[3y_9m]') == 'Himagirisha' and _clean_stem('Resume Sanjeev Kumar Updated_12.08.2026') == 'Sanjeev Kumar' and _clean_stem('Prateek Tyagi_CV_2026') == 'Prateek Tyagi' and _clean_stem('Praveenkumar K') == 'Praveenkumar K')
     ck('S170 nbsp and thin spaces are separators too', phones_in_text('Mob: 93605' + chr(160) + '66513') == ['9360566513'])
     ck('S171 a taught number beats extraction and empty is never cached', 'phones_taught.json' in _src and (chr(35)+' TAUGHT v81.63') in _src and 'v3|' in _src)
+    ck('S172 the email speaks when the phone is silent', emails_in_text('Lokesh A · lokeshmechanical23@gmail.com · 9360566513') == ['lokeshmechanical23@gmail.com'])
+    ck('S173 the master can teach a number from any terminal', 'def teach_phone(' in _src and (chr(35)+' TEACH-CLI v81.64') in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
@@ -2336,5 +2353,8 @@ def _selftest(root):
 
 if __name__ == '__main__':
     if len(sys.argv) > 2 and sys.argv[1] == '--selftest':
+        if len(sys.argv) > 2 and sys.argv[1] == 'teach':  # TEACH-CLI v81.64
+            print('taught:', ' '.join(sys.argv[2:-1]), '->', teach_phone(' '.join(sys.argv[2:-1]), sys.argv[-1]))
+            sys.exit(0)
         sys.exit(0 if _selftest(sys.argv[2]) else 1)
     main()
