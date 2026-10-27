@@ -1,3 +1,4 @@
+import butler  # LISTEN v81.67: the REPL teaches through the butler's book (module scope: the loop lives here)
 import os, re, sys, datetime, json, urllib.request
 import logging, warnings
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

@@ -2368,6 +2368,7 @@ def _selftest(root):
     ck('S174 the teach verb stands before the door', any(L[j].strip() == "if __name__ == '__main__':" and (chr(35)+' TEACH-CLI v81.65') in L[j+1] for j in range(len(L)-1)) if (L := _src.split(chr(10))) else False)  # adjacency-pinned
     ck('S175 silence teaches nothing, digits teach once', (chr(35)+' LISTEN-STATE v81.67') in _src and (chr(35)+' LISTEN v81.67') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S176 the gate shows every red line before the window', 'GATE-LOUD v81.69' in open(os.path.join(BASE_DIR, 'ship.sh')).read())
+    ck('S177 the REPL can name the butler it teaches through', any(x.startswith('import butler') for x in open(os.path.join(BASE_DIR, 'briefing.py')).read().split(chr(10))))
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
