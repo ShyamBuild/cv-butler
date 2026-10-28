@@ -192,6 +192,7 @@ def provenance_of(p, digits):  # PROVENANCE-AT-PICK v81.92: the pick-list speaks
     _lv = _provenance_lines(os.path.abspath(p), digits)
     if _lv:
         print('🔢 ' + str(len(digits)) + ' numbers in ' + os.path.basename(p) + ': ' + ' · '.join(f'{i}) {dd} ({w})' for i, (dd, w) in enumerate(_lv, 1)), flush=True)
+    return _lv  # CANDIDATE-FIRST v81.93: provenance speaks AND hands back its list, so callers can act on it
 
 def phones_of(p, quiet=False):  # QUIET-CLERK v81.87: the picker may ask without the ceremony; the law of speaking identity still binds every voice that drafts
     ap = os.path.abspath(p)
@@ -2429,7 +2430,10 @@ def _selftest(root):
     ck('S195 identity speaks once, not twice', chr(128231) not in _src and open(os.path.join(BASE_DIR, 'wa.py')).read().count('message is in the WhatsApp text field') == 1)
     ck('S196 no paste advice when WhatsApp says no field', 'if not _notwa: ' in open(os.path.join(BASE_DIR, 'wa.py')).read() and (chr(35)+' CONCISE v81.91') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S197 the WhatsApp door is asked within the first beats', (chr(35)+' EARLY-DOOR v81.92') in open(os.path.join(BASE_DIR, 'wa.py')).read())
+    ck('S200 a dead number ends the round with one menu', (chr(35)+' NO-FIELD-EXIT v81.94') in open(os.path.join(BASE_DIR, 'wa.py')).read())
+    ck('S201 the field detector sees the composer, not the search box', ((_w := open(os.path.join(BASE_DIR, 'wa.py')).read()) and re.search('(?<!footer )div' + chr(92) + '[contenteditable=' + chr(34) + 'true' + chr(34) + chr(92) + ']', _w) is None and ('footer div[contenteditable=' + chr(34) + 'true' + chr(34) + ']') in _w))
     ck('S198 every pick-list speaks its numbers'+chr(39)+' addresses', (chr(35)+' PROVENANCE-AT-PICK v81.92') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and _src.count('def provenance_'+'of(') == 1 and _src.find('def provenance_'+'of(') < _src.find('def phones_'+'of('))  # needles split: a count-guard must not count its own needle
+    ck('S199 the paper'+chr(39)+'s own witness picks the candidate'+chr(39)+'s number', (chr(35)+' CANDIDATE-FIRST v81.93') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and any(x.strip().startswith('return _lv') for x in _src.split(chr(10))))
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False

@@ -96,9 +96,15 @@ def _phones_of_local(path):  # ONE-CLERK v81.72: the old clerk, kept as last res
     except Exception: pass
     return ph
 def _pick_phone(ps, say=print, ask=None, path=None):
-    if path is not None and len(ps) > 1:  # PROVENANCE-AT-PICK v81.92: a pick-list without addresses is a guess with numbering
-        try: butler.provenance_of(path, ps)
-        except Exception: pass
+    if path is not None and len(ps) > 1:  # PROVENANCE-AT-PICK v81.92 # CANDIDATE-FIRST v81.93: when the paper distinguishes the human from a referee, the machine picks the human and says so; the list returns only for true ambiguity (markers separated by space-hash, never by plus: each witness keeps its own hash)
+        try:
+            _lv = butler.provenance_of(path, ps) or []
+            _cand = [x for x, w in _lv if 'referee' not in w]
+            if len(_cand) == 1 and _cand[0] in ps:
+                say(f"🎯 using the candidate's own number {_cand[0]} (page-proven); a referee-suspect number stays un-dialled unless you name it")
+                return _cand[0]
+        except Exception:
+            pass
     if not ps: return ''
     if len(ps) == 1: return ps[0]
     for i, x in enumerate(ps): say(f"   {i+1}) {x}")

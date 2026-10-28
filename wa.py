@@ -61,7 +61,7 @@ def _goto(page, url, say=print):
 
 AUTOSEND = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates', '.autosend')
 
-COMPOSE_SELS = ('div[contenteditable="true"][data-tab="10"]', 'div[contenteditable="true"][data-lexical-editor="true"]', 'footer div[contenteditable="true"]', 'div[contenteditable="true"]')
+COMPOSE_SELS = ('footer div[contenteditable="true"][data-tab="10"]', 'footer div[contenteditable="true"][data-lexical-editor="true"]', 'footer div[contenteditable="true"]', 'footer div[contenteditable="true"]')
 def _place_text(page, text, say=print):
     for attempt in (0, 1, 2):
         try:
@@ -122,7 +122,7 @@ def send_review(phone, text, say=print, ask=None):
                         say('⚠️ WhatsApp says this number isn\'t on WhatsApp - nothing drafted; teach or re-pick a number that is registered, or close the window whenever you like')
                         return False
                     try:
-                        if page.locator('div[contenteditable="true"]').count() > 0: break
+                        if page.locator('footer div[contenteditable="true"]').count() > 0: break
                     except Exception: break
                     page.wait_for_timeout(500)
             except Exception:
@@ -138,6 +138,11 @@ def send_review(phone, text, say=print, ask=None):
             try:  # NOT-ON-WHATSAPP v81.90: WhatsApp's own words beat any guess - say them plainly before advising a paste into a field that does not exist
                 if "isn't on WhatsApp" in (page.content() or ''):
                     say('⚠️ WhatsApp says this number isn\'t on WhatsApp - there is no message field to paste into; [x] discards this round, [q] closes it, or teach/re-pick a number that is registered')
+                    _r = input('   [x] discard this round · [q] close the window · [Enter] keep it open, then teach or re-pick: ').strip().lower()  # NO-FIELD-EXIT v81.94: a dead number ends the round with ONE menu; the paste-advice never speaks after a no-field confession
+                    if _r == 'q':
+                        try: page.close()
+                        except Exception: pass
+                    return False
                     _notwa = True
             except Exception: pass
             if not _notwa: say('⚠️ field did not take the text automatically - paste the draft from above into the WhatsApp field yourself, then:')
