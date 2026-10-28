@@ -174,7 +174,7 @@ def _full_text(p):  # FULL-TEXT v81.76: text layer first, vision second - design
         except Exception: t = ''
     return t
 
-def phones_of(p):  # TAUGHT v81.63: a taught number beats extraction; empty results are never cached; identity is spoken when nothing is found
+def phones_of(p, quiet=False):  # QUIET-CLERK v81.87: the picker may ask without the ceremony; the law of speaking identity still binds every voice that drafts
     ap = os.path.abspath(p)
     try: taught = json.load(open(os.path.join(BASE_DIR, 'phones_taught.json')))
     except Exception: taught = {}
@@ -185,8 +185,8 @@ def phones_of(p):  # TAUGHT v81.63: a taught number beats extraction; empty resu
             try:
                 _em = (emails_in_text(_full_text(ap)) or [''])[0]
             except Exception: pass
-            print(f'\U0001faaa {os.path.basename(ap)} · email: {_em or "none readable"} · taught for "{tk}" -> {tv}', flush=True)  # IDENTITY-FIRST v81.73: file and email before any number is used
-            print(f'\U0001f4da taught number in use for {os.path.basename(ap)}', flush=True)  # TAUGHT-ECHO v81.67
+            if not quiet: print(f'\U0001faaa {os.path.basename(ap)} · email: {_em or "none readable"} · taught for "{tk}" -> {tv}', flush=True)  # IDENTITY-FIRST v81.73: file and email before any number is used
+            if not quiet: print(f'\U0001f4da taught number in use for {os.path.basename(ap)}', flush=True)  # TAUGHT-ECHO v81.67
             return [re.sub(r'\D', '', str(tv))]
     try: store = json.load(open(PHONES_FILE))
     except Exception: store = {}
@@ -202,14 +202,14 @@ def phones_of(p):  # TAUGHT v81.63: a taught number beats extraction; empty resu
         ocr = extract_text_ocr(p)
         if ocr.strip(): ph = phones_in_text(ocr)
     em = emails_in_text(txt)  # IDENTITY-FIRST-EXTRACT v81.73: file, email and source before the window opens
-    if ph: print(f'\U0001faaa {os.path.basename(ap)} · email: {em[0] if em else "none readable"} · phone extracted: {ph[0]}', flush=True)
+    if ph and not quiet: print(f'\U0001faaa {os.path.basename(ap)} · email: {em[0] if em else "none readable"} · phone extracted: {ph[0]}', flush=True)
     if ph and em: print(f'\U0001f4e7 {os.path.basename(ap)} · {em[0]}', flush=True)
     if ph:
         store[ap] = {'k': k, 'phones': ph}
         try: json.dump(store, open(PHONES_FILE, 'w'))
         except Exception: pass
     else:
-        print(f'\U0001f937 we are talking about {os.path.basename(ap)} · email: {emails_in_text(txt)[0] if emails_in_text(txt) else "none readable"} - no phone readable in it; teach me: python3 butler.py teach <name> <digits>', flush=True)
+        if not quiet: print(f'\U0001f937 we are talking about {os.path.basename(ap)} · email: {emails_in_text(txt)[0] if emails_in_text(txt) else "none readable"} - no phone readable in it; teach me: python3 butler.py teach <name> <digits>', flush=True)
         try: json.dump({'stem': stem, 'ts': time.time()}, open(os.path.join(BASE_DIR, 'last_nophone.json'), 'w'))  # LISTEN-STATE v81.67: the confession leaves an address the REPL can listen at
         except Exception: pass
     return ph
@@ -2382,7 +2382,7 @@ def _selftest(root):
     ck('S168 pincodes never lend digits to phones', phones_in_text('Chennai, India 600050\n9597850419\n') == ['9597850419'] and phones_in_text('600050\n9597850419') == ['9597850419'])
     ck('S169 brackets and portal glue are scars too', _clean_stem('Naukri_Himagirisha[3y_9m]') == 'Himagirisha' and _clean_stem('Resume Sanjeev Kumar Updated_12.08.2026') == 'Sanjeev Kumar' and _clean_stem('Prateek Tyagi_CV_2026') == 'Prateek Tyagi' and _clean_stem('Praveenkumar K') == 'Praveenkumar K')
     ck('S170 nbsp and thin spaces are separators too', phones_in_text('Mob: 93605' + chr(160) + '66513') == ['9360566513'])
-    ck('S171 a taught number beats extraction and empty is never cached', 'phones_taught.json' in _src and (chr(35)+' TAUGHT v81.63') in _src and 'v3|' in _src)
+    ck('S171 a taught number beats extraction and empty is never cached', ('phones_'+'taught.json') in _src and ('v3'+'|') in _src and ('sorted(tk.split()) == sorted(stem.sp'+'lit())') in _src and ('store[ap] = {'+chr(39)+'k'+chr(39)+': k, '+chr(39)+'phones'+chr(39)+': ph}') in _src)  # S171-CONTRACT v81.89: repinned by identity, not by guessed content - the four truths of the taught book, none of them moved by the quiet keyword
     ck('S172 the email speaks when the phone is silent', emails_in_text('Lokesh A · lokeshmechanical23@gmail.com · 9360566513') == ['lokeshmechanical23@gmail.com'])
     ck('S173 the master can teach a number from any terminal', 'def teach_phone(' in _src and (chr(35)+' TEACH-CLI v81.64') in _src)
     ck('S174 the teach verb stands before the door', any(L[j].strip() == "if __name__ == '__main__':" and (chr(35)+' TEACH-CLI v81.65') in L[j+1] for j in range(len(L)-1)) if (L := _src.split(chr(10))) else False)  # adjacency-pinned
@@ -2403,6 +2403,7 @@ def _selftest(root):
     ck('S189 nothing above the workspace is ever walked', (chr(35)+' WORKSPACE-CLAMP v81.82') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and 'for _sr in ([] if hit else _roots)' in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S190 Ctrl-C anywhere in the picker is graceful', (chr(35)+' PICK-GRACEFUL-WIDE v81.82') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S191 old guards repin to new shapes, never veto them', (chr(35)+' S27-REPINNED v81.86') in _src)
+    ck('S192 the picker shows the number beside the email', (chr(35)+' PHONE-IN-PICKER v81.87') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' QUIET-CLERK v81.87') in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False

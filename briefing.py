@@ -769,7 +769,9 @@ def do_missed(arg, root, say=print, ask=None, words=None):
             for _n, _c in enumerate(_strict, 1):
                 try: _em = (butler.emails_of(_c) or ['none readable'])[0]
                 except Exception: _em = 'none readable'
-                say(f'   {_n}) {os.path.basename(_c)} · {_em} · {os.path.relpath(os.path.dirname(_c), root)}')    # POSITION-LABEL v81.76 # PATH-LABEL v81.79: the whole folder trail from the client down - position and stage together - because that is what tells humans apart (comment lives outside the f-string braces)
+                try: _ph = (butler.phones_of(_c, quiet=True) or ['none readable'])[0]  # PHONE-IN-PICKER v81.87: the row shows the number too, so the master verifies who AND where at one glance
+                except Exception: _ph = 'none readable'
+                say(f'   {_n}) {os.path.basename(_c)} · {_em} · {_ph} · {os.path.relpath(os.path.dirname(_c), root)}')    # POSITION-LABEL v81.76 # PATH-LABEL v81.79: the whole folder trail from the client down - position and stage together - because that is what tells humans apart (comment lives outside the f-string braces)
             hit = _strict[int(input('   pick #: ').strip()) - 1]  # the inner try becomes a plain assignment: the outer embrace owns both excepts
         except KeyboardInterrupt: say('👋 pick cancelled - nothing drafted'); hit = None  # PICK-GRACEFUL v81.81: Ctrl-C at the picker is a choice, not a crash
         except Exception: say('🤷 pick skipped'); hit = None
