@@ -95,7 +95,10 @@ def _phones_of_local(path):  # ONE-CLERK v81.72: the old clerk, kept as last res
     try: json.dump(store, open(PHONES_FILE, 'w'))
     except Exception: pass
     return ph
-def _pick_phone(ps, say=print, ask=None):
+def _pick_phone(ps, say=print, ask=None, path=None):
+    if path is not None and len(ps) > 1:  # PROVENANCE-AT-PICK v81.92: a pick-list without addresses is a guess with numbering
+        try: butler.provenance_of(path, ps)
+        except Exception: pass
     if not ps: return ''
     if len(ps) == 1: return ps[0]
     for i, x in enumerate(ps): say(f"   {i+1}) {x}")
@@ -788,7 +791,7 @@ def do_missed(arg, root, say=print, ask=None, words=None):
     if words == 'AUTO': words = _stage_words(hit) or ['outbox']
     elif words: words = _stage_words(hit) or words
     say(f'   🗣 voice: {_tpl_name(words)}')
-    phone = _pick_phone(_phones_by_basename(hit) or phones_of(hit), say)
+    phone = _pick_phone(_phones_by_basename(hit) or phones_of(hit), say, path=hit)
     if not phone:
         say("🤷 no phone found in that CV"); return
     name = _full_name(hit)
@@ -831,7 +834,7 @@ def do_reject(arg, root, say=print, ask=None):
         if hit: break
     if not hit:
         say(f"🤷 no candidate like '{arg}' under {f['display']}"); return
-    phone = _pick_phone(_phones_by_basename(hit) or phones_of(hit), say)
+    phone = _pick_phone(_phones_by_basename(hit) or phones_of(hit), say, path=hit)
     if not phone:
         say("🤷 no phone found in that CV"); return
     name = _full_name(hit)
@@ -879,7 +882,7 @@ def do_send(arg, root, tpl_words, say=print, ask=None):
         if hit: break
     if not hit:
         say(f"🤷 no candidate like '{arg}'"); return
-    phone = _pick_phone(_phones_by_basename(hit) or phones_of(hit), say)
+    phone = _pick_phone(_phones_by_basename(hit) or phones_of(hit), say, path=hit)
     if not phone:
         say("🤷 no phone found in that CV"); return
     nm = _full_name(hit)
@@ -1307,7 +1310,7 @@ def do_wa(arg, root, say=print, ask=None):
     msg = ' '.join(toks[ntok:]).strip()
     if not msg:
         say("usage: wa <name> <your message>"); return
-    phone = _pick_phone(_phones_by_basename(hit) or phones_of(hit), say)
+    phone = _pick_phone(_phones_by_basename(hit) or phones_of(hit), say, path=hit)
     if not phone:
         say("🤷 no phone found in that CV"); return
     try:

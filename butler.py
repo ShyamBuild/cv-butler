@@ -174,6 +174,25 @@ def _full_text(p):  # FULL-TEXT v81.76: text layer first, vision second - design
         except Exception: t = ''
     return t
 
+def _provenance_lines(ap, ph):  # PROVENANCE v81.90 (refactored v81.92): one source of truth for where each number lives in the paper (module level: briefing calls it too)
+    out = []
+    try:
+        with pdfplumber.open(ap) as _pf:
+            for _pi, _pg in enumerate(_pf.pages, 1):
+                _pt = _pg.extract_text() or ''
+                _ref = 'references' in _pt.lower()
+                for _dd in phones_in_text(_pt):
+                    if _dd in ph and _dd not in [x[0] for x in out]:
+                        out.append((_dd, f'page {_pi}' + (' , after a References heading - likely a referee, not the candidate' if _ref else ' , header/body - likely the candidate')))
+    except Exception:
+        pass
+    return out
+
+def provenance_of(p, digits):  # PROVENANCE-AT-PICK v81.92: the pick-list speaks each number's address, cached or fresh
+    _lv = _provenance_lines(os.path.abspath(p), digits)
+    if _lv:
+        print('🔢 ' + str(len(digits)) + ' numbers in ' + os.path.basename(p) + ': ' + ' · '.join(f'{i}) {dd} ({w})' for i, (dd, w) in enumerate(_lv, 1)), flush=True)
+
 def phones_of(p, quiet=False):  # QUIET-CLERK v81.87: the picker may ask without the ceremony; the law of speaking identity still binds every voice that drafts
     ap = os.path.abspath(p)
     try: taught = json.load(open(os.path.join(BASE_DIR, 'phones_taught.json')))
@@ -212,19 +231,7 @@ def phones_of(p, quiet=False):  # QUIET-CLERK v81.87: the picker may ask without
         if not quiet: print(f'\U0001f937 we are talking about {os.path.basename(ap)} · email: {emails_in_text(txt)[0] if emails_in_text(txt) else "none readable"} - no phone readable in it; teach me: python3 butler.py teach <name> <digits>', flush=True)
         try: json.dump({'stem': stem, 'ts': time.time()}, open(os.path.join(BASE_DIR, 'last_nophone.json'), 'w'))  # LISTEN-STATE v81.67: the confession leaves an address the REPL can listen at
         except Exception: pass
-    if ph and not quiet and len(ph) > 1:
-        try:
-            with pdfplumber.open(ap) as _pf:
-                _prov = []
-                for _pi, _pg in enumerate(_pf.pages, 1):
-                    _pt = _pg.extract_text() or ''
-                    _ref = 'references' in _pt.lower()
-                    for _dd in phones_in_text(_pt):
-                        if _dd in ph and _dd not in [x[0] for x in _prov]:
-                            _prov.append((_dd, f'page {_pi}' + (' , after a References heading - likely a referee, not the candidate' if _ref else ' , header/body - likely the candidate')))
-                if _prov:
-                    print('🔢 ' + str(len(ph)) + ' numbers in ' + os.path.basename(ap) + ': ' + ' · '.join(f'{i}) {dd} ({w})' for i, (dd, w) in enumerate(_prov, 1)), flush=True)  # PROVENANCE v81.90: every number carries its page and its section, so a referee can never pose as the candidate
-        except Exception: pass
+    if ph and not quiet and len(ph) > 1: _provenance_print = provenance_of(ap, ph)  # PROVENANCE v81.90: every number carries its page and its section
     return ph
 
 _h = logging.handlers.RotatingFileHandler(os.path.join(BASE_DIR, "butler.log"), maxBytes=1_000_000, backupCount=3)
@@ -2421,6 +2428,8 @@ def _selftest(root):
     ck('S194 every number carries its page and its section', (chr(35)+' PROVENANCE v81.90') in _src)
     ck('S195 identity speaks once, not twice', chr(128231) not in _src and open(os.path.join(BASE_DIR, 'wa.py')).read().count('message is in the WhatsApp text field') == 1)
     ck('S196 no paste advice when WhatsApp says no field', 'if not _notwa: ' in open(os.path.join(BASE_DIR, 'wa.py')).read() and (chr(35)+' CONCISE v81.91') in open(os.path.join(BASE_DIR, 'wa.py')).read())
+    ck('S197 the WhatsApp door is asked within the first beats', (chr(35)+' EARLY-DOOR v81.92') in open(os.path.join(BASE_DIR, 'wa.py')).read())
+    ck('S198 every pick-list speaks its numbers'+chr(39)+' addresses', (chr(35)+' PROVENANCE-AT-PICK v81.92') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and _src.count('def provenance_'+'of(') == 1 and _src.find('def provenance_'+'of(') < _src.find('def phones_'+'of('))  # needles split: a count-guard must not count its own needle
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False

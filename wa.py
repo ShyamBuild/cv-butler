@@ -115,6 +115,18 @@ def send_review(phone, text, say=print, ask=None):
             say('⚠️ chat page did not load - scan QR in the opened window if asked, then retry')
             return False
         try:
+            try:  # EARLY-DOOR v81.92: ask WhatsApp within the first beats, not after the placement wait - poll four seconds for the modal or the field, whichever speaks first (inserted before the modal-check if, at its own indent; the late path stays as fallback)
+                for _i in range(8):
+                    _html = page.content() or ''
+                    if "isn't on WhatsApp" in _html:
+                        say('⚠️ WhatsApp says this number isn\'t on WhatsApp - nothing drafted; teach or re-pick a number that is registered, or close the window whenever you like')
+                        return False
+                    try:
+                        if page.locator('div[contenteditable="true"]').count() > 0: break
+                    except Exception: break
+                    page.wait_for_timeout(500)
+            except Exception:
+                pass
             if "isn't on WhatsApp" in (page.content() or ''):
                 say('⚠️ WhatsApp says this number is not registered - nothing drafted. Correct it with: fixphone <name> <10-digit>')
                 return False
