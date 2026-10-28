@@ -212,6 +212,19 @@ def phones_of(p, quiet=False):  # QUIET-CLERK v81.87: the picker may ask without
         if not quiet: print(f'\U0001f937 we are talking about {os.path.basename(ap)} · email: {emails_in_text(txt)[0] if emails_in_text(txt) else "none readable"} - no phone readable in it; teach me: python3 butler.py teach <name> <digits>', flush=True)
         try: json.dump({'stem': stem, 'ts': time.time()}, open(os.path.join(BASE_DIR, 'last_nophone.json'), 'w'))  # LISTEN-STATE v81.67: the confession leaves an address the REPL can listen at
         except Exception: pass
+    if ph and not quiet and len(ph) > 1:
+        try:
+            with pdfplumber.open(ap) as _pf:
+                _prov = []
+                for _pi, _pg in enumerate(_pf.pages, 1):
+                    _pt = _pg.extract_text() or ''
+                    _ref = 'references' in _pt.lower()
+                    for _dd in phones_in_text(_pt):
+                        if _dd in ph and _dd not in [x[0] for x in _prov]:
+                            _prov.append((_dd, f'page {_pi}' + (' , after a References heading - likely a referee, not the candidate' if _ref else ' , header/body - likely the candidate')))
+                if _prov:
+                    print('🔢 ' + str(len(ph)) + ' numbers in ' + os.path.basename(ap) + ': ' + ' · '.join(f'{i}) {dd} ({w})' for i, (dd, w) in enumerate(_prov, 1)), flush=True)  # PROVENANCE v81.90: every number carries its page and its section, so a referee can never pose as the candidate
+        except Exception: pass
     return ph
 
 _h = logging.handlers.RotatingFileHandler(os.path.join(BASE_DIR, "butler.log"), maxBytes=1_000_000, backupCount=3)
@@ -2404,6 +2417,8 @@ def _selftest(root):
     ck('S190 Ctrl-C anywhere in the picker is graceful', (chr(35)+' PICK-GRACEFUL-WIDE v81.82') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S191 old guards repin to new shapes, never veto them', (chr(35)+' S27-REPINNED v81.86') in _src)
     ck('S192 the picker shows the number beside the email', (chr(35)+' PHONE-IN-PICKER v81.87') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' QUIET-CLERK v81.87') in _src)
+    ck('S193 a number absent from WhatsApp is named aloud', (chr(35)+' NOT-ON-WHATSAPP v81.90') in open(os.path.join(BASE_DIR, 'wa.py')).read())
+    ck('S194 every number carries its page and its section', (chr(35)+' PROVENANCE v81.90') in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False

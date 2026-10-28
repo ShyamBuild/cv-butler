@@ -122,6 +122,10 @@ def send_review(phone, text, say=print, ask=None):
             pass
         ok_fill = _place_text(page, text, say)
         if not ok_fill:
+            try:  # NOT-ON-WHATSAPP v81.90: WhatsApp's own words beat any guess - say them plainly before advising a paste into a field that does not exist
+                if "isn't on WhatsApp" in (page.content() or ''):
+                    say('⚠️ WhatsApp says this number isn\'t on WhatsApp - there is no message field to paste into; [x] discards this round, [q] closes it, or teach/re-pick a number that is registered')
+            except Exception: pass
             say('⚠️ field did not take the text automatically - paste the draft from above into the WhatsApp field yourself, then:')
         if os.path.exists(AUTOSEND):
             sent = _click_send(page)
