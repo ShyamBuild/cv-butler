@@ -135,7 +135,7 @@ def emails_in_text(t):  # EMAIL-WITNESS v81.64: the second anchor, unique to a p
 def emails_of(p):  # EMAIL-OF v81.74: the picker confirms humans by email, the anchor the master chose
     try:
         with pdfplumber.open(p) as pdf:
-            return emails_in_text("\n".join((pg.extract_text() or '') for pg in pdf.pages))
+            return emails_in_text(_full_text(p))
     except Exception:
         return []
 
@@ -163,6 +163,17 @@ def listen_teach(q):  # LISTEN-FN v81.69: the master's bare ten digits, within f
         print(f'⚠️ teach-listen skipped: {_te}', flush=True)
         return None
 
+def _full_text(p):  # FULL-TEXT v81.76: text layer first, vision second - designed CVs whose layer is silent still speak
+    try:
+        with pdfplumber.open(p) as pdf:
+            t = "\n".join((pg.extract_text() or '') for pg in pdf.pages)
+    except Exception:
+        t = ''
+    if not t.strip():
+        try: t = extract_text_ocr(p) or ''
+        except Exception: t = ''
+    return t
+
 def phones_of(p):  # TAUGHT v81.63: a taught number beats extraction; empty results are never cached; identity is spoken when nothing is found
     ap = os.path.abspath(p)
     try: taught = json.load(open(os.path.join(BASE_DIR, 'phones_taught.json')))
@@ -172,7 +183,7 @@ def phones_of(p):  # TAUGHT v81.63: a taught number beats extraction; empty resu
         if tk and (tk == stem or sorted(tk.split()) == sorted(stem.split())):  # EXACT-TEACH v81.73: a token is a whole word or nothing; 'a' inside 'sharma' is not identity
             _em = ''
             try:
-                with pdfplumber.open(ap) as _pf: _em = (emails_in_text('\n'.join((pg.extract_text() or '') for pg in _pf.pages)) or [''])[0]
+                _em = (emails_in_text(_full_text(ap)) or [''])[0]
             except Exception: pass
             print(f'\U0001faaa {os.path.basename(ap)} · email: {_em or "none readable"} · taught for "{tk}" -> {tv}', flush=True)  # IDENTITY-FIRST v81.73: file and email before any number is used
             print(f'\U0001f4da taught number in use for {os.path.basename(ap)}', flush=True)  # TAUGHT-ECHO v81.67
@@ -185,11 +196,7 @@ def phones_of(p):  # TAUGHT v81.63: a taught number beats extraction; empty resu
         return []
     e = store.get(ap)
     if e and e.get('k') == k and e.get('phones'): return e['phones']
-    txt = ''
-    try:
-        with pdfplumber.open(p) as pdf:
-            txt = "\n".join((pg.extract_text() or '') for pg in pdf.pages)
-    except Exception: pass
+    txt = _full_text(p)  # FULL-TEXT v81.76: the phone clerk and the email clerk share one pair of eyes
     ph = phones_in_text(txt)
     if not ph:
         ocr = extract_text_ocr(p)
@@ -202,7 +209,7 @@ def phones_of(p):  # TAUGHT v81.63: a taught number beats extraction; empty resu
         try: json.dump(store, open(PHONES_FILE, 'w'))
         except Exception: pass
     else:
-        print(f'\U0001f937 we are talking about {os.path.basename(ap)} · email: {emails_in_text(txt or ocr)[0] if emails_in_text(txt or ocr) else "none readable"} - no phone readable in it; teach me: python3 butler.py teach <name> <digits>', flush=True)
+        print(f'\U0001f937 we are talking about {os.path.basename(ap)} · email: {emails_in_text(txt)[0] if emails_in_text(txt) else "none readable"} - no phone readable in it; teach me: python3 butler.py teach <name> <digits>', flush=True)
         try: json.dump({'stem': stem, 'ts': time.time()}, open(os.path.join(BASE_DIR, 'last_nophone.json'), 'w'))  # LISTEN-STATE v81.67: the confession leaves an address the REPL can listen at
         except Exception: pass
     return ph
@@ -2384,10 +2391,12 @@ def _selftest(root):
     ck('S177 the REPL can name the butler it teaches through', any(x.startswith('import butler') for x in open(os.path.join(BASE_DIR, 'briefing.py')).read().split(chr(10))))
     ck('S178 every voice asks the same clerk', 'def _phones_of_local(' in _br and 'butler.phones_of(path)' in _br)
     ck('S179 a taught key is whole tokens or nothing', 'sorted(tk.split()) == sorted(stem.split())' in _src and ('all(w in stem for w in tk.sp'+'lit())') not in _src)
-    ck('S180 the whole paper is read, not an excerpt', ('txt = ' + chr(34) + chr(92) + 'n' + chr(34) + '.join((pg.extract_text() or ' + chr(39) + chr(39) + ') for pg in pdf.pages)') in _src)  # clerk-scoped: other readers may skim, the phone clerk may not
+    ck('S180 the whole paper is read, not an excerpt', (('pdf.pages[:'+'2]') not in _src[_src.find('def _full_'+'text('):_src.find(chr(10)+'def ', _src.find('def _full_'+'text(')+1)]) and ('txt = _full_'+'text(p)') in _src)  # S180-CONTRACT v81.78: pin the clerk's contract - whole pages inside _full_text, phones_of reads through it - not the old line's coordinates
     ck('S181 identity speaks before any number is used', (chr(35)+' IDENTITY-FIRST v81.73') in _src and (chr(35)+' IDENTITY-FIRST-EXTRACT v81.73') in _src)
     ck('S182 several humans become a question, never a guess', (chr(35)+' STRICT-RESOLVE v81.75') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and 'pick the human by email' in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S183 the picker reads emails from the paper', 'def emails_of(' in _src)
+    ck('S184 designed CVs speak through vision when their layer is silent', ('def _full_'+'text(') in _src and ('return emails_in_text(_full_'+'text(p))') in _src)
+    ck('S185 the picker labels humans by position, not client', (chr(35)+' POSITION-LABEL v81.76') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False

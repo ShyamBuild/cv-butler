@@ -765,7 +765,7 @@ def do_missed(arg, root, say=print, ask=None, words=None):
         for _n, _c in enumerate(_strict, 1):
             try: _em = (butler.emails_of(_c) or ['none readable'])[0]
             except Exception: _em = 'none readable'
-            say(f'   {_n}) {os.path.basename(_c)} · {_em} · {os.path.basename(os.path.dirname(os.path.dirname(_c)))}')
+            say(f'   {_n}) {os.path.basename(_c)} · {_em} · {os.path.basename(os.path.dirname(_c))}')  # POSITION-LABEL v81.76: the folder that distinguishes humans is the position, not the client (comment lives outside the f-string braces)
         try: hit = _strict[int(input('   pick #: ').strip()) - 1]
         except Exception: say('🤷 pick skipped'); hit = None
 
