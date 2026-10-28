@@ -749,9 +749,11 @@ def do_missed(arg, root, say=print, ask=None, words=None):
     hit = _scan_path(arg.strip(), root) if arg.strip().isdigit() else None
     if arg.strip().isdigit() and not hit:
         say(f"🤷 no file at scan number {arg.strip()} in the latest scan"); return
+    _cr = os.path.dirname(os.path.dirname(f['path']))  # WORKSPACE-CLAMP v81.82: the butler's world is the workspace root; nothing above it is ever walked
+    _roots = [f['path']] + ([_cr] if (_cr.startswith(root) and _cr != f['path']) else [])
     _qt = [t for t in q.split()]  # STRICT-RESOLVE v81.75: exact stem, equal token-sets, or whole words only; several humans means a question, never a guess
     _strict = []
-    for _sr2 in [f['path'], os.path.dirname(os.path.dirname(f['path']))]:
+    for _sr2 in _roots:
         for dp, dn, fn in os.walk(_sr2):
             for x in fn:
                 if not x.lower().endswith('.pdf'): continue
@@ -762,16 +764,17 @@ def do_missed(arg, root, say=print, ask=None, words=None):
     if len(_strict) == 1:
         hit = _strict[0]
     elif len(_strict) > 1:
-        say('🪪 several candidates wear that name - pick the human by email:')
-        for _n, _c in enumerate(_strict, 1):
-            try: _em = (butler.emails_of(_c) or ['none readable'])[0]
-            except Exception: _em = 'none readable'
-            say(f'   {_n}) {os.path.basename(_c)} · {_em} · {os.path.relpath(os.path.dirname(_c), root)}')    # POSITION-LABEL v81.76 # PATH-LABEL v81.79: the whole folder trail from the client down - position and stage together - because that is what tells humans apart (comment lives outside the f-string braces)
-        try: hit = _strict[int(input('   pick #: ').strip()) - 1]
+        try:  # PICK-GRACEFUL-WIDE v81.82: Ctrl-C anywhere in the picker - listing or prompt - is a choice, not a crash
+            say('🪪 several candidates wear that name - pick the human by email:')
+            for _n, _c in enumerate(_strict, 1):
+                try: _em = (butler.emails_of(_c) or ['none readable'])[0]
+                except Exception: _em = 'none readable'
+                say(f'   {_n}) {os.path.basename(_c)} · {_em} · {os.path.relpath(os.path.dirname(_c), root)}')    # POSITION-LABEL v81.76 # PATH-LABEL v81.79: the whole folder trail from the client down - position and stage together - because that is what tells humans apart (comment lives outside the f-string braces)
+            hit = _strict[int(input('   pick #: ').strip()) - 1]  # the inner try becomes a plain assignment: the outer embrace owns both excepts
         except KeyboardInterrupt: say('👋 pick cancelled - nothing drafted'); hit = None  # PICK-GRACEFUL v81.81: Ctrl-C at the picker is a choice, not a crash
         except Exception: say('🤷 pick skipped'); hit = None
 
-    for _sr in ([] if hit else [f['path'], os.path.dirname(os.path.dirname(f['path']))]):
+    for _sr in ([] if hit else _roots):
         for dp, dn, fn in os.walk(_sr):
             for x in fn:
                 if x.lower().endswith('.pdf') and all(t in os.path.splitext(x)[0].lower().replace('_', ' ').split() for t in q.split()):  # WHOLE-WORD-WALK v81.81: the loose walk stops guessing by substring; a token is a whole word or the candidate is not offered

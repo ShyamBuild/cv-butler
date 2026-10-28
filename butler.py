@@ -2229,7 +2229,7 @@ def _selftest(root):
     ck('S24 live locks visible at launch', '🔒 live lock: " +' in _src)
     ck('S25 containment refusal at lock acquire', ('\u26d4' + ' refused: live butler') in _src)
     ck('S26 scan index per-root only', "scan_index_' + hashlib" in _br and 'scan_index.json' not in _br.split('def _scan_path')[1].split('def ')[0])
-    ck('S27 nudge routes to tree-walk resolver + phones follow moves', 'def _phones_by_basename(' in _br and "for _sr in ([] if hit else [f['path']" in _br)
+    ck('S27 nudge routes to tree-walk resolver + phones follow moves', ('def _phones_by_base'+'name(') in _br and ('for _sr in ([] if hit else _ro'+'ots)') in _br)  # S27-REPINNED v81.86: the walk is clamped to the workspace roots; the resolver intent is unchanged, and the needles are built so the witness cannot pass vacuously
     ck('S28 learned phone beats extraction', '_phones_by_basename(hit) or phones_of(hit)' in _br)
     ck('S29 download stability gate', (chr(35) + ' DOWNLOAD-STABILITY-GATE') in _src)
     ck('S30 converter refuses empty sources', ('conversion skipped: ' + 'source is 0 bytes') in _src)
@@ -2400,6 +2400,9 @@ def _selftest(root):
     ck('S186 a human is listed once, labelled by their whole trail', (chr(35)+' DEDUPE v81.79') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' PATH-LABEL v81.79') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S187 the loose walk offers whole words only', (chr(35)+' WHOLE-WORD-WALK v81.81') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S188 Ctrl-C at the picker is a choice, not a crash', (chr(35)+' PICK-GRACEFUL v81.81') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
+    ck('S189 nothing above the workspace is ever walked', (chr(35)+' WORKSPACE-CLAMP v81.82') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and 'for _sr in ([] if hit else _roots)' in open(os.path.join(BASE_DIR, 'briefing.py')).read())
+    ck('S190 Ctrl-C anywhere in the picker is graceful', (chr(35)+' PICK-GRACEFUL-WIDE v81.82') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
+    ck('S191 old guards repin to new shapes, never veto them', (chr(35)+' S27-REPINNED v81.86') in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
