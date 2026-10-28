@@ -757,7 +757,8 @@ def do_missed(arg, root, say=print, ask=None, words=None):
                 if not x.lower().endswith('.pdf'): continue
                 _xs = os.path.splitext(x)[0].lower().replace('_', ' ')
                 if _xs == q or sorted(_xs.split()) == sorted(_qt) or all(t in _xs.split() for t in _qt):
-                    _strict.append(os.path.join(dp, x))
+                    _p = os.path.join(dp, x)
+                    if _p not in _strict: _strict.append(_p)  # DEDUPE v81.79: the client walk contains the position walk; a human is listed once
     if len(_strict) == 1:
         hit = _strict[0]
     elif len(_strict) > 1:
@@ -765,14 +766,15 @@ def do_missed(arg, root, say=print, ask=None, words=None):
         for _n, _c in enumerate(_strict, 1):
             try: _em = (butler.emails_of(_c) or ['none readable'])[0]
             except Exception: _em = 'none readable'
-            say(f'   {_n}) {os.path.basename(_c)} · {_em} · {os.path.basename(os.path.dirname(_c))}')  # POSITION-LABEL v81.76: the folder that distinguishes humans is the position, not the client (comment lives outside the f-string braces)
+            say(f'   {_n}) {os.path.basename(_c)} · {_em} · {os.path.relpath(os.path.dirname(_c), root)}')    # POSITION-LABEL v81.76 # PATH-LABEL v81.79: the whole folder trail from the client down - position and stage together - because that is what tells humans apart (comment lives outside the f-string braces)
         try: hit = _strict[int(input('   pick #: ').strip()) - 1]
+        except KeyboardInterrupt: say('👋 pick cancelled - nothing drafted'); hit = None  # PICK-GRACEFUL v81.81: Ctrl-C at the picker is a choice, not a crash
         except Exception: say('🤷 pick skipped'); hit = None
 
     for _sr in ([] if hit else [f['path'], os.path.dirname(os.path.dirname(f['path']))]):
         for dp, dn, fn in os.walk(_sr):
             for x in fn:
-                if x.lower().endswith('.pdf') and all(t in x.lower() for t in q.split() if len(t) > 2):
+                if x.lower().endswith('.pdf') and all(t in os.path.splitext(x)[0].lower().replace('_', ' ').split() for t in q.split()):  # WHOLE-WORD-WALK v81.81: the loose walk stops guessing by substring; a token is a whole word or the candidate is not offered
                     hit = os.path.join(dp, x); break
             if hit: break
         if hit: break

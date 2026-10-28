@@ -2397,6 +2397,9 @@ def _selftest(root):
     ck('S183 the picker reads emails from the paper', 'def emails_of(' in _src)
     ck('S184 designed CVs speak through vision when their layer is silent', ('def _full_'+'text(') in _src and ('return emails_in_text(_full_'+'text(p))') in _src)
     ck('S185 the picker labels humans by position, not client', (chr(35)+' POSITION-LABEL v81.76') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
+    ck('S186 a human is listed once, labelled by their whole trail', (chr(35)+' DEDUPE v81.79') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' PATH-LABEL v81.79') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
+    ck('S187 the loose walk offers whole words only', (chr(35)+' WHOLE-WORD-WALK v81.81') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
+    ck('S188 Ctrl-C at the picker is a choice, not a crash', (chr(35)+' PICK-GRACEFUL v81.81') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
