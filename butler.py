@@ -2419,6 +2419,8 @@ def _selftest(root):
     ck('S192 the picker shows the number beside the email', (chr(35)+' PHONE-IN-PICKER v81.87') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' QUIET-CLERK v81.87') in _src)
     ck('S193 a number absent from WhatsApp is named aloud', (chr(35)+' NOT-ON-WHATSAPP v81.90') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S194 every number carries its page and its section', (chr(35)+' PROVENANCE v81.90') in _src)
+    ck('S195 identity speaks once, not twice', chr(128231) not in _src and open(os.path.join(BASE_DIR, 'wa.py')).read().count('message is in the WhatsApp text field') == 1)
+    ck('S196 no paste advice when WhatsApp says no field', 'if not _notwa: ' in open(os.path.join(BASE_DIR, 'wa.py')).read() and (chr(35)+' CONCISE v81.91') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False

@@ -122,17 +122,18 @@ def send_review(phone, text, say=print, ask=None):
             pass
         ok_fill = _place_text(page, text, say)
         if not ok_fill:
+            _notwa = False  # CONCISE v81.91: the paste advice is wrong when WhatsApp has already said there is no field
             try:  # NOT-ON-WHATSAPP v81.90: WhatsApp's own words beat any guess - say them plainly before advising a paste into a field that does not exist
                 if "isn't on WhatsApp" in (page.content() or ''):
                     say('⚠️ WhatsApp says this number isn\'t on WhatsApp - there is no message field to paste into; [x] discards this round, [q] closes it, or teach/re-pick a number that is registered')
+                    _notwa = True
             except Exception: pass
-            say('⚠️ field did not take the text automatically - paste the draft from above into the WhatsApp field yourself, then:')
+            if not _notwa: say('⚠️ field did not take the text automatically - paste the draft from above into the WhatsApp field yourself, then:')
         if os.path.exists(AUTOSEND):
             sent = _click_send(page)
             say('✅ sent via WhatsApp Web (autosend)' if sent else '⚠️ send-button not found - click send yourself in the WA window')
             if sent: _arm(digits, text)
             return bool(sent)
-        say('📝 message is in the WhatsApp text field - review it in the opened window, then:')
         say("📝 message is in the WhatsApp text field - the window STAYS open until you choose:")
         while True:
             c = (ask or input)("   [s] I clicked send myself · [x] discard & clear · [q] leave in field & close · [Enter] keep waiting: ").strip().lower()
