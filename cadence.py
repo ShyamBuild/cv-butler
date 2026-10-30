@@ -52,7 +52,12 @@ def process(B, say=lambda m: None):
                 d['items'].append({'kind': 'reference_ask', 'name': k.title(), 'due': now, 'note': rows[-1].get('stage', ''), 'done': False, 'at': now}); ch = True
     except Exception: pass
     due = [i for i in d['items'] if not i['done'] and i['due'] <= now]
-    if due: say(f"📬 {len(due)} follow-up(s) due - type: due  (approve via: outbox)")
+    if due:  # ANN-REST-PROCESS v82.2: the machine's own voice rests unless the due-set changes or the rest elapses; the master's voices (due, outbox, ack) never rest
+        _key = f"{len(due)}:{min(i.get('due') for i in due)}"
+        _ann = d.setdefault('ann', {})
+        if _ann.get('key') != _key or now - _ann.get('ts', 0) >= _cfg().get('ann_rest', 4 * 3600):
+            say(f"📬 {len(due)} follow-up(s) due - type: due  (approve via: outbox)")
+            _ann['key'] = _key; _ann['ts'] = now
     if ch: _save(d)
 def _fmt(i, now):
     who = i.get('name') or i.get('phone') or '?'
