@@ -4,7 +4,7 @@ OUT = os.path.join(BASE, 'outbox.json'); CFG = os.path.join(BASE, 'fit_weights.j
 def _cfg():
     try: d = json.load(open(CFG))
     except Exception: d = {}
-    d.setdefault('ack_min', 10); d.setdefault('eod_cutoff', '16:30')
+    d.setdefault('ack_min', 10); d.setdefault('eod_cutoff', '16:30'); d.setdefault('ann_rest', 4 * 3600)  # ANN-REST v82.1: the machine's own voice rests four hours unless the due-set changes
     return d
 def _load():
     try: return json.load(open(OUT))
