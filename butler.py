@@ -425,6 +425,34 @@ def present_in_text(name, raw):
                 return False
     return True
 
+def _jd_like_name(st):  # RENAME-GATE v82.0: portal glue and JDs keep their names forever
+    lf = st.lower()
+    return lf.startswith('jd') or '_jd' in lf or ' jd' in lf or lf.endswith(('.eml', '.msg'))
+def _portal_name(st):  # RENAME-GATE v82.0: saved searches, reports and backups are not humans
+    lf = st.lower()
+    return any(w in lf for w in ('save search', 'resdex', 'report', 'summary', 'backup', 'anythingllm', 'debris'))
+def _is_candidate_paper(p):  # RENAME-GATE v82.0: only a paper that can hold a person may wear a person's name
+    st = os.path.splitext(os.path.basename(p))[0]
+    return not _jd_like_name(st) and not _portal_name(st)
+def _canonical_person_name(s):  # CANON-FORM v82.0: a pipeline name carries the human, not the paper's shout
+    t = (s or '')
+    t = re.sub(r'\b\d{1,2}[./-]\d{1,2}[./-]\d{2,4}\b', ' ', t)
+    t = re.sub(r'\b(20\d{2}|19\d{2})\b', ' ', t)
+    t = re.sub(r'\bcv\b', ' ', t, flags=re.I)
+    t = re.sub(r'\s+', ' ', t).strip(' -_.')
+    if t and t.isupper(): t = t.title()
+    return t
+def _rename_ledger(old, new, why, once=False):  # RENAME-LEDGER v82.0: every rename is written down so your word can undo it
+    try:
+        lp = os.path.join(BASE_DIR, 'rename_log.json')
+        lg = json.load(open(lp)) if os.path.exists(lp) else []
+        if once and any(e.get('old') == old and e.get('why') == why for e in lg): return False
+        lg.append({'old': old, 'new': new, 'why': why, 'ts': time.time()})
+        json.dump(lg[-200:], open(lp, 'w'), indent=1)
+        return True
+    except Exception:
+        return False
+
 def get_visual_name(fp):
     try:
         with pdfplumber.open(fp) as pdf:
@@ -794,7 +822,14 @@ class Butler:
             target = f"{base}_{num}{e}"
             if target == f: continue
             if os.path.exists(os.path.join(folder, target)): continue
-            self._rename(fp, target, say, 'suffix-canonical')
+            if not _is_candidate_paper(fp):  # RENAME-GATE v82.0: portal glue and JDs are left untouched, silently - they were never candidates
+                pass
+            elif not os.path.exists(fp):  # RENAME-PREFLIGHT v82.0: a stale decision rests once and is never re-knocked
+                if _rename_ledger(os.path.basename(fp), os.path.basename(target), 'suffix-canonical-stale', once=True):
+                    say(f'⏭️ [rename] rested: {os.path.basename(fp)} already wears its new name - stale decision, not retried')
+            else:
+                _rename_ledger(os.path.basename(fp), os.path.basename(target), 'suffix-canonical')
+                self._rename(fp, target, say, 'suffix-canonical')
         for f in sorted(os.listdir(folder)):
             if f.lower().endswith(".pdf"):
                 try: self.normalize_suffix(os.path.join(folder, f), say)
@@ -1146,9 +1181,9 @@ class Butler:
             if ch >= 2 and ch > cv:
                 name, tag = hh, 'arbitrated'
             else:
-                name, tag = vv, 'visual'
+                name, tag = _canonical_person_name(vv), 'visual'  # CANON-FORM v82.0: the pipeline name carries the human - no dates, no CV, no shouting
         elif vv:
-            name, tag = vv, 'visual'
+            name, tag = _canonical_person_name(vv), 'visual'  # CANON-FORM v82.0: the pipeline name carries the human - no dates, no CV, no shouting
         elif hh:
             aa = ask_name(); aa = aa if ok(aa) else None
             if aa and aa == hh:
@@ -2433,7 +2468,12 @@ def _selftest(root):
     ck('S200 a dead number ends the round with one menu', (chr(35)+' NO-FIELD-EXIT v81.94') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S201 the field detector sees the composer, not the search box', ((_w := open(os.path.join(BASE_DIR, 'wa.py')).read()) and re.search('(?<!footer )div' + chr(92) + '[contenteditable=' + chr(34) + 'true' + chr(34) + chr(92) + ']', _w) is None and ('footer div[contenteditable=' + chr(34) + 'true' + chr(34) + ']') in _w))
     ck('S202 the door is asked until it answers', (chr(35)+' MODAL-WATCH v81.98') in open(os.path.join(BASE_DIR, 'wa.py')).read() and ('for _i in range(' + '48):') in open(os.path.join(BASE_DIR, 'wa.py')).read())
+    ck('S208 the class keeps its methods', any(l.startswith('    def _reconcile_'+'tags') for l in _src.split(chr(10))) and any(l.startswith('    def _rename_'+'clean') for l in _src.split(chr(10))))  # S208: a column-zero line inside a class body amputates the class; the witnesses pin the indentation itself
     ck('S203 the autodraft sleep-switch honours the off word', ('if st == ' + chr(39) + 'off' + chr(39) + ': return False') in _src and ('if not self._ad_enabled' + '():') in _src)  # S203: the mute switch stays wired - a refactor may move it but may not delete it
+    ck('S204 portal glue and JDs keep their names', ('def _is_candidate_'+'paper(') in _src and (chr(35)+' RENAME-GATE v82.0') in _src)
+    ck('S205 a stale rename decision rests and is never re-knocked', (chr(35)+' RENAME-PREFLIGHT v82.0') in _src)
+    ck('S206 every rename is written in the undo ledger', (chr(35)+' RENAME-LEDGER v82.0') in _src and ('rename_log'+'.'+'json') in _src)  # the dot travels with the needle: split between characters, never delete one
+    ck('S207 the visual name carries the human, not the paper'+chr(39)+'s shout', (chr(35)+' CANON-FORM v82.0') in _src and ('name, tag = vv, ' + chr(39) + 'visual' + chr(39)) not in _src)
     ck('S198 every pick-list speaks its numbers'+chr(39)+' addresses', (chr(35)+' PROVENANCE-AT-PICK v81.92') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and _src.count('def provenance_'+'of(') == 1 and _src.find('def provenance_'+'of(') < _src.find('def phones_'+'of('))  # needles split: a count-guard must not count its own needle
     ck('S199 the paper'+chr(39)+'s own witness picks the candidate'+chr(39)+'s number', (chr(35)+' CANDIDATE-FIRST v81.93') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and any(x.strip().startswith('return _lv') for x in _src.split(chr(10))))
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
