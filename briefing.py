@@ -736,6 +736,13 @@ def _tpl_name(words):
     except Exception: pass
     return 'awaiting (fallback)'
 
+def do_desk(arg, root, say=print):  # DESK v84.0
+    butler.desk_cmd(arg, root, say)
+def do_briefing(arg, root, say=print):  # BRIEFING v84.0
+    butler.daily_briefing(say)
+def do_chase(arg, root, say=print):  # CHASE v84.0
+    butler.chase_cmd(arg, root, say)
+
 def do_pending(arg, root, say=print):
     butler.pipeline_pending(arg or None, say)
 def do_status(arg, root, say=print):
@@ -1453,6 +1460,9 @@ if __name__ == "__main__":
                     if alive: say(f"   🤖 {alive} watcher(s) keep running in background - 'focus clear' stops them")
                 except Exception: pass
                 break
+            if q.startswith('desk'): do_desk(q[4:].strip(), root); continue  # DESK v84.0
+            if q.startswith('briefing'): do_briefing(q[8:].strip(), root); continue
+            if q.startswith('chase'): do_chase(q[5:].strip(), root); continue
             if q.startswith('pending'): do_pending(q[len('pending'):].strip(), root); continue  # PIPELINE-CHAT-SHALLOW v83.1: the master's words stand at the head of the chain, never nested under another voice
             if q.startswith('status'): do_status(q[len('status'):].strip(), root); continue
             if q.startswith('note'): do_note(q[len('note'):].strip(), root); continue
