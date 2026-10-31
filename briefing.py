@@ -1469,6 +1469,7 @@ if __name__ == "__main__":
             if q.startswith('briefing'): do_briefing(q[8:].strip(), root); continue
             if q.startswith('chase'): do_chase(q[5:].strip(), root); continue
             if q.startswith('tag '): do_tagcmd(q[4:].strip(), root); continue  # TAG-VOICE v84.0
+            if q.strip().isdigit() and butler.tag_pick_pending(): do_tagcmd(q.strip(), root); continue  # TAG-PICK-ROUTE v84.3: a bare digit answers the fresh question before the AI wakes
             if q.startswith('pending'): do_pending(q[len('pending'):].strip(), root); continue  # PIPELINE-CHAT-SHALLOW v83.1: the master's words stand at the head of the chain, never nested under another voice
             if q.startswith('status'): do_status(q[len('status'):].strip(), root); continue
             if q.startswith('note'): do_note(q[len('note'):].strip(), root); continue
