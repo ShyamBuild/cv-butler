@@ -430,23 +430,29 @@ def desk_load():
     try: return json.load(open(DESK_PATH))
     except Exception: return {'primary': '', 'secondary': ''}
 def desk_save(d): json.dump(d, open(DESK_PATH, 'w'), indent=1)
-def desk_resolve(spec, root):
+def desk_resolve(spec, root):  # DESK v84.0 (JD-blind v84.1): a chair is a folder that holds people, not a folder that holds a JD
     toks = [t for t in spec.lower().split() if t]
-    best = None; bs = -1
+    best = None; bs = -1; bf = -1
     for dp, dn, fn in os.walk(root):
         rel = os.path.relpath(dp, root)
         if rel == '.' or rel.count(os.sep) > 1: continue
-        low = rel.lower()
-        hit = sum(1 for t in toks if t in low)
-        if hit == len(toks) and hit > bs: best, bs = dp, hit
+        if any(seg.lower().startswith('jd') for seg in rel.split(os.sep)): continue  # DESK-JD-BLIND v84.1
+        papers = [x for x in fn if x.lower().endswith(('.pdf', '.docx'))]
+        blob = rel.lower() + ' ' + ' '.join(papers).lower()
+        hit = sum(1 for t in toks if t in blob)
+        if hit == len(toks) and (hit > bs or (hit == bs and len(papers) > bf)):
+            best, bs, bf = dp, hit, len(papers)
     return best
+
 def desk_paths():
     d = desk_load()
     return [x for x in (d.get('primary'), d.get('secondary')) if x and os.path.isdir(x)]
 def desk_cmd(arg, root, say=print):  # DESK v84.0: the co-pilot's chair - primary today, secondary in peripheral vision
     d = desk_load()
     if not arg:
-        say(f"🪑 desk: {os.path.relpath(d.get('primary') or '?', root)} · secondary: {os.path.relpath(d.get('secondary') or '-', root)}" if d.get('primary') else '🪑 no desk set - the butler watches the whole library evenly')
+        _pr = os.path.relpath(d['primary'], root) if d.get('primary') else ''
+        _se = os.path.relpath(d['secondary'], root) if d.get('secondary') else '-'  # DESK-DISPLAY v84.1: a placeholder is never run through relpath
+        say(f'🪑 desk: {_pr or "-"} · secondary: {_se}' if d.get('primary') else '🪑 no desk set - the butler watches the whole library evenly')
     elif arg == 'clear':
         desk_save({'primary': '', 'secondary': ''}); say('🪑 desk cleared - back to librarian mode')
     elif arg == 'swap':
@@ -2140,11 +2146,14 @@ def main():
         else:
             root = sys.stdin.readline()
         root = os.path.normpath(os.path.expanduser(root.strip().strip('"').strip("'").replace('\\', '')))
-    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note'):  # PIPELINE-CLI-FIRST v83.1: a question is never a folder - the verbs answer before any root is validated
+    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
         _v, _a = sys.argv[1], sys.argv[2:]
         if _v == 'pending': pipeline_pending(_a[0] if _a else None, print)
         elif _v == 'status': pipeline_status(' '.join(_a), print)
-        else: pipeline_note(_a[0] if _a else '', ' '.join(_a[1:]), print)
+        elif _v == 'note': pipeline_note(_a[0] if _a else '', ' '.join(_a[1:]), print)
+        elif _v == 'desk': desk_cmd(' '.join(_a), _pl_root(), print)
+        elif _v == 'briefing': daily_briefing(print)
+        elif _v == 'chase': chase_cmd(' '.join(_a), _pl_root(), print)
         sys.exit(0)
     if not os.path.isdir(root):
         print("Error: folder does not exist."); sys.exit(1)
@@ -2780,13 +2789,16 @@ def _selftest(root):
     ck('S211 one ledger, two doors - chat and terminal ask the same clerk', ('def pipeline_pending(' in _src) and ('def do_pending(' in open(os.path.join(BASE_DIR, 'briefing.py')).read()) and ("sys.argv[1] == 'pend"+'ing') in _src)
     ck('S212 the overdue nudge rests like every machine-born voice', (chr(35)+' PIPELINE-NUDGE-REST v83.0') in _src)
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
-    ck('S214 a question is never a folder', 0 <= _src.find("sys.argv[1] in ('pend"+"ing', 'status', 'note')") < _src.find('if not os.path.isdir('+'root):'))
+    ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
     ck('S218 no chase knocks before nine or after half past seven', (chr(35)+' QUIET-WINDOW v84.0') in _src and ('def _clamp_window(' in _src))
     ck('S219 the desk is a chair, not a cage - focus still roams', ('def desk_cmd(' in _src) and ('def do_focus(' in open(os.path.join(BASE_DIR, 'briefing.py')).read()))
     ck('S220 the small model thinks on a small machine', (chr(35)+' LLM-PIN v84.0') in _src)
     ck('S222 the reader returns the exact bytes, NULs and all', ('buf.raw[:r]' in _src) and ('mdls' not in _src[_src.find('def _xattr_raw('):_src.find('def _xattr_raw(') + 900]))
     ck('S223 absence reads as empty bytes, never as None', _xattr_absence_ok())
+    ck('S225 six verbs answer before any root is validated', (chr(35)+' PIPELINE-CLI-FIRST v84.1') in _src and ("'desk', 'briefing', 'chase')" in _src))
+    ck('S226 the resolver seats folders that hold people, not folders that hold JDs', (chr(35)+' DESK-JD-BLIND v84.1') in _src)
+    ck('S227 a placeholder is never run through relpath', ("relpath(d.get('secondary') or " + "'-'" not in _src) and (chr(35)+' DESK-DISPLAY v84.1') in _src)
     ck('S216 the master'+chr(39)+'s words stand at the head of the chat chain', ((_b := open(os.path.join(BASE_DIR, 'briefing.py')).read()) and _b.count("if q.startswith('pending'): do_pending(") == 1 and _b.find("if q.startswith('pending'): do_pending(") < _b.find("if q.lower().startswith('missed'):")))
     ck('S209 the machine'+chr(39)+'s own voice rests, the master'+chr(39)+'s never', (chr(35)+' ANN-REST v82.1') in open(os.path.join(BASE_DIR, 'cadence.py')).read() and ('ann_rest' in open(os.path.join(BASE_DIR, 'cadence.py')).read()) and ("_ann = d.setdefault('ann', {})" in open(os.path.join(BASE_DIR, 'cadence.py')).read()) and ('show_outbox' in open(os.path.join(BASE_DIR, 'cadence.py')).read()))  # S209 repinned v82.2: the witness demands the process-block itself, not merely the config default
     ck('S203 the autodraft sleep-switch honours the off word', ('if st == ' + chr(39) + 'off' + chr(39) + ': return False') in _src and ('if not self._ad_enabled' + '():') in _src)  # S203: the mute switch stays wired - a refactor may move it but may not delete it
