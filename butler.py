@@ -47,6 +47,20 @@ def _names_by_phone():
     except Exception:
         return {}
 
+def _xattr_set_raw(p, name, data):  # XATTR-SET v84.0: the writer walks the same libc road as the reader - one hand, one law
+    import ctypes
+    lc = ctypes.CDLL('/usr/lib/libc.dylib', use_errno=True)
+    lc.setxattr.restype = ctypes.c_int
+    lc.setxattr.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_uint32, ctypes.c_int]
+    r = lc.setxattr(p.encode('utf-8'), name.encode('utf-8'), ctypes.cast(data, ctypes.c_void_p), len(data), 0, 0)
+    if r != 0: raise OSError(ctypes.get_errno(), 'setxattr failed for ' + str(p))
+def _xattr_del_raw(p, name):  # XATTR-SET v84.0
+    import ctypes
+    lc = ctypes.CDLL('/usr/lib/libc.dylib', use_errno=True)
+    lc.removexattr.restype = ctypes.c_int
+    lc.removexattr.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int]
+    lc.removexattr(p.encode('utf-8'), name.encode('utf-8'), 0)
+
 def _xattr_raw(p, name='com.apple.metadata:_kMDItemUserTags'):  # XATTR-RAW v81.7 (truthful v84.0): exact bytes NULs and all; absence reads as empty bytes, never None - the old contract half the house crc32s
     try:
         import ctypes
@@ -430,18 +444,19 @@ def desk_load():
     try: return json.load(open(DESK_PATH))
     except Exception: return {'primary': '', 'secondary': ''}
 def desk_save(d): json.dump(d, open(DESK_PATH, 'w'), indent=1)
-def desk_resolve(spec, root):  # DESK v84.0 (JD-blind v84.1): a chair is a folder that holds people, not a folder that holds a JD
+def desk_resolve(spec, root):  # DESK v84.0 (JD-blind v84.1, depth-preferring v84.2): a chair is a folder that holds people; a position outranks its client umbrella
     toks = [t for t in spec.lower().split() if t]
-    best = None; bs = -1; bf = -1
+    best = None; bs = -1; bd = -1; bf = -1
     for dp, dn, fn in os.walk(root):
         rel = os.path.relpath(dp, root)
         if rel == '.' or rel.count(os.sep) > 1: continue
         if any(seg.lower().startswith('jd') for seg in rel.split(os.sep)): continue  # DESK-JD-BLIND v84.1
+        depth = rel.count(os.sep)
         papers = [x for x in fn if x.lower().endswith(('.pdf', '.docx'))]
         blob = rel.lower() + ' ' + ' '.join(papers).lower()
         hit = sum(1 for t in toks if t in blob)
-        if hit == len(toks) and (hit > bs or (hit == bs and len(papers) > bf)):
-            best, bs, bf = dp, hit, len(papers)
+        if hit == len(toks) and (hit > bs or (hit == bs and (depth > bd or (depth == bd and len(papers) > bf)))):  # DESK-DEPTH v84.2
+            best, bs, bd, bf = dp, hit, depth, len(papers)
     return best
 
 def desk_paths():
@@ -2794,11 +2809,14 @@ def _selftest(root):
     ck('S218 no chase knocks before nine or after half past seven', (chr(35)+' QUIET-WINDOW v84.0') in _src and ('def _clamp_window(' in _src))
     ck('S219 the desk is a chair, not a cage - focus still roams', ('def desk_cmd(' in _src) and ('def do_focus(' in open(os.path.join(BASE_DIR, 'briefing.py')).read()))
     ck('S220 the small model thinks on a small machine', (chr(35)+' LLM-PIN v84.0') in _src)
+    ck('S221 the tag writer walks the same libc road as the reader', ('def _xattr_set_raw(' in _src) and (chr(35)+' XATTR-SET v84.0') in _src and ('os.set'+'xattr(') not in _src)
     ck('S222 the reader returns the exact bytes, NULs and all', ('buf.raw[:r]' in _src) and ('mdls' not in _src[_src.find('def _xattr_raw('):_src.find('def _xattr_raw(') + 900]))
     ck('S223 absence reads as empty bytes, never as None', _xattr_absence_ok())
     ck('S225 six verbs answer before any root is validated', (chr(35)+' PIPELINE-CLI-FIRST v84.1') in _src and ("'desk', 'briefing', 'chase')" in _src))
     ck('S226 the resolver seats folders that hold people, not folders that hold JDs', (chr(35)+' DESK-JD-BLIND v84.1') in _src)
     ck('S227 a placeholder is never run through relpath', ("relpath(d.get('secondary') or " + "'-'" not in _src) and (chr(35)+' DESK-DISPLAY v84.1') in _src)
+    ck('S228 a verb is answered without the clerk clearing his throat', ('_CLI_VERB' in _src) and ('if not _CLI_VERB:' in _src))
+    ck('S229 a position outranks its client umbrella', (chr(35)+' DESK-DEPTH v84.2') in _src)
     ck('S216 the master'+chr(39)+'s words stand at the head of the chat chain', ((_b := open(os.path.join(BASE_DIR, 'briefing.py')).read()) and _b.count("if q.startswith('pending'): do_pending(") == 1 and _b.find("if q.startswith('pending'): do_pending(") < _b.find("if q.lower().startswith('missed'):")))
     ck('S209 the machine'+chr(39)+'s own voice rests, the master'+chr(39)+'s never', (chr(35)+' ANN-REST v82.1') in open(os.path.join(BASE_DIR, 'cadence.py')).read() and ('ann_rest' in open(os.path.join(BASE_DIR, 'cadence.py')).read()) and ("_ann = d.setdefault('ann', {})" in open(os.path.join(BASE_DIR, 'cadence.py')).read()) and ('show_outbox' in open(os.path.join(BASE_DIR, 'cadence.py')).read()))  # S209 repinned v82.2: the witness demands the process-block itself, not merely the config default
     ck('S203 the autodraft sleep-switch honours the off word', ('if st == ' + chr(39) + 'off' + chr(39) + ': return False') in _src and ('if not self._ad_enabled' + '():') in _src)  # S203: the mute switch stays wired - a refactor may move it but may not delete it
