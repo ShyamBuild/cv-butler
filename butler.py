@@ -1,3 +1,5 @@
+import sys as _sys0
+_CLI_VERB = len(_sys0.argv) > 1 and _sys0.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase')  # QUIET-VERBS v84.2: a verb is answered without the clerk clearing his throat
 try:
     import sys as _sysio; _sysio.stdout.reconfigure(line_buffering=True)  # LOG-FLUSH v81.8
 except Exception:
@@ -500,6 +502,58 @@ def _xattr_absence_ok():  # S223 witness body: behaviour, not text - a bare file
         except Exception: pass
         return False
 
+def _tag_write(p, tags):  # TAG-WRITE v84.0: libc setxattr, synchronous - what we write is what the next read sees
+    import plistlib as _pl
+    name = 'com.apple.metadata:_kMDItemUserTags'
+    if tags: _xattr_set_raw(p, name, _pl.dumps(tags, fmt=_pl.FMT_BINARY))
+    else: _xattr_del_raw(p, name)
+def _tag_roundtrip_ok():  # S217 witness body - prints its own steps if it ever falls again
+    import tempfile, plistlib as _pl
+    tp = None
+    try:
+        fd, tp = tempfile.mkstemp(suffix='.pdf', dir=BASE_DIR); os.close(fd)
+        _tag_write(tp, ['Alpha Tag'])
+        _raw = _xattr_raw(tp)
+        cur = _tags_of(tp)
+        if not cur: print('🔬 S217 steps: len(raw)=' + str(len(_raw)) + ' hex=' + _raw.hex()[:64] + ' loads=' + repr(_pl.loads(_raw) if _raw else None))
+        _tag_write(tp, (cur or []) + ['Beta Tag']); cur2 = _tags_of(tp)
+        ok = 'Alpha Tag' in cur2 and 'Beta Tag' in cur2
+        _tag_write(tp, [t for t in cur2 if t != 'Beta Tag']); fin = _tags_of(tp)
+        ok = ok and 'Alpha Tag' in fin
+        if not ok: print('⚠️ S217 detail: cur=' + repr(cur) + ' cur2=' + repr(cur2) + ' final=' + repr(fin))
+        os.remove(tp); return ok
+    except Exception as _e:
+        print('⚠️ S217 detail: ' + repr(_e))
+        try:
+            if tp: os.remove(tp)
+        except Exception: pass
+        return False
+def _tag_vocab():  # DESK v84.0: built at call time, so no ordering of the book can starve it
+    return list(PIPELINE_CLOCKED) + list(PIPELINE_MOMENT) + list(PIPELINE_TERMINAL) + list(PIPELINE_PRE)
+def _match_tag(w):
+    low = (w or '').lower(); best = None
+    for t in _tag_vocab():
+        if low == t.lower() or (len(low) > 3 and low in t.lower()): best = t
+    return best
+def tag_apply(name, tagwords, on, say=print):  # TAG-VOICE v84.0: your word moves the tag, the machine keeps the rest
+    tag = _match_tag(tagwords)
+    if not tag: say(f'🤷 no known tag matches {tagwords!r}'); return
+    scope = desk_paths() or [_pl_root()]
+    toks = [t for t in name.lower().split() if t]; cands = []
+    for sc in scope:
+        for dp, dn, fn in os.walk(sc):
+            for x in fn:
+                if x.lower().endswith(('.pdf', '.docx')) and all(t in x.lower() for t in toks): cands.append(os.path.join(dp, x))
+    if not cands: say(f'🤷 no candidate file matches {name!r} on the desk'); return
+    if len(cands) > 1: say('❓ several humans match: ' + ' · '.join(os.path.basename(c) for c in cands[:5])); return
+    p = cands[0]; cur = _tags_of(p)
+    try:
+        if on and tag not in cur: _tag_write(p, cur + [tag]); say(f'🏷️ tagged {os.path.basename(p)}: {tag}')
+        elif not on and tag in cur: _tag_write(p, [t for t in cur if t != tag]); say(f'🏷️ untagged {os.path.basename(p)}: {tag}')
+        else: say(f'🏷️ {os.path.basename(p)} already {"wears" if on else "lacks"} {tag} - nothing changed')
+    except Exception as _te:
+        say(f'⚠️ tag write failed: {_te}')
+
 def _pl_root():  # PIPELINE v83.0 (hardened v83.1): a lock must prove its holder lives and its world exists before it may name the world
     cands = []
     try:
@@ -517,6 +571,7 @@ def _pl_root():  # PIPELINE v83.0 (hardened v83.1): a lock must prove its holder
     if cands: return cands[0]
     return os.path.join(os.path.expanduser('~'), 'Downloads', 'Sunsoft Technology')
 def _tags_of(p):  # PIPELINE v83.0 (v84.0): the kernel's bytes parsed twice if need be - auto-detect first, forced binary second, silence never
+    import plistlib  # S230 v84.2b: the function carries its own import - a module-level absence once silenced it for thirteen laps
     raw = _xattr_raw(p, 'com.apple.metadata:_kMDItemUserTags')
     if not raw: return []
     arr = None
@@ -2806,17 +2861,20 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S217 the tag-writer preserves every tag it was not asked about', _tag_roundtrip_ok())
     ck('S218 no chase knocks before nine or after half past seven', (chr(35)+' QUIET-WINDOW v84.0') in _src and ('def _clamp_window(' in _src))
     ck('S219 the desk is a chair, not a cage - focus still roams', ('def desk_cmd(' in _src) and ('def do_focus(' in open(os.path.join(BASE_DIR, 'briefing.py')).read()))
     ck('S220 the small model thinks on a small machine', (chr(35)+' LLM-PIN v84.0') in _src)
     ck('S221 the tag writer walks the same libc road as the reader', ('def _xattr_set_raw(' in _src) and (chr(35)+' XATTR-SET v84.0') in _src and ('os.set'+'xattr(') not in _src)
     ck('S222 the reader returns the exact bytes, NULs and all', ('buf.raw[:r]' in _src) and ('mdls' not in _src[_src.find('def _xattr_raw('):_src.find('def _xattr_raw(') + 900]))
     ck('S223 absence reads as empty bytes, never as None', _xattr_absence_ok())
+    ck('S224 the parse asks twice before it stays silent', ('FMT_BINARY' in _src[_src.find(chr(10)+'def _tags_of('):_src.find(chr(10)+'def _tags_of(') + 1400]))
     ck('S225 six verbs answer before any root is validated', (chr(35)+' PIPELINE-CLI-FIRST v84.1') in _src and ("'desk', 'briefing', 'chase')" in _src))
     ck('S226 the resolver seats folders that hold people, not folders that hold JDs', (chr(35)+' DESK-JD-BLIND v84.1') in _src)
     ck('S227 a placeholder is never run through relpath', ("relpath(d.get('secondary') or " + "'-'" not in _src) and (chr(35)+' DESK-DISPLAY v84.1') in _src)
     ck('S228 a verb is answered without the clerk clearing his throat', ('_CLI_VERB' in _src) and ('if not _CLI_VERB:' in _src))
     ck('S229 a position outranks its client umbrella', (chr(35)+' DESK-DEPTH v84.2') in _src)
+    ck('S230 every tag function carries its own import', ('import plistlib' in _src[_src.find(chr(10)+'def _tags_of('):_src.find(chr(10)+'def _tags_of(') + 400]))
     ck('S216 the master'+chr(39)+'s words stand at the head of the chat chain', ((_b := open(os.path.join(BASE_DIR, 'briefing.py')).read()) and _b.count("if q.startswith('pending'): do_pending(") == 1 and _b.find("if q.startswith('pending'): do_pending(") < _b.find("if q.lower().startswith('missed'):")))
     ck('S209 the machine'+chr(39)+'s own voice rests, the master'+chr(39)+'s never', (chr(35)+' ANN-REST v82.1') in open(os.path.join(BASE_DIR, 'cadence.py')).read() and ('ann_rest' in open(os.path.join(BASE_DIR, 'cadence.py')).read()) and ("_ann = d.setdefault('ann', {})" in open(os.path.join(BASE_DIR, 'cadence.py')).read()) and ('show_outbox' in open(os.path.join(BASE_DIR, 'cadence.py')).read()))  # S209 repinned v82.2: the witness demands the process-block itself, not merely the config default
     ck('S203 the autodraft sleep-switch honours the off word', ('if st == ' + chr(39) + 'off' + chr(39) + ': return False') in _src and ('if not self._ad_enabled' + '():') in _src)  # S203: the mute switch stays wired - a refactor may move it but may not delete it

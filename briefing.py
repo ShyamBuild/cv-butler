@@ -740,6 +740,14 @@ def do_desk(arg, root, say=print):  # DESK v84.0
     butler.desk_cmd(arg, root, say)
 def do_briefing(arg, root, say=print):  # BRIEFING v84.0
     butler.daily_briefing(say)
+def do_tagcmd(arg, root, say=print):  # TAG-VOICE v84.0
+    parts = arg.split(' ', 1)
+    if len(parts) < 2: say('usage: tag <name> <tag words> | tag off <name> <tag words>'); return
+    if parts[0] == 'off' and len(parts) > 1:
+        q2 = parts[1].split(' ', 1)
+        butler.tag_apply(q2[0], q2[1] if len(q2) > 1 else '', False, say); return
+    butler.tag_apply(parts[0], parts[1] if len(parts) > 1 else '', True, say)
+
 def do_chase(arg, root, say=print):  # CHASE v84.0
     butler.chase_cmd(arg, root, say)
 
@@ -1463,6 +1471,7 @@ if __name__ == "__main__":
             if q.startswith('desk'): do_desk(q[4:].strip(), root); continue  # DESK v84.0
             if q.startswith('briefing'): do_briefing(q[8:].strip(), root); continue
             if q.startswith('chase'): do_chase(q[5:].strip(), root); continue
+            if q.startswith('tag '): do_tagcmd(q[4:].strip(), root); continue  # TAG-VOICE v84.0
             if q.startswith('pending'): do_pending(q[len('pending'):].strip(), root); continue  # PIPELINE-CHAT-SHALLOW v83.1: the master's words stand at the head of the chain, never nested under another voice
             if q.startswith('status'): do_status(q[len('status'):].strip(), root); continue
             if q.startswith('note'): do_note(q[len('note'):].strip(), root); continue
