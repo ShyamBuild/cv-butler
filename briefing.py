@@ -740,13 +740,10 @@ def do_desk(arg, root, say=print):  # DESK v84.0
     butler.desk_cmd(arg, root, say)
 def do_briefing(arg, root, say=print):  # BRIEFING v84.0
     butler.daily_briefing(say)
-def do_tagcmd(arg, root, say=print):  # TAG-VOICE v84.0
-    parts = arg.split(' ', 1)
-    if len(parts) < 2: say('usage: tag <name> <tag words> | tag off <name> <tag words>'); return
-    if parts[0] == 'off' and len(parts) > 1:
-        q2 = parts[1].split(' ', 1)
-        butler.tag_apply(q2[0], q2[1] if len(q2) > 1 else '', False, say); return
-    butler.tag_apply(parts[0], parts[1] if len(parts) > 1 else '', True, say)
+def do_tagcmd(arg, root, say=print):  # TAG-VOICE v84.2c: the whole sentence goes to the clerk; the tag is read from its tail
+    if arg.startswith('off '): butler.tag_voice(arg[4:], False, say); return
+    butler.tag_voice(arg, True, say)
+
 
 def do_chase(arg, root, say=print):  # CHASE v84.0
     butler.chase_cmd(arg, root, say)

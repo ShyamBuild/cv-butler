@@ -535,9 +535,43 @@ def _match_tag(w):
     for t in _tag_vocab():
         if low == t.lower() or (len(low) > 3 and low in t.lower()): best = t
     return best
-def tag_apply(name, tagwords, on, say=print):  # TAG-VOICE v84.0: your word moves the tag, the machine keeps the rest
-    tag = _match_tag(tagwords)
-    if not tag: say(f'🤷 no known tag matches {tagwords!r}'); return
+def _match_tail(arg):  # TAG-TAIL v84.2c: the tag is the longest vocabulary tag your sentence ends with
+    low = (arg or '').lower().strip(); best = None
+    for t in _tag_vocab():
+        if low.endswith(t.lower()) and (best is None or len(t) > len(best)): best = t
+    return best
+def _tag_apply_one(p, tag, on, say=print):  # TAG-VOICE v84.2c: read, modify, write - every other tag preserved
+    cur = _tags_of(p)
+    try:
+        if on and tag not in cur: _tag_write(p, cur + [tag]); say(f'🏷️ tagged {os.path.basename(p)}: {tag}')
+        elif not on and tag in cur: _tag_write(p, [t for t in cur if t != tag]); say(f'🏷️ untagged {os.path.basename(p)}: {tag}')
+        else: say(f'🏷️ {os.path.basename(p)} already {"wears" if on else "lacks"} {tag} - nothing changed')
+    except Exception as _te:
+        say(f'⚠️ tag write failed: {_te}')
+def tag_voice(arg, on, say=print):  # TAG-VOICE v84.2c: names may hold spaces, the tag is read from the tail, and a question keeps its numbers
+    import json as _j
+    arg = (arg or '').strip()
+    pk = os.path.join(BASE_DIR, 'tag_pick.json')
+    pend = None
+    try:
+        pend = _j.load(open(pk))
+        if pend.get('ts', 0) < time.time() - 600: pend = None
+    except Exception:
+        pend = None
+    if pend:
+        first = arg.split()[0] if arg.split() else ''
+        if first.isdigit():  # TAG-PICK v84.2c: a bare digit answers the last question, exactly like the phone picker
+            i = int(first) - 1; rest = arg.split(' ', 1)[1] if ' ' in arg else ''
+            if 0 <= i < len(pend.get('cands', [])):
+                tg = _match_tail(rest) or pend.get('tag')
+                try: os.remove(pk)
+                except Exception: pass
+                _tag_apply_one(pend['cands'][i], tg, pend.get('on', on), say); return
+            say(f'🤷 no candidate number {first} in the last question'); return
+    tag = _match_tail(arg)
+    if not tag: say(f"🤷 no known tag at the end of {arg!r} - put the tag words last, e.g. tag lalan kumar ready for manager review"); return
+    name = arg[:len(arg) - len(tag)].strip()
+    if not name: say('usage: tag <name> <tag words>'); return
     scope = desk_paths() or [_pl_root()]
     toks = [t for t in name.lower().split() if t]; cands = []
     for sc in scope:
@@ -545,14 +579,12 @@ def tag_apply(name, tagwords, on, say=print):  # TAG-VOICE v84.0: your word move
             for x in fn:
                 if x.lower().endswith(('.pdf', '.docx')) and all(t in x.lower() for t in toks): cands.append(os.path.join(dp, x))
     if not cands: say(f'🤷 no candidate file matches {name!r} on the desk'); return
-    if len(cands) > 1: say('❓ several humans match: ' + ' · '.join(os.path.basename(c) for c in cands[:5])); return
-    p = cands[0]; cur = _tags_of(p)
-    try:
-        if on and tag not in cur: _tag_write(p, cur + [tag]); say(f'🏷️ tagged {os.path.basename(p)}: {tag}')
-        elif not on and tag in cur: _tag_write(p, [t for t in cur if t != tag]); say(f'🏷️ untagged {os.path.basename(p)}: {tag}')
-        else: say(f'🏷️ {os.path.basename(p)} already {"wears" if on else "lacks"} {tag} - nothing changed')
-    except Exception as _te:
-        say(f'⚠️ tag write failed: {_te}')
+    if len(cands) == 1: _tag_apply_one(cands[0], tag, on, say); return
+    say('❓ several humans match - type the number to choose:')
+    for n, c in enumerate(cands[:9], 1):
+        say(f'   {n}) {os.path.basename(c)} · in {os.path.basename(os.path.dirname(c))}')
+    try: _j.dump({'cands': cands[:9], 'tag': tag, 'on': on, 'ts': int(time.time())}, open(pk, 'w'))
+    except Exception: pass
 
 def _pl_root():  # PIPELINE v83.0 (hardened v83.1): a lock must prove its holder lives and its world exists before it may name the world
     cands = []
@@ -2216,7 +2248,7 @@ def main():
         else:
             root = sys.stdin.readline()
         root = os.path.normpath(os.path.expanduser(root.strip().strip('"').strip("'").replace('\\', '')))
-    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
+    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'tag'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
         _v, _a = sys.argv[1], sys.argv[2:]
         if _v == 'pending': pipeline_pending(_a[0] if _a else None, print)
         elif _v == 'status': pipeline_status(' '.join(_a), print)
@@ -2224,6 +2256,10 @@ def main():
         elif _v == 'desk': desk_cmd(' '.join(_a), _pl_root(), print)
         elif _v == 'briefing': daily_briefing(print)
         elif _v == 'chase': chase_cmd(' '.join(_a), _pl_root(), print)
+        elif _v == 'tag':  # TAG-VOICE v84.2c in the terminal door
+            _aa = list(_a); _on = True
+            if _aa and _aa[0] == 'off': _on = False; _aa = _aa[1:]
+            tag_voice(' '.join(_aa), _on, print)
         sys.exit(0)
     if not os.path.isdir(root):
         print("Error: folder does not exist."); sys.exit(1)
@@ -2869,12 +2905,15 @@ def _selftest(root):
     ck('S222 the reader returns the exact bytes, NULs and all', ('buf.raw[:r]' in _src) and ('mdls' not in _src[_src.find('def _xattr_raw('):_src.find('def _xattr_raw(') + 900]))
     ck('S223 absence reads as empty bytes, never as None', _xattr_absence_ok())
     ck('S224 the parse asks twice before it stays silent', ('FMT_BINARY' in _src[_src.find(chr(10)+'def _tags_of('):_src.find(chr(10)+'def _tags_of(') + 1400]))
+    ck('S225 the verbs and the tag voice answer before any root is validated', (chr(35)+' QUIET-VERBS v84.2') in _src and ('def tag_voice(' in _src) and (chr(35)+' PIPELINE-CLI-FIRST') in _src)
     ck('S225 six verbs answer before any root is validated', (chr(35)+' PIPELINE-CLI-FIRST v84.1') in _src and ("'desk', 'briefing', 'chase')" in _src))
     ck('S226 the resolver seats folders that hold people, not folders that hold JDs', (chr(35)+' DESK-JD-BLIND v84.1') in _src)
     ck('S227 a placeholder is never run through relpath', ("relpath(d.get('secondary') or " + "'-'" not in _src) and (chr(35)+' DESK-DISPLAY v84.1') in _src)
     ck('S228 a verb is answered without the clerk clearing his throat', ('_CLI_VERB' in _src) and ('if not _CLI_VERB:' in _src))
     ck('S229 a position outranks its client umbrella', (chr(35)+' DESK-DEPTH v84.2') in _src)
     ck('S230 every tag function carries its own import', ('import plistlib' in _src[_src.find(chr(10)+'def _tags_of('):_src.find(chr(10)+'def _tags_of(') + 400]))
+    ck('S231 the tag is read from the tail so names may hold spaces', (chr(35)+' TAG-TAIL v84.2c') in _src)
+    ck('S232 a question keeps its numbers and a bare digit answers it', (chr(35)+' TAG-PICK v84.2c') in _src and ('tag_pick.json' in _src))
     ck('S216 the master'+chr(39)+'s words stand at the head of the chat chain', ((_b := open(os.path.join(BASE_DIR, 'briefing.py')).read()) and _b.count("if q.startswith('pending'): do_pending(") == 1 and _b.find("if q.startswith('pending'): do_pending(") < _b.find("if q.lower().startswith('missed'):")))
     ck('S209 the machine'+chr(39)+'s own voice rests, the master'+chr(39)+'s never', (chr(35)+' ANN-REST v82.1') in open(os.path.join(BASE_DIR, 'cadence.py')).read() and ('ann_rest' in open(os.path.join(BASE_DIR, 'cadence.py')).read()) and ("_ann = d.setdefault('ann', {})" in open(os.path.join(BASE_DIR, 'cadence.py')).read()) and ('show_outbox' in open(os.path.join(BASE_DIR, 'cadence.py')).read()))  # S209 repinned v82.2: the witness demands the process-block itself, not merely the config default
     ck('S203 the autodraft sleep-switch honours the off word', ('if st == ' + chr(39) + 'off' + chr(39) + ': return False') in _src and ('if not self._ad_enabled' + '():') in _src)  # S203: the mute switch stays wired - a refactor may move it but may not delete it
