@@ -1453,12 +1453,12 @@ if __name__ == "__main__":
                     if alive: say(f"   🤖 {alive} watcher(s) keep running in background - 'focus clear' stops them")
                 except Exception: pass
                 break
+            if q.startswith('pending'): do_pending(q[len('pending'):].strip(), root); continue  # PIPELINE-CHAT-SHALLOW v83.1: the master's words stand at the head of the chain, never nested under another voice
+            if q.startswith('status'): do_status(q[len('status'):].strip(), root); continue
+            if q.startswith('note'): do_note(q[len('note'):].strip(), root); continue
             if q.lower().startswith('focus'):
                 do_focus(q[5:], root); continue
             if q.lower().startswith('missed'):
-                if q.startswith('pending'): do_pending(q[len('pending'):].strip(), root); continue
-                if q.startswith('status'): do_status(q[len('status'):].strip(), root); continue
-                if q.startswith('note'): do_note(q[len('note'):].strip(), root); continue
                 do_missed(q[6:], root); continue
             if q.lower().startswith('history '): do_history(q[8:], root); continue
             if q.lower().startswith('history'): do_history(q[7:].strip(), root); continue
