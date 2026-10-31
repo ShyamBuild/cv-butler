@@ -736,6 +736,15 @@ def _tpl_name(words):
     except Exception: pass
     return 'awaiting (fallback)'
 
+def do_pending(arg, root, say=print):
+    butler.pipeline_pending(arg or None, say)
+def do_status(arg, root, say=print):
+    butler.pipeline_status(arg, say)
+def do_note(arg, root, say=print):
+    parts = arg.split(' ', 1)
+    if len(parts) < 2: say('usage: note <name> <text>'); return
+    butler.pipeline_note(parts[0], parts[1], say)
+
 def do_missed(arg, root, say=print, ask=None, words=None):
     arg = (arg or '').strip()
     f = _read_focus()
@@ -1447,6 +1456,9 @@ if __name__ == "__main__":
             if q.lower().startswith('focus'):
                 do_focus(q[5:], root); continue
             if q.lower().startswith('missed'):
+                if q.startswith('pending'): do_pending(q[len('pending'):].strip(), root); continue
+                if q.startswith('status'): do_status(q[len('status'):].strip(), root); continue
+                if q.startswith('note'): do_note(q[len('note'):].strip(), root); continue
                 do_missed(q[6:], root); continue
             if q.lower().startswith('history '): do_history(q[8:], root); continue
             if q.lower().startswith('history'): do_history(q[7:].strip(), root); continue
