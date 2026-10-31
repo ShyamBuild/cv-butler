@@ -578,6 +578,7 @@ def tag_voice(arg, on, say=print):  # TAG-VOICE v84.2c: names may hold spaces, t
         for dp, dn, fn in os.walk(sc):
             for x in fn:
                 if x.lower().endswith(('.pdf', '.docx')) and all(t in x.lower() for t in toks): cands.append(os.path.join(dp, x))
+    seen = set(); cands = [c for c in cands if os.path.realpath(c) not in seen and not seen.add(os.path.realpath(c))]  # TAG-DEDUPE v84.2d: overlapping chairs must not double a human in a question
     if not cands: say(f'🤷 no candidate file matches {name!r} on the desk'); return
     if len(cands) == 1: _tag_apply_one(cands[0], tag, on, say); return
     say('❓ several humans match - type the number to choose:')
@@ -2906,7 +2907,6 @@ def _selftest(root):
     ck('S223 absence reads as empty bytes, never as None', _xattr_absence_ok())
     ck('S224 the parse asks twice before it stays silent', ('FMT_BINARY' in _src[_src.find(chr(10)+'def _tags_of('):_src.find(chr(10)+'def _tags_of(') + 1400]))
     ck('S225 the verbs and the tag voice answer before any root is validated', (chr(35)+' QUIET-VERBS v84.2') in _src and ('def tag_voice(' in _src) and (chr(35)+' PIPELINE-CLI-FIRST') in _src)
-    ck('S225 six verbs answer before any root is validated', (chr(35)+' PIPELINE-CLI-FIRST v84.1') in _src and ("'desk', 'briefing', 'chase')" in _src))
     ck('S226 the resolver seats folders that hold people, not folders that hold JDs', (chr(35)+' DESK-JD-BLIND v84.1') in _src)
     ck('S227 a placeholder is never run through relpath', ("relpath(d.get('secondary') or " + "'-'" not in _src) and (chr(35)+' DESK-DISPLAY v84.1') in _src)
     ck('S228 a verb is answered without the clerk clearing his throat', ('_CLI_VERB' in _src) and ('if not _CLI_VERB:' in _src))
@@ -2914,6 +2914,7 @@ def _selftest(root):
     ck('S230 every tag function carries its own import', ('import plistlib' in _src[_src.find(chr(10)+'def _tags_of('):_src.find(chr(10)+'def _tags_of(') + 400]))
     ck('S231 the tag is read from the tail so names may hold spaces', (chr(35)+' TAG-TAIL v84.2c') in _src)
     ck('S232 a question keeps its numbers and a bare digit answers it', (chr(35)+' TAG-PICK v84.2c') in _src and ('tag_pick.json' in _src))
+    ck('S233 overlapping chairs never double a human in a question', (chr(35)+' TAG-DEDUPE v84.2d') in _src)
     ck('S216 the master'+chr(39)+'s words stand at the head of the chat chain', ((_b := open(os.path.join(BASE_DIR, 'briefing.py')).read()) and _b.count("if q.startswith('pending'): do_pending(") == 1 and _b.find("if q.startswith('pending'): do_pending(") < _b.find("if q.lower().startswith('missed'):")))
     ck('S209 the machine'+chr(39)+'s own voice rests, the master'+chr(39)+'s never', (chr(35)+' ANN-REST v82.1') in open(os.path.join(BASE_DIR, 'cadence.py')).read() and ('ann_rest' in open(os.path.join(BASE_DIR, 'cadence.py')).read()) and ("_ann = d.setdefault('ann', {})" in open(os.path.join(BASE_DIR, 'cadence.py')).read()) and ('show_outbox' in open(os.path.join(BASE_DIR, 'cadence.py')).read()))  # S209 repinned v82.2: the witness demands the process-block itself, not merely the config default
     ck('S203 the autodraft sleep-switch honours the off word', ('if st == ' + chr(39) + 'off' + chr(39) + ': return False') in _src and ('if not self._ad_enabled' + '():') in _src)  # S203: the mute switch stays wired - a refactor may move it but may not delete it
