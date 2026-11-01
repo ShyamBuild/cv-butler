@@ -528,6 +528,10 @@ def _tag_roundtrip_ok():  # S217 witness body - prints its own steps if it ever 
             if tp: os.remove(tp)
         except Exception: pass
         return False
+TAG_WAITING = ('Awaiting JD Confirmation', 'Awaiting CV Update')  # TAG-CLASS v84.5: debts that coexist - a candidate may owe the JD ack and the CV update at once
+def _tag_stage(t):  # TAG-CLASS v84.5: everything else is a stage - one at a time, folder-bound
+    return t in _tag_vocab() and t not in TAG_WAITING
+
 def _tag_vocab():  # DESK v84.0: built at call time, so no ordering of the book can starve it
     return list(PIPELINE_CLOCKED) + list(PIPELINE_MOMENT) + list(PIPELINE_TERMINAL) + list(PIPELINE_PRE)
 def _match_tag(w):
@@ -569,23 +573,22 @@ def action_cancel(say=print):
     try: os.remove(os.path.join(BASE_DIR, 'pending_action.json'))
     except Exception: pass
     say('🗑️ proposal discarded - nothing changed')
-def action_execute(say=print):  # PROPOSE-FIRST v84.4: the yes that makes it so
+def action_execute(say=print):  # PROPOSE-FIRST v84.4 (classed v84.5): the yes that makes it so, dropping stages only
     import json as _j
     pp = os.path.join(BASE_DIR, 'pending_action.json')
     try: pend = _j.load(open(pp))
     except Exception: say('🤷 no proposal is waiting'); return
-    p, tag, on = pend.get('p'), pend.get('tag'), pend.get('on', True)
+    p, tag = pend.get('p'), pend.get('tag')
     cur = _tags_of(p)
-    drops = [t for t in cur if t in _tag_vocab() and t != tag] if on else []
-    newtags = ([t for t in cur if t not in drops] + [tag]) if on else [t for t in cur if t != tag]
+    drops = [t for t in cur if _tag_stage(t) and t != tag] if _tag_stage(tag) else []
+    newtags = [t for t in cur if t not in drops] + ([tag] if tag not in cur else [])
     try:
         _tag_write(p, newtags)
-        say(f"🏷️ {os.path.basename(p)}: {tag if on else 'untagged'}" + (f' (dropped {", ".join(drops)})' if drops else ''))
+        say(f"🏷️ {os.path.basename(p)}: {tag}" + (f' (dropped {", ".join(drops)})' if drops else ''))
         _stage_note(os.path.basename(p), cur, newtags, os.path.basename(os.path.dirname(p)), os.path.basename(os.path.dirname(p)), 'chat/terminal')
     except Exception as _te:
         say(f'⚠️ tag write failed: {_te}'); return
-    if pend.get('move_to'):
-        _stage_move(p, tag, say)
+    if pend.get('move_to'): _stage_move(p, tag, say)
     try: os.remove(pp)
     except Exception: pass
 
@@ -612,14 +615,24 @@ def _match_tail(arg):  # TAG-TAIL v84.2c: the tag is the longest vocabulary tag 
     for t in _tag_vocab():
         if low.endswith(t.lower()) and (best is None or len(t) > len(best)): best = t
     return best
-def _tag_apply_one(p, tag, on, say=print):  # TAG-VOICE v84.2c (v84.4): one stage per paper, proposals before replacements
+def _tag_apply_one(p, tag, on, say=print):  # TAG-VOICE v84.5: waiting tags add instantly, stage tags transition with a proposal that shows now and after
     import json as _j
     cur = _tags_of(p)
     if not on:
-        if tag in cur: _tag_write(p, [t for t in cur if t != tag]); say(f'🏷️ untagged {os.path.basename(p)}: {tag}'); _stage_note(os.path.basename(p), cur, [t for t in cur if t != tag], os.path.basename(os.path.dirname(p)), os.path.basename(os.path.dirname(p)), 'chat/terminal')
+        if tag in cur:
+            newt = [t for t in cur if t != tag]
+            _tag_write(p, newt); say(f'🏷️ untagged {os.path.basename(p)}: {tag}')
+            _stage_note(os.path.basename(p), cur, newt, os.path.basename(os.path.dirname(p)), os.path.basename(os.path.dirname(p)), 'chat/terminal')
         else: say(f'🏷️ {os.path.basename(p)} already lacks {tag} - nothing changed')
         return
-    drops = [t for t in cur if t in _tag_vocab() and t != tag]  # STAGE-ONE v84.4: a paper rests in one stage
+    if tag in cur: say(f'🏷️ {os.path.basename(p)} already wears {tag} - nothing changed'); return
+    if not _tag_stage(tag):
+        newt = cur + [tag]
+        _tag_write(p, newt); say(f'🏷️ tagged {os.path.basename(p)}: {tag} (added beside {", ".join(cur) or "nothing"})')
+        _stage_note(os.path.basename(p), cur, newt, os.path.basename(os.path.dirname(p)), os.path.basename(os.path.dirname(p)), 'chat/terminal')
+        return
+    drops = [t for t in cur if _tag_stage(t) and t != tag]  # STAGE-ONE v84.4, classed v84.5: a stage replaces a stage, never a waiting debt
+    keeps = [t for t in cur if t in TAG_WAITING]
     move_to = None; conflict = False
     root = _pl_root(); parts = os.path.relpath(p, root).split(os.sep)
     if len(parts) >= 4 and parts[-2] in _tag_vocab(): pos = os.path.join(root, *parts[:-2])
@@ -630,18 +643,15 @@ def _tag_apply_one(p, tag, on, say=print):  # TAG-VOICE v84.2c (v84.4): one stag
         if os.path.realpath(os.path.dirname(p)) != os.path.realpath(tgt):
             if os.path.exists(os.path.join(tgt, os.path.basename(p))): conflict = True
             else: move_to = tgt
-    if drops or move_to or conflict:  # PROPOSE-FIRST v84.4: real changes earn a question
-        txt = f"🤖 Proposal: {os.path.basename(p)} → {tag}"
-        if drops: txt += f' (drops {", ".join(drops)})'
-        if move_to: txt += f' · move {os.path.basename(os.path.dirname(p))} → {tag}'
-        if conflict: txt += f' · a paper already rests in {tag}, so it will be tagged in place'
-        say(txt + ' · reply y / n')
-        try: _j.dump({'p': p, 'tag': tag, 'on': on, 'move_to': move_to and not conflict, 'ts': int(time.time())}, open(os.path.join(BASE_DIR, 'pending_action.json'), 'w'))
-        except Exception: pass
-        return
-    _tag_write(p, cur + [tag]); say(f'🏷️ tagged {os.path.basename(p)}: {tag}')
-    _stage_note(os.path.basename(p), cur, cur + [tag], os.path.basename(os.path.dirname(p)), os.path.basename(os.path.dirname(p)), 'chat/terminal')
-    _stage_move(p, tag, say)
+    after = [t for t in cur if t not in drops] + [tag]
+    txt = f"🤖 Proposal: {os.path.basename(p)} → {tag} · now: [{', '.join(cur) or '-'}] → after: [{', '.join(after)}]"  # SHOW-BOTH v84.5
+    if drops: txt += f' · drops {", ".join(drops)}'
+    if keeps: txt += f' · keeps {", ".join(keeps)}'
+    if move_to: txt += f' · move {os.path.basename(os.path.dirname(p))} → {tag}'
+    if conflict: txt += f' · a paper already rests in {tag}, so it will be tagged in place'
+    say(txt + ' · reply y / n')
+    try: _j.dump({'p': p, 'tag': tag, 'on': on, 'move_to': bool(move_to) and not conflict, 'ts': int(time.time())}, open(os.path.join(BASE_DIR, 'pending_action.json'), 'w'))
+    except Exception: pass
 
 def tag_voice(arg, on, say=print):  # TAG-VOICE v84.2c: names may hold spaces, the tag is read from the tail, and a question keeps its numbers
     import json as _j
@@ -3019,6 +3029,8 @@ def _selftest(root):
     ck('S237 changes that replace or move ask first', (chr(35)+' PROPOSE-FIRST v84.4') in _src and ('pending_action.json' in _src))
     ck('S238 every tag and move is written in the stage log', (chr(35)+' STAGE-LOG v84.4') in _src and ('stage_log.json' in _src))
     ck('S239 a Finder move is repathed, not mourned', (chr(35)+' FINDER-MOVE v84.4') in _src)
+    ck('S240 waiting debts coexist and survive every stage transition', (chr(35)+' TAG-CLASS v84.5') in _src and ('TAG_WAITING' in _src) and ('def _tag_stage(' in _src))
+    ck('S241 a transition shows now and after before it asks', (chr(35)+' SHOW-BOTH v84.5') in _src)
     ck('S217 the tag-writer preserves every tag it was not asked about', _tag_roundtrip_ok())
     ck('S218 no chase knocks before nine or after half past seven', (chr(35)+' QUIET-WINDOW v84.0') in _src and ('def _clamp_window(' in _src))
     ck('S219 the desk is a chair, not a cage - focus still roams', ('def desk_cmd(' in _src) and ('def do_focus(' in open(os.path.join(BASE_DIR, 'briefing.py')).read()))
