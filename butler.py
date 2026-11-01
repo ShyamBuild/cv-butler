@@ -553,6 +553,42 @@ def _repath_ledgers(old, new):  # STAGE-SYNC v84.3: clocks and history walk with
             d[new] = d.pop(old)
             try: _j.dump(d, open(lp, 'w'), indent=1)
             except Exception: pass
+def _stage_note(file, from_tag, to_tag, from_dir, to_dir, srcs):  # STAGE-LOG v84.4: every change is written down, with the door that made it
+    import json as _j
+    lp = os.path.join(BASE_DIR, 'stage_log.json')
+    try: log = _j.load(open(lp))
+    except Exception: log = []
+    log.append({'ts': int(time.time()), 'file': file, 'from_tag': from_tag, 'to_tag': to_tag, 'from_dir': from_dir, 'to_dir': to_dir, 'src': srcs})
+    try: _j.dump(log[-400:], open(lp, 'w'), indent=1)
+    except Exception: pass
+def action_pending():  # PROPOSE-FIRST v84.4
+    import json as _j
+    try: return _j.load(open(os.path.join(BASE_DIR, 'pending_action.json'))).get('ts', 0) > time.time() - 600
+    except Exception: return False
+def action_cancel(say=print):
+    try: os.remove(os.path.join(BASE_DIR, 'pending_action.json'))
+    except Exception: pass
+    say('🗑️ proposal discarded - nothing changed')
+def action_execute(say=print):  # PROPOSE-FIRST v84.4: the yes that makes it so
+    import json as _j
+    pp = os.path.join(BASE_DIR, 'pending_action.json')
+    try: pend = _j.load(open(pp))
+    except Exception: say('🤷 no proposal is waiting'); return
+    p, tag, on = pend.get('p'), pend.get('tag'), pend.get('on', True)
+    cur = _tags_of(p)
+    drops = [t for t in cur if t in _tag_vocab() and t != tag] if on else []
+    newtags = ([t for t in cur if t not in drops] + [tag]) if on else [t for t in cur if t != tag]
+    try:
+        _tag_write(p, newtags)
+        say(f"🏷️ {os.path.basename(p)}: {tag if on else 'untagged'}" + (f' (dropped {", ".join(drops)})' if drops else ''))
+        _stage_note(os.path.basename(p), cur, newtags, os.path.basename(os.path.dirname(p)), os.path.basename(os.path.dirname(p)), 'chat/terminal')
+    except Exception as _te:
+        say(f'⚠️ tag write failed: {_te}'); return
+    if pend.get('move_to'):
+        _stage_move(p, tag, say)
+    try: os.remove(pp)
+    except Exception: pass
+
 def _stage_move(p, tag, say=print):  # STAGE-SYNC v84.3: a tagged paper rests in its tag's folder inside its position
     root = _pl_root()
     parts = os.path.relpath(p, root).split(os.sep)
@@ -576,14 +612,37 @@ def _match_tail(arg):  # TAG-TAIL v84.2c: the tag is the longest vocabulary tag 
     for t in _tag_vocab():
         if low.endswith(t.lower()) and (best is None or len(t) > len(best)): best = t
     return best
-def _tag_apply_one(p, tag, on, say=print):  # TAG-VOICE v84.2c: read, modify, write - every other tag preserved
+def _tag_apply_one(p, tag, on, say=print):  # TAG-VOICE v84.2c (v84.4): one stage per paper, proposals before replacements
+    import json as _j
     cur = _tags_of(p)
-    try:
-        if on and tag not in cur: _tag_write(p, cur + [tag]); say(f'🏷️ tagged {os.path.basename(p)}: {tag}'); _stage_move(p, tag, say)
-        elif not on and tag in cur: _tag_write(p, [t for t in cur if t != tag]); say(f'🏷️ untagged {os.path.basename(p)}: {tag}')
-        else: say(f'🏷️ {os.path.basename(p)} already {"wears" if on else "lacks"} {tag} - nothing changed')
-    except Exception as _te:
-        say(f'⚠️ tag write failed: {_te}')
+    if not on:
+        if tag in cur: _tag_write(p, [t for t in cur if t != tag]); say(f'🏷️ untagged {os.path.basename(p)}: {tag}'); _stage_note(os.path.basename(p), cur, [t for t in cur if t != tag], os.path.basename(os.path.dirname(p)), os.path.basename(os.path.dirname(p)), 'chat/terminal')
+        else: say(f'🏷️ {os.path.basename(p)} already lacks {tag} - nothing changed')
+        return
+    drops = [t for t in cur if t in _tag_vocab() and t != tag]  # STAGE-ONE v84.4: a paper rests in one stage
+    move_to = None; conflict = False
+    root = _pl_root(); parts = os.path.relpath(p, root).split(os.sep)
+    if len(parts) >= 4 and parts[-2] in _tag_vocab(): pos = os.path.join(root, *parts[:-2])
+    elif len(parts) == 3: pos = os.path.join(root, *parts[:-1])
+    else: pos = None
+    if pos:
+        tgt = os.path.join(pos, tag)
+        if os.path.realpath(os.path.dirname(p)) != os.path.realpath(tgt):
+            if os.path.exists(os.path.join(tgt, os.path.basename(p))): conflict = True
+            else: move_to = tgt
+    if drops or move_to or conflict:  # PROPOSE-FIRST v84.4: real changes earn a question
+        txt = f"🤖 Proposal: {os.path.basename(p)} → {tag}"
+        if drops: txt += f' (drops {", ".join(drops)})'
+        if move_to: txt += f' · move {os.path.basename(os.path.dirname(p))} → {tag}'
+        if conflict: txt += f' · a paper already rests in {tag}, so it will be tagged in place'
+        say(txt + ' · reply y / n')
+        try: _j.dump({'p': p, 'tag': tag, 'on': on, 'move_to': move_to and not conflict, 'ts': int(time.time())}, open(os.path.join(BASE_DIR, 'pending_action.json'), 'w'))
+        except Exception: pass
+        return
+    _tag_write(p, cur + [tag]); say(f'🏷️ tagged {os.path.basename(p)}: {tag}')
+    _stage_note(os.path.basename(p), cur, cur + [tag], os.path.basename(os.path.dirname(p)), os.path.basename(os.path.dirname(p)), 'chat/terminal')
+    _stage_move(p, tag, say)
+
 def tag_voice(arg, on, say=print):  # TAG-VOICE v84.2c: names may hold spaces, the tag is read from the tail, and a question keeps its numbers
     import json as _j
     arg = (arg or '').strip()
@@ -1968,6 +2027,22 @@ class Butler:
                 if term:
                     e['history'].append([e['tag'], e['since'], now]); e['closed'] = now; e['closed_tag'] = term; changed = True
                     say(f"✅ {os.path.basename(p)} closed ({term}) - ledger row archived"); continue
+                if not os.path.exists(p):  # FINDER-MOVE v84.4: a paper dragged by hand is repathed, not mourned
+                    _mv = None
+                    for _sc in (desk_paths() or [root]):
+                        for _dp, _dn, _fn in os.walk(_sc):
+                            if os.path.basename(p) in _fn:
+                                _cand = os.path.join(_dp, os.path.basename(p))
+                                if _cand != p and e.get('tag') in _tags_of(_cand): _mv = _cand; break
+                        if _mv: break
+                    if _mv:
+                        led[_mv] = led.pop(p); _repath_ledgers(p, _mv); changed = True
+                        _stage_note(os.path.basename(p), e.get('tag'), e.get('tag'), os.path.basename(os.path.dirname(p)), os.path.basename(os.path.dirname(_mv)), 'finder')
+                        say(f"👀 noticed in Finder: {os.path.basename(p)} now rests in {os.path.basename(os.path.dirname(_mv))}"); continue
+                    e['history'].append([e['tag'], e['since'], now]); e['closed'] = now; e['closed_tag'] = 'file gone'; changed = True
+                    say(f"📔 {os.path.basename(p)} left the pipeline (file gone)"); continue
+                if cur != e.get('tag') and e.get('tag') in _tag_vocab() and cur in _tag_vocab():  # FINDER-TAGNOTE v84.4: a tag changed by hand is noted by the watcher
+                    _stage_note(os.path.basename(p), e.get('tag'), cur, os.path.basename(os.path.dirname(p)), os.path.basename(os.path.dirname(p)), 'finder')
                 if cur is None:
                     e['history'].append([e['tag'], e['since'], now]); e['closed'] = now; e['closed_tag'] = 'tag removed'; changed = True
                     say(f"📔 {os.path.basename(p)} left the pipeline (tag removed)"); continue
@@ -2285,6 +2360,10 @@ def main():
         else:
             root = sys.stdin.readline()
         root = os.path.normpath(os.path.expanduser(root.strip().strip('"').strip("'").replace('\\', '')))
+    if len(sys.argv) > 1 and sys.argv[1].lower() in ('y', 'yes', 'ok', 'confirm') and action_pending():  # PROPOSE-ROUTE v84.4
+        action_execute(print); sys.exit(0)
+    if len(sys.argv) > 1 and sys.argv[1].lower() in ('n', 'no', 'cancel') and action_pending():
+        action_cancel(print); sys.exit(0)
     if len(sys.argv) > 1 and sys.argv[1].isdigit() and tag_pick_pending():  # TAG-PICK-ROUTE v84.3: the terminal door honours the digit too
         tag_voice(sys.argv[1], True, print); sys.exit(0)
     if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'tag'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
@@ -2936,6 +3015,10 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S236 a paper rests in one stage at a time', (chr(35)+' STAGE-ONE v84.4') in _src)
+    ck('S237 changes that replace or move ask first', (chr(35)+' PROPOSE-FIRST v84.4') in _src and ('pending_action.json' in _src))
+    ck('S238 every tag and move is written in the stage log', (chr(35)+' STAGE-LOG v84.4') in _src and ('stage_log.json' in _src))
+    ck('S239 a Finder move is repathed, not mourned', (chr(35)+' FINDER-MOVE v84.4') in _src)
     ck('S217 the tag-writer preserves every tag it was not asked about', _tag_roundtrip_ok())
     ck('S218 no chase knocks before nine or after half past seven', (chr(35)+' QUIET-WINDOW v84.0') in _src and ('def _clamp_window(' in _src))
     ck('S219 the desk is a chair, not a cage - focus still roams', ('def desk_cmd(' in _src) and ('def do_focus(' in open(os.path.join(BASE_DIR, 'briefing.py')).read()))

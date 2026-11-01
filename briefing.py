@@ -740,6 +740,11 @@ def do_desk(arg, root, say=print):  # DESK v84.0
     butler.desk_cmd(arg, root, say)
 def do_briefing(arg, root, say=print):  # BRIEFING v84.0
     butler.daily_briefing(say)
+def do_confirm(arg, root, say=print):  # PROPOSE-FIRST v84.4
+    butler.action_execute(say)
+def do_cancel(arg, root, say=print):  # PROPOSE-FIRST v84.4
+    butler.action_cancel(say)
+
 def do_tagcmd(arg, root, say=print):  # TAG-VOICE v84.2c: the whole sentence goes to the clerk; the tag is read from its tail
     if arg.startswith('off '): butler.tag_voice(arg[4:], False, say); return
     butler.tag_voice(arg, True, say)
@@ -1469,6 +1474,8 @@ if __name__ == "__main__":
             if q.startswith('briefing'): do_briefing(q[8:].strip(), root); continue
             if q.startswith('chase'): do_chase(q[5:].strip(), root); continue
             if q.startswith('tag '): do_tagcmd(q[4:].strip(), root); continue  # TAG-VOICE v84.0
+            if q.strip().lower() in ('y', 'yes', 'ok', 'confirm') and butler.action_pending(): do_confirm(q, root); continue  # PROPOSE-ROUTE v84.4
+            if q.strip().lower() in ('n', 'no', 'cancel') and butler.action_pending(): do_cancel(q, root); continue
             if q.strip().isdigit() and butler.tag_pick_pending(): do_tagcmd(q.strip(), root); continue  # TAG-PICK-ROUTE v84.3: a bare digit answers the fresh question before the AI wakes
             if q.startswith('pending'): do_pending(q[len('pending'):].strip(), root); continue  # PIPELINE-CHAT-SHALLOW v83.1: the master's words stand at the head of the chain, never nested under another voice
             if q.startswith('status'): do_status(q[len('status'):].strip(), root); continue
