@@ -642,7 +642,8 @@ def _tag_apply_one(p, tag, on, say=print):  # TAG-VOICE v84.5: waiting tags add 
             _stage_note(os.path.basename(p), cur, newt, os.path.basename(os.path.dirname(p)), os.path.basename(os.path.dirname(p)), 'chat/terminal')
         else: say(f'🏷️ {os.path.basename(p)} already lacks {tag} - nothing changed')
         return
-    if tag in cur: say(f'🏷️ {os.path.basename(p)} already wears {tag} - nothing changed'); return
+    drops0 = [t for t in cur if _tag_stage(t) and t != tag]
+    if tag in cur and not drops0: say(f'🏷️ {os.path.basename(p)} already wears {tag} - nothing changed'); return  # SETTLE v84.8: but if another stage rides along, the transition still owes its proposal
     if not _tag_stage(tag):
         newt = cur + [tag]
         _tag_write(p, newt); say(f'🏷️ tagged {os.path.basename(p)}: {tag} (added beside {", ".join(cur) or "nothing"})')
@@ -658,14 +659,15 @@ def _tag_apply_one(p, tag, on, say=print):  # TAG-VOICE v84.5: waiting tags add 
     if pos:
         tgt = os.path.join(pos, tag)
         if os.path.realpath(os.path.dirname(p)) != os.path.realpath(tgt):
-            if os.path.exists(os.path.join(tgt, os.path.basename(p))): conflict = True
+            _twin = os.path.join(tgt, os.path.basename(p))
+            if os.path.exists(_twin): conflict = _twin  # TWIN v84.8: name the twin; the master Bins, the machine never deletes
             else: move_to = tgt
     after = [t for t in cur if t not in drops] + [tag]
     txt = f"🤖 Proposal: {os.path.basename(p)} → {tag} · now: [{', '.join(cur) or '-'}] → after: [{', '.join(after)}]"  # SHOW-BOTH v84.5
     if drops: txt += f' · drops {", ".join(drops)}'
     if keeps: txt += f' · keeps {", ".join(keeps)}'
     if move_to: txt += f' · move {os.path.basename(os.path.dirname(p))} → {tag}'
-    if conflict: txt += f' · a paper already rests in {tag}, so it will be tagged in place'
+    if conflict: txt += f' · a twin already rests in {tag} ({os.path.relpath(conflict, root)}) - tagged in place; the twin is yours to Bin, I never delete'
     say(txt + ' · reply y / n')
     try: _j.dump({'p': p, 'tag': tag, 'on': on, 'move_to': bool(move_to) and not conflict, 'ts': int(time.time())}, open(os.path.join(BASE_DIR, 'pending_action.json'), 'w'))
     except Exception: pass
@@ -3093,6 +3095,8 @@ def _selftest(root):
     ck('S243 a proposal is answered by a keystroke, like the WhatsApp menu', (chr(35)+' KEY-CONFIRM v84.6') in _src and ('def confirm_wait(' in _src))
     ck('S244 the desk speaks its census in one breath, one human counted once', (chr(35)+' DASH v84.7') in _src and ('def desk_dashboard(' in _src))
     ck('S245 papers wearing two stages are named, never silently rewritten', (chr(35)+' AUDIT v84.7') in _src and ('def tags_audit(' in _src))
+    ck('S246 a paper wearing two stages still gets its transition proposal', (chr(35)+' SETTLE v84.8') in _src)
+    ck('S247 a name-conflict names the twin and never deletes it', (chr(35)+' TWIN v84.8') in _src and ('yours to Bin' in _src))
     ck('S217 the tag-writer preserves every tag it was not asked about', _tag_roundtrip_ok())
     ck('S218 no chase knocks before nine or after half past seven', (chr(35)+' QUIET-WINDOW v84.0') in _src and ('def _clamp_window(' in _src))
     ck('S219 the desk is a chair, not a cage - focus still roams', ('def desk_cmd(' in _src) and ('def do_focus(' in open(os.path.join(BASE_DIR, 'briefing.py')).read()))
