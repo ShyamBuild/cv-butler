@@ -2471,6 +2471,14 @@ def main():
         action_cancel(print); sys.exit(0)
     if len(sys.argv) > 1 and sys.argv[1].isdigit() and tag_pick_pending():  # TAG-PICK-ROUTE v84.3: the terminal door honours the digit too
         tag_voice(sys.argv[1], True, print); sys.exit(0)
+    if len(sys.argv) > 1 and sys.argv[1] in ('?', 'help'):  # MENU v84.10a: the clerk offers his menu when the master forgets
+        print('🤵 The 4-Word Life:')
+        print('  📆 briefing     · what is due today')
+        print('  🏷️ tag <n> <s>  · update a human (e.g. tag lalan feedback pending)')
+        print('  🧹 tidy         · carry misplaced papers home')
+        print('  👀 dash         · see the desk\'s census')
+        print('  (Right-click a folder in Finder -> Butler Here to start)')
+        sys.exit(0)
     if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'tag', 'dash', 'audit', 'tidy'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
         _v, _a = sys.argv[1], sys.argv[2:]
         if _v == 'pending': pipeline_pending(_a[0] if _a else None, print)
@@ -3123,6 +3131,7 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S250 the clerk offers his menu when the master forgets', (chr(35)+' MENU v84.10a') in _src and (chr(35)+' MENU v84.10a') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S236 a paper rests in one stage at a time', (chr(35)+' STAGE-ONE v84.4') in _src)
     ck('S237 changes that replace or move ask first', (chr(35)+' PROPOSE-FIRST v84.4') in _src and ('pending_action.json' in _src))
     ck('S238 every tag and move is written in the stage log', (chr(35)+' STAGE-LOG v84.4') in _src and ('stage_log.json' in _src))

@@ -1488,6 +1488,13 @@ if __name__ == "__main__":
             if q.startswith('dash'): do_dash(q[4:].strip(), root); continue  # DASH v84.7
             if q.startswith('audit'): do_audit(q[5:].strip(), root); continue
             if q.startswith('tidy'): do_tidy(q[4:].strip(), root); continue  # TIDY v84.9
+            if q.strip() in ('?', 'help', 'menu'):  # MENU v84.10a
+                say('🤵 The 4-Word Life:')
+                say('  📆 briefing     · what is due today')
+                say('  🏷️ tag <n> <s>  · update a human (e.g. tag lalan feedback pending)')
+                say('  🧹 tidy         · carry misplaced papers home')
+                say('  👀 dash         · see the desk\'s census')
+                continue
             if q.startswith('pending'): do_pending(q[len('pending'):].strip(), root); continue  # PIPELINE-CHAT-SHALLOW v83.1: the master's words stand at the head of the chain, never nested under another voice
             if q.startswith('status'): do_status(q[len('status'):].strip(), root); continue
             if q.startswith('note'): do_note(q[len('note'):].strip(), root); continue
