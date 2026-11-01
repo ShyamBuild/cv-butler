@@ -565,6 +565,22 @@ def _stage_note(file, from_tag, to_tag, from_dir, to_dir, srcs):  # STAGE-LOG v8
     log.append({'ts': int(time.time()), 'file': file, 'from_tag': from_tag, 'to_tag': to_tag, 'from_dir': from_dir, 'to_dir': to_dir, 'src': srcs})
     try: _j.dump(log[-400:], open(lp, 'w'), indent=1)
     except Exception: pass
+def confirm_wait(say=print):  # KEY-CONFIRM v84.6: the answer is a keystroke, not a line - like the WhatsApp menu
+    import sys, tty, termios
+    try:
+        if not sys.stdin.isatty(): return None
+        fd = sys.stdin.fileno()
+        old = termios.tcgetattr(fd)
+        try:
+            tty.setraw(fd)
+            ch = sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSAFLUSH, old)
+        print()
+        return ch.lower()
+    except Exception:
+        return None
+
 def action_pending():  # PROPOSE-FIRST v84.4
     import json as _j
     try: return _j.load(open(os.path.join(BASE_DIR, 'pending_action.json'))).get('ts', 0) > time.time() - 600
@@ -652,6 +668,10 @@ def _tag_apply_one(p, tag, on, say=print):  # TAG-VOICE v84.5: waiting tags add 
     say(txt + ' · reply y / n')
     try: _j.dump({'p': p, 'tag': tag, 'on': on, 'move_to': bool(move_to) and not conflict, 'ts': int(time.time())}, open(os.path.join(BASE_DIR, 'pending_action.json'), 'w'))
     except Exception: pass
+    k = confirm_wait(say)
+    if k in ('y',): action_execute(say)
+    elif k in ('n',): action_cancel(say)
+    elif k is not None: say('proposal left waiting - answer y or n on the next line')
 
 def tag_voice(arg, on, say=print):  # TAG-VOICE v84.2c: names may hold spaces, the tag is read from the tail, and a question keeps its numbers
     import json as _j
@@ -723,8 +743,8 @@ def _tags_of(p):  # PIPELINE v83.0 (v84.0): the kernel's bytes parsed twice if n
     out = []
     for t in (arr or []):
         if isinstance(t, bytes): t = t.decode('utf-8', 'ignore')
-        t = str(t).strip()
-        if t: out.append(t)
+        t = str(t).split(chr(10))[0].strip()  # TAG-SANITIZE v84.6: a tag is one line; stray newlines and bare digits are noise, not names
+        if t and not t.isdigit(): out.append(t)
     return out
 
 PIPELINE_CLOCKED = {'Ready for Manager Review': 'eod', 'Feedback Pending': 86400, 'Shortlisted for Interview': 172800, 'Interview Cleared': 172800, 'Expected to Join': 259200, 'Joined - Payment Pending': 259200}  # PIPELINE-CLOCKS v83.0
@@ -3031,6 +3051,8 @@ def _selftest(root):
     ck('S239 a Finder move is repathed, not mourned', (chr(35)+' FINDER-MOVE v84.4') in _src)
     ck('S240 waiting debts coexist and survive every stage transition', (chr(35)+' TAG-CLASS v84.5') in _src and ('TAG_WAITING' in _src) and ('def _tag_stage(' in _src))
     ck('S241 a transition shows now and after before it asks', (chr(35)+' SHOW-BOTH v84.5') in _src)
+    ck('S242 a tag is one line - noise is dropped at the door', (chr(35)+' TAG-SANITIZE v84.6') in _src)
+    ck('S243 a proposal is answered by a keystroke, like the WhatsApp menu', (chr(35)+' KEY-CONFIRM v84.6') in _src and ('def confirm_wait(' in _src))
     ck('S217 the tag-writer preserves every tag it was not asked about', _tag_roundtrip_ok())
     ck('S218 no chase knocks before nine or after half past seven', (chr(35)+' QUIET-WINDOW v84.0') in _src and ('def _clamp_window(' in _src))
     ck('S219 the desk is a chair, not a cage - focus still roams', ('def desk_cmd(' in _src) and ('def do_focus(' in open(os.path.join(BASE_DIR, 'briefing.py')).read()))
