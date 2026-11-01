@@ -488,6 +488,7 @@ def desk_cmd(arg, root, say=print):  # DESK v84.0: the co-pilot's chair - primar
         p = desk_resolve(arg, root)
         if p: d['primary'] = p; desk_save(d); say(f'🪑 desk set: {os.path.relpath(p, root)} - errands and instant processing point here')
         else: say(f'🤷 no position folder matches {arg}')
+        if d.get('primary'): desk_dashboard(say)  # DASH v84.7: seating a chair shows the census at once
 def _xattr_absence_ok():  # S223 witness body: behaviour, not text - a bare file reads as empty bytes
     import tempfile
     tp = None
@@ -812,6 +813,40 @@ def pipeline_status(name, say=print):
                 say(f"   · now: {e.get('tag')} · {_pl_age(now, e['since'])}{od}")
             for n in e.get('notes', [])[-3:]: say(f"   💬 {n['text']} ({_pl_age(now, n['ts'])} ago)")
     if not found: say(f'🤷 no pipeline row for {name or "?"}')
+def desk_dashboard(say=print):  # DASH v84.7: the desk's census in one breath, read live from the tags, one human counted once
+    seen = set(); counts = {}; multi = []
+    for sc in desk_paths():
+        for dp, dn, fn in os.walk(sc):
+            for x in fn:
+                if not x.lower().endswith(('.pdf', '.docx')): continue
+                p = os.path.join(dp, x); rp = os.path.realpath(p)
+                if rp in seen: continue
+                seen.add(rp)
+                tgs = _tags_of(p)
+                st = [t for t in tgs if _tag_stage(t)]
+                if len(st) > 1: multi.append(x)
+                for t in tgs: counts[t] = counts.get(t, 0) + 1
+                if not tgs: counts['(untagged)'] = counts.get('(untagged)', 0) + 1
+    order = ['Ready for Manager Review', 'Awaiting JD Confirmation', 'Awaiting CV Update', 'Feedback Pending', 'Call Scheduled', 'Shortlisted for Interview', 'Interview Scheduled', 'Interview Today', 'Interview Tomorrow', 'Interview Cleared', 'Expected to Join', 'Joined - Payment Pending', 'Payment Received', 'Closed \u2013 Not Proceeding', 'Rejected by Client', '(untagged)']
+    short = {'Ready for Manager Review': 'ready', 'Awaiting JD Confirmation': 'jd-ack', 'Awaiting CV Update': 'cv-wait', 'Feedback Pending': 'feedback', 'Call Scheduled': 'call', 'Shortlisted for Interview': 'short', 'Interview Scheduled': 'intv', 'Interview Today': 'intv-today', 'Interview Tomorrow': 'intv-tmrw', 'Interview Cleared': 'cleared', 'Expected to Join': 'join', 'Joined - Payment Pending': 'pay-pend', 'Payment Received': 'paid', 'Closed \u2013 Not Proceeding': 'closed', 'Rejected by Client': 'rejected', '(untagged)': 'untagged'}
+    line = ' · '.join(f'{short[t]}:{counts[t]}' for t in order if counts.get(t))
+    say('📊 ' + (line or 'empty desk'))
+    if multi: say('⚠️ wearing two stages: ' + ', '.join(multi[:6]) + (' …' if len(multi) > 6 else ''))
+def tags_audit(say=print):  # AUDIT v84.7: papers wearing two stages are named, never silently rewritten
+    seen = set(); bad = 0
+    for sc in desk_paths():
+        for dp, dn, fn in os.walk(sc):
+            for x in fn:
+                if not x.lower().endswith(('.pdf', '.docx')): continue
+                p = os.path.join(dp, x); rp = os.path.realpath(p)
+                if rp in seen: continue
+                seen.add(rp)
+                st = [t for t in _tags_of(p) if _tag_stage(t)]
+                if len(st) > 1:
+                    bad += 1
+                    say(f'⚠️ {x} · in {os.path.basename(dp)} · wears {", ".join(st)} - one transition will settle it')
+    if not bad: say('✅ every paper on the desk rests in exactly one stage')
+
 def _chase_draft(p, tag):
     first = os.path.splitext(os.path.basename(p))[0].split()[0].title()
     if tag == 'Awaiting JD Confirmation':
@@ -866,6 +901,7 @@ def daily_briefing(say=print):  # BRIEFING v84.0: yesterday's trail and today's 
             if isinstance(e, dict) and any(k.endswith(':chased') for k in e): say(f'   📨 chase due: {os.path.basename(p)}')
     except Exception: pass
     if not od: say('   · nothing overdue')
+    desk_dashboard(say)
 
 def pipeline_note(name, text, say=print):
     led, lp = _pl_load(); now = int(time.time()); toks = (name or '').lower().split(); found = 0
@@ -2396,7 +2432,7 @@ def main():
         action_cancel(print); sys.exit(0)
     if len(sys.argv) > 1 and sys.argv[1].isdigit() and tag_pick_pending():  # TAG-PICK-ROUTE v84.3: the terminal door honours the digit too
         tag_voice(sys.argv[1], True, print); sys.exit(0)
-    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'tag'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
+    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'tag', 'dash', 'audit'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
         _v, _a = sys.argv[1], sys.argv[2:]
         if _v == 'pending': pipeline_pending(_a[0] if _a else None, print)
         elif _v == 'status': pipeline_status(' '.join(_a), print)
@@ -2408,6 +2444,8 @@ def main():
             _aa = list(_a); _on = True
             if _aa and _aa[0] == 'off': _on = False; _aa = _aa[1:]
             tag_voice(' '.join(_aa), _on, print)
+        elif _v == 'dash': desk_dashboard(print)  # DASH v84.7 at the chain's own depth
+        elif _v == 'audit': tags_audit(print)
         sys.exit(0)
     if not os.path.isdir(root):
         print("Error: folder does not exist."); sys.exit(1)
@@ -3053,6 +3091,8 @@ def _selftest(root):
     ck('S241 a transition shows now and after before it asks', (chr(35)+' SHOW-BOTH v84.5') in _src)
     ck('S242 a tag is one line - noise is dropped at the door', (chr(35)+' TAG-SANITIZE v84.6') in _src)
     ck('S243 a proposal is answered by a keystroke, like the WhatsApp menu', (chr(35)+' KEY-CONFIRM v84.6') in _src and ('def confirm_wait(' in _src))
+    ck('S244 the desk speaks its census in one breath, one human counted once', (chr(35)+' DASH v84.7') in _src and ('def desk_dashboard(' in _src))
+    ck('S245 papers wearing two stages are named, never silently rewritten', (chr(35)+' AUDIT v84.7') in _src and ('def tags_audit(' in _src))
     ck('S217 the tag-writer preserves every tag it was not asked about', _tag_roundtrip_ok())
     ck('S218 no chase knocks before nine or after half past seven', (chr(35)+' QUIET-WINDOW v84.0') in _src and ('def _clamp_window(' in _src))
     ck('S219 the desk is a chair, not a cage - focus still roams', ('def desk_cmd(' in _src) and ('def do_focus(' in open(os.path.join(BASE_DIR, 'briefing.py')).read()))

@@ -745,6 +745,11 @@ def do_confirm(arg, root, say=print):  # PROPOSE-FIRST v84.4
 def do_cancel(arg, root, say=print):  # PROPOSE-FIRST v84.4
     butler.action_cancel(say)
 
+def do_dash(arg, root, say=print):  # DASH v84.7
+    butler.desk_dashboard(say)
+def do_audit(arg, root, say=print):  # AUDIT v84.7
+    butler.tags_audit(say)
+
 def do_tagcmd(arg, root, say=print):  # TAG-VOICE v84.2c: the whole sentence goes to the clerk; the tag is read from its tail
     if arg.startswith('off '): butler.tag_voice(arg[4:], False, say); return
     butler.tag_voice(arg, True, say)
@@ -1477,6 +1482,8 @@ if __name__ == "__main__":
             if q.strip().lower() in ('y', 'yes', 'ok', 'confirm') and butler.action_pending(): do_confirm(q, root); continue  # PROPOSE-ROUTE v84.4
             if q.strip().lower() in ('n', 'no', 'cancel') and butler.action_pending(): do_cancel(q, root); continue
             if q.strip().isdigit() and butler.tag_pick_pending(): do_tagcmd(q.strip(), root); continue  # TAG-PICK-ROUTE v84.3: a bare digit answers the fresh question before the AI wakes
+            if q.startswith('dash'): do_dash(q[4:].strip(), root); continue  # DASH v84.7
+            if q.startswith('audit'): do_audit(q[5:].strip(), root); continue
             if q.startswith('pending'): do_pending(q[len('pending'):].strip(), root); continue  # PIPELINE-CHAT-SHALLOW v83.1: the master's words stand at the head of the chain, never nested under another voice
             if q.startswith('status'): do_status(q[len('status'):].strip(), root); continue
             if q.startswith('note'): do_note(q[len('note'):].strip(), root); continue
