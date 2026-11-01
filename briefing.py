@@ -747,6 +747,9 @@ def do_cancel(arg, root, say=print):  # PROPOSE-FIRST v84.4
 
 def do_dash(arg, root, say=print):  # DASH v84.7
     butler.desk_dashboard(say)
+def do_tidy(arg, root, say=print):  # TIDY v84.9
+    butler.tags_tidy(say)
+
 def do_audit(arg, root, say=print):  # AUDIT v84.7
     butler.tags_audit(say)
 
@@ -1484,6 +1487,7 @@ if __name__ == "__main__":
             if q.strip().isdigit() and butler.tag_pick_pending(): do_tagcmd(q.strip(), root); continue  # TAG-PICK-ROUTE v84.3: a bare digit answers the fresh question before the AI wakes
             if q.startswith('dash'): do_dash(q[4:].strip(), root); continue  # DASH v84.7
             if q.startswith('audit'): do_audit(q[5:].strip(), root); continue
+            if q.startswith('tidy'): do_tidy(q[4:].strip(), root); continue  # TIDY v84.9
             if q.startswith('pending'): do_pending(q[len('pending'):].strip(), root); continue  # PIPELINE-CHAT-SHALLOW v83.1: the master's words stand at the head of the chain, never nested under another voice
             if q.startswith('status'): do_status(q[len('status'):].strip(), root); continue
             if q.startswith('note'): do_note(q[len('note'):].strip(), root); continue
