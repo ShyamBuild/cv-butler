@@ -1076,6 +1076,13 @@ DRAFTS_DIR = os.path.join(BASE_DIR, 'drafts')  # TEMPLATES v84.16: the master's 
 def _sig():
     try: return open(os.path.join(BASE_DIR, 'signature.txt')).read().strip()
     except Exception: return 'Regards,' + chr(10) + 'Sundeep Rana'
+def _pos_of(p, root):  # POS-OF v84.18: the position is the chair the paper lies under, else the client's child - never the list or stage folder above the paper
+    d = desk_load()
+    for chair in (d.get('primary'), d.get('secondary')):
+        if chair and p.startswith(chair + os.sep): return os.path.basename(chair)
+    rel = os.path.relpath(p, root).split(os.sep)
+    return rel[1] if len(rel) > 2 else (rel[0] if len(rel) > 1 else '')
+
 def _draft_fields(name, pos, p=None):
     import collections
     meta = {}
@@ -1088,7 +1095,12 @@ def _draft_fields(name, pos, p=None):
             v = get_visual_name(p)
             if v: full = v
         except Exception: pass
-    return collections.defaultdict(str, {'first': (full or name).split()[0].title(), 'full': (full or name).title(), 'role': role.strip(), 'company': meta.get('company', ''), 'loc': loc.strip(), 'pos': pos or '', 'signature': _sig()})
+        _rl = []
+        if role.strip(): _rl.append('the role of ' + role.strip())
+        if meta.get('company'): _rl.append('in ' + meta['company'])
+        if loc.strip(): _rl.append('for ' + loc.strip() + ' location')
+        roleline = ' '.join(_rl) or 'the role we discussed'  # ROLELINE v84.18: the sentence omits what was never taught
+    return collections.defaultdict(str, {'first': (full or name).split()[0].title(), 'full': (full or name).title(), 'role': role.strip(), 'company': meta.get('company', ''), 'loc': loc.strip(), 'pos': pos or '', 'signature': _sig(), 'roleline': roleline})
 def _draft_text(kind, name, pos, p=None):
     lp = os.path.join(DRAFTS_DIR, kind + '.txt')
     if not os.path.exists(lp): return None
@@ -1200,8 +1212,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
             ph = taught_digits(cur['name']) or phones_of(p) or None
             if isinstance(ph, list): ph = ph[0] if ph else None
             if ph:
-                parts = os.path.relpath(p, root).split(os.sep)
-                pos = parts[-2] if len(parts) >= 3 else (desk_load().get('primary') or root).rsplit('/', 1)[-1]
+                pos = _pos_of(p, root)
                 import wa
                 wa.send_review(ph, _chair_draft(draft, cur['name'], pos, p), say)
             else: say(f'⚠️ no phone for {cur["name"]} - teach me: python3 butler.py teach {cur["name"].split()[0].lower()} <digits>, then retry')
@@ -1212,8 +1223,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
 
 def _chase_draft(p, tag):  # CHASE v84.0 (v84.16): the background chase speaks in the master's templates too
     name = os.path.splitext(os.path.basename(p))[0]
-    parts = p.split(os.sep)
-    pos = parts[-2] if len(parts) >= 2 else ''
+    pos = _pos_of(p, _pl_root())
     kind = 'jd' if tag == 'Awaiting JD Confirmation' else 'cv'
     t = _draft_text(kind, name, pos, p)
     if t: return t
@@ -3471,7 +3481,9 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S272 the roleline omits what was never taught', (chr(35)+' ROLELINE v84.18') in _src)
     ck('S270 every name the skip branch speaks is defined in the same book', ('SKIPS_PATH =' in _src) and ('def skips_load(' in _src) and ('def _fp(' in _src) and ('def outcome_cmd(' in _src))
+    ck('S271 the draft'+chr(39)+'s role comes from the position, never from a list or stage folder', (chr(35)+' POS-OF v84.18') in _src and ('def _pos_of(' in _src))
     ck('S250 the clerk offers his menu when the master forgets', (chr(35)+' MENU v84.10a') in _src and (chr(35)+' MENU v84.10a') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S251 the chair remembers the name - outcomes answer without it', (chr(35)+' CHAIR v84.10b') in _src and ('def outcome_cmd(' in _src) and ('def sheet_current(' in _src))
     ck('S252 a missed call tags Call Scheduled and opens the draft, unsent', (chr(35)+' MISSED v84.10b') in _src)
