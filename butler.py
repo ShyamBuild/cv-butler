@@ -903,7 +903,7 @@ def sheet_save(s):
     try: json.dump(s, open(SHEET_PATH, 'w'), indent=1)
     except Exception: pass
 def sheet_current(): return sheet_load().get('current')
-CHAIR_WORDS = {'missed': '4', 'no answer': '4', 'jd': '1', 'jd mailed': '1', 'cv': '3', 'update cv': '3', 'not interested': '2', 'ready': '5', 'manager': '5', 'skip': '6', 'skip him': '6'}
+CHAIR_WORDS = {'missed': '4', 'no answer': '4', 'jd': '1', 'jd mailed': '1', 'cv': '3', 'update cv': '3', 'not interested': '2', 'ready': '5', 'manager': '5', 'skip': '6', 'skip him': '6', 'skip for now': '6', 'skip him for now': '6'}
 def chair_word(q): return CHAIR_WORDS.get((q or '').strip().lower())
 OUTCOMES = {'1': ('Awaiting JD Confirmation', 'interested · JD mailed', 'jd'), '2': ('Closed \u2013 Not Proceeding', 'not interested', 'refer'), '3': ('Awaiting CV Update', 'will update CV', 'cv'), '4': ('Call Scheduled', 'missed / no answer', 'missed'), '5': ('Ready for Manager Review', 'ready for manager', None), '6': (None, 'skipped', None)}  # DRAFTS v84.11: outward outcomes speak, internal ones stay silent
 def taught_digits(name):  # CHAIR-PHONE v84.10c: the chair reads the taught book directly, then falls back to the paper
@@ -1144,6 +1144,8 @@ def followup_cmd(arg, root, say=print):  # FOLLOWUP v84.11: the debts, by name, 
     except Exception: pass
     if due: say('📨 chase due now: ' + ', '.join(due[:6]) + ' - chase send <name> opens the draft')
     else: say('📨 no chase due right now')
+
+SKIPS_PATH = os.path.join(BASE_DIR, 'skips.json')  # SKIP v84.11: today's list, not today's verdicts
 
 def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair remembers the paper, not merely its path
     s = sheet_load(); cur = s.get('current')
@@ -3469,6 +3471,7 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S270 every name the skip branch speaks is defined in the same book', ('SKIPS_PATH =' in _src) and ('def skips_load(' in _src) and ('def _fp(' in _src) and ('def outcome_cmd(' in _src))
     ck('S250 the clerk offers his menu when the master forgets', (chr(35)+' MENU v84.10a') in _src and (chr(35)+' MENU v84.10a') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S251 the chair remembers the name - outcomes answer without it', (chr(35)+' CHAIR v84.10b') in _src and ('def outcome_cmd(' in _src) and ('def sheet_current(' in _src))
     ck('S252 a missed call tags Call Scheduled and opens the draft, unsent', (chr(35)+' MISSED v84.10b') in _src)
