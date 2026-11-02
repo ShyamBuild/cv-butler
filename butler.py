@@ -955,6 +955,7 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b: the next waiting candidate t
     i = w[0]; s['current'] = i; sheet_save(s)
     p = i['p']; ph = taught_digits(i['name']) or phones_of(p)
     i['fp'] = _fp(p)  # FP v84.11
+    i['fp'] = _fp(p)  # FP v84.11
     say(f"📞 UP: {i['name']} · in {os.path.basename(os.path.dirname(p))}")
     if isinstance(ph, list): say('   phones: ' + ' · '.join(f'{n}) {d}' for n, d in enumerate(ph, 1)))
     elif ph: say(f'   phone: {ph}')
