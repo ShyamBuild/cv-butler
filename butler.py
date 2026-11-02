@@ -469,7 +469,8 @@ def desk_cmd(arg, root, say=print):  # DESK v84.0: the co-pilot's chair - primar
     if not arg:
         _pr = os.path.relpath(d['primary'], root) if d.get('primary') else ''
         _se = os.path.relpath(d['secondary'], root) if d.get('secondary') else '-'  # DESK-DISPLAY v84.1: a placeholder is never run through relpath
-        say(f'🪑 desk: {_pr or "-"} · secondary: {_se}' if d.get('primary') else '🪑 no desk set - the butler watches the whole library evenly')
+        if d.get('primary') or d.get('secondary'): say(f'🪑 desk: {_pr or "-"} · secondary: {_se}')  # DESK-TRUTH v84.13: an empty primary never hides a seated secondary
+        else: say('🪑 no desk set - the butler watches the whole library evenly')
     elif arg == 'clear':
         desk_save({'primary': '', 'secondary': ''}); say('🪑 desk cleared - back to librarian mode')
     elif arg == 'swap':
@@ -477,9 +478,7 @@ def desk_cmd(arg, root, say=print):  # DESK v84.0: the co-pilot's chair - primar
         say(f"🪑 swapped - desk: {os.path.relpath(d.get('primary') or '?', root)}")
     elif arg.startswith('- '):
         p = desk_resolve(arg[2:], root)
-        if d.get('primary') == p: d['primary'] = ''
-        if d.get('secondary') == p: d['secondary'] = ''
-        desk_save(d); say(f'🪑 chair released: {os.path.relpath(p, root) if p else arg[2:]}')
+        desk_release(p or arg[2:], say)  # RELEASE v84.13
     elif arg.startswith('+'):
         p = desk_resolve(arg[1:], root)
         if p: d['secondary'] = p; desk_save(d); say(f'🪑 secondary desk: {os.path.relpath(p, root)}')
@@ -502,6 +501,15 @@ def _xattr_absence_ok():  # S223 witness body: behaviour, not text - a bare file
             if tp: os.remove(tp)
         except Exception: pass
         return False
+
+def desk_release(p, say=print):  # RELEASE v84.13: releasing the top chair hands the desk to the waiting chair
+    d = desk_load(); rp = os.path.abspath(p)
+    if d.get('primary') == rp:
+        d['primary'] = d.get('secondary') or ''; d['secondary'] = ''
+    elif d.get('secondary') == rp:
+        d['secondary'] = ''
+    desk_save(d)
+    say(f"🪑 chair released: {os.path.basename(rp)}" + (f" · promoted: {os.path.basename(d['primary'])}" if d.get('primary') else ' · no chairs remain'))
 
 def _tag_write(p, tags):  # TAG-WRITE v84.0: libc setxattr, synchronous - what we write is what the next read sees
     import plistlib as _pl
@@ -2701,7 +2709,7 @@ def main():
         print('  👀 dash         · see the desk\'s census')
         print('  (Right-click a folder in Finder -> Butler Here to start)')
         sys.exit(0)
-    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'tag', 'dash', 'audit', 'tidy', 'calls', 'sheet', 'up', 'unskip', 'followup'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
+    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'tag', 'dash', 'audit', 'tidy', 'calls', 'sheet', 'up', 'unskip', 'followup', 'release'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
         _v, _a = sys.argv[1], sys.argv[2:]
         if _v == 'pending': pipeline_pending(_a[0] if _a else None, print)
         elif _v == 'status': pipeline_status(' '.join(_a), print)
@@ -2721,6 +2729,7 @@ def main():
         elif _v == 'up': up_cmd(' '.join(_a), _pl_root(), print)
         elif _v == 'unskip': unskip_cmd(' '.join(_a), _pl_root(), print)
         elif _v == 'followup': followup_cmd(' '.join(_a), _pl_root(), print)
+        elif _v == 'release': desk_release(' '.join(_a), print)
         sys.exit(0)
     if not os.path.isdir(root):
         print("Error: folder does not exist."); sys.exit(1)
@@ -3371,6 +3380,7 @@ def _selftest(root):
     ck('S260 covered means any tag - the sheet seats only the silent', (chr(35)+' COVERED v84.11') in _src)
     ck('S261 the sheet breathes - covered rows leave, new papers join', (chr(35)+' SHEET-LIVE v84.12') in _src)
     ck('S262 every closed row ends with the living scoreboard', (chr(35)+' CENSUS-AFTER v84.12') in _src)
+    ck('S263 release promotes the waiting chair and never hides a seated secondary', (chr(35)+' RELEASE v84.13') in _src and (chr(35)+' DESK-TRUTH v84.13') in _src and ('def desk_release(' in _src))
     ck('S236 a paper rests in one stage at a time', (chr(35)+' STAGE-ONE v84.4') in _src)
     ck('S237 changes that replace or move ask first', (chr(35)+' PROPOSE-FIRST v84.4') in _src and ('pending_action.json' in _src))
     ck('S238 every tag and move is written in the stage log', (chr(35)+' STAGE-LOG v84.4') in _src and ('stage_log.json' in _src))
