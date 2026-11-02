@@ -897,6 +897,23 @@ def sheet_current(): return sheet_load().get('current')
 CHAIR_WORDS = {'missed': '4', 'no answer': '4', 'jd': '1', 'jd mailed': '1', 'cv': '3', 'update cv': '3', 'not interested': '2', 'ready': '5', 'manager': '5'}  # CHAIR v84.10b: the words you would say anyway
 def chair_word(q): return CHAIR_WORDS.get((q or '').strip().lower())
 OUTCOMES = {'1': ('Awaiting JD Confirmation', 'interested · JD mailed', False), '2': ('Closed \u2013 Not Proceeding', 'not interested', False), '3': ('Awaiting CV Update', 'will update CV', False), '4': ('Call Scheduled', 'missed / no answer', True), '5': ('Ready for Manager Review', 'ready for manager', False)}
+def taught_digits(name):  # CHAIR-PHONE v84.10c: the chair reads the taught book directly, then falls back to the paper
+    import json as _j
+    low = (name or '').lower()
+    for fn in ('taught.json', 'phonebook.json', 'taught_book.json', 'phones.json'):
+        lp = os.path.join(BASE_DIR, fn)
+        if not os.path.exists(lp): continue
+        try: d = _j.load(open(lp))
+        except Exception: continue
+        if isinstance(d, dict):
+            for k, v in d.items():
+                kl = str(k).lower()
+                if low and (low in kl or kl in low):
+                    if isinstance(v, list): return v
+                    if isinstance(v, str) and v.strip().isdigit(): return v.strip()
+        break
+    return None
+
 def calls_cmd(arg, root, say=print):  # CHAIR v84.10b: seed today's sheet with every uncovered paper on the desk
     scopes = [desk_resolve(arg, root)] if arg else (desk_paths() or [root])
     items = []; seen = set()
@@ -3230,6 +3247,7 @@ def _selftest(root):
     ck('S251 the chair remembers the name - outcomes answer without it', (chr(35)+' CHAIR v84.10b') in _src and ('def outcome_cmd(' in _src) and ('def sheet_current(' in _src))
     ck('S252 a missed call tags Call Scheduled and opens the draft, unsent', (chr(35)+' MISSED v84.10b') in _src)
     ck('S253 the sheet advances only after a confirmed outcome', (chr(35)+' ADVANCE v84.10b') in _src)
+    ck('S254 no ghost may name the phone book', ('taught_' + 'digits(' not in _src.replace('def taught_digits(', 'DEF')) or ('def taught_digits(' in _src))
     ck('S236 a paper rests in one stage at a time', (chr(35)+' STAGE-ONE v84.4') in _src)
     ck('S237 changes that replace or move ask first', (chr(35)+' PROPOSE-FIRST v84.4') in _src and ('pending_action.json' in _src))
     ck('S238 every tag and move is written in the stage log', (chr(35)+' STAGE-LOG v84.4') in _src and ('stage_log.json' in _src))
