@@ -1141,9 +1141,10 @@ def client_cmd(arg, root, say=print):  # POS-ID v84.21: teach a client's company
     k, v = arg.split('=', 1)
     try: cm = json.load(open(CLIENTMAP_PATH))
     except Exception: cm = {}
+    _prev = cm.get(k.strip())  # RETEACH v84.26: an overwrite speaks its before-and-after, so no haste-teaching steals a true one silently
     cm[k.strip()] = v.strip()
     json.dump(cm, open(CLIENTMAP_PATH, 'w'), indent=1)
-    say(f'🏢 client taught: {k.strip()} = {v.strip()}')
+    say(f'🏢 client re-taught: {k.strip()} was {_prev} → now {v.strip()}' if _prev and _prev != v.strip() else f'🏢 client taught: {k.strip()} = {v.strip()}')  # RETEACH v84.26
 def posmeta_cmd(arg, root, say=print):  # POS-ID v84.21: override the triple for the seated chair when the folder lies
     d = desk_load()
     if not d.get('primary'): say('🤷 no desk seated - seat one first'); return
@@ -3634,6 +3635,7 @@ def _selftest(root):
     ck('S281 the keywords answer in the bare terminal too', (chr(35)+' KEYWORDS-CLI v84.23') in _src)
     ck('S282 the client ledger shows the taught and names the anonymous', (chr(35)+' CLIENTS-LIST v84.24') in _src and ('def clients_cmd(' in _src))
     ck('S283 the teach door works in chat and the ledger holds only real folders', (chr(35)+' CLIENT-DISPATCH v84.25') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' CLIENT-PRUNE v84.25') in _src)
+    ck('S284 a re-teaching speaks its before-and-after', (chr(35)+' RETEACH v84.26') in _src)
     ck('S272 the roleline omits what was never taught', (chr(35)+' ROLELINE v84.18') in _src)
     ck('S273 the chair drafts through the keywords'+chr(39)+' composer, not a rival clerk', (chr(35)+' ONE-VOICE v84.19') in _src and ('def _chair_wa_text(' in _src) and ('_fmt_tpl' in _src))
     ck('S270 every name the skip branch speaks is defined in the same book', ('SKIPS_PATH =' in _src) and ('def skips_load(' in _src) and ('def _fp(' in _src) and ('def outcome_cmd(' in _src))
