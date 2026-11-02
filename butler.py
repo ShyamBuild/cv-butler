@@ -1,5 +1,5 @@
 import sys as _sys0
-_CLI_VERB = len(_sys0.argv) > 1 and _sys0.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase')  # QUIET-VERBS v84.2: a verb is answered without the clerk clearing his throat
+_CLI_VERB = len(_sys0.argv) > 1 and _sys0.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'refresh', 'options')  # QUIET-VERBS v84.2: a verb is answered without the clerk clearing his throat
 try:
     import sys as _sysio; _sysio.stdout.reconfigure(line_buffering=True)  # LOG-FLUSH v81.8
 except Exception:
@@ -986,6 +986,18 @@ def sheet_cmd(arg, root, say=print):
     say(f"📞 sheet {s.get('date') or '-'}: covered {len(dn)} · waiting {len(wt)}" + (f" · NOW: {cur['name']}" if cur else ''))
     for i in dn[-8:]: say(f"   ✅ {i['name']} · {i.get('outcome', '')}")
     for i in wt[:8]: say(f"   ⏳ {i['name']}")
+OPTION_MAP = [  # OPTIONS-MAP v84.32: option = tag = keyword = draft-now + later-chase, so no door confuses the moments
+ '1 interested · JD mailed   → [Awaiting JD Confirmation] · keyword: jd · now: jd-share · later: ack-reminder',
+ '2 not interested           → [Closed – Not Proceeding] · keyword: refer · now: refer/farewell',
+ '3 will update CV           → [Awaiting CV Update] · keyword: nudge · now: jd+ack+CV · later: cv-due',
+ '4 missed / no answer       → [Call Scheduled] · keyword: missed · now: missed+JD-on-email',
+ '5 ready for manager review → [Ready for Manager Review] · internal · no draft',
+ '6 skip him for now         → no tag, no move, remembered · no draft',
+]
+def options_cmd(arg, root, say=print):  # OPTIONS-MAP v84.32
+    say('📋 option = tag = keyword = draft:')
+    for ln in OPTION_MAP: say('   ' + ln)
+
 def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes, and the seat itself re-checks coverage
     s = sheet_load()
     sk = skips_load()
@@ -1025,7 +1037,10 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
             it['status'] = 'done'; it['outcome'] = 'covered elsewhere'; continue
         i = it; break
     sheet_save(s)
-    if not i: say('📭 sheet empty - type: calls'); return
+    if not i:  # SELF-REFRESH v84.32: an empty sheet re-seeds itself from the living folders, so a dragged-out paper rises without a command
+        calls_cmd('', root, say)
+        if any(x.get('status') == 'waiting' for x in sheet_load().get('items', [])): return up_cmd(arg, root, say)
+        say('📭 sheet empty - every loose paper is seated, skipped or remembered'); return
     s['current'] = i; sheet_save(s)
     p = i['p']; ph = taught_digits(i['name']) or phones_of(p) or None
     if isinstance(ph, list): ph = ph[0] if ph else None
@@ -1036,12 +1051,7 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
     tgs = _tags_of(p)
     if tgs: say('   tags: ' + ', '.join(tgs))
     say('   after the call, one digit or one word closes his row:')
-    say('   1 interested · JD mailed   → [Awaiting JD Confirmation]')
-    say('   2 not interested           → [Closed \u2013 Not Proceeding]')
-    say('   3 will update CV           → [Awaiting CV Update]')
-    say('   4 missed / no answer       → [Call Scheduled] + WhatsApp draft')
-    say('   5 ready for manager review → [Ready for Manager Review]')
-    say('   6 skip him for now        → no tag, no move, remembered')
+    for _ln in OPTION_MAP: say('   ' + _ln)  # OPTIONS-MAP v84.32
 
 def covered_load():
     try: return json.load(open(COVERED_PATH))
@@ -2988,7 +2998,7 @@ def main():
         print('  👀 dash         · see the desk\'s census')
         print('  (Right-click a folder in Finder -> Butler Here to start)')
         sys.exit(0)
-    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'tag', 'dash', 'audit', 'tidy', 'calls', 'sheet', 'up', 'unskip', 'followup', 'release', 'forget', 'meta', 'client', 'posmeta', 'missed', 'jd', 'nudge', 'refer', 'clients'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
+    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'tag', 'dash', 'audit', 'tidy', 'calls', 'sheet', 'up', 'unskip', 'followup', 'release', 'forget', 'meta', 'client', 'posmeta', 'missed', 'jd', 'nudge', 'refer', 'clients', 'refresh', 'options'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
         _v, _a = sys.argv[1], sys.argv[2:]
         if _v == 'pending': pipeline_pending(_a[0] if _a else None, print)
         elif _v == 'status': pipeline_status(' '.join(_a), print)
@@ -3014,6 +3024,8 @@ def main():
         elif _v == 'client': client_cmd(' '.join(_a), _pl_root(), print)
         elif _v == 'posmeta': posmeta_cmd(' '.join(_a), _pl_root(), print)
         elif _v == 'clients': clients_cmd(' '.join(_a), _pl_root(), print)
+        elif _v == 'refresh': calls_cmd(' '.join(_a), _pl_root(), print)
+        elif _v == 'options': options_cmd(' '.join(_a), _pl_root(), print)
         elif _v in ('missed', 'jd', 'nudge', 'refer'):  # KEYWORDS-CLI v84.23: the keyword habit works in every door
             import briefing as _br
             _fn = getattr(_br, 'do_' + _v, None)
@@ -3658,6 +3670,9 @@ def _selftest(root):
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
     ck('S291 the cv draft carries the touchpoint and the missed draft carries the JD line in whichever store speaks it', 'acknowledge receipt' in open(os.path.join(BASE_DIR, 'drafts', 'cv.txt')).read() and ('JD on your email' in open(os.path.join(BASE_DIR, 'templates', 'missed.txt')).read() or 'JD on your email' in open(os.path.join(BASE_DIR, 'drafts', 'missed.txt')).read()))  # S291 repinned v84.31: the house polices its own drafts; the master's style is never the failing grade
+    ck('S292 every option states its tag, its keyword and its two drafts', (chr(35)+' OPTIONS-MAP v84.32') in _src and ('def options_cmd(' in _src))
+    ck('S293 an empty sheet re-seeds itself and refresh re-seeds on demand', (chr(35)+' SELF-REFRESH v84.32') in _src and (chr(35)+' SELF-REFRESH v84.32') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
+    ck('S294 widening a tuple never amputates its marker', any(_l.lstrip().startswith('_CLI_VERB = ') and chr(39)+'refresh'+chr(39) in _l and (chr(35)+' QUIET-VERBS v84.2') in _l for _l in _src.split(chr(10))))  # S294 repinned v84.32: the witness is the quiet line itself - verbs and marker in one breath, not a comment in a patch
     ck('S274 the fallback chain keeps every scenario speakable', ('def _chair_wa_text(' in _src) and ('def _draft_text(' in _src) and ('def _chair_draft(' in _src))
     ck('S275 the fields dict carries every sentence it computes', ("'roleline': roleline" in _src) and (chr(35)+' ROLELINE v84.18') in _src)
     ck('S276 one truth per position, taught once and shown at the composer', (chr(35)+' POS-ID v84.21') in _src and ('def pos_identity(' in _src) and ('say_identity_for' in open(os.path.join(BASE_DIR, 'briefing.py')).read()))
