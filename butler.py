@@ -1114,6 +1114,12 @@ def say_identity_for(p, say=print):  # POS-ID v84.21: the triple, shown before a
 def clients_cmd(arg, root, say=print):  # CLIENTS-LIST v84.24: the taught map and every anonymous folder, each with its teach-line ready
     try: cm = json.load(open(CLIENTMAP_PATH))
     except Exception: cm = {}
+    stale = [k for k in cm if not os.path.isdir(os.path.join(root, k))]  # CLIENT-PRUNE v84.25: the ledger may only hold truths the filesystem confirms
+    if stale:
+        for k in stale: cm.pop(k, None)
+        try: json.dump(cm, open(CLIENTMAP_PATH, 'w'), indent=1)
+        except Exception: pass
+        say('🧹 pruned keys that match no client folder: ' + ', '.join(stale))
     if cm:
         say('🏢 taught clients:')
         for k in sorted(cm): say(f'   {k} = {cm[k]}')
@@ -3627,6 +3633,7 @@ def _selftest(root):
     ck('S280 an untold company asks where the master is looking', (chr(35)+' CLIENT-ASK v84.23') in _src)
     ck('S281 the keywords answer in the bare terminal too', (chr(35)+' KEYWORDS-CLI v84.23') in _src)
     ck('S282 the client ledger shows the taught and names the anonymous', (chr(35)+' CLIENTS-LIST v84.24') in _src and ('def clients_cmd(' in _src))
+    ck('S283 the teach door works in chat and the ledger holds only real folders', (chr(35)+' CLIENT-DISPATCH v84.25') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' CLIENT-PRUNE v84.25') in _src)
     ck('S272 the roleline omits what was never taught', (chr(35)+' ROLELINE v84.18') in _src)
     ck('S273 the chair drafts through the keywords'+chr(39)+' composer, not a rival clerk', (chr(35)+' ONE-VOICE v84.19') in _src and ('def _chair_wa_text(' in _src) and ('_fmt_tpl' in _src))
     ck('S270 every name the skip branch speaks is defined in the same book', ('SKIPS_PATH =' in _src) and ('def skips_load(' in _src) and ('def _fp(' in _src) and ('def outcome_cmd(' in _src))
