@@ -935,6 +935,7 @@ def _is_desk_candidate(x):  # PAPER-OR-NOT v84.10d: only humans take the chair
 def calls_cmd(arg, root, say=print):  # CHAIR v84.10b: seed today's sheet with every uncovered paper on the desk
     scopes = [desk_resolve(arg, root)] if arg else (desk_paths() or [root])
     items = []; seen = set()
+    cov = _covered_names(root)
     for sc in scopes:
         if not sc or not os.path.isdir(sc): continue
         for dp, dn, fn in os.walk(sc):
@@ -945,6 +946,7 @@ def calls_cmd(arg, root, say=print):  # CHAIR v84.10b: seed today's sheet with e
                 if os.path.realpath(p) in skips_load(): continue  # SKIP v84.11: the remembered stay out of tomorrow's queue
                 seen.add(rp)
                 if _tags_of(p): continue  # COVERED v84.11: any tag at all means already covered or under follow-up
+                if _name_key(x) in cov: continue  # COVERED-MEMORY v84.15
                 items.append({'p': p, 'name': os.path.splitext(x)[0], 'status': 'waiting'})
     sheet_save({'date': time.strftime('%Y-%m-%d'), 'items': items, 'current': None})
     say(f'📞 call sheet seeded: {len(items)} uncovered candidate(s) on the desk')
@@ -956,39 +958,49 @@ def sheet_cmd(arg, root, say=print):
     say(f"📞 sheet {s.get('date') or '-'}: covered {len(dn)} · waiting {len(wt)}" + (f" · NOW: {cur['name']}" if cur else ''))
     for i in dn[-8:]: say(f"   ✅ {i['name']} · {i.get('outcome', '')}")
     for i in wt[:8]: say(f"   ⏳ {i['name']}")
-def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.12): the sheet breathes - covered rows leave, gone rows resolve, new papers join
+def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes, and the seat itself re-checks coverage
     s = sheet_load()
     sk = skips_load()
+    cov = _covered_names(root)
     known = set()
     for it in s.get('items', []):
         try: known.add(os.path.realpath(it['p']))
         except Exception: pass
-    for it in s.get('items', []):  # SHEET-LIVE v84.12: reconcile against the living desk before seating anyone
+    for it in s.get('items', []):  # SHEET-LIVE v84.12
         if it.get('status') != 'waiting': continue
         p = it['p']
         if not os.path.exists(p):
             q = _find_by_fp(it.get('fp'), root)
             if q: p = it['p'] = q
             else: it['status'] = 'done'; it['outcome'] = 'gone'; continue
-        if _tags_of(p): it['status'] = 'done'; it['outcome'] = 'covered elsewhere'; continue
+        if _tags_of(p) or _name_key(os.path.basename(p)) in cov: it['status'] = 'done'; it['outcome'] = 'covered elsewhere'; continue
     for sc in desk_paths():
         for dp, dn, fn in os.walk(sc):
             for x in fn:
                 if not _is_desk_candidate(x): continue
                 q = os.path.join(dp, x); rq = os.path.realpath(q)
-                if rq in known or rq in sk or _tags_of(q): continue
+                if rq in known or rq in sk or _tags_of(q) or _name_key(x) in cov: continue
                 s.setdefault('items', []).append({'p': q, 'name': os.path.splitext(x)[0], 'status': 'waiting', 'fp': _fp(q)})
                 known.add(rq)
                 say(f'➕ new paper joined the sheet: {x}')
+    i = None  # SEAT-CHECK v84.15: coverage is enforced at the chair, not merely at the seed
+    for it in s.get('items', []):
+        if it.get('status') != 'waiting': continue
+        p = it['p']
+        if not os.path.exists(p):
+            q = _find_by_fp(it.get('fp'), root)
+            if q: p = it['p'] = q
+            else: it['status'] = 'done'; it['outcome'] = 'gone'; continue
+        if _tags_of(p) or _name_key(os.path.basename(p)) in cov:
+            it['status'] = 'done'; it['outcome'] = 'covered elsewhere'; continue
+        i = it; break
     sheet_save(s)
-    w = [i for i in s.get('items', []) if i['status'] == 'waiting']
-    if not w: say('📭 sheet empty - type: calls'); return
-    i = w[0]; s['current'] = i; sheet_save(s)
+    if not i: say('📭 sheet empty - type: calls'); return
+    s['current'] = i; sheet_save(s)
     p = i['p']; ph = taught_digits(i['name']) or phones_of(p) or None
     if isinstance(ph, list): ph = ph[0] if ph else None
     say(f"📞 UP: {i['name']} · in {os.path.basename(os.path.dirname(p))}")
-    if isinstance(ph, list): say('   phones: ' + ' · '.join(f'{n}) {d}' for n, d in enumerate(ph, 1)))
-    elif ph: say(f'   phone: {ph}')
+    if ph: say(f'   phone: {ph}')
     else: say(f'   phone: none readable - teach me: python3 butler.py teach {i["name"].split()[0].lower()} <digits>')
     tgs = _tags_of(p)
     if tgs: say('   tags: ' + ', '.join(tgs))
@@ -999,6 +1011,36 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.12): the sheet breathes 
     say('   4 missed / no answer       → [Call Scheduled] + WhatsApp draft')
     say('   5 ready for manager review → [Ready for Manager Review]')
     say('   6 skip him for now        → no tag, no move, remembered')
+
+def covered_load():
+    try: return json.load(open(COVERED_PATH))
+    except Exception: return {}
+def covered_add(nk, fp, tag, file):
+    d = covered_load(); d[nk] = {'ts': int(time.time()), 'fp': fp, 'tag': tag, 'file': file}
+    try: json.dump(d, open(COVERED_PATH, 'w'), indent=1)
+    except Exception: pass
+def _name_key(x):
+    import re as _re
+    return ' '.join(_re.sub(r'[^a-z ]', ' ', os.path.splitext(x)[0].lower()).split())
+def _covered_names(root):  # COVERED-MEMORY v84.15: memory plus the living desk, by person not by file
+    keys = set(covered_load())
+    seen = set()
+    for sc in desk_paths() or [root]:
+        for dp, dn, fn in os.walk(sc):
+            for x in fn:
+                if not _is_desk_candidate(x): continue
+                q = os.path.join(dp, x); rq = os.path.realpath(q)
+                if rq in seen: continue
+                seen.add(rq)
+                if [t for t in _tags_of(q) if _tag_stage(t)]: keys.add(_name_key(x))
+    return keys
+def forget_cmd(arg, root, say=print):  # COVERED-MEMORY v84.15: the door that re-opens a person for a new season
+    d = covered_load(); nk = _name_key(arg + '.pdf')
+    hit = [k for k in d if k == nk or (arg and arg.lower() in k)]
+    if not hit: say(f'🤷 no covered memory matches {arg!r}'); return
+    for k in hit: d.pop(k, None)
+    json.dump(d, open(COVERED_PATH, 'w'), indent=1)
+    say('↩️ forgotten: ' + ', '.join(hit) + ' - the next calls may seat them again')
 
 def skips_load():
     try: return json.load(open(SKIPS_PATH))
@@ -1074,8 +1116,14 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
             say('🤷 the paper moved and I cannot find it by fingerprint - re-seed with calls, or tag it by its new name'); return
     say(f"🤖 Proposal: {cur['name']} → " + (f'[{tag}]' if tag else 'SKIPPED, untagged, unmoved') + f" ({outcome})" + (f' · WhatsApp {draft} draft will open, unsent' if draft else ' · no message - this one stays in the house') + ' · y / n')
     k = confirm_wait(say)
-    if k != 'y':
-        say('· row left open - he stays in the chair' if k == 'n' else '· row left open')
+    if k == 'n':
+        say('· row left open - he stays in the chair'); return
+    if k != 'y':  # PROPOSE-WAIT v84.15: Enter or silence leaves a typed answer pending
+        import json as _j2
+        try: _j2.dump({'p': p, 'tag': tag, 'on': True, 'move_to': True, 'ts': int(time.time())}, open(os.path.join(BASE_DIR, 'pending_action.json'), 'w'))
+        except Exception: pass
+        say('· proposal waiting - type y or n on the next line')
+        return
         return
     if tag is None:  # SKIP v84.11: remembered, untagged, unmoved, silent
         sk = skips_load(); sk[os.path.realpath(p)] = {'name': cur['name'], 'ts': int(time.time()), 'in': os.path.basename(os.path.dirname(p))}
@@ -1084,6 +1132,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
             if it.get('p') == p: it['status'] = 'done'; it['outcome'] = 'skipped'; it['ts'] = int(time.time())
         s['current'] = None; sheet_save(s)
         _stage_note(cur['name'], _tags_of(p), _tags_of(p), os.path.basename(os.path.dirname(p)), os.path.basename(os.path.dirname(p)), 'chair-skip')
+        covered_add(_name_key(os.path.basename(p)), _fp(p), 'skipped', os.path.basename(p))
         say(f"⏭️ skipped {cur['name']} - untagged, unmoved, remembered; unskip {cur['name'].split()[0].lower()} brings him back")
     else:
         cur_tags = _tags_of(p)
@@ -1093,6 +1142,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
             _tag_write(p, newtags)
             say(f"🏷️ {cur['name']}: {tag}" + (f' (dropped {", ".join(drops)})' if drops else ''))
             _stage_note(cur['name'], cur_tags, newtags, os.path.basename(os.path.dirname(p)), tag, 'chair')
+            covered_add(_name_key(os.path.basename(p)), _fp(p), tag, os.path.basename(p))
             _stage_move(p, tag, say)
         except Exception as _te:
             say(f'⚠️ tag write failed: {_te}'); return
@@ -2710,7 +2760,7 @@ def main():
         print('  👀 dash         · see the desk\'s census')
         print('  (Right-click a folder in Finder -> Butler Here to start)')
         sys.exit(0)
-    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'tag', 'dash', 'audit', 'tidy', 'calls', 'sheet', 'up', 'unskip', 'followup', 'release'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
+    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'tag', 'dash', 'audit', 'tidy', 'calls', 'sheet', 'up', 'unskip', 'followup', 'release', 'forget'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
         _v, _a = sys.argv[1], sys.argv[2:]
         if _v == 'pending': pipeline_pending(_a[0] if _a else None, print)
         elif _v == 'status': pipeline_status(' '.join(_a), print)
@@ -2731,6 +2781,7 @@ def main():
         elif _v == 'unskip': unskip_cmd(' '.join(_a), _pl_root(), print)
         elif _v == 'followup': followup_cmd(' '.join(_a), _pl_root(), print)
         elif _v == 'release': desk_release(' '.join(_a), print)
+        elif _v == 'forget': forget_cmd(' '.join(_a), _pl_root(), print)
         sys.exit(0)
     if not os.path.isdir(root):
         print("Error: folder does not exist."); sys.exit(1)
@@ -3383,6 +3434,9 @@ def _selftest(root):
     ck('S262 every closed row ends with the living scoreboard', (chr(35)+' CENSUS-AFTER v84.12') in _src)
     ck('S263 release promotes the waiting chair and never hides a seated secondary', (chr(35)+' RELEASE v84.13') in _src and (chr(35)+' DESK-TRUTH v84.13') in _src and ('def desk_release(' in _src))
     ck('S264 the fingerprint searches every file and names a stripped extension aloud', (chr(35)+' FP-ANY v84.14') in _src and (chr(35)+' EXT-LOSS v84.14') in _src)
+    ck('S265 a person covered once is never seated again', (chr(35)+' COVERED-MEMORY v84.15') in _src and ('def covered_add(' in _src) and ('def forget_cmd(' in _src))
+    ck('S266 coverage is enforced at the chair, not merely at the seed', (chr(35)+' SEAT-CHECK v84.15') in _src)
+    ck('S267 a proposal survives Enter and waits for a typed answer', (chr(35)+' PROPOSE-WAIT v84.15') in _src)
     ck('S236 a paper rests in one stage at a time', (chr(35)+' STAGE-ONE v84.4') in _src)
     ck('S237 changes that replace or move ask first', (chr(35)+' PROPOSE-FIRST v84.4') in _src and ('pending_action.json' in _src))
     ck('S238 every tag and move is written in the stage log', (chr(35)+' STAGE-LOG v84.4') in _src and ('stage_log.json' in _src))

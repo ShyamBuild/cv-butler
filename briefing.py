@@ -1510,6 +1510,7 @@ if __name__ == "__main__":
             if q.startswith('calls'): do_calls(q[5:].strip(), root); continue
             if q.startswith('sheet'): do_sheet(q[5:].strip(), root); continue
             if q.startswith('unskip '): butler.unskip_cmd(q[7:].strip(), root, say); continue  # SKIP v84.11
+            if q.startswith('forget '): butler.forget_cmd(q[7:].strip(), root, say); continue  # COVERED-MEMORY v84.15
             if q.startswith('followup'): butler.followup_cmd(q[8:].strip(), root, say); continue  # FOLLOWUP v84.11
             if q.startswith('pending'): do_pending(q[len('pending'):].strip(), root); continue  # PIPELINE-CHAT-SHALLOW v83.1: the master's words stand at the head of the chain, never nested under another voice
             if q.startswith('status'): do_status(q[len('status'):].strip(), root); continue
