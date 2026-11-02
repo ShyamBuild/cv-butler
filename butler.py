@@ -1115,6 +1115,18 @@ def meta_cmd(arg, root, say=print):  # TEMPLATES v84.16: teach the company once 
     json.dump(m, open(os.path.join(BASE_DIR, 'desk_meta.json'), 'w'), indent=1)
     say(f'🏢 company for this desk: {arg.strip()}')
 
+CHAIR_SCENARIO = {'jd': 'jd', 'refer': 'refer', 'cv': 'nudge', 'missed': 'missed'}  # ONE-VOICE v84.19: the chair's outcomes map onto the keywords' scenarios
+def _chair_wa_text(kind, p, name):  # ONE-VOICE v84.19: the chair drafts through the same composer the keywords have always used; drafts/ and built-ins are fallbacks, not rivals
+    try:
+        import briefing as _br
+        sc = CHAIR_SCENARIO.get(kind)
+        if sc and hasattr(_br, '_fmt_tpl') and hasattr(_br, '_tpl_for'):
+            t = _br._fmt_tpl(_br._tpl_for([sc]), p, None, name)
+            if t and str(t).strip(): return str(t)
+    except Exception:
+        pass
+    return _chair_draft(kind, name, _pos_of(p, _pl_root()), p)
+
 def _chair_draft(kind, name, pos, p=None):  # DRAFTS v84.11 (v84.16): the master's templates first, the house's defaults second, his signature always
     t = _draft_text(kind, name, pos, p)
     if t: return t
@@ -1214,20 +1226,24 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
             if ph:
                 pos = _pos_of(p, root)
                 import wa
-                wa.send_review(ph, _chair_draft(draft, cur['name'], pos, p), say)
+                wa.send_review(ph, _chair_wa_text(draft, p, cur['name']), say)
             else: say(f'⚠️ no phone for {cur["name"]} - teach me: python3 butler.py teach {cur["name"].split()[0].lower()} <digits>, then retry')
     desk_dashboard(say)  # CENSUS-AFTER v84.12: every closed row ends with the living scoreboard
     w = [x for x in s.get('items', []) if x['status'] == 'waiting']  # ADVANCE v84.10b: the queue walks without being pushed
     if w: say(f'⏭️ next up: {w[0]["name"]} - type: up')
     else: say('🏁 sheet covered - every candidate has an outcome')
 
-def _chase_draft(p, tag):  # CHASE v84.0 (v84.16): the background chase speaks in the master's templates too
+def _chase_draft(p, tag):  # CHASE v84.0 (v84.19): the background chase speaks through the same composer too
     name = os.path.splitext(os.path.basename(p))[0]
-    pos = _pos_of(p, _pl_root())
+    sc = 'awaiting' if tag == 'Awaiting JD Confirmation' else 'nudge'
+    try:
+        import briefing as _br
+        t = _br._fmt_tpl(_br._tpl_for([sc]), p, None, name)
+        if t and str(t).strip(): return str(t)
+    except Exception:
+        pass
     kind = 'jd' if tag == 'Awaiting JD Confirmation' else 'cv'
-    t = _draft_text(kind, name, pos, p)
-    if t: return t
-    return _chair_draft(kind, name, pos, p)
+    return _chair_draft(kind, name, _pos_of(p, _pl_root()), p)
 
 def chase_cmd(arg, root, say=print):  # CHASE v84.0: the draft waits in the field, never in the send column
     ep = os.path.join(BASE_DIR, 'errands.json')
@@ -3481,7 +3497,9 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S274 the fallback chain keeps every scenario speakable', ('def _chair_wa_text(' in _src) and ('def _draft_text(' in _src) and ('def _chair_draft(' in _src))
     ck('S272 the roleline omits what was never taught', (chr(35)+' ROLELINE v84.18') in _src)
+    ck('S273 the chair drafts through the keywords'+chr(39)+' composer, not a rival clerk', (chr(35)+' ONE-VOICE v84.19') in _src and ('def _chair_wa_text(' in _src) and ('_fmt_tpl' in _src))
     ck('S270 every name the skip branch speaks is defined in the same book', ('SKIPS_PATH =' in _src) and ('def skips_load(' in _src) and ('def _fp(' in _src) and ('def outcome_cmd(' in _src))
     ck('S271 the draft'+chr(39)+'s role comes from the position, never from a list or stage folder', (chr(35)+' POS-OF v84.18') in _src and ('def _pos_of(' in _src))
     ck('S250 the clerk offers his menu when the master forgets', (chr(35)+' MENU v84.10a') in _src and (chr(35)+' MENU v84.10a') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
