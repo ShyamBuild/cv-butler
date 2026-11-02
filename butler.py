@@ -1000,6 +1000,7 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
     p = i['p']; ph = taught_digits(i['name']) or phones_of(p) or None
     if isinstance(ph, list): ph = ph[0] if ph else None
     say(f"📞 UP: {i['name']} · in {os.path.basename(os.path.dirname(p))}")
+    say_identity_for(p, say)
     if ph: say(f'   phone: {ph}')
     else: say(f'   phone: none readable - teach me: python3 butler.py teach {i["name"].split()[0].lower()} <digits>')
     tgs = _tags_of(p)
@@ -1076,6 +1077,58 @@ DRAFTS_DIR = os.path.join(BASE_DIR, 'drafts')  # TEMPLATES v84.16: the master's 
 def _sig():
     try: return open(os.path.join(BASE_DIR, 'signature.txt')).read().strip()
     except Exception: return 'Regards,' + chr(10) + 'Sundeep Rana'
+POS_PATH = os.path.join(BASE_DIR, 'positions.json')  # POS-ID v84.21: one truth per position, taught once, read forever
+CLIENTMAP_PATH = os.path.join(BASE_DIR, 'clients.json')  # POS-ID v84.21: one truth per client, system-wide
+def pos_identity(p, root=None):  # POS-ID v84.21: company from the client map, role and location from the folder, overrides win
+    root = root or _pl_root()
+    out = {'company': '', 'role': '', 'loc': ''}
+    if not p: return out
+    rel = os.path.relpath(p, root).split(os.sep)
+    pospath = None
+    d = desk_load()
+    for chair in (d.get('primary'), d.get('secondary')):
+        if chair and (p == chair or p.startswith(chair + os.sep)): pospath = chair; break
+    if pospath is None and len(rel) > 2: pospath = os.path.join(root, rel[0], rel[1])
+    if pospath is None and len(rel) == 2: pospath = os.path.join(root, rel[0])
+    if not pospath: return out
+    try: reg = json.load(open(POS_PATH))
+    except Exception: reg = {}
+    ov = reg.get(pospath, {})
+    base = os.path.basename(pospath)
+    role, loc = (base.split(' -', 1) + [''])[:2]
+    out['role'] = ov.get('role') or role.strip()
+    out['loc'] = ov.get('loc') or loc.strip()
+    client = os.path.basename(os.path.dirname(pospath))
+    try: cm = json.load(open(CLIENTMAP_PATH))
+    except Exception: cm = {}
+    out['company'] = ov.get('company') or cm.get(client, '') or ''
+    return out
+def say_identity_for(p, say=print):  # POS-ID v84.21: the triple, shown before anything sends
+    i = pos_identity(p)
+    parts = [x for x in (i['company'], i['role'], i['loc']) if x]
+    if parts: say('🏢 ' + ' · '.join(parts))
+def client_cmd(arg, root, say=print):  # POS-ID v84.21: teach a client's company once, system-wide
+    if '=' not in arg: say('usage: client 02 HIPP = Honda India'); return
+    k, v = arg.split('=', 1)
+    try: cm = json.load(open(CLIENTMAP_PATH))
+    except Exception: cm = {}
+    cm[k.strip()] = v.strip()
+    json.dump(cm, open(CLIENTMAP_PATH, 'w'), indent=1)
+    say(f'🏢 client taught: {k.strip()} = {v.strip()}')
+def posmeta_cmd(arg, root, say=print):  # POS-ID v84.21: override the triple for the seated chair when the folder lies
+    d = desk_load()
+    if not d.get('primary'): say('🤷 no desk seated - seat one first'); return
+    parts = [x.strip() for x in arg.split('|')]
+    try: reg = json.load(open(POS_PATH))
+    except Exception: reg = {}
+    ov = reg.get(d['primary'], {})
+    if len(parts) > 0 and parts[0]: ov['company'] = parts[0]
+    if len(parts) > 1 and parts[1]: ov['role'] = parts[1]
+    if len(parts) > 2 and parts[2]: ov['loc'] = parts[2]
+    reg[d['primary']] = ov
+    json.dump(reg, open(POS_PATH, 'w'), indent=1)
+    say('📋 position truth set: ' + ' · '.join(x for x in (ov.get('company'), ov.get('role'), ov.get('loc')) if x))
+
 def _pos_of(p, root):  # POS-OF v84.18: the position is the chair the paper lies under, else the client's child - never the list or stage folder above the paper
     d = desk_load()
     for chair in (d.get('primary'), d.get('secondary')):
@@ -1088,7 +1141,9 @@ def _draft_fields(name, pos, p=None):
     meta = {}
     try: meta = json.load(open(os.path.join(BASE_DIR, 'desk_meta.json'))).get(desk_load().get('primary') or '', {})
     except Exception: pass
-    role, loc = (pos.split(' -', 1) + [''])[:2] if pos else ('', '')
+    _idn = pos_identity(p or '')
+    role = _idn['role'] or role
+    loc = _idn['loc'] or loc
     full = name
     if p:
         try:
@@ -1097,7 +1152,7 @@ def _draft_fields(name, pos, p=None):
         except Exception: pass
         _rl = []
         if role.strip(): _rl.append('the role of ' + role.strip())
-        if meta.get('company'): _rl.append('in ' + meta['company'])
+        if (_idn['company'] or meta.get('company')): _rl.append('in ' + (_idn['company'] or meta['company']))
         if loc.strip(): _rl.append('for ' + loc.strip() + ' location')
         roleline = ' '.join(_rl) or 'the role we discussed'  # ROLELINE v84.18: the sentence omits what was never taught
     return collections.defaultdict(str, {'first': (full or name).split()[0].title(), 'full': (full or name).title(), 'role': role.strip(), 'company': meta.get('company', ''), 'loc': loc.strip(), 'pos': pos or '', 'signature': _sig(), 'roleline': roleline})
@@ -1185,6 +1240,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
             if not p.lower().endswith(('.pdf', '.docx')): say('⚠️ he lost his .pdf/.docx extension in the rename - most doors ignore extension-less papers; rename him back when convenient')  # EXT-LOSS v84.14
         else:
             say('🤷 the paper moved and I cannot find it by fingerprint - re-seed with calls, or tag it by its new name'); return
+    say_identity_for(p, say)
     say(f"🤖 Proposal: {cur['name']} → " + (f'[{tag}]' if tag else 'SKIPPED, untagged, unmoved') + f" ({outcome})" + (f' · WhatsApp {draft} draft will open, unsent' if draft else ' · no message - this one stays in the house') + ' · y / n')
     k = confirm_wait(say)
     if k == 'n':
@@ -2837,7 +2893,7 @@ def main():
         print('  👀 dash         · see the desk\'s census')
         print('  (Right-click a folder in Finder -> Butler Here to start)')
         sys.exit(0)
-    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'tag', 'dash', 'audit', 'tidy', 'calls', 'sheet', 'up', 'unskip', 'followup', 'release', 'forget', 'meta'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
+    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'tag', 'dash', 'audit', 'tidy', 'calls', 'sheet', 'up', 'unskip', 'followup', 'release', 'forget', 'meta', 'client', 'posmeta'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
         _v, _a = sys.argv[1], sys.argv[2:]
         if _v == 'pending': pipeline_pending(_a[0] if _a else None, print)
         elif _v == 'status': pipeline_status(' '.join(_a), print)
@@ -2860,6 +2916,8 @@ def main():
         elif _v == 'release': desk_release(' '.join(_a), print)
         elif _v == 'forget': forget_cmd(' '.join(_a), _pl_root(), print)
         elif _v == 'meta': meta_cmd(' '.join(_a), _pl_root(), print)
+        elif _v == 'client': client_cmd(' '.join(_a), _pl_root(), print)
+        elif _v == 'posmeta': posmeta_cmd(' '.join(_a), _pl_root(), print)
         sys.exit(0)
     if not os.path.isdir(root):
         print("Error: folder does not exist."); sys.exit(1)
@@ -3499,6 +3557,8 @@ def _selftest(root):
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
     ck('S274 the fallback chain keeps every scenario speakable', ('def _chair_wa_text(' in _src) and ('def _draft_text(' in _src) and ('def _chair_draft(' in _src))
     ck('S275 the fields dict carries every sentence it computes', ("'roleline': roleline" in _src) and (chr(35)+' ROLELINE v84.18') in _src)
+    ck('S276 one truth per position, taught once and shown at the composer', (chr(35)+' POS-ID v84.21') in _src and ('def pos_identity(' in _src) and ('say_identity_for' in open(os.path.join(BASE_DIR, 'briefing.py')).read()))
+    ck('S277 the chair shows the triple before the thumb decides', ('say_identity_for(p, say)' in _src))
     ck('S272 the roleline omits what was never taught', (chr(35)+' ROLELINE v84.18') in _src)
     ck('S273 the chair drafts through the keywords'+chr(39)+' composer, not a rival clerk', (chr(35)+' ONE-VOICE v84.19') in _src and ('def _chair_wa_text(' in _src) and ('_fmt_tpl' in _src))
     ck('S270 every name the skip branch speaks is defined in the same book', ('SKIPS_PATH =' in _src) and ('def skips_load(' in _src) and ('def _fp(' in _src) and ('def outcome_cmd(' in _src))

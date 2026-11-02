@@ -215,6 +215,10 @@ def _split_pos(pos):
 class _SafeDict(dict):
     def __missing__(self, k): return ''
 def _fmt_tpl(tpl, hit, f, name):
+    try:  # POS-ID v84.21: every draft, keyword or chair, shows the position's triple before the window opens
+        if hit and os.path.isfile(str(hit)):
+            import butler as _bt; _bt.say_identity_for(str(hit), print)
+    except Exception: pass
     pos, cli = _pos_client_for(hit, f)
     title, loc = _split_pos(pos)
     where = f"Company: {cli}" + (f" | Location: {loc}" if loc else "")
@@ -1512,6 +1516,8 @@ if __name__ == "__main__":
             if q.startswith('unskip '): butler.unskip_cmd(q[7:].strip(), root, say); continue  # SKIP v84.11
             if q.startswith('forget '): butler.forget_cmd(q[7:].strip(), root, say); continue  # COVERED-MEMORY v84.15
             if q.startswith('meta '): butler.meta_cmd(q[5:].strip(), root, say); continue  # TEMPLATES v84.16
+            if q.startswith('client '): butler.client_cmd(q[7:].strip(), root, say); continue  # POS-ID v84.21
+            if q.startswith('posmeta '): butler.posmeta_cmd(q[8:].strip(), root, say); continue
             if q.startswith('followup'): butler.followup_cmd(q[8:].strip(), root, say); continue  # FOLLOWUP v84.11
             if q.startswith('pending'): do_pending(q[len('pending'):].strip(), root); continue  # PIPELINE-CHAT-SHALLOW v83.1: the master's words stand at the head of the chain, never nested under another voice
             if q.startswith('status'): do_status(q[len('status'):].strip(), root); continue
