@@ -747,6 +747,15 @@ def do_cancel(arg, root, say=print):  # PROPOSE-FIRST v84.4
 
 def do_dash(arg, root, say=print):  # DASH v84.7
     butler.desk_dashboard(say)
+def do_calls(arg, root, say=print):  # CHAIR v84.10b
+    butler.calls_cmd(arg, root, say)
+def do_sheet(arg, root, say=print):  # CHAIR v84.10b
+    butler.sheet_cmd(arg, root, say)
+def do_up(arg, root, say=print):  # CHAIR v84.10b
+    butler.up_cmd(arg, root, say)
+def do_outcome(arg, root, say=print):  # CHAIR v84.10b
+    butler.outcome_cmd(arg, root, say)
+
 def do_tidy(arg, root, say=print):  # TIDY v84.9
     butler.tags_tidy(say)
 
@@ -1495,6 +1504,11 @@ if __name__ == "__main__":
                 say('  🧹 tidy         · carry misplaced papers home')
                 say('  👀 dash         · see the desk\'s census')
                 continue
+            if butler.sheet_current() and q.strip() in ('1', '2', '3', '4', '5'): do_outcome(q.strip(), root); continue  # CHAIR v84.10b
+            if butler.sheet_current() and butler.chair_word(q): do_outcome(butler.chair_word(q), root); continue
+            if q == 'up' or q.startswith('up '): do_up(q[2:].strip(), root); continue
+            if q.startswith('calls'): do_calls(q[5:].strip(), root); continue
+            if q.startswith('sheet'): do_sheet(q[5:].strip(), root); continue
             if q.startswith('pending'): do_pending(q[len('pending'):].strip(), root); continue  # PIPELINE-CHAT-SHALLOW v83.1: the master's words stand at the head of the chain, never nested under another voice
             if q.startswith('status'): do_status(q[len('status'):].strip(), root); continue
             if q.startswith('note'): do_note(q[len('note'):].strip(), root); continue
