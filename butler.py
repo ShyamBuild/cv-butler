@@ -820,7 +820,7 @@ def desk_dashboard(say=print):  # DASH v84.7: the desk's census in one breath, r
     for sc in desk_paths():
         for dp, dn, fn in os.walk(sc):
             for x in fn:
-                if not x.lower().endswith(('.pdf', '.docx')): continue
+                if not _is_desk_candidate(x): continue  # PAPER-OR-NOT v84.10d
                 p = os.path.join(dp, x); rp = os.path.realpath(p)
                 if rp in seen: continue
                 seen.add(rp)
@@ -839,7 +839,7 @@ def tags_audit(say=print):  # AUDIT v84.7 (v84.9): two stages, or a stage away f
     for sc in desk_paths():
         for dp, dn, fn in os.walk(sc):
             for x in fn:
-                if not x.lower().endswith(('.pdf', '.docx')): continue
+                if not _is_desk_candidate(x): continue  # PAPER-OR-NOT v84.10d
                 p = os.path.join(dp, x); rp = os.path.realpath(p)
                 if rp in seen: continue
                 seen.add(rp)
@@ -858,7 +858,7 @@ def tags_tidy(say=print):  # TIDY v84.9: carry each misplaced paper home, one ke
     for sc in desk_paths():
         for dp, dn, fn in os.walk(sc):
             for x in fn:
-                if not x.lower().endswith(('.pdf', '.docx')): continue
+                if not _is_desk_candidate(x): continue  # PAPER-OR-NOT v84.10d
                 p = os.path.join(dp, x); rp = os.path.realpath(p)
                 if rp in seen: continue
                 seen.add(rp)
@@ -914,6 +914,15 @@ def taught_digits(name):  # CHAIR-PHONE v84.10c: the chair reads the taught book
         break
     return None
 
+NON_CANDIDATE_PREFIXES = ('jd', 'summary', 'rated_', 'candidate', 'form', 'template')  # PAPER-OR-NOT v84.10d: the desk knows a CV from its furniture
+def _is_desk_candidate(x):  # PAPER-OR-NOT v84.10d: only humans take the chair
+    low = (x or '').lower()
+    if not low.endswith(('.pdf', '.docx')): return False
+    stem = low[:-5] if low.endswith('.docx') else low[:-4]
+    for pre in NON_CANDIDATE_PREFIXES:
+        if stem.startswith(pre): return False
+    return True
+
 def calls_cmd(arg, root, say=print):  # CHAIR v84.10b: seed today's sheet with every uncovered paper on the desk
     scopes = [desk_resolve(arg, root)] if arg else (desk_paths() or [root])
     items = []; seen = set()
@@ -921,7 +930,7 @@ def calls_cmd(arg, root, say=print):  # CHAIR v84.10b: seed today's sheet with e
         if not sc or not os.path.isdir(sc): continue
         for dp, dn, fn in os.walk(sc):
             for x in fn:
-                if not x.lower().endswith(('.pdf', '.docx')): continue
+                if not _is_desk_candidate(x): continue  # PAPER-OR-NOT v84.10d
                 p = os.path.join(dp, x); rp = os.path.realpath(p)
                 if rp in seen: continue
                 seen.add(rp)
@@ -2189,7 +2198,7 @@ class Butler:
             for dp in desk_paths():
                 for dpx, dnx, fnx in os.walk(dp):
                     for x in fnx:
-                        if not x.lower().endswith(('.pdf', '.docx')): continue
+                        if not _is_desk_candidate(x): continue  # PAPER-OR-NOT v84.10d
                         p = os.path.join(dpx, x); tgs = _tags_of(p)
                         for tag, delay in (('Awaiting JD Confirmation', 600), ('Awaiting CV Update', None)):
                             at_k, ch_k = tag + ':at', tag + ':chased'
@@ -3248,6 +3257,7 @@ def _selftest(root):
     ck('S252 a missed call tags Call Scheduled and opens the draft, unsent', (chr(35)+' MISSED v84.10b') in _src)
     ck('S253 the sheet advances only after a confirmed outcome', (chr(35)+' ADVANCE v84.10b') in _src)
     ck('S254 no ghost may name the phone book', ('taught_' + 'digits(' not in _src.replace('def taught_digits(', 'DEF')) or ('def taught_digits(' in _src))
+    ck('S255 the sheet seats humans, not JDs or summaries', (chr(35)+' PAPER-OR-NOT v84.10d') in _src and ('def _is_desk_candidate(' in _src) and ('_is_desk_candidate(x)' in _src))
     ck('S236 a paper rests in one stage at a time', (chr(35)+' STAGE-ONE v84.4') in _src)
     ck('S237 changes that replace or move ask first', (chr(35)+' PROPOSE-FIRST v84.4') in _src and ('pending_action.json' in _src))
     ck('S238 every tag and move is written in the stage log', (chr(35)+' STAGE-LOG v84.4') in _src and ('stage_log.json' in _src))
