@@ -1081,7 +1081,7 @@ POS_PATH = os.path.join(BASE_DIR, 'positions.json')  # POS-ID v84.21: one truth 
 CLIENTMAP_PATH = os.path.join(BASE_DIR, 'clients.json')  # POS-ID v84.21: one truth per client, system-wide
 def pos_identity(p, root=None):  # POS-ID v84.21: company from the client map, role and location from the folder, overrides win
     root = root or _pl_root()
-    out = {'company': '', 'role': '', 'loc': ''}
+    out = {'company': '', 'role': '', 'loc': '', 'designation': ''}  # DESIGNATION v84.22
     if not p: return out
     rel = os.path.relpath(p, root).split(os.sep)
     pospath = None
@@ -1098,6 +1098,7 @@ def pos_identity(p, root=None):  # POS-ID v84.21: company from the client map, r
     role, loc = (base.split(' -', 1) + [''])[:2]
     out['role'] = ov.get('role') or role.strip()
     out['loc'] = ov.get('loc') or loc.strip()
+    out['designation'] = ov.get('designation') or ''
     client = os.path.basename(os.path.dirname(pospath))
     try: cm = json.load(open(CLIENTMAP_PATH))
     except Exception: cm = {}
@@ -1123,7 +1124,7 @@ def posmeta_cmd(arg, root, say=print):  # POS-ID v84.21: override the triple for
     except Exception: reg = {}
     ov = reg.get(d['primary'], {})
     if len(parts) > 0 and parts[0]: ov['company'] = parts[0]
-    if len(parts) > 1 and parts[1]: ov['role'] = parts[1]
+    if len(parts) > 1 and parts[1]: ov['designation'] = parts[1]  # DESIGNATION v84.22: the middle slot is the designation, not the folder's role
     if len(parts) > 2 and parts[2]: ov['loc'] = parts[2]
     reg[d['primary']] = ov
     json.dump(reg, open(POS_PATH, 'w'), indent=1)
@@ -1150,11 +1151,14 @@ def _draft_fields(name, pos, p=None):
             v = get_visual_name(p)
             if v: full = v
         except Exception: pass
-        _rl = []
-        if role.strip(): _rl.append('the role of ' + role.strip())
-        if (_idn['company'] or meta.get('company')): _rl.append('in ' + (_idn['company'] or meta['company']))
-        if loc.strip(): _rl.append('for ' + loc.strip() + ' location')
-        roleline = ' '.join(_rl) or 'the role we discussed'  # ROLELINE v84.18: the sentence omits what was never taught
+    _dz = _idn['designation'] or _idn['role']
+    _co = _idn['company'] or meta.get('company')
+    _parts = []
+    if _dz: _parts.append('the ' + _dz + ' opening')
+    if _co: _parts.append('for ' + _co)
+    _tail = ', '.join(x for x in (_idn['role'], _idn['loc']) if x and x != _dz)
+    if _tail: _parts.append('(' + _tail + ')')
+    roleline = ' '.join(_parts) or 'the role we discussed'  # ROLELINE v84.18 (refined v84.22): designation, company, then where - omitting only what was never taught
     return collections.defaultdict(str, {'first': (full or name).split()[0].title(), 'full': (full or name).title(), 'role': role.strip(), 'company': meta.get('company', ''), 'loc': loc.strip(), 'pos': pos or '', 'signature': _sig(), 'roleline': roleline})
 def _draft_text(kind, name, pos, p=None):
     lp = os.path.join(DRAFTS_DIR, kind + '.txt')
@@ -2486,6 +2490,36 @@ class Butler:
                 say(f'📝 queued autodraft (extra number +{_d2}): {nm}')
         except Exception as e:
             say(f'⚠️ autodraft error: {e}')
+    def _auto_registry(self, say=print):  # AUTO-REG v84.22: a new position folder is understood the moment it lands; a new client asks for its company once
+        try:
+            root = _pl_root()
+            try: reg = json.load(open(POS_PATH))
+            except Exception: reg = {}
+            spoken = reg.get('__spoken__', {})
+            try: cm = json.load(open(CLIENTMAP_PATH))
+            except Exception: cm = {}
+            changed = False
+            for client in os.listdir(root):
+                cp = os.path.join(root, client)
+                if client.startswith('.') or not os.path.isdir(cp): continue
+                for pos in os.listdir(cp):
+                    pp = os.path.join(cp, pos)
+                    if pos.startswith('.') or not os.path.isdir(pp): continue
+                    if pp not in reg:
+                        role, loc = (pos.split(' -', 1) + [''])[:2]
+                        reg[pp] = {'company': cm.get(client, ''), 'role': role.strip(), 'loc': loc.strip(), 'designation': ''}
+                        changed = True
+                        say(f'🧠 new position understood: {client} / {pos}' + ('' if cm.get(client) else ' - company unknown; teach once: client ' + client + ' = <company>'))
+                    elif not reg[pp].get('company') and cm.get(client):
+                        reg[pp]['company'] = cm[client]; changed = True
+                if client not in cm and client not in spoken:
+                    spoken[client] = int(time.time()); changed = True
+                    say(f'🏢 new client folder: {client} - teach me once: client {client} = <company>')
+            reg['__spoken__'] = spoken
+            if changed: json.dump(reg, open(POS_PATH, 'w'), indent=1)
+        except Exception:
+            pass
+
     def _errands_tick(self, say=print):  # ERRANDS v84.0: the background hands - chases arm on the desk, draft in the outbox of your thumb
         try:
             now = int(time.time()); ep = os.path.join(BASE_DIR, 'errands.json')
@@ -2582,6 +2616,7 @@ class Butler:
     def _autodraft_tick(self, say=print):
         self._pipeline_reconcile(say)  # PIPELINE-RECONCILE v83.0: the first breath of the tick reconciles the pipeline before any flag is read
         self._errands_tick(say)  # ERRANDS v84.0: after the ledger, the hands
+        self._auto_registry(say)  # AUTO-REG v84.22: the registry grows while the sweep works
         if not getattr(self, '_rc_boot', False):  # RENAME-IN-TICK v81.52: the heal runs where every mode actually executes
             self._rc_boot = True
             try:
@@ -3559,6 +3594,8 @@ def _selftest(root):
     ck('S275 the fields dict carries every sentence it computes', ("'roleline': roleline" in _src) and (chr(35)+' ROLELINE v84.18') in _src)
     ck('S276 one truth per position, taught once and shown at the composer', (chr(35)+' POS-ID v84.21') in _src and ('def pos_identity(' in _src) and ('say_identity_for' in open(os.path.join(BASE_DIR, 'briefing.py')).read()))
     ck('S277 the chair shows the triple before the thumb decides', ('say_identity_for(p, say)' in _src))
+    ck('S278 a new position is understood the moment it lands, a new client asks once', (chr(35)+' AUTO-REG v84.22') in _src and ('def _auto_registry(' in _src))
+    ck('S279 the roleline speaks designation, company, role and location in one clause', (chr(35)+' DESIGNATION v84.22') in _src and ("'designation'" in _src))
     ck('S272 the roleline omits what was never taught', (chr(35)+' ROLELINE v84.18') in _src)
     ck('S273 the chair drafts through the keywords'+chr(39)+' composer, not a rival clerk', (chr(35)+' ONE-VOICE v84.19') in _src and ('def _chair_wa_text(' in _src) and ('_fmt_tpl' in _src))
     ck('S270 every name the skip branch speaks is defined in the same book', ('SKIPS_PATH =' in _src) and ('def skips_load(' in _src) and ('def _fp(' in _src) and ('def outcome_cmd(' in _src))
