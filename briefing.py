@@ -199,7 +199,7 @@ def _client_full(short_dirname, pos_path):
         except Exception: pass
         return full
     return short.title()
-CITY_WORDS = ['greater noida', 'vikhroli east', 'vikhroli', 'mumbai', 'bengaluru', 'bangalore', 'delhi', 'gurugram', 'gurgaon', 'noida', 'pune', 'chennai', 'hyderabad', 'ahmedabad', 'kolkata', 'jaipur', 'lucknow', 'indore', 'nagpur', 'thane', 'erode', 'coimbatore']
+CITY_WORDS = ['bhopal', 'indore', 'surat', 'chandigarh', 'greater noida', 'vikhroli east', 'vikhroli', 'mumbai', 'bengaluru', 'bangalore', 'delhi', 'gurugram', 'gurgaon', 'noida', 'pune', 'chennai', 'hyderabad', 'ahmedabad', 'kolkata', 'jaipur', 'lucknow', 'indore', 'nagpur', 'thane', 'erode', 'coimbatore']
 def _split_pos(pos):
     low = (pos or '').lower().replace('|', ' ')  # SPLIT-HARD v56
     low = re.sub(r'\blocation\b', ' ', low)
@@ -221,12 +221,21 @@ def _fmt_tpl(tpl, hit, f, name):
     except Exception: pass
     pos, cli = _pos_client_for(hit, f)
     title, loc = _split_pos(pos)
+    try:  # REGISTRY-VOICE v84.28: the taught truths outrank the path guesses inside the message itself
+        import butler as _bt
+        _idn = _bt.pos_identity(str(hit)) if (hit and os.path.isfile(str(hit))) else {}
+        if _idn.get('company'): cli = _idn['company']
+        if _idn.get('role'): title = _idn['role']
+        if _idn.get('loc'): loc = _idn['loc']
+        _dz = _idn.get('designation') or ''
+    except Exception:
+        _dz = ''
     where = f"Company: {cli}" + (f" | Location: {loc}" if loc else "")
     at = cli + (f", {loc}" if loc else "")
     try:
-        return tpl.format(name=name, position=title, company=cli, location=loc or '-', where_line=where, where=at)
+        return tpl.format(name=name, position=title, company=cli, location=loc or '-', where_line=where, where=at, designation=_dz)
     except Exception:
-        return tpl.format_map(_SafeDict(name=name, position=title, company=cli, location=loc or '-', where_line=where, where=at))
+        return tpl.format_map(_SafeDict(name=name, position=title, company=cli, location=loc or '-', where_line=where, where=at, designation=_dz))
 def _pos_client_for(hit, f=None):
     for base in ([os.path.dirname(os.path.abspath(hit))] if hit else []) + ([f['path']] if f and f.get('path') else []):
         comp = _company_root(base)
