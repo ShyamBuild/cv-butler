@@ -1103,7 +1103,7 @@ def pos_identity(p, root=None):  # POS-ID v84.21: company from the client map, r
     out['client'] = client
     try: cm = json.load(open(CLIENTMAP_PATH))
     except Exception: cm = {}
-    out['company'] = ov.get('company') or cm.get(client, '') or ''
+    out['company'] = cm.get(client) or ov.get('company') or ''  # COMPANY-LIVE v84.27: the client map is the living truth; a frozen position copy never outranks it
     return out
 def say_identity_for(p, say=print):  # POS-ID v84.21: the triple, shown before anything sends
     i = pos_identity(p)
@@ -3636,6 +3636,7 @@ def _selftest(root):
     ck('S282 the client ledger shows the taught and names the anonymous', (chr(35)+' CLIENTS-LIST v84.24') in _src and ('def clients_cmd(' in _src))
     ck('S283 the teach door works in chat and the ledger holds only real folders', (chr(35)+' CLIENT-DISPATCH v84.25') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' CLIENT-PRUNE v84.25') in _src)
     ck('S284 a re-teaching speaks its before-and-after', (chr(35)+' RETEACH v84.26') in _src)
+    ck('S285 the living client map outranks every frozen copy', (chr(35)+' COMPANY-LIVE v84.27') in _src)
     ck('S272 the roleline omits what was never taught', (chr(35)+' ROLELINE v84.18') in _src)
     ck('S273 the chair drafts through the keywords'+chr(39)+' composer, not a rival clerk', (chr(35)+' ONE-VOICE v84.19') in _src and ('def _chair_wa_text(' in _src) and ('_fmt_tpl' in _src))
     ck('S270 every name the skip branch speaks is defined in the same book', ('SKIPS_PATH =' in _src) and ('def skips_load(' in _src) and ('def _fp(' in _src) and ('def outcome_cmd(' in _src))
