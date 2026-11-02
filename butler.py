@@ -1022,8 +1022,17 @@ def covered_add(nk, fp, tag, file):
 def _name_key(x):
     import re as _re
     return ' '.join(_re.sub(r'[^a-z ]', ' ', os.path.splitext(x)[0].lower()).split())
-def _covered_names(root):  # COVERED-MEMORY v84.15: memory plus the living desk, by person not by file
+def _covered_names(root):  # COVERED-WIDE v84.16: five signals of already-spoken-to - memory, any tag, the stage folder he rests in, the sheet's closed rows, the stage log
     keys = set(covered_load())
+    try:
+        for it in sheet_load().get('items', []):
+            if it.get('status') != 'waiting' and it.get('p'): keys.add(_name_key(os.path.basename(it['p'])))
+    except Exception: pass
+    try:
+        lg = json.load(open(os.path.join(BASE_DIR, 'stage_log.json')))
+        for e in lg[-400:]:
+            if e.get('file'): keys.add(_name_key(e['file']))
+    except Exception: pass
     seen = set()
     for sc in desk_paths() or [root]:
         for dp, dn, fn in os.walk(sc):
@@ -1032,8 +1041,9 @@ def _covered_names(root):  # COVERED-MEMORY v84.15: memory plus the living desk,
                 q = os.path.join(dp, x); rq = os.path.realpath(q)
                 if rq in seen: continue
                 seen.add(rq)
-                if [t for t in _tags_of(q) if _tag_stage(t)]: keys.add(_name_key(x))
+                if _tags_of(q) or os.path.basename(dp) in _tag_vocab(): keys.add(_name_key(x))
     return keys
+
 def forget_cmd(arg, root, say=print):  # COVERED-MEMORY v84.15: the door that re-opens a person for a new season
     d = covered_load(); nk = _name_key(arg + '.pdf')
     hit = [k for k in d if k == nk or (arg and arg.lower() in k)]
@@ -1062,13 +1072,48 @@ def _find_by_fp(fp, root):
                 q = os.path.join(dp, x)
                 if _fp(q) == fp: return q
     return None
-def _chair_draft(kind, name, pos):  # DRAFTS v84.11: every outward outcome speaks; the internal ones stay silent
+DRAFTS_DIR = os.path.join(BASE_DIR, 'drafts')  # TEMPLATES v84.16: the master's own wording, read live at the moment of writing
+def _sig():
+    try: return open(os.path.join(BASE_DIR, 'signature.txt')).read().strip()
+    except Exception: return 'Regards,' + chr(10) + 'Sundeep Rana'
+def _draft_fields(name, pos, p=None):
+    import collections
+    meta = {}
+    try: meta = json.load(open(os.path.join(BASE_DIR, 'desk_meta.json'))).get(desk_load().get('primary') or '', {})
+    except Exception: pass
+    role, loc = (pos.split(' -', 1) + [''])[:2] if pos else ('', '')
+    full = name
+    if p:
+        try:
+            v = get_visual_name(p)
+            if v: full = v
+        except Exception: pass
+    return collections.defaultdict(str, {'first': (full or name).split()[0].title(), 'full': (full or name).title(), 'role': role.strip(), 'company': meta.get('company', ''), 'loc': loc.strip(), 'pos': pos or '', 'signature': _sig()})
+def _draft_text(kind, name, pos, p=None):
+    lp = os.path.join(DRAFTS_DIR, kind + '.txt')
+    if not os.path.exists(lp): return None
+    try: return open(lp).read().strip().format_map(_draft_fields(name, pos, p))
+    except Exception: return None
+def meta_cmd(arg, root, say=print):  # TEMPLATES v84.16: teach the company once per desk
+    d = desk_load()
+    if not d.get('primary'): say('🤷 no desk seated - seat one first'); return
+    try: m = json.load(open(os.path.join(BASE_DIR, 'desk_meta.json')))
+    except Exception: m = {}
+    m[d['primary']] = {'company': arg.strip()}
+    json.dump(m, open(os.path.join(BASE_DIR, 'desk_meta.json'), 'w'), indent=1)
+    say(f'🏢 company for this desk: {arg.strip()}')
+
+def _chair_draft(kind, name, pos, p=None):  # DRAFTS v84.11 (v84.16): the master's templates first, the house's defaults second, his signature always
+    t = _draft_text(kind, name, pos, p)
+    if t: return t
     first = (name or '').split()[0].title()
-    if kind == 'jd': return f'Hi {first}, great speaking with you today. I have shared the JD for {pos} on your email - please go through it and confirm your interest so I can move your profile forward.'
-    if kind == 'cv': return f'Hi {first}, as discussed on call, please share your updated CV at the earliest so I can push your profile to the manager today.'
-    if kind == 'refer': return f'Hi {first}, thank you for your time today. I have noted you are not keen on this role - if any friend or colleague might fit, do refer them to me. Wishing you the very best.'
-    if kind == 'missed': return f'Hi {first}, I tried reaching you just now about your application - whenever you are free, please call me back or tell me a good time to connect.'
-    return None
+    if kind == 'jd': base = f'Hi {first}, great speaking with you today. I have shared the JD for {pos} on your email - please go through it and confirm your interest so I can move your profile forward.'
+    elif kind == 'cv': base = f'Hi {first}, as discussed on call, please share your updated CV at the earliest so I can push your profile to the manager today.'
+    elif kind == 'refer': base = f'Hi {first}, thank you for your time today. I have noted you are not keen on this role - if any friend or colleague might fit, do refer them to me. Wishing you the very best.'
+    elif kind == 'missed': base = f'Hi {first}, I tried reaching you just now about your application - whenever you are free, please call me back or tell me a good time to connect.'
+    else: base = None
+    return (base + chr(10) + _sig()) if base else None
+
 def unskip_cmd(arg, root, say=print):  # SKIP v84.11
     sk = skips_load(); hit = [k for k in sk if arg and arg.lower() in os.path.basename(k).lower()]
     if not hit: say(f'🤷 no skipped candidate matches {arg!r}'); return
@@ -1156,18 +1201,22 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
                 parts = os.path.relpath(p, root).split(os.sep)
                 pos = parts[-2] if len(parts) >= 3 else (desk_load().get('primary') or root).rsplit('/', 1)[-1]
                 import wa
-                wa.send_review(ph, _chair_draft(draft, cur['name'], pos), say)
+                wa.send_review(ph, _chair_draft(draft, cur['name'], pos, p), say)
             else: say(f'⚠️ no phone for {cur["name"]} - teach me: python3 butler.py teach {cur["name"].split()[0].lower()} <digits>, then retry')
     desk_dashboard(say)  # CENSUS-AFTER v84.12: every closed row ends with the living scoreboard
     w = [x for x in s.get('items', []) if x['status'] == 'waiting']  # ADVANCE v84.10b: the queue walks without being pushed
     if w: say(f'⏭️ next up: {w[0]["name"]} - type: up')
     else: say('🏁 sheet covered - every candidate has an outcome')
 
-def _chase_draft(p, tag):
-    first = os.path.splitext(os.path.basename(p))[0].split()[0].title()
-    if tag == 'Awaiting JD Confirmation':
-        return f'Hi {first}, just checking the JD I shared reached you - a quick acknowledgement once you have gone through it would help me move things forward for you.'
-    return f'Hi {first}, following up on the CV update you mentioned - whenever it is ready, please share the latest version so I can push it forward today.'
+def _chase_draft(p, tag):  # CHASE v84.0 (v84.16): the background chase speaks in the master's templates too
+    name = os.path.splitext(os.path.basename(p))[0]
+    parts = p.split(os.sep)
+    pos = parts[-2] if len(parts) >= 2 else ''
+    kind = 'jd' if tag == 'Awaiting JD Confirmation' else 'cv'
+    t = _draft_text(kind, name, pos, p)
+    if t: return t
+    return _chair_draft(kind, name, pos, p)
+
 def chase_cmd(arg, root, say=print):  # CHASE v84.0: the draft waits in the field, never in the send column
     ep = os.path.join(BASE_DIR, 'errands.json')
     er = json.load(open(ep)) if os.path.exists(ep) else {}
@@ -2760,7 +2809,7 @@ def main():
         print('  👀 dash         · see the desk\'s census')
         print('  (Right-click a folder in Finder -> Butler Here to start)')
         sys.exit(0)
-    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'tag', 'dash', 'audit', 'tidy', 'calls', 'sheet', 'up', 'unskip', 'followup', 'release', 'forget'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
+    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'tag', 'dash', 'audit', 'tidy', 'calls', 'sheet', 'up', 'unskip', 'followup', 'release', 'forget', 'meta'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
         _v, _a = sys.argv[1], sys.argv[2:]
         if _v == 'pending': pipeline_pending(_a[0] if _a else None, print)
         elif _v == 'status': pipeline_status(' '.join(_a), print)
@@ -2782,6 +2831,7 @@ def main():
         elif _v == 'followup': followup_cmd(' '.join(_a), _pl_root(), print)
         elif _v == 'release': desk_release(' '.join(_a), print)
         elif _v == 'forget': forget_cmd(' '.join(_a), _pl_root(), print)
+        elif _v == 'meta': meta_cmd(' '.join(_a), _pl_root(), print)
         sys.exit(0)
     if not os.path.isdir(root):
         print("Error: folder does not exist."); sys.exit(1)
@@ -3437,6 +3487,8 @@ def _selftest(root):
     ck('S265 a person covered once is never seated again', (chr(35)+' COVERED-MEMORY v84.15') in _src and ('def covered_add(' in _src) and ('def forget_cmd(' in _src))
     ck('S266 coverage is enforced at the chair, not merely at the seed', (chr(35)+' SEAT-CHECK v84.15') in _src)
     ck('S267 a proposal survives Enter and waits for a typed answer', (chr(35)+' PROPOSE-WAIT v84.15') in _src)
+    ck('S268 coverage reads five signals, not one', (chr(35)+' COVERED-WIDE v84.16') in _src)
+    ck('S269 every draft is composed from the master'+chr(39)+'s templates, read live', (chr(35)+' TEMPLATES v84.16') in _src and ('def _draft_text(' in _src))
     ck('S236 a paper rests in one stage at a time', (chr(35)+' STAGE-ONE v84.4') in _src)
     ck('S237 changes that replace or move ask first', (chr(35)+' PROPOSE-FIRST v84.4') in _src and ('pending_action.json' in _src))
     ck('S238 every tag and move is written in the stage log', (chr(35)+' STAGE-LOG v84.4') in _src and ('stage_log.json' in _src))
