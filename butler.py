@@ -891,6 +891,28 @@ def tags_tidy(say=print):  # TIDY v84.9: carry each misplaced paper home, one ke
                         say(f'⚠️ move skipped: {_me}')
                 else:
                     say('· left in place')
+    seen2 = set()
+    for sc in desk_paths():  # FOLDER-TRUTH v84.30: where folder and tag disagree, tidy asks - one keystroke each way
+        for dp, dn, fn in os.walk(sc):
+            stage = os.path.basename(dp)
+            for x in fn:
+                if not _is_desk_candidate(x): continue
+                p = os.path.join(dp, x); rp = os.path.realpath(p)
+                if rp in seen2: continue
+                seen2.add(rp)
+                tgs = _tags_of(p); st = [t for t in tgs if _tag_stage(t)]
+                if stage in _tag_vocab() and (not st or st[0] != stage):
+                    say(f'🧭 {x} rests in {stage} but wears {st[0] if st else chr(34)+chr(34)} - tag it to its folder? y / n')
+                    if confirm_wait(say) == 'y':
+                        newt = [t for t in tgs if not _tag_stage(t)] + [stage]
+                        _tag_write(p, newt); _stage_note(x, tgs, newt, stage, stage, 'tidy-folder')
+                        say(f'🏷️ {x}: {stage}')
+                elif stage not in _tag_vocab() and st:
+                    say(f'🧭 {x} wears {st[0]} but rests outside the stage folders - untag it back to the contact list? y / n')
+                    if confirm_wait(say) == 'y':
+                        newt = [t for t in tgs if t != st[0]]
+                        _tag_write(p, newt); _stage_note(x, tgs, newt, stage, stage, 'tidy-folder')
+                        say(f'🏷️ untagged {x}: {st[0]} - back to the contact list')
     if moved: say(f'🧺 carried {moved} paper(s) home')
     elif held: say('🧺 nothing moved - twins wait for your Bin')
     else: say('🧺 every paper rests where its tag says')
@@ -932,25 +954,31 @@ def _is_desk_candidate(x):  # PAPER-OR-NOT v84.10d: only humans take the chair
         if stem.startswith(pre): return False
     return True
 
-def calls_cmd(arg, root, say=print):  # CHAIR v84.10b: seed today's sheet with every uncovered paper on the desk
+def calls_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.30): FOLDER-TRUTH - the sheet maps the folders, not the tags
     scopes = [desk_resolve(arg, root)] if arg else (desk_paths() or [root])
-    items = []; seen = set()
-    cov = _covered_names(root)
+    s0 = sheet_load(); sk = skips_load(); mem = set(covered_load())
+    items = []; seen = set(); reopened = 0
     for sc in scopes:
         if not sc or not os.path.isdir(sc): continue
         for dp, dn, fn in os.walk(sc):
+            if os.path.basename(dp) in _tag_vocab(): continue  # FOLDER-TRUTH v84.30: a stage folder's residents are already spoken for
             for x in fn:
-                if not _is_desk_candidate(x): continue  # PAPER-OR-NOT v84.10d
+                if not _is_desk_candidate(x): continue
                 p = os.path.join(dp, x); rp = os.path.realpath(p)
-                if rp in seen: continue
-                if os.path.realpath(p) in skips_load(): continue  # SKIP v84.11: the remembered stay out of tomorrow's queue
+                if rp in seen or rp in sk or _name_key(x) in mem: continue
                 seen.add(rp)
-                if _tags_of(p): continue  # COVERED v84.11: any tag at all means already covered or under follow-up
-                if _name_key(x) in cov: continue  # COVERED-MEMORY v84.15
-                items.append({'p': p, 'name': os.path.splitext(x)[0], 'status': 'waiting'})
-    sheet_save({'date': time.strftime('%Y-%m-%d'), 'items': items, 'current': None})
-    say(f'📞 call sheet seeded: {len(items)} uncovered candidate(s) on the desk')
-    if items: say('   type: up')
+                row = next((i for i in s0.get('items', []) if os.path.realpath(i.get('p', '')) == rp), None)
+                if row and row.get('status') == 'waiting': continue
+                if row:
+                    row['status'] = 'waiting'; row['outcome'] = ''; reopened += 1; continue  # FOLDER-TRUTH v84.30: dragged out means to be contacted again
+                items.append({'p': p, 'name': os.path.splitext(x)[0], 'status': 'waiting', 'fp': _fp(p)})
+    waiting = [i for i in s0.get('items', []) if i.get('status') == 'waiting']
+    kept = [i for i in s0.get('items', []) if i.get('status') != 'waiting']
+    s0['date'] = time.strftime('%Y-%m-%d'); s0['items'] = kept + waiting + items
+    sheet_save(s0)
+    say(f'📞 call sheet seeded: {len(items) + reopened} candidate(s) outside the stage folders' + (f' · reopened {reopened}' if reopened else ''))
+    if items or reopened: say('   type: up')
+
 def sheet_cmd(arg, root, say=print):
     s = sheet_load()
     dn = [i for i in s.get('items', []) if i['status'] != 'waiting']; wt = [i for i in s.get('items', []) if i['status'] == 'waiting']
@@ -961,7 +989,7 @@ def sheet_cmd(arg, root, say=print):
 def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes, and the seat itself re-checks coverage
     s = sheet_load()
     sk = skips_load()
-    cov = _covered_names(root)
+    mem = set(covered_load())  # FOLDER-TRUTH v84.30: outcome memory guards duplicates; the folders decide the rest
     known = set()
     for it in s.get('items', []):
         try: known.add(os.path.realpath(it['p']))
@@ -973,13 +1001,14 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
             q = _find_by_fp(it.get('fp'), root)
             if q: p = it['p'] = q
             else: it['status'] = 'done'; it['outcome'] = 'gone'; continue
-        if _tags_of(p) or _name_key(os.path.basename(p)) in cov: it['status'] = 'done'; it['outcome'] = 'covered elsewhere'; continue
+        if os.path.basename(os.path.dirname(p)) in _tag_vocab() or _name_key(os.path.basename(p)) in mem:
+            it['status'] = 'done'; it['outcome'] = 'covered elsewhere'; continue  # FOLDER-TRUTH v84.30
     for sc in desk_paths():
         for dp, dn, fn in os.walk(sc):
             for x in fn:
                 if not _is_desk_candidate(x): continue
                 q = os.path.join(dp, x); rq = os.path.realpath(q)
-                if rq in known or rq in sk or _tags_of(q) or _name_key(x) in cov: continue
+                if rq in known or rq in sk or os.path.basename(dp) in _tag_vocab() or _name_key(x) in mem: continue  # FOLDER-TRUTH v84.30
                 s.setdefault('items', []).append({'p': q, 'name': os.path.splitext(x)[0], 'status': 'waiting', 'fp': _fp(q)})
                 known.add(rq)
                 say(f'➕ new paper joined the sheet: {x}')
@@ -991,7 +1020,8 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
             q = _find_by_fp(it.get('fp'), root)
             if q: p = it['p'] = q
             else: it['status'] = 'done'; it['outcome'] = 'gone'; continue
-        if _tags_of(p) or _name_key(os.path.basename(p)) in cov:
+        if os.path.basename(os.path.dirname(p)) in _tag_vocab() or _name_key(os.path.basename(p)) in mem:
+            it['status'] = 'done'; it['outcome'] = 'covered elsewhere'; continue  # FOLDER-TRUTH v84.30
             it['status'] = 'done'; it['outcome'] = 'covered elsewhere'; continue
         i = it; break
     sheet_save(s)
@@ -2986,7 +3016,8 @@ def main():
         elif _v in ('missed', 'jd', 'nudge', 'refer'):  # KEYWORDS-CLI v84.23: the keyword habit works in every door
             import briefing as _br
             _fn = getattr(_br, 'do_' + _v, None)
-            if _fn: _fn(' '.join(_a), _pl_root(), print)
+            _kw = ' '.join(_a) or ((os.path.splitext(os.path.basename(sheet_current()['p']))[0]) if sheet_current() else '')  # CHAIR-KEYWORD v84.30: a bare keyword during a call speaks to the seated candidate
+            if _fn: _fn(_kw, _pl_root(), print)
             else: print('🤷 voice missing: ' + _v)
         sys.exit(0)
     if not os.path.isdir(root):
@@ -3639,6 +3670,8 @@ def _selftest(root):
     ck('S285 the living client map outranks every frozen copy', (chr(35)+' COMPANY-LIVE v84.27') in _src)
     ck('S286 the message body drinks from the registry', (chr(35)+' REGISTRY-VOICE v84.28') in _br and ('designation=' in _br))
     ck('S287 the designation slot is never blank and the city list holds no twins', (chr(35)+' DESIG-FALLBACK v84.29') in _br and (chr(35)+' CITY-DEDUPE v84.29') in _br)
+    ck('S288 the sheet maps the folders - dragged out means to be contacted again', (chr(35)+' FOLDER-TRUTH v84.30') in _src)
+    ck('S289 a bare keyword during a call speaks to the seated candidate', (chr(35)+' CHAIR-KEYWORD v84.30') in _src and (chr(35)+' CHAIR-KEYWORD v84.30') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S272 the roleline omits what was never taught', (chr(35)+' ROLELINE v84.18') in _src)
     ck('S273 the chair drafts through the keywords'+chr(39)+' composer, not a rival clerk', (chr(35)+' ONE-VOICE v84.19') in _src and ('def _chair_wa_text(' in _src) and ('_fmt_tpl' in _src))
     ck('S270 every name the skip branch speaks is defined in the same book', ('SKIPS_PATH =' in _src) and ('def skips_load(' in _src) and ('def _fp(' in _src) and ('def outcome_cmd(' in _src))
@@ -3653,7 +3686,7 @@ def _selftest(root):
     ck('S257 outward outcomes draft, internal outcomes stay silent', (chr(35)+' DRAFTS v84.11') in _src and ('def _chair_draft(' in _src))
     ck('S258 followup names the debtors, not merely counts them', (chr(35)+' FOLLOWUP v84.11') in _src and ('def followup_cmd(' in _src))
     ck('S259 a renamed paper is still the same paper', (chr(35)+' FP v84.11') in _src and ('def _find_by_fp(' in _src))
-    ck('S260 covered means any tag - the sheet seats only the silent', (chr(35)+' COVERED v84.11') in _src)
+    ck('S260 covered means filed, remembered or skipped - the sheet seats only the loose', (chr(35)+' FOLDER-TRUTH v84.30') in _src and ('skips_load(); mem = set(covered_load())' in _src))  # S260 repinned v84.30: coverage grew a better definition - the folder, the memory, the skip
     ck('S261 the sheet breathes - covered rows leave, new papers join', (chr(35)+' SHEET-LIVE v84.12') in _src)
     ck('S262 every closed row ends with the living scoreboard', (chr(35)+' CENSUS-AFTER v84.12') in _src)
     ck('S263 release promotes the waiting chair and never hides a seated secondary', (chr(35)+' RELEASE v84.13') in _src and (chr(35)+' DESK-TRUTH v84.13') in _src and ('def desk_release(' in _src))

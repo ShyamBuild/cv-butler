@@ -1517,6 +1517,7 @@ if __name__ == "__main__":
                 say('  🧹 tidy         · carry misplaced papers home')
                 say('  👀 dash         · see the desk\'s census')
                 continue
+            if butler.sheet_current() and q.strip() in ('jd', 'missed', 'nudge', 'refer'): q = q + ' ' + os.path.splitext(os.path.basename(butler.sheet_current()['p']))[0]  # CHAIR-KEYWORD v84.30
             if butler.sheet_current() and q.strip() in ('1', '2', '3', '4', '5', '6'): do_outcome(q.strip(), root); continue  # CHAIR v84.10b
             if butler.sheet_current() and butler.chair_word(q): do_outcome(butler.chair_word(q), root); continue
             if q == 'up' or q.startswith('up '): do_up(q[2:].strip(), root); continue
