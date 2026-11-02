@@ -1016,7 +1016,7 @@ def _find_by_fp(fp, root):
     for sc in desk_paths() or [root]:
         for dp, dn, fn in os.walk(sc):
             for x in fn:
-                if not _is_desk_candidate(x): continue
+                pass  # FP-ANY v84.14: content is identity, extension is only clothing - the fingerprint searches every file
                 q = os.path.join(dp, x)
                 if _fp(q) == fp: return q
     return None
@@ -1069,6 +1069,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
         if q:
             p = cur['p'] = q; sheet_save(s)
             say(f'🔁 the paper moved - found it again in {os.path.basename(os.path.dirname(q))}')
+            if not p.lower().endswith(('.pdf', '.docx')): say('⚠️ he lost his .pdf/.docx extension in the rename - most doors ignore extension-less papers; rename him back when convenient')  # EXT-LOSS v84.14
         else:
             say('🤷 the paper moved and I cannot find it by fingerprint - re-seed with calls, or tag it by its new name'); return
     say(f"🤖 Proposal: {cur['name']} → " + (f'[{tag}]' if tag else 'SKIPPED, untagged, unmoved') + f" ({outcome})" + (f' · WhatsApp {draft} draft will open, unsent' if draft else ' · no message - this one stays in the house') + ' · y / n')
@@ -3381,6 +3382,7 @@ def _selftest(root):
     ck('S261 the sheet breathes - covered rows leave, new papers join', (chr(35)+' SHEET-LIVE v84.12') in _src)
     ck('S262 every closed row ends with the living scoreboard', (chr(35)+' CENSUS-AFTER v84.12') in _src)
     ck('S263 release promotes the waiting chair and never hides a seated secondary', (chr(35)+' RELEASE v84.13') in _src and (chr(35)+' DESK-TRUTH v84.13') in _src and ('def desk_release(' in _src))
+    ck('S264 the fingerprint searches every file and names a stripped extension aloud', (chr(35)+' FP-ANY v84.14') in _src and (chr(35)+' EXT-LOSS v84.14') in _src)
     ck('S236 a paper rests in one stage at a time', (chr(35)+' STAGE-ONE v84.4') in _src)
     ck('S237 changes that replace or move ask first', (chr(35)+' PROPOSE-FIRST v84.4') in _src and ('pending_action.json' in _src))
     ck('S238 every tag and move is written in the stage log', (chr(35)+' STAGE-LOG v84.4') in _src and ('stage_log.json' in _src))
