@@ -1325,6 +1325,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
         covered_add(_name_key(os.path.basename(p)), _fp(p), 'skipped', os.path.basename(p))
         say(f"⏭️ skipped {cur['name']} - untagged, unmoved, remembered; unskip {cur['name'].split()[0].lower()} brings him back")
     else:
+        ph0 = taught_digits(cur['name']) or phones_of(p) or None  # PHONE-FIRST v84.31: read the number before the paper moves, never from a ghost path
         cur_tags = _tags_of(p)
         drops = [t for t in cur_tags if _tag_stage(t) and t != tag]
         newtags = [t for t in cur_tags if t not in drops] + ([tag] if tag not in cur_tags else [])
@@ -1340,7 +1341,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
             if it.get('p') == p: it['status'] = 'done'; it['outcome'] = outcome; it['ts'] = int(time.time())
         s['current'] = None; sheet_save(s)
         if draft:  # MISSED v84.10b: the outward outcome speaks through the number he already knows, unsent until your thumb
-            ph = taught_digits(cur['name']) or phones_of(p) or None
+            ph = ph0
             if isinstance(ph, list): ph = ph[0] if ph else None
             if ph:
                 pos = _pos_of(p, root)
@@ -3656,6 +3657,7 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S291 the cv draft carries the touchpoint and the missed draft carries the JD line in whichever store speaks it', 'acknowledge receipt' in open(os.path.join(BASE_DIR, 'drafts', 'cv.txt')).read() and ('JD on your email' in open(os.path.join(BASE_DIR, 'templates', 'missed.txt')).read() or 'JD on your email' in open(os.path.join(BASE_DIR, 'drafts', 'missed.txt')).read()))  # S291 repinned v84.31: the house polices its own drafts; the master's style is never the failing grade
     ck('S274 the fallback chain keeps every scenario speakable', ('def _chair_wa_text(' in _src) and ('def _draft_text(' in _src) and ('def _chair_draft(' in _src))
     ck('S275 the fields dict carries every sentence it computes', ("'roleline': roleline" in _src) and (chr(35)+' ROLELINE v84.18') in _src)
     ck('S276 one truth per position, taught once and shown at the composer', (chr(35)+' POS-ID v84.21') in _src and ('def pos_identity(' in _src) and ('say_identity_for' in open(os.path.join(BASE_DIR, 'briefing.py')).read()))
@@ -3672,6 +3674,7 @@ def _selftest(root):
     ck('S287 the designation slot is never blank and the city list holds no twins', (chr(35)+' DESIG-FALLBACK v84.29') in _br and (chr(35)+' CITY-DEDUPE v84.29') in _br)
     ck('S288 the sheet maps the folders - dragged out means to be contacted again', (chr(35)+' FOLDER-TRUTH v84.30') in _src)
     ck('S289 a bare keyword during a call speaks to the seated candidate', (chr(35)+' CHAIR-KEYWORD v84.30') in _src and (chr(35)+' CHAIR-KEYWORD v84.30') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
+    ck('S290 the draft'+chr(39)+'s phone is read before the paper moves', (chr(35)+' PHONE-FIRST v84.31') in _src and ('ph = ph0' in _src))
     ck('S272 the roleline omits what was never taught', (chr(35)+' ROLELINE v84.18') in _src)
     ck('S273 the chair drafts through the keywords'+chr(39)+' composer, not a rival clerk', (chr(35)+' ONE-VOICE v84.19') in _src and ('def _chair_wa_text(' in _src) and ('_fmt_tpl' in _src))
     ck('S270 every name the skip branch speaks is defined in the same book', ('SKIPS_PATH =' in _src) and ('def skips_load(' in _src) and ('def _fp(' in _src) and ('def outcome_cmd(' in _src))
