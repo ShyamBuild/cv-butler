@@ -1111,6 +1111,25 @@ def say_identity_for(p, say=print):  # POS-ID v84.21: the triple, shown before a
     if parts: say('🏢 ' + ' · '.join(parts))
     if not i['company'] and (i['role'] or i['loc']):
         say(f"🏢 company unknown for client {i.get('client') or '?'} - teach once: client {i.get('client') or '?'} = <company>")  # CLIENT-ASK v84.23: an ask must speak where the master is looking
+def clients_cmd(arg, root, say=print):  # CLIENTS-LIST v84.24: the taught map and every anonymous folder, each with its teach-line ready
+    try: cm = json.load(open(CLIENTMAP_PATH))
+    except Exception: cm = {}
+    if cm:
+        say('🏢 taught clients:')
+        for k in sorted(cm): say(f'   {k} = {cm[k]}')
+    else:
+        say('🏢 no client taught yet')
+    pending = []
+    for client in sorted(os.listdir(root)):
+        cp = os.path.join(root, client)
+        if client.startswith('.') or not os.path.isdir(cp): continue
+        if client not in cm: pending.append(client)
+    if pending:
+        say('🏢 anonymous client folders - teach each once:')
+        for c in pending: say(f'   client {c} = <company>')
+    elif cm:
+        say('✅ every client folder under the root is taught')
+
 def client_cmd(arg, root, say=print):  # POS-ID v84.21: teach a client's company once, system-wide
     if '=' not in arg: say('usage: client 02 HIPP = Honda India'); return
     k, v = arg.split('=', 1)
@@ -2931,7 +2950,7 @@ def main():
         print('  👀 dash         · see the desk\'s census')
         print('  (Right-click a folder in Finder -> Butler Here to start)')
         sys.exit(0)
-    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'tag', 'dash', 'audit', 'tidy', 'calls', 'sheet', 'up', 'unskip', 'followup', 'release', 'forget', 'meta', 'client', 'posmeta', 'missed', 'jd', 'nudge', 'refer'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
+    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'tag', 'dash', 'audit', 'tidy', 'calls', 'sheet', 'up', 'unskip', 'followup', 'release', 'forget', 'meta', 'client', 'posmeta', 'missed', 'jd', 'nudge', 'refer', 'clients'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
         _v, _a = sys.argv[1], sys.argv[2:]
         if _v == 'pending': pipeline_pending(_a[0] if _a else None, print)
         elif _v == 'status': pipeline_status(' '.join(_a), print)
@@ -2956,6 +2975,7 @@ def main():
         elif _v == 'meta': meta_cmd(' '.join(_a), _pl_root(), print)
         elif _v == 'client': client_cmd(' '.join(_a), _pl_root(), print)
         elif _v == 'posmeta': posmeta_cmd(' '.join(_a), _pl_root(), print)
+        elif _v == 'clients': clients_cmd(' '.join(_a), _pl_root(), print)
         elif _v in ('missed', 'jd', 'nudge', 'refer'):  # KEYWORDS-CLI v84.23: the keyword habit works in every door
             import briefing as _br
             _fn = getattr(_br, 'do_' + _v, None)
@@ -3606,6 +3626,7 @@ def _selftest(root):
     ck('S279 the roleline speaks designation, company, role and location in one clause', (chr(35)+' DESIGNATION v84.22') in _src and ("'designation'" in _src))
     ck('S280 an untold company asks where the master is looking', (chr(35)+' CLIENT-ASK v84.23') in _src)
     ck('S281 the keywords answer in the bare terminal too', (chr(35)+' KEYWORDS-CLI v84.23') in _src)
+    ck('S282 the client ledger shows the taught and names the anonymous', (chr(35)+' CLIENTS-LIST v84.24') in _src and ('def clients_cmd(' in _src))
     ck('S272 the roleline omits what was never taught', (chr(35)+' ROLELINE v84.18') in _src)
     ck('S273 the chair drafts through the keywords'+chr(39)+' composer, not a rival clerk', (chr(35)+' ONE-VOICE v84.19') in _src and ('def _chair_wa_text(' in _src) and ('_fmt_tpl' in _src))
     ck('S270 every name the skip branch speaks is defined in the same book', ('SKIPS_PATH =' in _src) and ('def skips_load(' in _src) and ('def _fp(' in _src) and ('def outcome_cmd(' in _src))
