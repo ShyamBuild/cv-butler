@@ -1081,7 +1081,7 @@ POS_PATH = os.path.join(BASE_DIR, 'positions.json')  # POS-ID v84.21: one truth 
 CLIENTMAP_PATH = os.path.join(BASE_DIR, 'clients.json')  # POS-ID v84.21: one truth per client, system-wide
 def pos_identity(p, root=None):  # POS-ID v84.21: company from the client map, role and location from the folder, overrides win
     root = root or _pl_root()
-    out = {'company': '', 'role': '', 'loc': '', 'designation': ''}  # DESIGNATION v84.22
+    out = {'company': '', 'role': '', 'loc': '', 'designation': '', 'client': ''}
     if not p: return out
     rel = os.path.relpath(p, root).split(os.sep)
     pospath = None
@@ -1100,6 +1100,7 @@ def pos_identity(p, root=None):  # POS-ID v84.21: company from the client map, r
     out['loc'] = ov.get('loc') or loc.strip()
     out['designation'] = ov.get('designation') or ''
     client = os.path.basename(os.path.dirname(pospath))
+    out['client'] = client
     try: cm = json.load(open(CLIENTMAP_PATH))
     except Exception: cm = {}
     out['company'] = ov.get('company') or cm.get(client, '') or ''
@@ -1108,6 +1109,8 @@ def say_identity_for(p, say=print):  # POS-ID v84.21: the triple, shown before a
     i = pos_identity(p)
     parts = [x for x in (i['company'], i['role'], i['loc']) if x]
     if parts: say('🏢 ' + ' · '.join(parts))
+    if not i['company'] and (i['role'] or i['loc']):
+        say(f"🏢 company unknown for client {i.get('client') or '?'} - teach once: client {i.get('client') or '?'} = <company>")  # CLIENT-ASK v84.23: an ask must speak where the master is looking
 def client_cmd(arg, root, say=print):  # POS-ID v84.21: teach a client's company once, system-wide
     if '=' not in arg: say('usage: client 02 HIPP = Honda India'); return
     k, v = arg.split('=', 1)
@@ -2928,7 +2931,7 @@ def main():
         print('  👀 dash         · see the desk\'s census')
         print('  (Right-click a folder in Finder -> Butler Here to start)')
         sys.exit(0)
-    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'tag', 'dash', 'audit', 'tidy', 'calls', 'sheet', 'up', 'unskip', 'followup', 'release', 'forget', 'meta', 'client', 'posmeta'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
+    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'tag', 'dash', 'audit', 'tidy', 'calls', 'sheet', 'up', 'unskip', 'followup', 'release', 'forget', 'meta', 'client', 'posmeta', 'missed', 'jd', 'nudge', 'refer'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
         _v, _a = sys.argv[1], sys.argv[2:]
         if _v == 'pending': pipeline_pending(_a[0] if _a else None, print)
         elif _v == 'status': pipeline_status(' '.join(_a), print)
@@ -2953,6 +2956,11 @@ def main():
         elif _v == 'meta': meta_cmd(' '.join(_a), _pl_root(), print)
         elif _v == 'client': client_cmd(' '.join(_a), _pl_root(), print)
         elif _v == 'posmeta': posmeta_cmd(' '.join(_a), _pl_root(), print)
+        elif _v in ('missed', 'jd', 'nudge', 'refer'):  # KEYWORDS-CLI v84.23: the keyword habit works in every door
+            import briefing as _br
+            _fn = getattr(_br, 'do_' + _v, None)
+            if _fn: _fn(' '.join(_a), _pl_root(), print)
+            else: print('🤷 voice missing: ' + _v)
         sys.exit(0)
     if not os.path.isdir(root):
         print("Error: folder does not exist."); sys.exit(1)
@@ -3596,6 +3604,8 @@ def _selftest(root):
     ck('S277 the chair shows the triple before the thumb decides', ('say_identity_for(p, say)' in _src))
     ck('S278 a new position is understood the moment it lands, a new client asks once', (chr(35)+' AUTO-REG v84.22') in _src and ('def _auto_registry(' in _src))
     ck('S279 the roleline speaks designation, company, role and location in one clause', (chr(35)+' DESIGNATION v84.22') in _src and ("'designation'" in _src))
+    ck('S280 an untold company asks where the master is looking', (chr(35)+' CLIENT-ASK v84.23') in _src)
+    ck('S281 the keywords answer in the bare terminal too', (chr(35)+' KEYWORDS-CLI v84.23') in _src)
     ck('S272 the roleline omits what was never taught', (chr(35)+' ROLELINE v84.18') in _src)
     ck('S273 the chair drafts through the keywords'+chr(39)+' composer, not a rival clerk', (chr(35)+' ONE-VOICE v84.19') in _src and ('def _chair_wa_text(' in _src) and ('_fmt_tpl' in _src))
     ck('S270 every name the skip branch speaks is defined in the same book', ('SKIPS_PATH =' in _src) and ('def skips_load(' in _src) and ('def _fp(' in _src) and ('def outcome_cmd(' in _src))
