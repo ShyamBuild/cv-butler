@@ -948,18 +948,40 @@ def sheet_cmd(arg, root, say=print):
     say(f"📞 sheet {s.get('date') or '-'}: covered {len(dn)} · waiting {len(wt)}" + (f" · NOW: {cur['name']}" if cur else ''))
     for i in dn[-8:]: say(f"   ✅ {i['name']} · {i.get('outcome', '')}")
     for i in wt[:8]: say(f"   ⏳ {i['name']}")
-def up_cmd(arg, root, say=print):  # CHAIR v84.10b: the next waiting candidate takes the chair, dossier and all
+def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.12): the sheet breathes - covered rows leave, gone rows resolve, new papers join
     s = sheet_load()
+    sk = skips_load()
+    known = set()
+    for it in s.get('items', []):
+        try: known.add(os.path.realpath(it['p']))
+        except Exception: pass
+    for it in s.get('items', []):  # SHEET-LIVE v84.12: reconcile against the living desk before seating anyone
+        if it.get('status') != 'waiting': continue
+        p = it['p']
+        if not os.path.exists(p):
+            q = _find_by_fp(it.get('fp'), root)
+            if q: p = it['p'] = q
+            else: it['status'] = 'done'; it['outcome'] = 'gone'; continue
+        if _tags_of(p): it['status'] = 'done'; it['outcome'] = 'covered elsewhere'; continue
+    for sc in desk_paths():
+        for dp, dn, fn in os.walk(sc):
+            for x in fn:
+                if not _is_desk_candidate(x): continue
+                q = os.path.join(dp, x); rq = os.path.realpath(q)
+                if rq in known or rq in sk or _tags_of(q): continue
+                s.setdefault('items', []).append({'p': q, 'name': os.path.splitext(x)[0], 'status': 'waiting', 'fp': _fp(q)})
+                known.add(rq)
+                say(f'➕ new paper joined the sheet: {x}')
+    sheet_save(s)
     w = [i for i in s.get('items', []) if i['status'] == 'waiting']
     if not w: say('📭 sheet empty - type: calls'); return
     i = w[0]; s['current'] = i; sheet_save(s)
-    p = i['p']; ph = taught_digits(i['name']) or phones_of(p)
-    i['fp'] = _fp(p)  # FP v84.11
-    i['fp'] = _fp(p)  # FP v84.11
+    p = i['p']; ph = taught_digits(i['name']) or phones_of(p) or None
+    if isinstance(ph, list): ph = ph[0] if ph else None
     say(f"📞 UP: {i['name']} · in {os.path.basename(os.path.dirname(p))}")
     if isinstance(ph, list): say('   phones: ' + ' · '.join(f'{n}) {d}' for n, d in enumerate(ph, 1)))
     elif ph: say(f'   phone: {ph}')
-    else: say('   phone: none taught - teach me: python3 butler.py teach <name> <digits>')
+    else: say(f'   phone: none readable - teach me: python3 butler.py teach {i["name"].split()[0].lower()} <digits>')
     tgs = _tags_of(p)
     if tgs: say('   tags: ' + ', '.join(tgs))
     say('   after the call, one digit or one word closes his row:')
@@ -969,7 +991,7 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b: the next waiting candidate t
     say('   4 missed / no answer       → [Call Scheduled] + WhatsApp draft')
     say('   5 ready for manager review → [Ready for Manager Review]')
     say('   6 skip him for now        → no tag, no move, remembered')
-SKIPS_PATH = os.path.join(BASE_DIR, 'skips.json')  # SKIP v84.11: today's list, not today's verdicts
+
 def skips_load():
     try: return json.load(open(SKIPS_PATH))
     except Exception: return {}
@@ -1077,6 +1099,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
                 import wa
                 wa.send_review(ph, _chair_draft(draft, cur['name'], pos), say)
             else: say(f'⚠️ no phone for {cur["name"]} - teach me: python3 butler.py teach {cur["name"].split()[0].lower()} <digits>, then retry')
+    desk_dashboard(say)  # CENSUS-AFTER v84.12: every closed row ends with the living scoreboard
     w = [x for x in s.get('items', []) if x['status'] == 'waiting']  # ADVANCE v84.10b: the queue walks without being pushed
     if w: say(f'⏭️ next up: {w[0]["name"]} - type: up')
     else: say('🏁 sheet covered - every candidate has an outcome')
@@ -3346,6 +3369,8 @@ def _selftest(root):
     ck('S258 followup names the debtors, not merely counts them', (chr(35)+' FOLLOWUP v84.11') in _src and ('def followup_cmd(' in _src))
     ck('S259 a renamed paper is still the same paper', (chr(35)+' FP v84.11') in _src and ('def _find_by_fp(' in _src))
     ck('S260 covered means any tag - the sheet seats only the silent', (chr(35)+' COVERED v84.11') in _src)
+    ck('S261 the sheet breathes - covered rows leave, new papers join', (chr(35)+' SHEET-LIVE v84.12') in _src)
+    ck('S262 every closed row ends with the living scoreboard', (chr(35)+' CENSUS-AFTER v84.12') in _src)
     ck('S236 a paper rests in one stage at a time', (chr(35)+' STAGE-ONE v84.4') in _src)
     ck('S237 changes that replace or move ask first', (chr(35)+' PROPOSE-FIRST v84.4') in _src and ('pending_action.json' in _src))
     ck('S238 every tag and move is written in the stage log', (chr(35)+' STAGE-LOG v84.4') in _src and ('stage_log.json' in _src))
