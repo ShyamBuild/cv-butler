@@ -3638,6 +3638,7 @@ def _selftest(root):
     ck('S284 a re-teaching speaks its before-and-after', (chr(35)+' RETEACH v84.26') in _src)
     ck('S285 the living client map outranks every frozen copy', (chr(35)+' COMPANY-LIVE v84.27') in _src)
     ck('S286 the message body drinks from the registry', (chr(35)+' REGISTRY-VOICE v84.28') in _br and ('designation=' in _br))
+    ck('S287 the designation slot is never blank and the city list holds no twins', (chr(35)+' DESIG-FALLBACK v84.29') in _br and (chr(35)+' CITY-DEDUPE v84.29') in _br)
     ck('S272 the roleline omits what was never taught', (chr(35)+' ROLELINE v84.18') in _src)
     ck('S273 the chair drafts through the keywords'+chr(39)+' composer, not a rival clerk', (chr(35)+' ONE-VOICE v84.19') in _src and ('def _chair_wa_text(' in _src) and ('_fmt_tpl' in _src))
     ck('S270 every name the skip branch speaks is defined in the same book', ('SKIPS_PATH =' in _src) and ('def skips_load(' in _src) and ('def _fp(' in _src) and ('def outcome_cmd(' in _src))

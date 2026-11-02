@@ -199,7 +199,7 @@ def _client_full(short_dirname, pos_path):
         except Exception: pass
         return full
     return short.title()
-CITY_WORDS = ['bhopal', 'indore', 'surat', 'chandigarh', 'greater noida', 'vikhroli east', 'vikhroli', 'mumbai', 'bengaluru', 'bangalore', 'delhi', 'gurugram', 'gurgaon', 'noida', 'pune', 'chennai', 'hyderabad', 'ahmedabad', 'kolkata', 'jaipur', 'lucknow', 'indore', 'nagpur', 'thane', 'erode', 'coimbatore']
+CITY_WORDS = ['bhopal', 'indore', 'surat', 'chandigarh', 'greater noida', 'vikhroli east', 'vikhroli', 'mumbai', 'bengaluru', 'bangalore', 'delhi', 'gurugram', 'gurgaon', 'noida', 'pune', 'chennai', 'hyderabad', 'ahmedabad', 'kolkata', 'jaipur', 'lucknow', 'nagpur', 'thane', 'erode', 'coimbatore']  # CITY-DEDUPE v84.29: a law-list holds no twins
 def _split_pos(pos):
     low = (pos or '').lower().replace('|', ' ')  # SPLIT-HARD v56
     low = re.sub(r'\blocation\b', ' ', low)
@@ -227,7 +227,7 @@ def _fmt_tpl(tpl, hit, f, name):
         if _idn.get('company'): cli = _idn['company']
         if _idn.get('role'): title = _idn['role']
         if _idn.get('loc'): loc = _idn['loc']
-        _dz = _idn.get('designation') or ''
+        _dz = _idn.get('designation') or title  # DESIG-FALLBACK v84.29: the designation slot is never blank - it borrows the position's name when untold
     except Exception:
         _dz = ''
     where = f"Company: {cli}" + (f" | Location: {loc}" if loc else "")
