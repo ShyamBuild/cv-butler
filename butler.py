@@ -831,7 +831,8 @@ def desk_dashboard(say=print):  # DASH v84.7: the desk's census in one breath, r
                 if not tgs: counts['(untagged)'] = counts.get('(untagged)', 0) + 1
     order = ['Ready for Manager Review', 'Awaiting JD Confirmation', 'Awaiting CV Update', 'Feedback Pending', 'Call Scheduled', 'Shortlisted for Interview', 'Interview Scheduled', 'Interview Today', 'Interview Tomorrow', 'Interview Cleared', 'Expected to Join', 'Joined - Payment Pending', 'Payment Received', 'Closed \u2013 Not Proceeding', 'Rejected by Client', '(untagged)']
     short = {'Ready for Manager Review': 'ready', 'Awaiting JD Confirmation': 'jd-ack', 'Awaiting CV Update': 'cv-wait', 'Feedback Pending': 'feedback', 'Call Scheduled': 'call', 'Shortlisted for Interview': 'short', 'Interview Scheduled': 'intv', 'Interview Today': 'intv-today', 'Interview Tomorrow': 'intv-tmrw', 'Interview Cleared': 'cleared', 'Expected to Join': 'join', 'Joined - Payment Pending': 'pay-pend', 'Payment Received': 'paid', 'Closed \u2013 Not Proceeding': 'closed', 'Rejected by Client': 'rejected', '(untagged)': 'untagged'}
-    line = ' · '.join(f'{short[t]}:{counts[t]}' for t in order if counts.get(t))
+    _sk = sum(1 for q in skips_load() if any(q.startswith(os.path.realpath(sc)) for sc in desk_paths()))
+    line = ' · '.join(f'{short[t]}:{counts[t]}' for t in order if counts.get(t)) + (f' · skipped:{_sk}' if _sk else '')
     say('📊 ' + (line or 'empty desk'))
     if multi: say('⚠️ wearing two stages: ' + ', '.join(multi[:6]) + (' …' if len(multi) > 6 else ''))
 def tags_audit(say=print):  # AUDIT v84.7 (v84.9): two stages, or a stage away from its folder - named, never silently rewritten
@@ -894,9 +895,9 @@ def sheet_save(s):
     try: json.dump(s, open(SHEET_PATH, 'w'), indent=1)
     except Exception: pass
 def sheet_current(): return sheet_load().get('current')
-CHAIR_WORDS = {'missed': '4', 'no answer': '4', 'jd': '1', 'jd mailed': '1', 'cv': '3', 'update cv': '3', 'not interested': '2', 'ready': '5', 'manager': '5'}  # CHAIR v84.10b: the words you would say anyway
+CHAIR_WORDS = {'missed': '4', 'no answer': '4', 'jd': '1', 'jd mailed': '1', 'cv': '3', 'update cv': '3', 'not interested': '2', 'ready': '5', 'manager': '5', 'skip': '6', 'skip him': '6'}
 def chair_word(q): return CHAIR_WORDS.get((q or '').strip().lower())
-OUTCOMES = {'1': ('Awaiting JD Confirmation', 'interested · JD mailed', False), '2': ('Closed \u2013 Not Proceeding', 'not interested', False), '3': ('Awaiting CV Update', 'will update CV', False), '4': ('Call Scheduled', 'missed / no answer', True), '5': ('Ready for Manager Review', 'ready for manager', False)}
+OUTCOMES = {'1': ('Awaiting JD Confirmation', 'interested · JD mailed', 'jd'), '2': ('Closed \u2013 Not Proceeding', 'not interested', 'refer'), '3': ('Awaiting CV Update', 'will update CV', 'cv'), '4': ('Call Scheduled', 'missed / no answer', 'missed'), '5': ('Ready for Manager Review', 'ready for manager', None), '6': (None, 'skipped', None)}  # DRAFTS v84.11: outward outcomes speak, internal ones stay silent
 def taught_digits(name):  # CHAIR-PHONE v84.10c: the chair reads the taught book directly, then falls back to the paper
     import json as _j
     low = (name or '').lower()
@@ -933,8 +934,9 @@ def calls_cmd(arg, root, say=print):  # CHAIR v84.10b: seed today's sheet with e
                 if not _is_desk_candidate(x): continue  # PAPER-OR-NOT v84.10d
                 p = os.path.join(dp, x); rp = os.path.realpath(p)
                 if rp in seen: continue
+                if os.path.realpath(p) in skips_load(): continue  # SKIP v84.11: the remembered stay out of tomorrow's queue
                 seen.add(rp)
-                if [t for t in _tags_of(p) if _tag_stage(t)]: continue
+                if _tags_of(p): continue  # COVERED v84.11: any tag at all means already covered or under follow-up
                 items.append({'p': p, 'name': os.path.splitext(x)[0], 'status': 'waiting'})
     sheet_save({'date': time.strftime('%Y-%m-%d'), 'items': items, 'current': None})
     say(f'📞 call sheet seeded: {len(items)} uncovered candidate(s) on the desk')
@@ -952,6 +954,7 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b: the next waiting candidate t
     if not w: say('📭 sheet empty - type: calls'); return
     i = w[0]; s['current'] = i; sheet_save(s)
     p = i['p']; ph = taught_digits(i['name']) or phones_of(p)
+    i['fp'] = _fp(p)  # FP v84.11
     say(f"📞 UP: {i['name']} · in {os.path.basename(os.path.dirname(p))}")
     if isinstance(ph, list): say('   phones: ' + ' · '.join(f'{n}) {d}' for n, d in enumerate(ph, 1)))
     elif ph: say(f'   phone: {ph}')
@@ -964,38 +967,115 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b: the next waiting candidate t
     say('   3 will update CV           → [Awaiting CV Update]')
     say('   4 missed / no answer       → [Call Scheduled] + WhatsApp draft')
     say('   5 ready for manager review → [Ready for Manager Review]')
-def outcome_cmd(key, root, say=print):  # CHAIR v84.10b: the chair remembers the name; you only say what happened
+    say('   6 skip him for now        → no tag, no move, remembered')
+SKIPS_PATH = os.path.join(BASE_DIR, 'skips.json')  # SKIP v84.11: today's list, not today's verdicts
+def skips_load():
+    try: return json.load(open(SKIPS_PATH))
+    except Exception: return {}
+def _fp(p):  # FP v84.11: size plus a head-crc - a rename cannot change either
+    import zlib
+    try:
+        st = os.stat(p)
+        with open(p, 'rb') as f: head = f.read(65536)
+        return [st.st_size, zlib.crc32(head)]
+    except Exception:
+        return None
+def _find_by_fp(fp, root):
+    if not fp: return None
+    for sc in desk_paths() or [root]:
+        for dp, dn, fn in os.walk(sc):
+            for x in fn:
+                if not _is_desk_candidate(x): continue
+                q = os.path.join(dp, x)
+                if _fp(q) == fp: return q
+    return None
+def _chair_draft(kind, name, pos):  # DRAFTS v84.11: every outward outcome speaks; the internal ones stay silent
+    first = (name or '').split()[0].title()
+    if kind == 'jd': return f'Hi {first}, great speaking with you today. I have shared the JD for {pos} on your email - please go through it and confirm your interest so I can move your profile forward.'
+    if kind == 'cv': return f'Hi {first}, as discussed on call, please share your updated CV at the earliest so I can push your profile to the manager today.'
+    if kind == 'refer': return f'Hi {first}, thank you for your time today. I have noted you are not keen on this role - if any friend or colleague might fit, do refer them to me. Wishing you the very best.'
+    if kind == 'missed': return f'Hi {first}, I tried reaching you just now about your application - whenever you are free, please call me back or tell me a good time to connect.'
+    return None
+def unskip_cmd(arg, root, say=print):  # SKIP v84.11
+    sk = skips_load(); hit = [k for k in sk if arg and arg.lower() in os.path.basename(k).lower()]
+    if not hit: say(f'🤷 no skipped candidate matches {arg!r}'); return
+    for k in hit: sk.pop(k, None)
+    json.dump(sk, open(SKIPS_PATH, 'w'), indent=1)
+    say('↩️ unskipped: ' + ', '.join(os.path.basename(k) for k in hit) + ' - the next calls will seat them again')
+def followup_cmd(arg, root, say=print):  # FOLLOWUP v84.11: the debts, by name, not by count
+    seen = set(); jd = []; cv = []
+    for sc in desk_paths():
+        for dp, dn, fn in os.walk(sc):
+            for x in fn:
+                if not _is_desk_candidate(x): continue
+                p = os.path.join(dp, x); rp = os.path.realpath(p)
+                if rp in seen: continue
+                seen.add(rp)
+                tgs = _tags_of(p)
+                if 'Awaiting JD Confirmation' in tgs: jd.append((x, os.path.basename(dp)))
+                if 'Awaiting CV Update' in tgs: cv.append((x, os.path.basename(dp)))
+    say(f'📬 awaiting JD acknowledgement: {len(jd)}')
+    for x, f in jd[:10]: say(f'   · {x} · in {f}')
+    say(f'📬 awaiting CV update: {len(cv)}')
+    for x, f in cv[:10]: say(f'   · {x} · in {f}')
+    due = []
+    try:
+        er = json.load(open(os.path.join(BASE_DIR, 'errands.json')))
+        for p, e in er.items():
+            if isinstance(e, dict) and any(k.endswith(':chased') for k in e): due.append(os.path.basename(p))
+    except Exception: pass
+    if due: say('📨 chase due now: ' + ', '.join(due[:6]) + ' - chase send <name> opens the draft')
+    else: say('📨 no chase due right now')
+
+def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair remembers the paper, not merely its path
     s = sheet_load(); cur = s.get('current')
     if not cur: say('🤷 nobody is in the chair - type: up'); return
     o = OUTCOMES.get(key)
-    if not o: say('🤷 unknown outcome - digits 1 to 5, or missed / jd / cv / not interested / ready'); return
-    tag, outcome, wa_draft = o; p = cur['p']
-    say(f"🤖 Proposal: {cur['name']} → [{tag}] ({outcome})" + (' · WhatsApp missed-call draft will open, unsent' if wa_draft else '') + ' · y / n')
+    if not o: say('🤷 unknown outcome - digits 1 to 6, or missed / jd / cv / not interested / ready / skip'); return
+    tag, outcome, draft = o; p = cur['p']
+    if not os.path.exists(p):  # FP v84.11: a renamed paper is still the same paper
+        q = _find_by_fp(cur.get('fp'), root)
+        if q:
+            p = cur['p'] = q; sheet_save(s)
+            say(f'🔁 the paper moved - found it again in {os.path.basename(os.path.dirname(q))}')
+        else:
+            say('🤷 the paper moved and I cannot find it by fingerprint - re-seed with calls, or tag it by its new name'); return
+    say(f"🤖 Proposal: {cur['name']} → " + (f'[{tag}]' if tag else 'SKIPPED, untagged, unmoved') + f" ({outcome})" + (f' · WhatsApp {draft} draft will open, unsent' if draft else ' · no message - this one stays in the house') + ' · y / n')
     k = confirm_wait(say)
     if k != 'y':
         say('· row left open - he stays in the chair' if k == 'n' else '· row left open')
         return
-    cur_tags = _tags_of(p)
-    drops = [t for t in cur_tags if _tag_stage(t) and t != tag]
-    newtags = [t for t in cur_tags if t not in drops] + ([tag] if tag not in cur_tags else [])
-    try:
-        _tag_write(p, newtags)
-        say(f"🏷️ {cur['name']}: {tag}" + (f' (dropped {", ".join(drops)})' if drops else ''))
-        _stage_note(cur['name'], cur_tags, newtags, os.path.basename(os.path.dirname(p)), tag, 'chair')
-        _stage_move(p, tag, say)
-    except Exception as _te:
-        say(f'⚠️ tag write failed: {_te}'); return
-    for it in s.get('items', []):
-        if it.get('p') == p: it['status'] = 'done'; it['outcome'] = outcome; it['ts'] = int(time.time())
-    s['current'] = None; sheet_save(s)
-    if wa_draft:  # MISSED v84.10b: the missed call speaks for itself, through the number he already knows
-        ph = taught_digits(cur['name']) or phones_of(p)
-        if isinstance(ph, list): ph = ph[0]
-        if ph:
-            import wa
-            first = cur['name'].split()[0].title()
-            wa.send_review(ph, f'Hi {first}, I tried reaching you just now about your application - whenever you are free, please call me back or tell me a good time to connect.', say)
-        else: say(f'⚠️ no phone taught for {cur["name"]} - draft skipped; teach me and retry')
+    if tag is None:  # SKIP v84.11: remembered, untagged, unmoved, silent
+        sk = skips_load(); sk[os.path.realpath(p)] = {'name': cur['name'], 'ts': int(time.time()), 'in': os.path.basename(os.path.dirname(p))}
+        json.dump(sk, open(SKIPS_PATH, 'w'), indent=1)
+        for it in s.get('items', []):
+            if it.get('p') == p: it['status'] = 'done'; it['outcome'] = 'skipped'; it['ts'] = int(time.time())
+        s['current'] = None; sheet_save(s)
+        _stage_note(cur['name'], _tags_of(p), _tags_of(p), os.path.basename(os.path.dirname(p)), os.path.basename(os.path.dirname(p)), 'chair-skip')
+        say(f"⏭️ skipped {cur['name']} - untagged, unmoved, remembered; unskip {cur['name'].split()[0].lower()} brings him back")
+    else:
+        cur_tags = _tags_of(p)
+        drops = [t for t in cur_tags if _tag_stage(t) and t != tag]
+        newtags = [t for t in cur_tags if t not in drops] + ([tag] if tag not in cur_tags else [])
+        try:
+            _tag_write(p, newtags)
+            say(f"🏷️ {cur['name']}: {tag}" + (f' (dropped {", ".join(drops)})' if drops else ''))
+            _stage_note(cur['name'], cur_tags, newtags, os.path.basename(os.path.dirname(p)), tag, 'chair')
+            _stage_move(p, tag, say)
+        except Exception as _te:
+            say(f'⚠️ tag write failed: {_te}'); return
+        for it in s.get('items', []):
+            if it.get('p') == p: it['status'] = 'done'; it['outcome'] = outcome; it['ts'] = int(time.time())
+        s['current'] = None; sheet_save(s)
+        if draft:  # MISSED v84.10b: the outward outcome speaks through the number he already knows, unsent until your thumb
+            ph = taught_digits(cur['name']) or phones_of(p) or None
+            if isinstance(ph, list): ph = ph[0] if ph else None
+            if ph:
+                parts = os.path.relpath(p, root).split(os.sep)
+                pos = parts[-2] if len(parts) >= 3 else (desk_load().get('primary') or root).rsplit('/', 1)[-1]
+                import wa
+                wa.send_review(ph, _chair_draft(draft, cur['name'], pos), say)
+            else: say(f'⚠️ no phone for {cur["name"]} - teach me: python3 butler.py teach {cur["name"].split()[0].lower()} <digits>, then retry')
     w = [x for x in s.get('items', []) if x['status'] == 'waiting']  # ADVANCE v84.10b: the queue walks without being pushed
     if w: say(f'⏭️ next up: {w[0]["name"]} - type: up')
     else: say('🏁 sheet covered - every candidate has an outcome')
@@ -2583,7 +2663,7 @@ def main():
         action_execute(print); sys.exit(0)
     if len(sys.argv) > 1 and sys.argv[1].lower() in ('n', 'no', 'cancel') and action_pending():
         action_cancel(print); sys.exit(0)
-    if len(sys.argv) > 1 and sys.argv[1] in ('1', '2', '3', '4', '5') and sheet_current():  # CHAIR v84.10b
+    if len(sys.argv) > 1 and sys.argv[1] in ('1', '2', '3', '4', '5', '6') and sheet_current():  # CHAIR v84.10b
         outcome_cmd(sys.argv[1], _pl_root(), print); sys.exit(0)
     if len(sys.argv) > 1 and sheet_current() and chair_word(sys.argv[1]):
         outcome_cmd(chair_word(sys.argv[1]), _pl_root(), print); sys.exit(0)
@@ -2597,7 +2677,7 @@ def main():
         print('  👀 dash         · see the desk\'s census')
         print('  (Right-click a folder in Finder -> Butler Here to start)')
         sys.exit(0)
-    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'tag', 'dash', 'audit', 'tidy', 'calls', 'sheet', 'up'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
+    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'tag', 'dash', 'audit', 'tidy', 'calls', 'sheet', 'up', 'unskip', 'followup'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
         _v, _a = sys.argv[1], sys.argv[2:]
         if _v == 'pending': pipeline_pending(_a[0] if _a else None, print)
         elif _v == 'status': pipeline_status(' '.join(_a), print)
@@ -2615,6 +2695,8 @@ def main():
         elif _v == 'calls': calls_cmd(' '.join(_a), _pl_root(), print)
         elif _v == 'sheet': sheet_cmd(' '.join(_a), _pl_root(), print)
         elif _v == 'up': up_cmd(' '.join(_a), _pl_root(), print)
+        elif _v == 'unskip': unskip_cmd(' '.join(_a), _pl_root(), print)
+        elif _v == 'followup': followup_cmd(' '.join(_a), _pl_root(), print)
         sys.exit(0)
     if not os.path.isdir(root):
         print("Error: folder does not exist."); sys.exit(1)
@@ -3258,6 +3340,11 @@ def _selftest(root):
     ck('S253 the sheet advances only after a confirmed outcome', (chr(35)+' ADVANCE v84.10b') in _src)
     ck('S254 no ghost may name the phone book', ('taught_' + 'digits(' not in _src.replace('def taught_digits(', 'DEF')) or ('def taught_digits(' in _src))
     ck('S255 the sheet seats humans, not JDs or summaries', (chr(35)+' PAPER-OR-NOT v84.10d') in _src and ('def _is_desk_candidate(' in _src) and ('_is_desk_candidate(x)' in _src))
+    ck('S256 a skip is remembered, untagged, unmoved and silent', (chr(35)+' SKIP v84.11') in _src and ('skips.json' in _src) and ('def unskip_cmd(' in _src))
+    ck('S257 outward outcomes draft, internal outcomes stay silent', (chr(35)+' DRAFTS v84.11') in _src and ('def _chair_draft(' in _src))
+    ck('S258 followup names the debtors, not merely counts them', (chr(35)+' FOLLOWUP v84.11') in _src and ('def followup_cmd(' in _src))
+    ck('S259 a renamed paper is still the same paper', (chr(35)+' FP v84.11') in _src and ('def _find_by_fp(' in _src))
+    ck('S260 covered means any tag - the sheet seats only the silent', (chr(35)+' COVERED v84.11') in _src)
     ck('S236 a paper rests in one stage at a time', (chr(35)+' STAGE-ONE v84.4') in _src)
     ck('S237 changes that replace or move ask first', (chr(35)+' PROPOSE-FIRST v84.4') in _src and ('pending_action.json' in _src))
     ck('S238 every tag and move is written in the stage log', (chr(35)+' STAGE-LOG v84.4') in _src and ('stage_log.json' in _src))
