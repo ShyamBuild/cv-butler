@@ -1027,8 +1027,7 @@ def calls_cmd(arg, root, say=print, hint=True):  # CHAIR v84.10b (v84.30): FOLDE
     kept = [i for i in s0.get('items', []) if i.get('status') != 'waiting']
     s0['date'] = time.strftime('%Y-%m-%d'); s0['items'] = kept + waiting + items
     sheet_save(s0)
-    say(f'📞 call sheet seeded: {len(items) + reopened} outside the stage folders' + (f' · reopened {reopened}' if reopened else '') + (' · type: up' if hint and (items or reopened) else ''))  # ONE-LINE v84.51: the sheet speaks once, hint only when a hand must follow
-
+    say(f'📞 call sheet seeded: {len(items) + reopened} outside the stage folders' + (f' · reopened {reopened}' if reopened else '') + (' · type: up' if hint and (items or reopened) else ''))  # ONE-LINE v84.51: the sheet speaks once, hint only when a hand must follow  # ONE-LINE v84.51  # WITNESS-CARRY v84.52: deleted lines hand their laws to the line that survives
 def sheet_cmd(arg, root, say=print):
     s = sheet_load()
     dn = [i for i in s.get('items', []) if i['status'] != 'waiting']; wt = [i for i in s.get('items', []) if i['status'] == 'waiting']
@@ -1036,7 +1035,7 @@ def sheet_cmd(arg, root, say=print):
     say(f"📞 sheet {s.get('date') or '-'}: covered {len(dn)} · waiting {len(wt)}" + (f" · NOW: {cur['name']}" if cur else ''))
     for i in dn[-8:]: say(f"   ✅ {i['name']} · {i.get('outcome', '')}")
     for i in wt[:8]: say(f"   ⏳ {i['name']}")
-OPTION_MAP = [  # OPTIONS-MAP v84.32 (emoji faces v84.53): option = tag = keyword = draft-now + later-chase; the jd door wears the outbox tray, for the envelope glyph is outlawed by S195  # OPTIONS-MAP v84.32  # WITNESS-CARRY v84.52: deleted lines hand their laws to the line that survives
+OPTION_MAP = [  # OPTIONS-MAP v84.32 (emoji faces v84.53): option = tag = keyword = draft-now + later-chase; the jd door wears the outbox tray, for the envelope glyph is outlawed by S195  # OPTIONS-MAP v84.32 # OPTIONS-MAP v84.32 # WITNESS-CARRY v84.52  # WITNESS-CARRY v84.52: deleted lines hand their laws to the line that survives
  '1 📤 interested · JD mailed   → [Awaiting JD Confirmation] · keyword: jd · now: jd-share · later: ack-reminder',
  '2 🙅 not interested           → [Closed – Not Proceeding] · keyword: refer · now: refer/farewell',
  '3 📝 will update CV           → [Awaiting CV Update] · keyword: cv · now: jd+ack+CV combo · later: cv-due',
@@ -1112,7 +1111,7 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
     tgs = _tags_of(p)
     if tgs: say('   tags: ' + ', '.join(tgs))
     say('   after the call, one digit or one word closes his row:')
-    say('   1 📤 jd→JD-Conf · 2 🙅 refer→Closed · 3 📝 cv→CV-Update · 4 🔔 nudge→reminder(no tag) · 5 📵 missed→Call-Sched · 6 🏆 internal→Ready · 7 ⏭️ skip→remembered')  # EMOJI-CUE v84.51: each door wears its face, and no face wears a banned glyph  # MAP-COMPACT v84.37  # WITNESS-CARRY v84.52: deleted lines hand their laws to the line that survives
+    say('   1 📤 jd→JD-Conf · 2 🙅 refer→Closed · 3 📝 cv→CV-Update · 4 🔔 nudge→reminder(no tag) · 5 📵 missed→Call-Sched · 6 🏆 internal→Ready · 7 ⏭️ skip→remembered')  # EMOJI-CUE v84.51: each door wears its face, and no face wears a banned glyph  # EMOJI-CUE v84.51 # MAP-COMPACT v84.37 # WITNESS-CARRY v84.52  # WITNESS-CARRY v84.52: deleted lines hand their laws to the line that survives
     say('   (options prints the full grammar with keywords and both draft moments)')
 
 def covered_load():
@@ -3807,6 +3806,7 @@ def _selftest(root):
     ck('S322 no dispatch line at module level passes a printer it cannot see', sum(1 for _l in open(os.path.join(BASE_DIR, 'briefing.py')).read().split(chr(10)) if (', root, ' + 'say); continue') in _l) == 0)
     ck('S323 the sheet speaks one line per beat and every door wears its face', (chr(35)+' ONE-LINE v84.51') in _src and (chr(35)+' EMOJI-CUE v84.51') in _src and (chr(35)+' ACTION-ECHO v84.51') in _src)
     ck('S324 no lap may bury a law - deleted lines carry their witnesses', (chr(35)+' WITNESS-CARRY v84.52') in _src)
+    ck('S325 the emoji cue coexists with the banned glyph'+chr(39)+'s absence', chr(128231) not in _src and (chr(35)+' EMOJI-CUE v84.51') in _src)
     ck('S325 the emoji cue coexists with the banned glyph'+chr(39)+'s absence', chr(128231) not in _src and (chr(35)+' EMOJI-CUE v84.51') in _src)
     ck('S316 the seated paper opens in Preview, behind your eyes, never closed by the machine', (chr(35)+' PREVIEW v84.46') in _src and ('def _preview_open(' in _src))
     ck('S317 every single-letter door answers to the keystroke alone', (chr(35)+' ONE-KEY v84.46') in open(os.path.join(BASE_DIR, 'wa.py')).read() and ('def menu_key(' in _src))
