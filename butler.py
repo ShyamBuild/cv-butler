@@ -1023,6 +1023,17 @@ def calls_cmd(arg, root, say=print, hint=True):  # CHAIR v84.10b (v84.30): FOLDE
                 if row:
                     row['status'] = 'waiting'; row['outcome'] = ''; reopened += 1; continue  # FOLDER-TRUTH v84.30: dragged out means to be contacted again
                 items.append({'p': p, 'name': os.path.splitext(x)[0], 'status': 'waiting', 'fp': _fp(p)})
+    refed = 0
+    if not items and not reopened:  # RETRAY v84.55: when no loose paper waits, the skipped return for re-review - one per empty seed, oldest skip first, and the skip is consumed so no man re-feds endlessly
+        skd = skips_load()
+        for kp in sorted(skd, key=lambda x: skd[x] if isinstance(skd[x], (int, float)) else 0):  # RETRAY-ONE v84.56: the tray offers one soul per empty seed; the rest hold their place
+            if not os.path.isfile(kp): continue
+            rp2 = os.path.realpath(kp)
+            if rp2 in seen or os.path.basename(os.path.dirname(kp)) in _tag_vocab() or _name_key(os.path.basename(kp)) in mem: continue
+            if any(os.path.realpath(it.get('p', '')) == rp2 for it in s0.get('items', [])): continue
+            items.append({'p': kp, 'name': os.path.splitext(os.path.basename(kp))[0], 'status': 'waiting', 'fp': _fp(kp), 're': True})
+            del skd[kp]; refed += 1; break
+        if refed: json.dump(skd, open(SKIPS_PATH, 'w'), indent=1)
     waiting = [i for i in s0.get('items', []) if i.get('status') == 'waiting']
     kept = [i for i in s0.get('items', []) if i.get('status') != 'waiting']
     s0['date'] = time.strftime('%Y-%m-%d'); s0['items'] = kept + waiting + items
@@ -1037,12 +1048,12 @@ def sheet_cmd(arg, root, say=print):
     for i in wt[:8]: say(f"   ⏳ {i['name']}")
 OPTION_MAP = [  # OPTIONS-MAP v84.32 (emoji faces v84.53): option = tag = keyword = draft-now + later-chase; the jd door wears the outbox tray, for the envelope glyph is outlawed by S195  # OPTIONS-MAP v84.32 # OPTIONS-MAP v84.32 # WITNESS-CARRY v84.52  # WITNESS-CARRY v84.52: deleted lines hand their laws to the line that survives
  '1 📤 interested · JD mailed   → [Awaiting JD Confirmation] · keyword: jd · now: jd-share · later: ack-reminder',
- '2 🙅 not interested           → [Closed – Not Proceeding] · keyword: refer · now: refer/farewell',
+  '2 🙅 not interested / not relevant → [Closed – Not Proceeding] · keyword: refer · now: refer/farewell (references often asked)',
  '3 📝 will update CV           → [Awaiting CV Update] · keyword: cv · now: jd+ack+CV combo · later: cv-due',
  '4 🔔 nudge / remind him       → no tag change · keyword: nudge · now: reminder (ack JD or send CV) · row closes, debt stays',
  '5 📵 missed / no answer       → [Call Scheduled] · keyword: missed · now: missed+JD-on-email',
  '6 🏆 ready for manager review → [Ready for Manager Review] · internal · no draft',
- '7 ⏭️ skip him for now         → no tag, no move, remembered · no draft',
+  '7 ⏭️ skip him for now         → no tag, no move, remembered · returns one-per-empty-seed, newest skips last',
 ]
 def options_cmd(arg, root, say=print):  # OPTIONS-MAP v84.32
     say('📋 option = tag = keyword = draft:')
@@ -1075,7 +1086,7 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
                 known.add(rq)
                 say(f'➕ new paper joined the sheet: {x}')
     i = None  # SEAT-CHECK v84.15: coverage is enforced at the chair, not merely at the seed
-    for it in s.get('items', []):
+    for it in sorted(s.get('items', []), key=lambda x: 1 if x.get('re') else 0):  # RETRAY v84.55: new blood outranks the re-review tray in the chair
         if it.get('status') != 'waiting': continue
         p = it['p']
         if not os.path.exists(p):
@@ -1092,6 +1103,7 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
         if any(x.get('status') == 'waiting' for x in sheet_load().get('items', [])): return up_cmd(arg, root, say)
         say('📭 sheet empty - every loose paper is seated, skipped or remembered'); return
     s['current'] = i; sheet_save(s)
+    if i.get('re'): say('🔄 re-review: skipped earlier, the tray is empty now - one soul per seed, new loose papers still outrank him')  # RETRAY v84.55
     p = i['p']; ph = taught_digits(i['name']) or phones_of(p, True) or None  # QUIET-CHAIR v84.37: the dossier takes the number without the clerk's ceremony
     if isinstance(ph, list): ph = ph[0] if ph else None
     say(f"📞 UP: {i['name']} · in {os.path.basename(os.path.dirname(p))}")
@@ -1111,7 +1123,7 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
     tgs = _tags_of(p)
     if tgs: say('   tags: ' + ', '.join(tgs))
     say('   after the call, one digit or one word closes his row:')
-    say('   1 📤 jd→JD-Conf · 2 🙅 refer→Closed · 3 📝 cv→CV-Update · 4 🔔 nudge→reminder(no tag) · 5 📵 missed→Call-Sched · 6 🏆 internal→Ready · 7 ⏭️ skip→remembered')  # EMOJI-CUE v84.51: each door wears its face, and no face wears a banned glyph  # EMOJI-CUE v84.51 # MAP-COMPACT v84.37 # WITNESS-CARRY v84.52  # WITNESS-CARRY v84.52: deleted lines hand their laws to the line that survives
+    say('   1 📤 jd→JD-Conf · 2 🙅 refer→Closed · 3 📝 cv→CV-Update · 4 🔔 nudge→reminder(no tag) · 5 📵 missed→Call-Sched · 6 🏆 internal→Ready · 7 ⏭️ skip→tray (one returns per empty seed)')  # EMOJI-CUE v84.51: each door wears its face, and no face wears a banned glyph  # EMOJI-CUE v84.51 # MAP-COMPACT v84.37 # WITNESS-CARRY v84.52  # WITNESS-CARRY v84.52: deleted lines hand their laws to the line that survives
     say('   (options prints the full grammar with keywords and both draft moments)')
 
 def covered_load():
@@ -3804,6 +3816,8 @@ def _selftest(root):
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
     ck('S326 the cue says aloud what cancel leaves behind', (chr(35)+' ASK-LINE v84.49') in _src and ('n = cancel, he stays in the chair' in _src))
+    ck('S327 the tray refills only when empty and new blood always outranks it', (chr(35)+' RETRAY v84.55') in _src and ('key=lambda x: 1 if x.get(' + chr(39) + 're' + chr(39) + ') else 0' in _src))
+    ck('S328 the tray offers one skipped soul per empty seed, oldest first', (chr(35)+' RETRAY-ONE v84.56') in _src and ('del skd[kp]; refed += 1; break' in _src))
     ck('S322 no dispatch line at module level passes a printer it cannot see', sum(1 for _l in open(os.path.join(BASE_DIR, 'briefing.py')).read().split(chr(10)) if (', root, ' + 'say); continue') in _l) == 0)
     ck('S323 the sheet speaks one line per beat and every door wears its face', (chr(35)+' ONE-LINE v84.51') in _src and (chr(35)+' EMOJI-CUE v84.51') in _src and (chr(35)+' ACTION-ECHO v84.51') in _src)
     ck('S324 no lap may bury a law - deleted lines carry their witnesses', (chr(35)+' WITNESS-CARRY v84.52') in _src)
