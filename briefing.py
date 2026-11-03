@@ -233,9 +233,9 @@ def _fmt_tpl(tpl, hit, f, name):
     where = f"Company: {cli}" + (f" | Location: {loc}" if loc else "")
     at = cli + (f", {loc}" if loc else "")
     try:
-        return tpl.format(name=name, position=title, company=cli, location=loc or '-', where_line=where, where=at, designation=_dz)
+        return tpl.format(name=name, position=title, company=cli, location=loc or '-', where_line=where, where=at, designation=_dz, client=cli)  # CLIENT-KEY v84.42: legacy templates ask for {client}; the living registry answers
     except Exception:
-        return tpl.format_map(_SafeDict(name=name, position=title, company=cli, location=loc or '-', where_line=where, where=at, designation=_dz))
+        return tpl.format_map(_SafeDict(name=name, position=title, company=cli, location=loc or '-', where_line=where, where=at, designation=_dz, client=cli))
 def _pos_client_for(hit, f=None):
     for base in ([os.path.dirname(os.path.abspath(hit))] if hit else []) + ([f['path']] if f and f.get('path') else []):
         comp = _company_root(base)

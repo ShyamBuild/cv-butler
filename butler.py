@@ -980,8 +980,8 @@ def calls_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.30): FOLDER-TRUTH - t
             if os.path.basename(dp) in _tag_vocab(): continue  # FOLDER-TRUTH v84.30: a stage folder's residents are already spoken for
             for x in fn:
                 if not _is_desk_candidate(x): continue
-                if _in_nonqueue(p): continue  # NON-QUEUE v84.39: a converted paper is a derivative, not a candidate
                 p = os.path.join(dp, x); rp = os.path.realpath(p)
+                if _in_nonqueue(p): continue  # NON-QUEUE v84.39 (moved v84.43): a check stands after the path it reads is born, never before
                 if rp in seen or rp in sk or _name_key(x) in mem: continue
                 seen.add(rp)
                 row = next((i for i in s0.get('items', []) if os.path.realpath(i.get('p', '')) == rp), None)
@@ -1259,8 +1259,9 @@ def _draft_fields(name, pos, p=None):
     try: meta = json.load(open(os.path.join(BASE_DIR, 'desk_meta.json'))).get(desk_load().get('primary') or '', {})
     except Exception: pass
     _idn = pos_identity(p or '')
-    role = _idn['role'] or role
-    loc = _idn['loc'] or loc
+    role, loc = (pos.split(' -', 1) + [''])[:2] if pos else ('', '')  # FIELDS-SAFE v84.42: the folder parse is the floor; the registry is the ceiling - no field may reference itself before birth
+    role = _idn['role'] or role.strip()
+    loc = _idn['loc'] or loc.strip()
     full = name
     if p:
         try:
@@ -3750,6 +3751,7 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S312 a check never stands before the path it reads is born', (lambda seg: seg.find('_in_nonqueue(p)') > seg.find('p = os.path.join(dp, x)') >= 0)(_src.split('def calls_cmd(')[1].split('def sheet_cmd(')[0]))
     ck('S291 the cv draft carries the touchpoint and the missed draft carries the JD line in whichever store speaks it', 'acknowledge receipt' in open(os.path.join(BASE_DIR, 'drafts', 'cv.txt')).read() and ('JD on your email' in open(os.path.join(BASE_DIR, 'templates', 'missed.txt')).read() or 'JD on your email' in open(os.path.join(BASE_DIR, 'drafts', 'missed.txt')).read()))  # S291 repinned v84.31: the house polices its own drafts; the master's style is never the failing grade
     ck('S292 every option states its tag, its keyword and its two drafts', (chr(35)+' OPTIONS-MAP v84.32') in _src and ('def options_cmd(' in _src))
     ck('S293 an empty sheet re-seeds itself and refresh re-seeds on demand', (chr(35)+' SELF-REFRESH v84.32') in _src and (chr(35)+' SELF-REFRESH v84.32') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
@@ -3769,6 +3771,8 @@ def _selftest(root):
     ck('S307 the module map lives in the index, versioned with the code', os.path.exists(os.path.join(BASE_DIR, 'ARCHITECTURE.md')) and ('module map' in open(os.path.join(BASE_DIR, 'ARCHITECTURE.md')).read()))
     ck('S308 outcome 3 speaks the combo from the scenario store, nudge stays the touchpoint', (chr(35)+' SCENARIO-3 v84.41') in _src and ('def _draft_text(' in _src))
     ck('S309 the email probe is silent and the triple speaks once at the seat', (chr(35)+' SILENT-PROBE v84.41') in _src and (chr(35)+' IDENTITY-ONCE v84.41') in _src)
+    ck('S310 no field may reference itself before birth', (chr(35)+' FIELDS-SAFE v84.42') in _src and ("role = _idn['role'] or role.strip()" in _src))
+    ck('S311 legacy templates'+chr(39)+' client placeholder fills from the living registry', (chr(35)+' CLIENT-KEY v84.42') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and ('client=cli' in open(os.path.join(BASE_DIR, 'briefing.py')).read()))
     ck('S274 the fallback chain keeps every scenario speakable', ('def _chair_wa_text(' in _src) and ('def _draft_text(' in _src) and ('def _chair_draft(' in _src))
     ck('S275 the fields dict carries every sentence it computes', ("'roleline': roleline" in _src) and (chr(35)+' ROLELINE v84.18') in _src)
     ck('S276 one truth per position, taught once and shown at the composer', (chr(35)+' POS-ID v84.21') in _src and ('def pos_identity(' in _src) and ('say_identity_for' in open(os.path.join(BASE_DIR, 'briefing.py')).read()))
