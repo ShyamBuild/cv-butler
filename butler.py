@@ -925,9 +925,9 @@ def sheet_save(s):
     try: json.dump(s, open(SHEET_PATH, 'w'), indent=1)
     except Exception: pass
 def sheet_current(): return sheet_load().get('current')
-CHAIR_WORDS = {'missed': '4', 'no answer': '4', 'jd': '1', 'jd mailed': '1', 'cv': '3', 'update cv': '3', 'not interested': '2', 'ready': '5', 'manager': '5', 'skip': '6', 'skip him': '6', 'skip for now': '6', 'skip him for now': '6'}
+CHAIR_WORDS = {'missed': '5', 'no answer': '5', 'jd': '1', 'jd mailed': '1', 'cv': '3', 'update cv': '3', 'not interested': '2', 'ready': '6', 'manager': '6', 'skip': '7', 'skip him': '7', 'skip for now': '7', 'skip him for now': '7', 'nudge': '4', 'remind': '4', 'reminder': '4'}  # CHAIR-WORDS renumbered v84.44: the reminder owns four
 def chair_word(q): return CHAIR_WORDS.get((q or '').strip().lower())
-OUTCOMES = {'1': ('Awaiting JD Confirmation', 'interested · JD mailed', 'jd'), '2': ('Closed \u2013 Not Proceeding', 'not interested', 'refer'), '3': ('Awaiting CV Update', 'will update CV', 'cv'), '4': ('Call Scheduled', 'missed / no answer', 'missed'), '5': ('Ready for Manager Review', 'ready for manager', None), '6': (None, 'skipped', None)}  # DRAFTS v84.11: outward outcomes speak, internal ones stay silent
+OUTCOMES = {'1': ('Awaiting JD Confirmation', 'interested · JD mailed', 'jd'), '2': ('Closed \u2013 Not Proceeding', 'not interested', 'refer'), '3': ('Awaiting CV Update', 'will update CV', 'cv'), '4': ('', 'nudge - remind to acknowledge the JD or send the updated CV', 'nudge'), '5': ('Call Scheduled', 'missed / no answer', 'missed'), '6': ('Ready for Manager Review', 'ready for manager', None), '7': (None, 'skipped', None)}  # NUDGE-OPTION v84.44: seven doors - the reminder changes no tag and moves nothing
 def taught_digits(name):  # CHAIR-PHONE v84.10c: the chair reads the taught book directly, then falls back to the paper
     import json as _j
     low = (name or '').lower()
@@ -1003,13 +1003,14 @@ def sheet_cmd(arg, root, say=print):
     say(f"📞 sheet {s.get('date') or '-'}: covered {len(dn)} · waiting {len(wt)}" + (f" · NOW: {cur['name']}" if cur else ''))
     for i in dn[-8:]: say(f"   ✅ {i['name']} · {i.get('outcome', '')}")
     for i in wt[:8]: say(f"   ⏳ {i['name']}")
-OPTION_MAP = [  # OPTIONS-MAP v84.32: option = tag = keyword = draft-now + later-chase, so no door confuses the moments
+OPTION_MAP = [  # OPTIONS-MAP v84.32 (seven doors v84.44): option = tag = keyword = draft-now + later-chase
  '1 interested · JD mailed   → [Awaiting JD Confirmation] · keyword: jd · now: jd-share · later: ack-reminder',
  '2 not interested           → [Closed – Not Proceeding] · keyword: refer · now: refer/farewell',
- '3 will update CV           → [Awaiting CV Update] · keyword: nudge · now: jd+ack+CV · later: cv-due',
- '4 missed / no answer       → [Call Scheduled] · keyword: missed · now: missed+JD-on-email',
- '5 ready for manager review → [Ready for Manager Review] · internal · no draft',
- '6 skip him for now         → no tag, no move, remembered · no draft',
+ '3 will update CV           → [Awaiting CV Update] · keyword: cv · now: jd+ack+CV combo · later: cv-due',
+ '4 nudge / remind him       → no tag change · keyword: nudge · now: reminder (ack JD or send CV) · row closes, debt stays',
+ '5 missed / no answer       → [Call Scheduled] · keyword: missed · now: missed+JD-on-email',
+ '6 ready for manager review → [Ready for Manager Review] · internal · no draft',
+ '7 skip him for now         → no tag, no move, remembered · no draft',
 ]
 def options_cmd(arg, root, say=print):  # OPTIONS-MAP v84.32
     say('📋 option = tag = keyword = draft:')
@@ -1077,7 +1078,7 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
     tgs = _tags_of(p)
     if tgs: say('   tags: ' + ', '.join(tgs))
     say('   after the call, one digit or one word closes his row:')
-    say('   1 jd→JD-Conf · 2 refer→Closed · 3 nudge→CV-Update · 4 missed→Call-Sched · 5 internal→Ready · 6 skip→remembered')  # MAP-COMPACT v84.37: the map in two lines; options keeps the grammar
+    say('   1 jd→JD-Conf · 2 refer→Closed · 3 cv→CV-Update · 4 nudge→reminder(no tag) · 5 missed→Call-Sched · 6 internal→Ready · 7 skip→remembered')  # MAP-COMPACT v84.37 (seven doors v84.44)
     say('   (options prints the full grammar with keywords and both draft moments)')
 
 def covered_load():
@@ -1365,7 +1366,8 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
         else:
             say('🤷 the paper moved and I cannot find it by fingerprint - re-seed with calls, or tag it by its new name'); return
     pass  # IDENTITY-ONCE v84.41: the triple speaks at the seat; the proposal carries only the decision, the draft carries the truth inside
-    say(f"🤖 Proposal: {cur['name']} → " + (f'[{tag}]' if tag else 'SKIPPED, untagged, unmoved') + f" ({outcome})" + (f' · WhatsApp {draft} draft will open, unsent' if draft else ' · no message - this one stays in the house') + ' · y / n')
+    _tagpart = 'SKIPPED, untagged, unmoved' if tag is None else ('[no tag change - reminder only]' if tag == '' else f'[{tag}]')  # NUDGE-OPTION v84.44
+    say(f"🤖 Proposal: {cur['name']} → " + _tagpart + f" ({outcome})" + (f' · WhatsApp {draft} draft will open, unsent' if draft else ' · no message - this one stays in the house') + ' · y / n')
     k = confirm_wait(say)
     if k == 'n':
         say('· row left open - he stays in the chair'); return
@@ -1375,6 +1377,28 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
         except Exception: pass
         say('· proposal waiting - type y or n on the next line')
         return
+        return
+    if tag == '':  # NUDGE-OPTION v84.44: a reminder changes no tag and moves nothing - the debt stays, the row closes, the thread continues
+        _r0 = ''
+        try: _r0 = input('📱 draft WhatsApp? [y] yes · [n] skip (no text): ').strip().lower()
+        except Exception: pass
+        if _r0 != 'n':
+            ph0 = taught_digits(cur['name']) or phones_of(p, True) or None
+            if isinstance(ph0, list): ph0 = ph0[0] if ph0 else None
+            if ph0:
+                import wa
+                wa.send_review(ph0, _chair_wa_text('nudge', p, cur['name']), say)
+            else: say(f'⚠️ no phone for {cur["name"]} - teach me: python3 butler.py teach {cur["name"].split()[0].lower()} <digits>, then retry')
+        for it in s.get('items', []):
+            if it.get('status') == 'waiting' and (os.path.realpath(it.get('p', '')) == os.path.realpath(p) or _name_key(os.path.basename(it.get('p', ''))) == _name_key(os.path.basename(p))):
+                it['status'] = 'done'; it['outcome'] = 'nudged'; it['ts'] = int(time.time())
+        s['current'] = None; sheet_save(s)
+        _stage_note(cur['name'], _tags_of(p), _tags_of(p), os.path.basename(os.path.dirname(p)), os.path.basename(os.path.dirname(p)), 'chair-nudge')
+        say(f'🔔 nudged {cur["name"]} - no tag changed, nothing moved; his debts stay on the followup board')
+        desk_dashboard(say)
+        w = [x for x in s.get('items', []) if x['status'] == 'waiting']
+        if w: say(f'⏭️ next up: {w[0]["name"]} - type: up')
+        else: say('🏁 sheet covered - every candidate has an outcome')
         return
     if tag is None:  # SKIP v84.11: remembered, untagged, unmoved, silent
         sk = skips_load(); sk[os.path.realpath(p)] = {'name': cur['name'], 'ts': int(time.time()), 'in': os.path.basename(os.path.dirname(p))}
@@ -3062,7 +3086,7 @@ def main():
         action_execute(print); sys.exit(0)
     if len(sys.argv) > 1 and sys.argv[1].lower() in ('n', 'no', 'cancel') and action_pending():
         action_cancel(print); sys.exit(0)
-    if len(sys.argv) > 1 and sys.argv[1] in ('1', '2', '3', '4', '5', '6') and sheet_current():  # CHAIR v84.10b
+    if len(sys.argv) > 1 and sys.argv[1] in ('1', '2', '3', '4', '5', '6', '7') and sheet_current():  # CHAIR v84.10b
         outcome_cmd(sys.argv[1], _pl_root(), print); sys.exit(0)
     if len(sys.argv) > 1 and sheet_current() and chair_word(sys.argv[1]):
         outcome_cmd(chair_word(sys.argv[1]), _pl_root(), print); sys.exit(0)
@@ -3752,6 +3776,8 @@ def _selftest(root):
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
     ck('S312 a check never stands before the path it reads is born', (lambda seg: seg.find('_in_nonqueue(p)') > seg.find('p = os.path.join(dp, x)') >= 0)(_src.split('def calls_cmd(')[1].split('def sheet_cmd(')[0]))
+    ck('S313 seven doors with the reminder at four', (chr(35)+' NUDGE-OPTION v84.44') in _src and ("'7': (None, 'skipped', None)" in _src))
+    ck('S314 a nudge changes no tag and moves nothing', ('chair-nudge' in _src) and ("it['outcome'] = 'nudged'" in _src))
     ck('S291 the cv draft carries the touchpoint and the missed draft carries the JD line in whichever store speaks it', 'acknowledge receipt' in open(os.path.join(BASE_DIR, 'drafts', 'cv.txt')).read() and ('JD on your email' in open(os.path.join(BASE_DIR, 'templates', 'missed.txt')).read() or 'JD on your email' in open(os.path.join(BASE_DIR, 'drafts', 'missed.txt')).read()))  # S291 repinned v84.31: the house polices its own drafts; the master's style is never the failing grade
     ck('S292 every option states its tag, its keyword and its two drafts', (chr(35)+' OPTIONS-MAP v84.32') in _src and ('def options_cmd(' in _src))
     ck('S293 an empty sheet re-seeds itself and refresh re-seeds on demand', (chr(35)+' SELF-REFRESH v84.32') in _src and (chr(35)+' SELF-REFRESH v84.32') in open(os.path.join(BASE_DIR, 'briefing.py')).read())

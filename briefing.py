@@ -1584,7 +1584,7 @@ if __name__ == "__main__":
             if q.strip() == 'weekly': butler.weekly_cmd('', root, say); continue  # WEEKLY v84.40
             if q.strip() == 'refresh': butler.calls_cmd('', root, say); continue  # SELF-REFRESH v84.32
             if q.strip() == 'options': butler.options_cmd('', root, say); continue  # OPTIONS-MAP v84.32
-            if butler.sheet_current() and q.strip() in ('1', '2', '3', '4', '5', '6'): do_outcome(q.strip(), root); continue  # CHAIR v84.10b
+            if butler.sheet_current() and q.strip() in ('1', '2', '3', '4', '5', '6', '7'): do_outcome(q.strip(), root); continue  # CHAIR v84.10b
             if butler.sheet_current() and butler.chair_word(q): do_outcome(butler.chair_word(q), root); continue
             if q == 'up' or q.startswith('up '): do_up(q[2:].strip(), root); continue
             if q.startswith('calls'): do_calls(q[5:].strip(), root); continue
