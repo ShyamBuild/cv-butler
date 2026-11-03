@@ -954,6 +954,22 @@ def _is_desk_candidate(x):  # PAPER-OR-NOT v84.10d: only humans take the chair
         if stem.startswith(pre): return False
     return True
 
+NONQUEUE_PATH = os.path.join(BASE_DIR, 'nonqueue.json')  # NON-QUEUE v84.39: derivative folders never queue
+def nonqueue_load():
+    try: d = json.load(open(NONQUEUE_PATH))
+    except Exception: d = []
+    return [x.lower() for x in d] + ['converted files', 'converted', 'archive', 'duplicates']
+def _in_nonqueue(p):
+    nq = set(nonqueue_load())
+    return any(dn.lower() in nq for dn in os.path.split(os.path.dirname(p))[0:][0].split(os.sep)) if False else any(dn.lower() in nq for dn in os.path.dirname(p).split(os.sep))
+def skipfolder_cmd(arg, root, say=print):  # NON-QUEUE v84.39
+    if not arg: say('usage: skipfolder Converted Files'); return
+    try: d = json.load(open(NONQUEUE_PATH))
+    except Exception: d = []
+    if arg not in d: d.append(arg)
+    json.dump(d, open(NONQUEUE_PATH, 'w'), indent=1)
+    say(f'🚫 never queue: {arg} - its residents are derivatives or archives, not candidates')
+
 def calls_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.30): FOLDER-TRUTH - the sheet maps the folders, not the tags
     scopes = [desk_resolve(arg, root)] if arg else (desk_paths() or [root])
     s0 = sheet_load(); sk = skips_load(); mem = set(covered_load())
@@ -964,6 +980,7 @@ def calls_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.30): FOLDER-TRUTH - t
             if os.path.basename(dp) in _tag_vocab(): continue  # FOLDER-TRUTH v84.30: a stage folder's residents are already spoken for
             for x in fn:
                 if not _is_desk_candidate(x): continue
+                if _in_nonqueue(p): continue  # NON-QUEUE v84.39: a converted paper is a derivative, not a candidate
                 p = os.path.join(dp, x); rp = os.path.realpath(p)
                 if rp in seen or rp in sk or _name_key(x) in mem: continue
                 seen.add(rp)
@@ -1013,14 +1030,14 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
             q = _find_by_fp(it.get('fp'), root)
             if q: p = it['p'] = q
             else: it['status'] = 'done'; it['outcome'] = 'gone'; continue
-        if os.path.basename(os.path.dirname(p)) in _tag_vocab() or _name_key(os.path.basename(p)) in mem:
+        if os.path.basename(os.path.dirname(p)) in _tag_vocab() or _name_key(os.path.basename(p)) in mem or _in_nonqueue(p):
             it['status'] = 'done'; it['outcome'] = 'covered elsewhere'; continue  # FOLDER-TRUTH v84.30
     for sc in desk_paths():
         for dp, dn, fn in os.walk(sc):
             for x in fn:
                 if not _is_desk_candidate(x): continue
                 q = os.path.join(dp, x); rq = os.path.realpath(q)
-                if rq in known or rq in sk or os.path.basename(dp) in _tag_vocab() or _name_key(x) in mem: continue  # FOLDER-TRUTH v84.30
+                if rq in known or rq in sk or os.path.basename(dp) in _tag_vocab() or _name_key(x) in mem or _in_nonqueue(q): continue  # FOLDER-TRUTH v84.30
                 s.setdefault('items', []).append({'p': q, 'name': os.path.splitext(x)[0], 'status': 'waiting', 'fp': _fp(q)})
                 known.add(rq)
                 say(f'➕ new paper joined the sheet: {x}')
@@ -1032,7 +1049,7 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
             q = _find_by_fp(it.get('fp'), root)
             if q: p = it['p'] = q
             else: it['status'] = 'done'; it['outcome'] = 'gone'; continue
-        if os.path.basename(os.path.dirname(p)) in _tag_vocab() or _name_key(os.path.basename(p)) in mem:
+        if os.path.basename(os.path.dirname(p)) in _tag_vocab() or _name_key(os.path.basename(p)) in mem or _in_nonqueue(p):
             it['status'] = 'done'; it['outcome'] = 'covered elsewhere'; continue  # FOLDER-TRUTH v84.30
             it['status'] = 'done'; it['outcome'] = 'covered elsewhere'; continue
         i = it; break
@@ -1045,9 +1062,17 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
     p = i['p']; ph = taught_digits(i['name']) or phones_of(p, True) or None  # QUIET-CHAIR v84.37: the dossier takes the number without the clerk's ceremony
     if isinstance(ph, list): ph = ph[0] if ph else None
     say(f"📞 UP: {i['name']} · in {os.path.basename(os.path.dirname(p))}")
-    pass  # QUIET-CHAIR v84.37: the triple speaks once, at the proposal, where the thumb decides (S277 keeps that one)
-    if ph: say(f'   phone: {ph}')
-    else: say(f'   phone: none readable - teach me: python3 butler.py teach {i["name"].split()[0].lower()} <digits>')
+    say_identity_for(p, say)  # IDENTITY-AT-SEAT v84.39: the master asked for the triple at the seat as well; S277 keeps the proposal's
+    _em = ''  # CONTACT-ONCE v84.39: every truth exactly once - email and phone in a single line
+    for _fn in ('email_of', '_email_of', '_email_witness', 'emails_of'):
+        _f = globals().get(_fn)
+        if callable(_f):
+            try:
+                _v = _f(p)
+                if _v: _em = _v[0] if isinstance(_v, (list, tuple)) else str(_v); break
+            except Exception: pass
+    if ph: say(f'   ✉️ {_em} · 📱 {ph}' if _em else f'   📱 {ph}')
+    else: say((f'   ✉️ {_em}' if _em else f'   phone: none readable - teach me: python3 butler.py teach {i["name"].split()[0].lower()} <digits>'))
     tgs = _tags_of(p)
     if tgs: say('   tags: ' + ', '.join(tgs))
     say('   after the call, one digit or one word closes his row:')
@@ -3026,7 +3051,7 @@ def main():
         print('  👀 dash         · see the desk\'s census')
         print('  (Right-click a folder in Finder -> Butler Here to start)')
         sys.exit(0)
-    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'tag', 'dash', 'audit', 'tidy', 'calls', 'sheet', 'up', 'unskip', 'followup', 'release', 'forget', 'meta', 'client', 'posmeta', 'missed', 'jd', 'nudge', 'refer', 'clients', 'refresh', 'options', 'draftwhy', 'twins'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
+    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'tag', 'dash', 'audit', 'tidy', 'calls', 'sheet', 'up', 'unskip', 'followup', 'release', 'forget', 'meta', 'client', 'posmeta', 'missed', 'jd', 'nudge', 'refer', 'clients', 'refresh', 'options', 'draftwhy', 'twins', 'skipfolder'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
         _v, _a = sys.argv[1], sys.argv[2:]
         if _v == 'pending': pipeline_pending(_a[0] if _a else None, print)
         elif _v == 'status': pipeline_status(' '.join(_a), print)
@@ -3056,6 +3081,7 @@ def main():
         elif _v == 'options': options_cmd(' '.join(_a), _pl_root(), print)
         elif _v == 'draftwhy': import briefing as _br; _br.do_draftwhy(' '.join(_a), _pl_root(), print)
         elif _v == 'twins': twins_cmd(' '.join(_a), _pl_root(), print)
+        elif _v == 'skipfolder': skipfolder_cmd(' '.join(_a), _pl_root(), print)
         elif _v in ('missed', 'jd', 'nudge', 'refer'):  # KEYWORDS-CLI v84.23: the keyword habit works in every door
             import briefing as _br
             _fn = getattr(_br, 'do_' + _v, None)
@@ -3712,6 +3738,8 @@ def _selftest(root):
     ck('S301 the chair speaks each truth once and the clerk keeps his ceremony for the doors that ask', (chr(35)+' QUIET-CHAIR v84.37') in _src and ('phones_of(p, True)' in _src))
     ck('S302 the seat prints the map in two lines and options keeps the full grammar', (chr(35)+' MAP-COMPACT v84.37') in _src and ('def options_cmd(' in _src))
     ck('S303 the persistent window stays open and the master may tag without texting', (chr(35)+' PERSISTENT-WA v84.38') in open(os.path.join(BASE_DIR, 'wa.py')).read() and (chr(35)+' SKIP-WA v84.38') in _src)
+    ck('S304 derivative folders never queue as candidates', (chr(35)+' NON-QUEUE v84.39') in _src and ('nonqueue.json' in _src) and ('def skipfolder_cmd(' in _src))
+    ck('S305 every contact truth is spoken once, at the seat and at the proposal', (chr(35)+' CONTACT-ONCE v84.39') in _src and (chr(35)+' IDENTITY-AT-SEAT v84.39') in _src)
     ck('S274 the fallback chain keeps every scenario speakable', ('def _chair_wa_text(' in _src) and ('def _draft_text(' in _src) and ('def _chair_draft(' in _src))
     ck('S275 the fields dict carries every sentence it computes', ("'roleline': roleline" in _src) and (chr(35)+' ROLELINE v84.18') in _src)
     ck('S276 one truth per position, taught once and shown at the composer', (chr(35)+' POS-ID v84.21') in _src and ('def pos_identity(' in _src) and ('say_identity_for' in open(os.path.join(BASE_DIR, 'briefing.py')).read()))

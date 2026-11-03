@@ -1580,6 +1580,7 @@ if __name__ == "__main__":
             if butler.sheet_current() and q.strip() in ('jd', 'missed', 'nudge', 'refer'): q = q + ' ' + os.path.splitext(os.path.basename(butler.sheet_current()['p']))[0]  # CHAIR-KEYWORD v84.30
             if q.startswith('draftwhy '): do_draftwhy(q[9:].strip(), root, say); continue  # DRAFT-WHY v84.33
             if q == 'twins' or q.startswith('twins '): butler.twins_cmd(q[5:].strip(), root, say); continue  # TWINS v84.36
+            if q.startswith('skipfolder '): butler.skipfolder_cmd(q[11:].strip(), root, say); continue  # NON-QUEUE v84.39
             if q.strip() == 'refresh': butler.calls_cmd('', root, say); continue  # SELF-REFRESH v84.32
             if q.strip() == 'options': butler.options_cmd('', root, say); continue  # OPTIONS-MAP v84.32
             if butler.sheet_current() and q.strip() in ('1', '2', '3', '4', '5', '6'): do_outcome(q.strip(), root); continue  # CHAIR v84.10b
