@@ -1401,7 +1401,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
     pass  # IDENTITY-ONCE v84.41: the triple speaks at the seat; the proposal carries only the decision, the draft carries the truth inside
     _tagpart = 'SKIPPED, untagged, unmoved' if tag is None else ('[no tag change - reminder only]' if tag == '' else f'[{tag}]')  # NUDGE-OPTION v84.44
     say(f"🤖 Proposal: {cur['name']} → " + _tagpart + f" ({outcome})" + (f' · WhatsApp {draft} draft will open, unsent' if draft else ' · no message - this one stays in the house'))  # ASK-LINE v84.49: the statement ends in its own line
-    k = menu_key('   y = 🏷️ tag + 📦 move + 📱 WhatsApp draft · t = 🏷️ tag + 📦 move, no 📱 · n = cancel › ')  # ASK-LINE v84.49: the question waits at a visible cue and the key signs it  # PLAIN-CUE v84.50: the cue names the deeds in the master's words - tag, move, text
+    k = menu_key('   y = 🏷️ tag + 📦 move + 📱 WhatsApp draft · t = 🏷️ tag + 📦 move, no 📱 · n = cancel, he stays in the chair ›  ')  # ASK-LINE v84.49: the question waits at a visible cue and the key signs it  # PLAIN-CUE v84.50: the cue names the deeds in the master's words - tag, move, text
     if k == 'n':
         say('· row left open - he stays in the chair'); return
     if k not in ('y', 't'):  # PROPOSE-WAIT v84.15: Enter or silence leaves a typed answer pending
@@ -3803,6 +3803,7 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S326 the cue says aloud what cancel leaves behind', (chr(35)+' ASK-LINE v84.49') in _src and ('n = cancel, he stays in the chair' in _src))
     ck('S322 no dispatch line at module level passes a printer it cannot see', sum(1 for _l in open(os.path.join(BASE_DIR, 'briefing.py')).read().split(chr(10)) if (', root, ' + 'say); continue') in _l) == 0)
     ck('S323 the sheet speaks one line per beat and every door wears its face', (chr(35)+' ONE-LINE v84.51') in _src and (chr(35)+' EMOJI-CUE v84.51') in _src and (chr(35)+' ACTION-ECHO v84.51') in _src)
     ck('S324 no lap may bury a law - deleted lines carry their witnesses', (chr(35)+' WITNESS-CARRY v84.52') in _src)
