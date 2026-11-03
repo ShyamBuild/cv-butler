@@ -248,6 +248,27 @@ def _pos_client_for(hit, f=None):
             pos_path = os.path.join(comp, parts[0])
             return clean_pos(parts[0]), _client_full(parts[0], pos_path)
     return 'the discussed role', 'our client'
+def do_draftwhy(arg, root, say=print):  # DRAFT-WHY v84.33: eyes behind every draft - which guess, which truth, which fields, which files (display-only; _fmt_tpl stays witnessed and untouched)
+    hits = _hits_for((arg or '').strip(), root)
+    if not hits: say(f'🤷 no CV matches {arg!r}'); return
+    p = hits[0]; nm = os.path.splitext(os.path.basename(p))[0]
+    pos, cli = _pos_client_for(p, None); title, loc = _split_pos(pos)
+    import butler as _bt
+    idn = _bt.pos_identity(p)
+    fco = idn.get('company') or cli; fpo = idn.get('role') or title; flo = idn.get('loc') or loc; fdz = idn.get('designation') or fpo
+    say(f'🔎 draft anatomy for {nm}:')
+    say(f'   legacy path-guess : position={title!r} company={cli!r} location={loc!r}')
+    say(f'   registry truth    : company={idn.get("company")!r} role={idn.get("role")!r} loc={idn.get("loc")!r} designation={idn.get("designation")!r}')
+    say(f'   fields used       : name={nm!r} · position={fpo!r} · company={fco!r} · location={flo!r} · designation={fdz!r} · where={fco + (", " + flo if flo else "")!r}')
+    TDIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates')
+    for w in ('jd', 'missed', 'nudge', 'refer', 'awaiting'):
+        try: cands = [fn for fn in sorted(os.listdir(TDIR)) if fn.endswith('.txt') and w in fn.lower()]
+        except Exception: cands = []
+        say(f'   scenario {w} files : ' + (', '.join(cands[:4]) or 'none'))
+    say('   rendered jd draft :')
+    for ln in _fmt_tpl(_tpl_for(['jd']), p, None, nm).split(chr(10)): say('     ' + ln)
+    say('   queued chases     : ad_wait.build_text now drinks from the same registry (QUEUE-REGISTRY v84.34)')
+
 def do_adlog(arg, root, say=print):  # ADLOG v81.2 (read-only)
     n = 10
     try: n = max(1, int((arg or '').strip()))
@@ -1518,6 +1539,7 @@ if __name__ == "__main__":
                 say('  👀 dash         · see the desk\'s census')
                 continue
             if butler.sheet_current() and q.strip() in ('jd', 'missed', 'nudge', 'refer'): q = q + ' ' + os.path.splitext(os.path.basename(butler.sheet_current()['p']))[0]  # CHAIR-KEYWORD v84.30
+            if q.startswith('draftwhy '): do_draftwhy(q[9:].strip(), root, say); continue  # DRAFT-WHY v84.33
             if q.strip() == 'refresh': butler.calls_cmd('', root, say); continue  # SELF-REFRESH v84.32
             if q.strip() == 'options': butler.options_cmd('', root, say); continue  # OPTIONS-MAP v84.32
             if butler.sheet_current() and q.strip() in ('1', '2', '3', '4', '5', '6'): do_outcome(q.strip(), root); continue  # CHAIR v84.10b

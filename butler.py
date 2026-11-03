@@ -2998,7 +2998,7 @@ def main():
         print('  👀 dash         · see the desk\'s census')
         print('  (Right-click a folder in Finder -> Butler Here to start)')
         sys.exit(0)
-    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'tag', 'dash', 'audit', 'tidy', 'calls', 'sheet', 'up', 'unskip', 'followup', 'release', 'forget', 'meta', 'client', 'posmeta', 'missed', 'jd', 'nudge', 'refer', 'clients', 'refresh', 'options'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
+    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'tag', 'dash', 'audit', 'tidy', 'calls', 'sheet', 'up', 'unskip', 'followup', 'release', 'forget', 'meta', 'client', 'posmeta', 'missed', 'jd', 'nudge', 'refer', 'clients', 'refresh', 'options', 'draftwhy'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
         _v, _a = sys.argv[1], sys.argv[2:]
         if _v == 'pending': pipeline_pending(_a[0] if _a else None, print)
         elif _v == 'status': pipeline_status(' '.join(_a), print)
@@ -3026,6 +3026,7 @@ def main():
         elif _v == 'clients': clients_cmd(' '.join(_a), _pl_root(), print)
         elif _v == 'refresh': calls_cmd(' '.join(_a), _pl_root(), print)
         elif _v == 'options': options_cmd(' '.join(_a), _pl_root(), print)
+        elif _v == 'draftwhy': import briefing as _br; _br.do_draftwhy(' '.join(_a), _pl_root(), print)
         elif _v in ('missed', 'jd', 'nudge', 'refer'):  # KEYWORDS-CLI v84.23: the keyword habit works in every door
             import briefing as _br
             _fn = getattr(_br, 'do_' + _v, None)
@@ -3673,6 +3674,9 @@ def _selftest(root):
     ck('S292 every option states its tag, its keyword and its two drafts', (chr(35)+' OPTIONS-MAP v84.32') in _src and ('def options_cmd(' in _src))
     ck('S293 an empty sheet re-seeds itself and refresh re-seeds on demand', (chr(35)+' SELF-REFRESH v84.32') in _src and (chr(35)+' SELF-REFRESH v84.32') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S294 widening a tuple never amputates its marker', any(_l.lstrip().startswith('_CLI_VERB = ') and chr(39)+'refresh'+chr(39) in _l and (chr(35)+' QUIET-VERBS v84.2') in _l for _l in _src.split(chr(10))))  # S294 repinned v84.32: the witness is the quiet line itself - verbs and marker in one breath, not a comment in a patch
+    ck('S295 every draft can name its guesses, its truths, its fields and its files', (chr(35)+' DRAFT-WHY v84.33') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and ('def do_draftwhy(' in open(os.path.join(BASE_DIR, 'briefing.py')).read()))
+    ck('S296 the queued chase drinks from the same registry as every other door', (chr(35)+' QUEUE-REGISTRY v84.34') in open(os.path.join(BASE_DIR, 'ad_wait.py')).read())
+    ck('S297 no region is replaced before its markers are counted', os.path.exists(os.path.join(BASE_DIR, 'mw.sh')) and ('region markers above' in open(os.path.join(BASE_DIR, 'mw.sh')).read()) and os.path.exists(os.path.join(BASE_DIR, 'ARCHITECTURE.md')))
     ck('S274 the fallback chain keeps every scenario speakable', ('def _chair_wa_text(' in _src) and ('def _draft_text(' in _src) and ('def _chair_draft(' in _src))
     ck('S275 the fields dict carries every sentence it computes', ("'roleline': roleline" in _src) and (chr(35)+' ROLELINE v84.18') in _src)
     ck('S276 one truth per position, taught once and shown at the composer', (chr(35)+' POS-ID v84.21') in _src and ('def pos_identity(' in _src) and ('say_identity_for' in open(os.path.join(BASE_DIR, 'briefing.py')).read()))
