@@ -1578,24 +1578,24 @@ if __name__ == "__main__":
                 say('  👀 dash         · see the desk\'s census')
                 continue
             if butler.sheet_current() and q.strip() in ('jd', 'missed', 'nudge', 'refer'): q = q + ' ' + os.path.splitext(os.path.basename(butler.sheet_current()['p']))[0]  # CHAIR-KEYWORD v84.30
-            if q.startswith('draftwhy '): do_draftwhy(q[9:].strip(), root, say); continue  # DRAFT-WHY v84.33
-            if q == 'twins' or q.startswith('twins '): butler.twins_cmd(q[5:].strip(), root, say); continue  # TWINS v84.36
-            if q.startswith('skipfolder '): butler.skipfolder_cmd(q[11:].strip(), root, say); continue  # NON-QUEUE v84.39
-            if q.strip() == 'weekly': butler.weekly_cmd('', root, say); continue  # WEEKLY v84.40
-            if q.strip() == 'refresh': butler.calls_cmd('', root, say); continue  # SELF-REFRESH v84.32
-            if q.strip() == 'options': butler.options_cmd('', root, say); continue  # OPTIONS-MAP v84.32
+            if q.startswith('draftwhy '): do_draftwhy(q[9:].strip(), root, print); continue  # DRAFT-WHY v84.33
+            if q == 'twins' or q.startswith('twins '): butler.twins_cmd(q[5:].strip(), root, print); continue  # TWINS v84.36
+            if q.startswith('skipfolder '): butler.skipfolder_cmd(q[11:].strip(), root, print); continue  # NON-QUEUE v84.39
+            if q.strip() == 'weekly': butler.weekly_cmd('', root, print); continue  # WEEKLY v84.40
+            if q.strip() == 'refresh': butler.calls_cmd('', root, print); continue  # SELF-REFRESH v84.32
+            if q.strip() == 'options': butler.options_cmd('', root, print); continue  # OPTIONS-MAP v84.32
             if butler.sheet_current() and q.strip() in ('1', '2', '3', '4', '5', '6', '7'): do_outcome(q.strip(), root); continue  # CHAIR v84.10b
             if butler.sheet_current() and butler.chair_word(q): do_outcome(butler.chair_word(q), root); continue
             if q == 'up' or q.startswith('up '): do_up(q[2:].strip(), root); continue
             if q.startswith('calls'): do_calls(q[5:].strip(), root); continue
             if q.startswith('sheet'): do_sheet(q[5:].strip(), root); continue
-            if q.startswith('unskip '): butler.unskip_cmd(q[7:].strip(), root, say); continue  # SKIP v84.11
-            if q.startswith('forget '): butler.forget_cmd(q[7:].strip(), root, say); continue  # COVERED-MEMORY v84.15
-            if q.startswith('meta '): butler.meta_cmd(q[5:].strip(), root, say); continue  # TEMPLATES v84.16
+            if q.startswith('unskip '): butler.unskip_cmd(q[7:].strip(), root, print); continue  # SKIP v84.11
+            if q.startswith('forget '): butler.forget_cmd(q[7:].strip(), root, print); continue  # COVERED-MEMORY v84.15
+            if q.startswith('meta '): butler.meta_cmd(q[5:].strip(), root, print); continue  # TEMPLATES v84.16
             if q.startswith('client '): butler.client_cmd(q[7:].strip(), root); continue  # POS-ID v84.21  # CLIENT-DISPATCH v84.25
             if q.strip() == 'clients': butler.clients_cmd('', root); continue  # CLIENTS-LIST v84.24
             if q.startswith('posmeta '): butler.posmeta_cmd(q[8:].strip(), root); continue
-            if q.startswith('followup'): butler.followup_cmd(q[8:].strip(), root, say); continue  # FOLLOWUP v84.11
+            if q.startswith('followup'): butler.followup_cmd(q[8:].strip(), root, print); continue  # FOLLOWUP v84.11
             if q.startswith('pending'): do_pending(q[len('pending'):].strip(), root); continue  # PIPELINE-CHAT-SHALLOW v83.1: the master's words stand at the head of the chain, never nested under another voice
             if q.startswith('status'): do_status(q[len('status'):].strip(), root); continue
             if q.startswith('note'): do_note(q[len('note'):].strip(), root); continue

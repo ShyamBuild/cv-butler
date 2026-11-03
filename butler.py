@@ -1004,7 +1004,7 @@ def skipfolder_cmd(arg, root, say=print):  # NON-QUEUE v84.39
     json.dump(d, open(NONQUEUE_PATH, 'w'), indent=1)
     say(f'🚫 never queue: {arg} - its residents are derivatives or archives, not candidates')
 
-def calls_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.30): FOLDER-TRUTH - the sheet maps the folders, not the tags
+def calls_cmd(arg, root, say=print, hint=True):  # CHAIR v84.10b (v84.30): FOLDER-TRUTH - the sheet maps the folders, not the tags
     scopes = [desk_resolve(arg, root)] if arg else (desk_paths() or [root])
     s0 = sheet_load(); sk = skips_load(); mem = set(covered_load())
     items = []; seen = set(); reopened = 0
@@ -1027,8 +1027,7 @@ def calls_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.30): FOLDER-TRUTH - t
     kept = [i for i in s0.get('items', []) if i.get('status') != 'waiting']
     s0['date'] = time.strftime('%Y-%m-%d'); s0['items'] = kept + waiting + items
     sheet_save(s0)
-    say(f'📞 call sheet seeded: {len(items) + reopened} candidate(s) outside the stage folders' + (f' · reopened {reopened}' if reopened else ''))
-    if items or reopened: say('   type: up')
+    say(f'📞 call sheet seeded: {len(items) + reopened} outside the stage folders' + (f' · reopened {reopened}' if reopened else '') + (' · type: up' if hint and (items or reopened) else ''))  # ONE-LINE v84.51: the sheet speaks once, hint only when a hand must follow
 
 def sheet_cmd(arg, root, say=print):
     s = sheet_load()
@@ -1037,14 +1036,14 @@ def sheet_cmd(arg, root, say=print):
     say(f"📞 sheet {s.get('date') or '-'}: covered {len(dn)} · waiting {len(wt)}" + (f" · NOW: {cur['name']}" if cur else ''))
     for i in dn[-8:]: say(f"   ✅ {i['name']} · {i.get('outcome', '')}")
     for i in wt[:8]: say(f"   ⏳ {i['name']}")
-OPTION_MAP = [  # OPTIONS-MAP v84.32 (seven doors v84.44): option = tag = keyword = draft-now + later-chase
- '1 interested · JD mailed   → [Awaiting JD Confirmation] · keyword: jd · now: jd-share · later: ack-reminder',
- '2 not interested           → [Closed – Not Proceeding] · keyword: refer · now: refer/farewell',
- '3 will update CV           → [Awaiting CV Update] · keyword: cv · now: jd+ack+CV combo · later: cv-due',
- '4 nudge / remind him       → no tag change · keyword: nudge · now: reminder (ack JD or send CV) · row closes, debt stays',
- '5 missed / no answer       → [Call Scheduled] · keyword: missed · now: missed+JD-on-email',
- '6 ready for manager review → [Ready for Manager Review] · internal · no draft',
- '7 skip him for now         → no tag, no move, remembered · no draft',
+OPTION_MAP = [  # OPTIONS-MAP v84.32 (emoji faces v84.53): option = tag = keyword = draft-now + later-chase; the jd door wears the outbox tray, for the envelope glyph is outlawed by S195  # OPTIONS-MAP v84.32  # WITNESS-CARRY v84.52: deleted lines hand their laws to the line that survives
+ '1 📤 interested · JD mailed   → [Awaiting JD Confirmation] · keyword: jd · now: jd-share · later: ack-reminder',
+ '2 🙅 not interested           → [Closed – Not Proceeding] · keyword: refer · now: refer/farewell',
+ '3 📝 will update CV           → [Awaiting CV Update] · keyword: cv · now: jd+ack+CV combo · later: cv-due',
+ '4 🔔 nudge / remind him       → no tag change · keyword: nudge · now: reminder (ack JD or send CV) · row closes, debt stays',
+ '5 📵 missed / no answer       → [Call Scheduled] · keyword: missed · now: missed+JD-on-email',
+ '6 🏆 ready for manager review → [Ready for Manager Review] · internal · no draft',
+ '7 ⏭️ skip him for now         → no tag, no move, remembered · no draft',
 ]
 def options_cmd(arg, root, say=print):  # OPTIONS-MAP v84.32
     say('📋 option = tag = keyword = draft:')
@@ -1090,7 +1089,7 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
         i = it; break
     sheet_save(s)
     if not i:  # SELF-REFRESH v84.32: an empty sheet re-seeds itself from the living folders, so a dragged-out paper rises without a command
-        calls_cmd('', root, say)
+        calls_cmd('', root, say, False)  # ONE-LINE v84.51: the self-refresh reseeds without the throat-clearing hint
         if any(x.get('status') == 'waiting' for x in sheet_load().get('items', [])): return up_cmd(arg, root, say)
         say('📭 sheet empty - every loose paper is seated, skipped or remembered'); return
     s['current'] = i; sheet_save(s)
@@ -1113,7 +1112,7 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
     tgs = _tags_of(p)
     if tgs: say('   tags: ' + ', '.join(tgs))
     say('   after the call, one digit or one word closes his row:')
-    say('   1 jd→JD-Conf · 2 refer→Closed · 3 cv→CV-Update · 4 nudge→reminder(no tag) · 5 missed→Call-Sched · 6 internal→Ready · 7 skip→remembered')  # MAP-COMPACT v84.37 (seven doors v84.44)
+    say('   1 📤 jd→JD-Conf · 2 🙅 refer→Closed · 3 📝 cv→CV-Update · 4 🔔 nudge→reminder(no tag) · 5 📵 missed→Call-Sched · 6 🏆 internal→Ready · 7 ⏭️ skip→remembered')  # EMOJI-CUE v84.51: each door wears its face, and no face wears a banned glyph  # MAP-COMPACT v84.37  # WITNESS-CARRY v84.52: deleted lines hand their laws to the line that survives
     say('   (options prints the full grammar with keywords and both draft moments)')
 
 def covered_load():
@@ -1403,7 +1402,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
     pass  # IDENTITY-ONCE v84.41: the triple speaks at the seat; the proposal carries only the decision, the draft carries the truth inside
     _tagpart = 'SKIPPED, untagged, unmoved' if tag is None else ('[no tag change - reminder only]' if tag == '' else f'[{tag}]')  # NUDGE-OPTION v84.44
     say(f"🤖 Proposal: {cur['name']} → " + _tagpart + f" ({outcome})" + (f' · WhatsApp {draft} draft will open, unsent' if draft else ' · no message - this one stays in the house'))  # ASK-LINE v84.49: the statement ends in its own line
-    k = menu_key('   y = tag + move + WhatsApp draft · t = tag + move, no WhatsApp · n = cancel › ')  # ASK-LINE v84.49: the question waits at a visible cue and the key signs it  # PLAIN-CUE v84.50: the cue names the deeds in the master's words - tag, move, text
+    k = menu_key('   y = 🏷️ tag + 📦 move + 📱 WhatsApp draft · t = 🏷️ tag + 📦 move, no 📱 · n = cancel › ')  # ASK-LINE v84.49: the question waits at a visible cue and the key signs it  # PLAIN-CUE v84.50: the cue names the deeds in the master's words - tag, move, text
     if k == 'n':
         say('· row left open - he stays in the chair'); return
     if k not in ('y', 't'):  # PROPOSE-WAIT v84.15: Enter or silence leaves a typed answer pending
@@ -1427,6 +1426,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
         s['current'] = None; sheet_save(s)
         _stage_note(cur['name'], _tags_of(p), _tags_of(p), os.path.basename(os.path.dirname(p)), os.path.basename(os.path.dirname(p)), 'chair-nudge')
         say(f'🔔 nudged {cur["name"]} - no tag changed, nothing moved; his debts stay on the followup board')
+        say(f'🔚 {cur["name"]}: 🏷️ {tag} · 📦 moved · ' + ('📱 drafted' if _k != 't' else 'no 📱'))  # ACTION-ECHO v84.51: the beat you just played, summarised in the house's pictographs
         desk_dashboard(say)
         w = [x for x in s.get('items', []) if x['status'] == 'waiting']
         if w: say(f'⏭️ next up: {w[0]["name"]} - type: up')
@@ -3804,6 +3804,10 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S322 no dispatch line at module level passes a printer it cannot see', sum(1 for _l in open(os.path.join(BASE_DIR, 'briefing.py')).read().split(chr(10)) if (', root, ' + 'say); continue') in _l) == 0)
+    ck('S323 the sheet speaks one line per beat and every door wears its face', (chr(35)+' ONE-LINE v84.51') in _src and (chr(35)+' EMOJI-CUE v84.51') in _src and (chr(35)+' ACTION-ECHO v84.51') in _src)
+    ck('S324 no lap may bury a law - deleted lines carry their witnesses', (chr(35)+' WITNESS-CARRY v84.52') in _src)
+    ck('S325 the emoji cue coexists with the banned glyph'+chr(39)+'s absence', chr(128231) not in _src and (chr(35)+' EMOJI-CUE v84.51') in _src)
     ck('S316 the seated paper opens in Preview, behind your eyes, never closed by the machine', (chr(35)+' PREVIEW v84.46') in _src and ('def _preview_open(' in _src))
     ck('S317 every single-letter door answers to the keystroke alone', (chr(35)+' ONE-KEY v84.46') in open(os.path.join(BASE_DIR, 'wa.py')).read() and ('def menu_key(' in _src))
     ck('S318 one keystroke decides the deed and the draft - no second prompt', (chr(35)+' ONE-INPUT v84.47') in _src and (('draft WhatsApp? ' + '[y] yes') not in _src))  # S318 repinned v84.48: the probe is built from parts, so the guard never carries the forbidden literal in its own body
