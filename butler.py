@@ -1042,16 +1042,17 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
         if any(x.get('status') == 'waiting' for x in sheet_load().get('items', [])): return up_cmd(arg, root, say)
         say('📭 sheet empty - every loose paper is seated, skipped or remembered'); return
     s['current'] = i; sheet_save(s)
-    p = i['p']; ph = taught_digits(i['name']) or phones_of(p) or None
+    p = i['p']; ph = taught_digits(i['name']) or phones_of(p, True) or None  # QUIET-CHAIR v84.37: the dossier takes the number without the clerk's ceremony
     if isinstance(ph, list): ph = ph[0] if ph else None
     say(f"📞 UP: {i['name']} · in {os.path.basename(os.path.dirname(p))}")
-    say_identity_for(p, say)
+    pass  # QUIET-CHAIR v84.37: the triple speaks once, at the proposal, where the thumb decides (S277 keeps that one)
     if ph: say(f'   phone: {ph}')
     else: say(f'   phone: none readable - teach me: python3 butler.py teach {i["name"].split()[0].lower()} <digits>')
     tgs = _tags_of(p)
     if tgs: say('   tags: ' + ', '.join(tgs))
     say('   after the call, one digit or one word closes his row:')
-    for _ln in OPTION_MAP: say('   ' + _ln)  # OPTIONS-MAP v84.32
+    say('   1 jd→JD-Conf · 2 refer→Closed · 3 nudge→CV-Update · 4 missed→Call-Sched · 5 internal→Ready · 6 skip→remembered')  # MAP-COMPACT v84.37: the map in two lines; options keeps the grammar
+    say('   (options prints the full grammar with keywords and both draft moments)')
 
 def covered_load():
     try: return json.load(open(COVERED_PATH))
@@ -1351,11 +1352,14 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
         for it in s.get('items', []):
             if it.get('p') == p: it['status'] = 'done'; it['outcome'] = 'skipped'; it['ts'] = int(time.time())
         s['current'] = None; sheet_save(s)
+        for it in s.get('items', []):  # QUIET-CHAIR v84.37: a closed human closes every row wearing his name or his path - the queue never offers a man twice
+            if it.get('status') == 'waiting' and (os.path.realpath(it.get('p', '')) == os.path.realpath(p) or _name_key(os.path.basename(it.get('p', ''))) == _name_key(os.path.basename(p))):
+                it['status'] = 'done'; it['outcome'] = outcome
         _stage_note(cur['name'], _tags_of(p), _tags_of(p), os.path.basename(os.path.dirname(p)), os.path.basename(os.path.dirname(p)), 'chair-skip')
         covered_add(_name_key(os.path.basename(p)), _fp(p), 'skipped', os.path.basename(p))
         say(f"⏭️ skipped {cur['name']} - untagged, unmoved, remembered; unskip {cur['name'].split()[0].lower()} brings him back")
     else:
-        ph0 = taught_digits(cur['name']) or phones_of(p) or None  # PHONE-FIRST v84.31: read the number before the paper moves, never from a ghost path
+        ph0 = taught_digits(cur['name']) or phones_of(p, True) or None  # PHONE-FIRST v84.31: read the number before the paper moves, never from a ghost path
         cur_tags = _tags_of(p)
         drops = [t for t in cur_tags if _tag_stage(t) and t != tag]
         newtags = [t for t in cur_tags if t not in drops] + ([tag] if tag not in cur_tags else [])
@@ -1368,7 +1372,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
         except Exception as _te:
             say(f'⚠️ tag write failed: {_te}'); return
         for it in s.get('items', []):
-            if it.get('p') == p: it['status'] = 'done'; it['outcome'] = outcome; it['ts'] = int(time.time())
+            if os.path.realpath(it.get('p', '')) == os.path.realpath(p): it['status'] = 'done'; it['outcome'] = outcome; it['ts'] = int(time.time())
         s['current'] = None; sheet_save(s)
         if draft:  # MISSED v84.10b: the outward outcome speaks through the number he already knows, unsent until your thumb
             ph = ph0
@@ -1376,7 +1380,11 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
             if ph:
                 pos = _pos_of(p, root)
                 import wa
-                wa.send_review(ph, _chair_wa_text(draft, p, cur['name']), say)
+                _r = ''
+                try: _r = input('📱 draft WhatsApp? [y] yes · [n] skip (tag only): ').strip().lower()  # SKIP-WA v84.38: the master may tag without texting
+                except Exception: pass
+                if _r == 'n': say('🏷️ tagged only - WhatsApp skipped')
+                else: wa.send_review(ph, _chair_wa_text(draft, p, cur['name']), say)
             else: say(f'⚠️ no phone for {cur["name"]} - teach me: python3 butler.py teach {cur["name"].split()[0].lower()} <digits>, then retry')
     desk_dashboard(say)  # CENSUS-AFTER v84.12: every closed row ends with the living scoreboard
     w = [x for x in s.get('items', []) if x['status'] == 'waiting']  # ADVANCE v84.10b: the queue walks without being pushed
@@ -3701,6 +3709,9 @@ def _selftest(root):
     ck('S298 a sentence proposes and never acts - the thumb executes', (chr(35)+' EAR v84.35') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and ('def _ear_intent(' in open(os.path.join(BASE_DIR, 'briefing.py')).read()) and ('pending_action.json' in open(os.path.join(BASE_DIR, 'briefing.py')).read()))
     ck('S299 the brain answers the ear in strict JSON only, and offline it is silent', (chr(35)+' EAR-JSON v84.35') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and ('localhost:11434' in open(os.path.join(BASE_DIR, 'briefing.py')).read()))
     ck('S300 twins names every duplicate group and never deletes', (chr(35)+' TWINS v84.36') in _src and ('def twins_cmd(' in _src) and ('I never delete' in _src))
+    ck('S301 the chair speaks each truth once and the clerk keeps his ceremony for the doors that ask', (chr(35)+' QUIET-CHAIR v84.37') in _src and ('phones_of(p, True)' in _src))
+    ck('S302 the seat prints the map in two lines and options keeps the full grammar', (chr(35)+' MAP-COMPACT v84.37') in _src and ('def options_cmd(' in _src))
+    ck('S303 the persistent window stays open and the master may tag without texting', (chr(35)+' PERSISTENT-WA v84.38') in open(os.path.join(BASE_DIR, 'wa.py')).read() and (chr(35)+' SKIP-WA v84.38') in _src)
     ck('S274 the fallback chain keeps every scenario speakable', ('def _chair_wa_text(' in _src) and ('def _draft_text(' in _src) and ('def _chair_draft(' in _src))
     ck('S275 the fields dict carries every sentence it computes', ("'roleline': roleline" in _src) and (chr(35)+' ROLELINE v84.18') in _src)
     ck('S276 one truth per position, taught once and shown at the composer', (chr(35)+' POS-ID v84.21') in _src and ('def pos_identity(' in _src) and ('say_identity_for' in open(os.path.join(BASE_DIR, 'briefing.py')).read()))

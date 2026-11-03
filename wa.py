@@ -108,8 +108,8 @@ def send_review(phone, text, say=print, ask=None):
             via_cdp = True
             browser = None
         except Exception:
-            browser = pw.chromium.launch_persistent_context(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa_profile'), headless=False, no_viewport=True)
-            page = browser.pages[0] if browser.pages else browser.new_page()
+            ctx = _ctx()  # PERSISTENT-WA v84.38: reuse the living window instead of launching and closing one per draft
+            page = ctx.pages[0] if ctx.pages else ctx.new_page()
             via_cdp = False
         if not _goto(page, f"https://web.whatsapp.com/send?phone={digits}", say):
             say('⚠️ chat page did not load - scan QR in the opened window if asked, then retry')
@@ -177,10 +177,10 @@ def send_review(phone, text, say=print, ask=None):
     finally:
         try:
             if via_cdp and page is not None: page.close()
-            elif browser is not None: browser.close()
+            pass  # PERSISTENT-WA v84.38: the persistent browser is never closed; only a CDP guest page goes home
         except Exception:
             pass
         try:
-            pw.stop()
+            if via_cdp: pw.stop()  # PERSISTENT-WA v84.38: only the CDP playwright instance stops; the living one rests in _state
         except Exception:
             pass
