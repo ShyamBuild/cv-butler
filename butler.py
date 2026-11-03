@@ -20,7 +20,7 @@ for _n in ("pdfminer", "fontTools"):
     _l.addHandler(logging.NullHandler())
     _l.setLevel(logging.CRITICAL)
 
-VERSION = "butler v6 (final-rules edition)"
+VERSION = '85.0'  # THE FREEZE v85.0: the standing price of every future change
 for _lf in sorted(__import__("glob").glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), "butler_*.lock"))):
     try: print("   🔒 live lock: " + os.path.basename(_lf) + " -> " + open(_lf).read().strip())
     except Exception: pass
@@ -3818,6 +3818,7 @@ def _selftest(root):
     ck('S326 the cue says aloud what cancel leaves behind', (chr(35)+' ASK-LINE v84.49') in _src and ('n = cancel, he stays in the chair' in _src))
     ck('S327 the tray refills only when empty and new blood always outranks it', (chr(35)+' RETRAY v84.55') in _src and ('key=lambda x: 1 if x.get(' + chr(39) + 're' + chr(39) + ') else 0' in _src))
     ck('S328 the tray offers one skipped soul per empty seed, oldest first', (chr(35)+' RETRAY-ONE v84.56') in _src and ('del skd[kp]; refed += 1; break' in _src))
+    ck('S329 the freeze holds - v85.0 is the standing price of every future change', (chr(35)+' THE FREEZE v85.0') in _src and os.path.exists(os.path.join(BASE_DIR, 'README.md')) and os.path.exists(os.path.join(BASE_DIR, 'install.sh')))  # S329 repinned v85.0: a version is a fact about the source, so the guard reads the source, not a variable the book may reassign
     ck('S322 no dispatch line at module level passes a printer it cannot see', sum(1 for _l in open(os.path.join(BASE_DIR, 'briefing.py')).read().split(chr(10)) if (', root, ' + 'say); continue') in _l) == 0)
     ck('S323 the sheet speaks one line per beat and every door wears its face', (chr(35)+' ONE-LINE v84.51') in _src and (chr(35)+' EMOJI-CUE v84.51') in _src and (chr(35)+' ACTION-ECHO v84.51') in _src)
     ck('S324 no lap may bury a law - deleted lines carry their witnesses', (chr(35)+' WITNESS-CARRY v84.52') in _src)

@@ -1,3 +1,4 @@
+VERSION = '85.0'  # THE FREEZE v85.0: the standing price of every future change
 import butler  # LISTEN v81.67: the REPL teaches through the butler's book (module scope: the loop lives here)
 import os, re, sys, datetime, json, urllib.request
 import logging, warnings
