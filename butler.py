@@ -1450,6 +1450,26 @@ def chase_cmd(arg, root, say=print):  # CHASE v84.0: the draft waits in the fiel
         tag = next((k[:-7] for k in e if k.endswith(':chased')), '?')
         say(f"📨 {os.path.basename(p)} · {tag}")
         say(f"   draft: {_chase_draft(p, tag)}")
+def weekly_cmd(arg, root, say=print):  # WEEKLY v84.40: the manager's page - seven days of decisions, read from the stage log and the sheet
+    cut = time.time() - 7 * 86400
+    try: lg = json.load(open(os.path.join(BASE_DIR, 'stage_log.json')))
+    except Exception: lg = []
+    rows = [e for e in lg if isinstance(e, dict) and (e.get('ts') or 0) >= cut]
+    by = {}
+    for e in rows:
+        by.setdefault(e.get('to') or e.get('tag') or '?', []).append(os.path.basename(e.get('file') or '?'))
+    say(f'📅 last seven days: {len(rows)} stage decision(s)')
+    for k in sorted(by):
+        ns = by[k]
+        say(f'   → {k}: {len(ns)} · ' + ', '.join(ns[:6]) + (' …' if len(ns) > 6 else ''))
+    s = sheet_load()
+    done_rows = [i for i in s.get('items', []) if i.get('status') != 'waiting']
+    outs = {}
+    for i in done_rows: outs[i.get('outcome') or '?'] = outs.get(i.get('outcome') or '?', 0) + 1
+    if outs: say('📞 this sheet: ' + ' · '.join(f'{k}:{v}' for k, v in sorted(outs.items())))
+    say(f'⏭️ skipped this season: {len(skips_load())} · covered memory: {len(covered_load())}')
+    desk_dashboard(say)
+
 def daily_briefing(say=print):  # BRIEFING v84.0: yesterday's trail and today's dues in one breath
     now = int(time.time()); st = time.localtime(now)
     d0 = int(time.mktime((st.tm_year, st.tm_mon, st.tm_mday, 0, 0, 0, 0, 0, -1)))
@@ -3051,7 +3071,7 @@ def main():
         print('  👀 dash         · see the desk\'s census')
         print('  (Right-click a folder in Finder -> Butler Here to start)')
         sys.exit(0)
-    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'tag', 'dash', 'audit', 'tidy', 'calls', 'sheet', 'up', 'unskip', 'followup', 'release', 'forget', 'meta', 'client', 'posmeta', 'missed', 'jd', 'nudge', 'refer', 'clients', 'refresh', 'options', 'draftwhy', 'twins', 'skipfolder'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
+    if len(sys.argv) > 1 and sys.argv[1] in ('pending', 'status', 'note', 'desk', 'briefing', 'chase', 'tag', 'dash', 'audit', 'tidy', 'calls', 'sheet', 'up', 'unskip', 'followup', 'release', 'forget', 'meta', 'client', 'posmeta', 'missed', 'jd', 'nudge', 'refer', 'clients', 'refresh', 'options', 'draftwhy', 'twins', 'skipfolder', 'weekly'):  # PIPELINE-CLI-FIRST v84.1: six verbs answer before any root is validated
         _v, _a = sys.argv[1], sys.argv[2:]
         if _v == 'pending': pipeline_pending(_a[0] if _a else None, print)
         elif _v == 'status': pipeline_status(' '.join(_a), print)
@@ -3082,6 +3102,7 @@ def main():
         elif _v == 'draftwhy': import briefing as _br; _br.do_draftwhy(' '.join(_a), _pl_root(), print)
         elif _v == 'twins': twins_cmd(' '.join(_a), _pl_root(), print)
         elif _v == 'skipfolder': skipfolder_cmd(' '.join(_a), _pl_root(), print)
+        elif _v == 'weekly': weekly_cmd(' '.join(_a), _pl_root(), print)
         elif _v in ('missed', 'jd', 'nudge', 'refer'):  # KEYWORDS-CLI v84.23: the keyword habit works in every door
             import briefing as _br
             _fn = getattr(_br, 'do_' + _v, None)
@@ -3740,6 +3761,8 @@ def _selftest(root):
     ck('S303 the persistent window stays open and the master may tag without texting', (chr(35)+' PERSISTENT-WA v84.38') in open(os.path.join(BASE_DIR, 'wa.py')).read() and (chr(35)+' SKIP-WA v84.38') in _src)
     ck('S304 derivative folders never queue as candidates', (chr(35)+' NON-QUEUE v84.39') in _src and ('nonqueue.json' in _src) and ('def skipfolder_cmd(' in _src))
     ck('S305 every contact truth is spoken once, at the seat and at the proposal', (chr(35)+' CONTACT-ONCE v84.39') in _src and (chr(35)+' IDENTITY-AT-SEAT v84.39') in _src)
+    ck('S306 the weekly page reads only what the house already keeps', (chr(35)+' WEEKLY v84.40') in _src and ('def weekly_cmd(' in _src) and ('stage_log.json' in _src))
+    ck('S307 the module map lives in the index, versioned with the code', os.path.exists(os.path.join(BASE_DIR, 'ARCHITECTURE.md')) and ('module map' in open(os.path.join(BASE_DIR, 'ARCHITECTURE.md')).read()))
     ck('S274 the fallback chain keeps every scenario speakable', ('def _chair_wa_text(' in _src) and ('def _draft_text(' in _src) and ('def _chair_draft(' in _src))
     ck('S275 the fields dict carries every sentence it computes', ("'roleline': roleline" in _src) and (chr(35)+' ROLELINE v84.18') in _src)
     ck('S276 one truth per position, taught once and shown at the composer', (chr(35)+' POS-ID v84.21') in _src and ('def pos_identity(' in _src) and ('say_identity_for' in open(os.path.join(BASE_DIR, 'briefing.py')).read()))
