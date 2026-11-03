@@ -467,7 +467,46 @@ def _local_name(q):
     toks = [t.strip('.,!?') for t in q.split() if t.strip('.,!?')[:1].isupper() and t.strip('.,!?').lower() not in stop]
     return ' '.join(toks[:3]) if toks else ''
 
+EAR_WORDS = ('said', 'will', 'send', 'sent', 'missed', 'not interested', 'ready', 'update', 'acknowledge', 'confirm', 'joined', 'interview', 'feedback', 'pick', 'answer')  # EAR v84.35: an event-word or it is not an ear-sentence
+EAR_TAGS = [('not interested', 'Closed \u2013 Not Proceeding'), ('rejected by client', 'Rejected by Client'), ('ready for manager', 'Ready for Manager Review'), ('manager review', 'Ready for Manager Review'), ('will send cv', 'Awaiting CV Update'), ('send the cv', 'Awaiting CV Update'), ('update cv', 'Awaiting CV Update'), ('updated cv', 'Awaiting CV Update'), ('missed', 'Call Scheduled'), ('no answer', 'Call Scheduled'), ('didn\u2019t pick', 'Call Scheduled'), ('did not pick', 'Call Scheduled'), ('jd mailed', 'Awaiting JD Confirmation'), ('acknowledge', 'Awaiting JD Confirmation'), ('interested', 'Awaiting JD Confirmation'), ('feedback pending', 'Feedback Pending'), ('interview tomorrow', 'Interview Tomorrow'), ('interview today', 'Interview Today'), ('interview', 'Interview Scheduled'), ('joined', 'Expected to Join'), ('call scheduled', 'Call Scheduled')]  # EAR v84.35: the deterministic table speaks first
+def _ear_json(q, vocab):  # EAR-JSON v84.35: the brain answers the ear in grammar, not prose; offline it is silent
+    try:
+        with urllib.request.urlopen('http://localhost:11434/api/tags', timeout=5) as r:
+            names = [m['name'] for m in json.loads(r.read().decode()).get('models', []) if 'embed' not in m['name'].lower()]
+        if not names: return None
+        payload = json.dumps({'model': names[0], 'messages': [{'role': 'user', 'content': f'From this recruiter sentence return ONLY JSON like {{"tag": "<one of: {vocab}>"}} or {{"tag": null}}. Sentence: {q}'}], 'stream': False}).encode()
+        req = urllib.request.Request('http://localhost:11434/api/chat', data=payload, headers={'Content-Type': 'application/json'})
+        with urllib.request.urlopen(req, timeout=60) as r:
+            d = _parse_json(json.loads(r.read().decode())['message']['content'])
+        return (d or {}).get('tag')
+    except Exception:
+        return None
+def _ear_intent(q, root, say=print):  # EAR v84.35: a sentence about a human becomes a proposal; the thumb still executes
+    ql = (q or '').lower()
+    if not any(w in ql for w in EAR_WORDS): return False
+    import butler as _bt
+    nm = _name_from(q) or _local_name(q)
+    p = None
+    if nm:
+        hs = _hits_for(nm, root)
+        if len(hs) == 1: p = hs[0]
+    if p is None and _bt.sheet_current():
+        p = _bt.sheet_current()['p']; nm = nm or os.path.splitext(os.path.basename(p))[0]
+    if not p: return False
+    tag = next((t for w, t in EAR_TAGS if w in ql), None)
+    if not tag: tag = _ear_json(q, ' / '.join(_bt._tag_vocab()))
+    if not tag or tag not in _bt._tag_vocab(): return False
+    on = not any(w in ql for w in ('remove', 'undo', 'off', 'cancel'))
+    say(f'🤖 Proposal: {os.path.splitext(os.path.basename(p))[0]} → [{tag}] (heard from your sentence) · y / n')
+    try:
+        json.dump({'p': p, 'tag': tag, 'on': on, 'move_to': True}, open(os.path.join(BASE_DIR, 'pending_action.json'), 'w'))
+    except Exception:
+        return False
+    say('· proposal waiting - type y or n on the next line')
+    return True
+
 def answer(root, q, say=print):
+    if _ear_intent(q, root, say): return  # EAR v84.35: a sentence about a human becomes a proposal before the brain wanders
     ql = q.lower()
     kb = keyword_fallback(q)
     talk_words = ('why', 'how', 'summar', 'explain', 'draft', 'should', 'compare', 'message', 'whatsapp', 'about', 'tell', 'can we', 'what do', 'who is')
