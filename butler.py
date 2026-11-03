@@ -574,21 +574,23 @@ def _stage_note(file, from_tag, to_tag, from_dir, to_dir, srcs):  # STAGE-LOG v8
     log.append({'ts': int(time.time()), 'file': file, 'from_tag': from_tag, 'to_tag': to_tag, 'from_dir': from_dir, 'to_dir': to_dir, 'src': srcs})
     try: _j.dump(log[-400:], open(lp, 'w'), indent=1)
     except Exception: pass
-def confirm_wait(say=print):  # KEY-CONFIRM v84.6: the answer is a keystroke, not a line - like the WhatsApp menu
-    import sys, tty, termios
+def confirm_wait(say=print):  # KEY-CONFIRM v84.6: the answer is a keystroke, not a line - like the WhatsApp menu (INLINE-ECHO v84.45: the key you press appears on the proposal's own line)
+    import sys, termios, tty
     try:
-        if not sys.stdin.isatty(): return None
         fd = sys.stdin.fileno()
         old = termios.tcgetattr(fd)
         try:
             tty.setraw(fd)
-            ch = sys.stdin.read(1)
+            k = sys.stdin.read(1)
         finally:
-            termios.tcsetattr(fd, termios.TCSAFLUSH, old)
-        print()
-        return ch.lower()
+            termios.tcsetattr(fd, termios.TCSADRAIN, old)
     except Exception:
         return None
+    if k in ('y', 'n', 'Y', 'N'):
+        sys.stdout.write(k.lower() + '\n'); sys.stdout.flush()  # INLINE-ECHO v84.45: question and answer on one line, the way the hand acted
+        return k.lower()
+    sys.stdout.write('\n'); sys.stdout.flush()
+    return k if k not in ('\r', '\n') else None
 
 def action_pending():  # PROPOSE-FIRST v84.4
     import json as _j
@@ -3778,6 +3780,7 @@ def _selftest(root):
     ck('S312 a check never stands before the path it reads is born', (lambda seg: seg.find('_in_nonqueue(p)') > seg.find('p = os.path.join(dp, x)') >= 0)(_src.split('def calls_cmd(')[1].split('def sheet_cmd(')[0]))
     ck('S313 seven doors with the reminder at four', (chr(35)+' NUDGE-OPTION v84.44') in _src and ("'7': (None, 'skipped', None)" in _src))
     ck('S314 a nudge changes no tag and moves nothing', ('chair-nudge' in _src) and ("it['outcome'] = 'nudged'" in _src))
+    ck('S315 the keystroke answers on its own question'+chr(39)+'s line', (chr(35)+' INLINE-ECHO v84.45') in _src and ('sys.stdout.write(k.lower()' in _src))
     ck('S291 the cv draft carries the touchpoint and the missed draft carries the JD line in whichever store speaks it', 'acknowledge receipt' in open(os.path.join(BASE_DIR, 'drafts', 'cv.txt')).read() and ('JD on your email' in open(os.path.join(BASE_DIR, 'templates', 'missed.txt')).read() or 'JD on your email' in open(os.path.join(BASE_DIR, 'drafts', 'missed.txt')).read()))  # S291 repinned v84.31: the house polices its own drafts; the master's style is never the failing grade
     ck('S292 every option states its tag, its keyword and its two drafts', (chr(35)+' OPTIONS-MAP v84.32') in _src and ('def options_cmd(' in _src))
     ck('S293 an empty sheet re-seeds itself and refresh re-seeds on demand', (chr(35)+' SELF-REFRESH v84.32') in _src and (chr(35)+' SELF-REFRESH v84.32') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
