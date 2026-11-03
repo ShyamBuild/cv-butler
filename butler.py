@@ -1068,7 +1068,8 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
         _f = globals().get(_fn)
         if callable(_f):
             try:
-                _v = _f(p)
+                _buf = __import__('io').StringIO()
+                with __import__('contextlib').redirect_stdout(_buf): _v = _f(p)  # SILENT-PROBE v84.41: discovering the email must not print the clerk's witness lines
                 if _v: _em = _v[0] if isinstance(_v, (list, tuple)) else str(_v); break
             except Exception: pass
     if ph: say(f'   ✉️ {_em} · 📱 {ph}' if _em else f'   📱 {ph}')
@@ -1291,6 +1292,9 @@ def meta_cmd(arg, root, say=print):  # TEMPLATES v84.16: teach the company once 
 
 CHAIR_SCENARIO = {'jd': 'jd', 'refer': 'refer', 'cv': 'nudge', 'missed': 'missed'}  # ONE-VOICE v84.19: the chair's outcomes map onto the keywords' scenarios
 def _chair_wa_text(kind, p, name):  # ONE-VOICE v84.19: the chair drafts through the same composer the keywords have always used; drafts/ and built-ins are fallbacks, not rivals
+    if kind == 'cv':  # SCENARIO-3 v84.41: outcome 3 speaks the master's combo - acknowledge the JD and send the updated CV - from the scenario store; the legacy nudge stays the later touchpoint
+        t3 = _draft_text('cv', name, _pos_of(p, _pl_root()), p)
+        if t3: return t3
     try:
         import briefing as _br
         sc = CHAIR_SCENARIO.get(kind)
@@ -1359,7 +1363,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
             if not p.lower().endswith(('.pdf', '.docx')): say('⚠️ he lost his .pdf/.docx extension in the rename - most doors ignore extension-less papers; rename him back when convenient')  # EXT-LOSS v84.14
         else:
             say('🤷 the paper moved and I cannot find it by fingerprint - re-seed with calls, or tag it by its new name'); return
-    say_identity_for(p, say)
+    pass  # IDENTITY-ONCE v84.41: the triple speaks at the seat; the proposal carries only the decision, the draft carries the truth inside
     say(f"🤖 Proposal: {cur['name']} → " + (f'[{tag}]' if tag else 'SKIPPED, untagged, unmoved') + f" ({outcome})" + (f' · WhatsApp {draft} draft will open, unsent' if draft else ' · no message - this one stays in the house') + ' · y / n')
     k = confirm_wait(say)
     if k == 'n':
@@ -3763,6 +3767,8 @@ def _selftest(root):
     ck('S305 every contact truth is spoken once, at the seat and at the proposal', (chr(35)+' CONTACT-ONCE v84.39') in _src and (chr(35)+' IDENTITY-AT-SEAT v84.39') in _src)
     ck('S306 the weekly page reads only what the house already keeps', (chr(35)+' WEEKLY v84.40') in _src and ('def weekly_cmd(' in _src) and ('stage_log.json' in _src))
     ck('S307 the module map lives in the index, versioned with the code', os.path.exists(os.path.join(BASE_DIR, 'ARCHITECTURE.md')) and ('module map' in open(os.path.join(BASE_DIR, 'ARCHITECTURE.md')).read()))
+    ck('S308 outcome 3 speaks the combo from the scenario store, nudge stays the touchpoint', (chr(35)+' SCENARIO-3 v84.41') in _src and ('def _draft_text(' in _src))
+    ck('S309 the email probe is silent and the triple speaks once at the seat', (chr(35)+' SILENT-PROBE v84.41') in _src and (chr(35)+' IDENTITY-ONCE v84.41') in _src)
     ck('S274 the fallback chain keeps every scenario speakable', ('def _chair_wa_text(' in _src) and ('def _draft_text(' in _src) and ('def _chair_draft(' in _src))
     ck('S275 the fields dict carries every sentence it computes', ("'roleline': roleline" in _src) and (chr(35)+' ROLELINE v84.18') in _src)
     ck('S276 one truth per position, taught once and shown at the composer', (chr(35)+' POS-ID v84.21') in _src and ('def pos_identity(' in _src) and ('say_identity_for' in open(os.path.join(BASE_DIR, 'briefing.py')).read()))
