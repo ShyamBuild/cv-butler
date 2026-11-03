@@ -574,6 +574,31 @@ def _stage_note(file, from_tag, to_tag, from_dir, to_dir, srcs):  # STAGE-LOG v8
     log.append({'ts': int(time.time()), 'file': file, 'from_tag': from_tag, 'to_tag': to_tag, 'from_dir': from_dir, 'to_dir': to_dir, 'src': srcs})
     try: _j.dump(log[-400:], open(lp, 'w'), indent=1)
     except Exception: pass
+def menu_key(prompt='', allowed=('y', 't', 'n')):  # ONE-INPUT v84.47: one keystroke decides the deed and the draft - echoed on the question's own line
+    import sys, termios, tty
+    if prompt: sys.stdout.write(prompt); sys.stdout.flush()
+    try:
+        fd = sys.stdin.fileno(); old = termios.tcgetattr(fd)
+        try:
+            tty.setraw(fd); k = sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old)
+    except Exception:
+        return (input() or '').strip().lower()
+    if k in ('\r', '\n'):
+        sys.stdout.write('\n'); sys.stdout.flush(); return ''
+    sys.stdout.write(k + '\n'); sys.stdout.flush()
+    return k.strip().lower()
+def _preview_open(p, say=print):  # PREVIEW v84.46: the seated paper opens in Preview behind your eyes; already-open is fine; the machine never closes what you opened
+    if not (p or '').lower().endswith('.pdf'): return
+    try:
+        import subprocess
+        out = subprocess.run(['osascript', '-e', 'tell application "Preview" to get name of windows'], capture_output=True, text=True, timeout=5).stdout or ''
+        if os.path.basename(p) in out: return
+        subprocess.Popen(['open', '-g', '-a', 'Preview', p])
+    except Exception:
+        pass
+
 def confirm_wait(say=print):  # KEY-CONFIRM v84.6: the answer is a keystroke, not a line - like the WhatsApp menu (INLINE-ECHO v84.45: the key you press appears on the proposal's own line)
     import sys, termios, tty
     try:
@@ -678,11 +703,11 @@ def _tag_apply_one(p, tag, on, say=print):  # TAG-VOICE v84.5: waiting tags add 
     if keeps: txt += f' · keeps {", ".join(keeps)}'
     if move_to: txt += f' · move {os.path.basename(os.path.dirname(p))} → {tag}'
     if conflict: txt += f' · a twin already rests in {tag} ({os.path.relpath(conflict, root)}) - tagged in place; the twin is yours to Bin, I never delete'
-    say(txt + ' · reply y / n')
+    say(txt + ' · y / n', end='')  # INLINE-ECHO v84.45: the answer signs its own question's line
     try: _j.dump({'p': p, 'tag': tag, 'on': on, 'move_to': bool(move_to) and not conflict, 'ts': int(time.time())}, open(os.path.join(BASE_DIR, 'pending_action.json'), 'w'))
     except Exception: pass
-    k = confirm_wait(say)
-    if k in ('y',): action_execute(say)
+    k = menu_key()
+    if k in ('y', 't'): action_execute(say)  # ONE-INPUT v84.47: t executes without a draft wherever a draft could follow
     elif k in ('n',): action_cancel(say)
     elif k is not None: say('proposal left waiting - answer y or n on the next line')
 
@@ -1065,6 +1090,7 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
     p = i['p']; ph = taught_digits(i['name']) or phones_of(p, True) or None  # QUIET-CHAIR v84.37: the dossier takes the number without the clerk's ceremony
     if isinstance(ph, list): ph = ph[0] if ph else None
     say(f"📞 UP: {i['name']} · in {os.path.basename(os.path.dirname(p))}")
+    _preview_open(p, say)
     say_identity_for(p, say)  # IDENTITY-AT-SEAT v84.39: the master asked for the triple at the seat as well; S277 keeps the proposal's
     _em = ''  # CONTACT-ONCE v84.39: every truth exactly once - email and phone in a single line
     for _fn in ('email_of', '_email_of', '_email_witness', 'emails_of'):
@@ -1357,7 +1383,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
     s = sheet_load(); cur = s.get('current')
     if not cur: say('🤷 nobody is in the chair - type: up'); return
     o = OUTCOMES.get(key)
-    if not o: say('🤷 unknown outcome - digits 1 to 6, or missed / jd / cv / not interested / ready / skip'); return
+    if not o: say('🤷 unknown outcome - digits 1 to 7, or missed / jd / cv / not interested / ready / skip'); return
     tag, outcome, draft = o; p = cur['p']
     if not os.path.exists(p):  # FP v84.11: a renamed paper is still the same paper
         q = _find_by_fp(cur.get('fp'), root)
@@ -1369,22 +1395,19 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
             say('🤷 the paper moved and I cannot find it by fingerprint - re-seed with calls, or tag it by its new name'); return
     pass  # IDENTITY-ONCE v84.41: the triple speaks at the seat; the proposal carries only the decision, the draft carries the truth inside
     _tagpart = 'SKIPPED, untagged, unmoved' if tag is None else ('[no tag change - reminder only]' if tag == '' else f'[{tag}]')  # NUDGE-OPTION v84.44
-    say(f"🤖 Proposal: {cur['name']} → " + _tagpart + f" ({outcome})" + (f' · WhatsApp {draft} draft will open, unsent' if draft else ' · no message - this one stays in the house') + ' · y / n')
-    k = confirm_wait(say)
+    say(f"🤖 Proposal: {cur['name']} → " + _tagpart + f" ({outcome})" + (f' · WhatsApp {draft} draft will open, unsent' if draft else ' · no message - this one stays in the house') + ' · [y] do + WhatsApp draft · [t] do, no WhatsApp · [n] cancel', end='')  # ONE-INPUT v84.47: the menu and the echo share the proposal's line
+    k = menu_key()  # ONE-INPUT v84.47: one keystroke decides deed and draft - the twin return is buried with the old block
     if k == 'n':
         say('· row left open - he stays in the chair'); return
-    if k != 'y':  # PROPOSE-WAIT v84.15: Enter or silence leaves a typed answer pending
+    if k not in ('y', 't'):  # PROPOSE-WAIT v84.15: Enter or silence leaves a typed answer pending
         import json as _j2
         try: _j2.dump({'p': p, 'tag': tag, 'on': True, 'move_to': True, 'ts': int(time.time())}, open(os.path.join(BASE_DIR, 'pending_action.json'), 'w'))
         except Exception: pass
-        say('· proposal waiting - type y or n on the next line')
-        return
-        return
+        say('')
+        say('· proposal waiting - type y or n on the next line'); return
+    _k = k
     if tag == '':  # NUDGE-OPTION v84.44: a reminder changes no tag and moves nothing - the debt stays, the row closes, the thread continues
-        _r0 = ''
-        try: _r0 = input('📱 draft WhatsApp? [y] yes · [n] skip (no text): ').strip().lower()
-        except Exception: pass
-        if _r0 != 'n':
+        if _k != 't':  # ONE-INPUT v84.47: the nudge's draft decision lives in the same keystroke
             ph0 = taught_digits(cur['name']) or phones_of(p, True) or None
             if isinstance(ph0, list): ph0 = ph0[0] if ph0 else None
             if ph0:
@@ -1436,10 +1459,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
             if ph:
                 pos = _pos_of(p, root)
                 import wa
-                _r = ''
-                try: _r = input('📱 draft WhatsApp? [y] yes · [n] skip (tag only): ').strip().lower()  # SKIP-WA v84.38: the master may tag without texting
-                except Exception: pass
-                if _r == 'n': say('🏷️ tagged only - WhatsApp skipped')
+                if _k == 't': say('🏷️ tagged only - WhatsApp skipped')  # SKIP-WA v84.38 + ONE-INPUT v84.47: the prompt retires, its law stays - the proposal's t already said it
                 else: wa.send_review(ph, _chair_wa_text(draft, p, cur['name']), say)
             else: say(f'⚠️ no phone for {cur["name"]} - teach me: python3 butler.py teach {cur["name"].split()[0].lower()} <digits>, then retry')
     desk_dashboard(say)  # CENSUS-AFTER v84.12: every closed row ends with the living scoreboard
@@ -3777,6 +3797,10 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S316 the seated paper opens in Preview, behind your eyes, never closed by the machine', (chr(35)+' PREVIEW v84.46') in _src and ('def _preview_open(' in _src))
+    ck('S317 every single-letter door answers to the keystroke alone', (chr(35)+' ONE-KEY v84.46') in open(os.path.join(BASE_DIR, 'wa.py')).read() and ('def menu_key(' in _src))
+    ck('S318 one keystroke decides the deed and the draft - no second prompt', (chr(35)+' ONE-INPUT v84.47') in _src and (('draft WhatsApp? ' + '[y] yes') not in _src))  # S318 repinned v84.48: the probe is built from parts, so the guard never carries the forbidden literal in its own body
+    ck('S319 the unknown-outcome confession counts all seven doors', ('digits 1 to 7' in _src))
     ck('S312 a check never stands before the path it reads is born', (lambda seg: seg.find('_in_nonqueue(p)') > seg.find('p = os.path.join(dp, x)') >= 0)(_src.split('def calls_cmd(')[1].split('def sheet_cmd(')[0]))
     ck('S313 seven doors with the reminder at four', (chr(35)+' NUDGE-OPTION v84.44') in _src and ("'7': (None, 'skipped', None)" in _src))
     ck('S314 a nudge changes no tag and moves nothing', ('chair-nudge' in _src) and ("it['outcome'] = 'nudged'" in _src))

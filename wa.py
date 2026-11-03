@@ -92,6 +92,22 @@ def _arm(phone, text):
     except Exception:
         pass
 
+def _key(prompt):  # ONE-KEY v84.46: the menu answers to the keystroke alone; Enter still means take your time
+    import sys, termios, tty
+    sys.stdout.write(prompt); sys.stdout.flush()
+    try:
+        fd = sys.stdin.fileno(); old = termios.tcgetattr(fd)
+        try:
+            tty.setraw(fd); k = sys.stdin.read(1)
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old)
+    except Exception:
+        return (input() or '').strip().lower()
+    if k in ('\r', '\n'):
+        sys.stdout.write('\n'); sys.stdout.flush(); return ''
+    sys.stdout.write(k + '\n'); sys.stdout.flush()
+    return k.strip().lower()
+
 def send_review(phone, text, say=print, ask=None):
     digits = re.sub(r'\D', '', str(phone))
     if len(digits) == 10: digits = '91' + digits
@@ -153,7 +169,8 @@ def send_review(phone, text, say=print, ask=None):
             return bool(sent)
         say("📝 message is in the WhatsApp text field - the window STAYS open until you choose:")
         while True:
-            c = (ask or input)("   [s] I clicked send myself · [x] discard & clear · [q] leave in field & close · [Enter] keep waiting: ").strip().lower()
+            _pm = '   [s] I clicked send myself · [x] discard & clear · [q] leave in field & close · [Enter] keep waiting: '
+            c = (ask(_pm).strip().lower() if ask else _key(_pm))  # ONE-KEY v84.46
             if c == '':
                 say("   …still open - take your time (s / x / q)")
                 continue
