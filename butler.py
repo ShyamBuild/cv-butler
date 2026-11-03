@@ -574,21 +574,28 @@ def _stage_note(file, from_tag, to_tag, from_dir, to_dir, srcs):  # STAGE-LOG v8
     log.append({'ts': int(time.time()), 'file': file, 'from_tag': from_tag, 'to_tag': to_tag, 'from_dir': from_dir, 'to_dir': to_dir, 'src': srcs})
     try: _j.dump(log[-400:], open(lp, 'w'), indent=1)
     except Exception: pass
-def menu_key(prompt='', allowed=('y', 't', 'n')):  # ONE-INPUT v84.47: one keystroke decides the deed and the draft - echoed on the question's own line
+def menu_key(prompt='', allowed=('y', 't', 'n')):  # ONE-INPUT v84.47 (ASK-LINE v84.49): the statement ends in its own line; the question ends in a visible cue; the key signs it; Enter re-asks once; Ctrl+C cancels like everywhere else
     import sys, termios, tty
-    if prompt: sys.stdout.write(prompt); sys.stdout.flush()
-    try:
-        fd = sys.stdin.fileno(); old = termios.tcgetattr(fd)
+    for attempt in (0, 1):
+        sys.stdout.write(prompt if attempt == 0 else '   one key, master: y / t / n › '); sys.stdout.flush()
         try:
-            tty.setraw(fd); k = sys.stdin.read(1)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old)
-    except Exception:
-        return (input() or '').strip().lower()
-    if k in ('\r', '\n'):
-        sys.stdout.write('\n'); sys.stdout.flush(); return ''
-    sys.stdout.write(k + '\n'); sys.stdout.flush()
-    return k.strip().lower()
+            fd = sys.stdin.fileno(); old = termios.tcgetattr(fd)
+            try:
+                tty.setraw(fd); k = sys.stdin.read(1)
+            finally:
+                termios.tcsetattr(fd, termios.TCSADRAIN, old)
+        except Exception:
+            return (input() or '').strip().lower()
+        if k == '\x03':
+            sys.stdout.write('^C\n'); sys.stdout.flush(); return 'n'
+        if k in ('\r', '\n'):
+            sys.stdout.write('\n'); sys.stdout.flush()
+            if attempt == 0: continue
+            return ''
+        sys.stdout.write(k + '\n'); sys.stdout.flush()
+        return k.strip().lower()
+    return ''
+
 def _preview_open(p, say=print):  # PREVIEW v84.46: the seated paper opens in Preview behind your eyes; already-open is fine; the machine never closes what you opened
     if not (p or '').lower().endswith('.pdf'): return
     try:
@@ -703,7 +710,7 @@ def _tag_apply_one(p, tag, on, say=print):  # TAG-VOICE v84.5: waiting tags add 
     if keeps: txt += f' · keeps {", ".join(keeps)}'
     if move_to: txt += f' · move {os.path.basename(os.path.dirname(p))} → {tag}'
     if conflict: txt += f' · a twin already rests in {tag} ({os.path.relpath(conflict, root)}) - tagged in place; the twin is yours to Bin, I never delete'
-    say(txt + ' · y / n', end='')  # INLINE-ECHO v84.45: the answer signs its own question's line
+    say(txt)  # ASK-LINE v84.49: statement first, question second
     try: _j.dump({'p': p, 'tag': tag, 'on': on, 'move_to': bool(move_to) and not conflict, 'ts': int(time.time())}, open(os.path.join(BASE_DIR, 'pending_action.json'), 'w'))
     except Exception: pass
     k = menu_key()
@@ -1395,8 +1402,8 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
             say('🤷 the paper moved and I cannot find it by fingerprint - re-seed with calls, or tag it by its new name'); return
     pass  # IDENTITY-ONCE v84.41: the triple speaks at the seat; the proposal carries only the decision, the draft carries the truth inside
     _tagpart = 'SKIPPED, untagged, unmoved' if tag is None else ('[no tag change - reminder only]' if tag == '' else f'[{tag}]')  # NUDGE-OPTION v84.44
-    say(f"🤖 Proposal: {cur['name']} → " + _tagpart + f" ({outcome})" + (f' · WhatsApp {draft} draft will open, unsent' if draft else ' · no message - this one stays in the house') + ' · [y] do + WhatsApp draft · [t] do, no WhatsApp · [n] cancel', end='')  # ONE-INPUT v84.47: the menu and the echo share the proposal's line
-    k = menu_key()  # ONE-INPUT v84.47: one keystroke decides deed and draft - the twin return is buried with the old block
+    say(f"🤖 Proposal: {cur['name']} → " + _tagpart + f" ({outcome})" + (f' · WhatsApp {draft} draft will open, unsent' if draft else ' · no message - this one stays in the house'))  # ASK-LINE v84.49: the statement ends in its own line
+    k = menu_key('   y = do + WhatsApp draft · t = do only · n = cancel › ')  # ASK-LINE v84.49: the question waits at a visible cue and the key signs it
     if k == 'n':
         say('· row left open - he stays in the chair'); return
     if k not in ('y', 't'):  # PROPOSE-WAIT v84.15: Enter or silence leaves a typed answer pending
@@ -3801,6 +3808,7 @@ def _selftest(root):
     ck('S317 every single-letter door answers to the keystroke alone', (chr(35)+' ONE-KEY v84.46') in open(os.path.join(BASE_DIR, 'wa.py')).read() and ('def menu_key(' in _src))
     ck('S318 one keystroke decides the deed and the draft - no second prompt', (chr(35)+' ONE-INPUT v84.47') in _src and (('draft WhatsApp? ' + '[y] yes') not in _src))  # S318 repinned v84.48: the probe is built from parts, so the guard never carries the forbidden literal in its own body
     ck('S319 the unknown-outcome confession counts all seven doors', ('digits 1 to 7' in _src))
+    ck('S320 no question may listen in silence - the cue line waits visibly and Ctrl+C cancels', (chr(35)+' ASK-LINE v84.49') in _src and ('x03' in _src) and ('one key, master' in _src))
     ck('S312 a check never stands before the path it reads is born', (lambda seg: seg.find('_in_nonqueue(p)') > seg.find('p = os.path.join(dp, x)') >= 0)(_src.split('def calls_cmd(')[1].split('def sheet_cmd(')[0]))
     ck('S313 seven doors with the reminder at four', (chr(35)+' NUDGE-OPTION v84.44') in _src and ("'7': (None, 'skipped', None)" in _src))
     ck('S314 a nudge changes no tag and moves nothing', ('chair-nudge' in _src) and ("it['outcome'] = 'nudged'" in _src))
