@@ -1403,7 +1403,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
     pass  # IDENTITY-ONCE v84.41: the triple speaks at the seat; the proposal carries only the decision, the draft carries the truth inside
     _tagpart = 'SKIPPED, untagged, unmoved' if tag is None else ('[no tag change - reminder only]' if tag == '' else f'[{tag}]')  # NUDGE-OPTION v84.44
     say(f"🤖 Proposal: {cur['name']} → " + _tagpart + f" ({outcome})" + (f' · WhatsApp {draft} draft will open, unsent' if draft else ' · no message - this one stays in the house'))  # ASK-LINE v84.49: the statement ends in its own line
-    k = menu_key('   y = do + WhatsApp draft · t = do only · n = cancel › ')  # ASK-LINE v84.49: the question waits at a visible cue and the key signs it
+    k = menu_key('   y = tag + move + WhatsApp draft · t = tag + move, no WhatsApp · n = cancel › ')  # ASK-LINE v84.49: the question waits at a visible cue and the key signs it  # PLAIN-CUE v84.50: the cue names the deeds in the master's words - tag, move, text
     if k == 'n':
         say('· row left open - he stays in the chair'); return
     if k not in ('y', 't'):  # PROPOSE-WAIT v84.15: Enter or silence leaves a typed answer pending
@@ -3809,6 +3809,7 @@ def _selftest(root):
     ck('S318 one keystroke decides the deed and the draft - no second prompt', (chr(35)+' ONE-INPUT v84.47') in _src and (('draft WhatsApp? ' + '[y] yes') not in _src))  # S318 repinned v84.48: the probe is built from parts, so the guard never carries the forbidden literal in its own body
     ck('S319 the unknown-outcome confession counts all seven doors', ('digits 1 to 7' in _src))
     ck('S320 no question may listen in silence - the cue line waits visibly and Ctrl+C cancels', (chr(35)+' ASK-LINE v84.49') in _src and ('x03' in _src) and ('one key, master' in _src))
+    ck('S321 the cue line names the deeds in the master'+chr(39)+'s words', (chr(35)+' PLAIN-CUE v84.50') in _src and ('tag + move + WhatsApp draft' in _src) and (('t = do ' + 'only') not in _src) and (('t = yes, no ' + 'draft') not in _src))  # S321 repinned v84.50: negative probes are built from parts - a witness may not carry the crime in its own body
     ck('S312 a check never stands before the path it reads is born', (lambda seg: seg.find('_in_nonqueue(p)') > seg.find('p = os.path.join(dp, x)') >= 0)(_src.split('def calls_cmd(')[1].split('def sheet_cmd(')[0]))
     ck('S313 seven doors with the reminder at four', (chr(35)+' NUDGE-OPTION v84.44') in _src and ("'7': (None, 'skipped', None)" in _src))
     ck('S314 a nudge changes no tag and moves nothing', ('chair-nudge' in _src) and ("it['outcome'] = 'nudged'" in _src))
