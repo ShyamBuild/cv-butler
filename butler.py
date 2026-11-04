@@ -877,6 +877,9 @@ def desk_dashboard(say=print):  # DASH v84.7: the desk's census in one breath, r
     line = ' · '.join(f'{short[t]}:{counts[t]}' for t in order if counts.get(t)) + (f' · skipped:{_sk}' if _sk else '')
     say('📊 ' + (line or 'empty desk'))
     if multi: say('⚠️ wearing two stages: ' + ', '.join(multi[:6]) + (' …' if len(multi) > 6 else ''))
+    if skips_load():  # TRAY-NAMES v85.1: a count without names is a queue of strangers - the tray names its members whenever it is not empty
+        _sk = list(skips_load())
+        say('⏭️ tray: ' + ', '.join(os.path.basename(x) for x in _sk[:4]) + (f' +{len(_sk)-4}' if len(_sk) > 4 else '') + ' · one returns per empty seed')
 def tags_audit(say=print):  # AUDIT v84.7 (v84.9): two stages, or a stage away from its folder - named, never silently rewritten
     seen = set(); bad = 0; wrong = []
     for sc in desk_paths():
@@ -1027,11 +1030,18 @@ def calls_cmd(arg, root, say=print, hint=True):  # CHAIR v84.10b (v84.30): FOLDE
     if not items and not reopened:  # RETRAY v84.55: when no loose paper waits, the skipped return for re-review - one per empty seed, oldest skip first, and the skip is consumed so no man re-feds endlessly
         skd = skips_load()
         for kp in sorted(skd, key=lambda x: skd[x] if isinstance(skd[x], (int, float)) else 0):  # RETRAY-ONE v84.56: the tray offers one soul per empty seed; the rest hold their place
-            if not os.path.isfile(kp): continue
-            rp2 = os.path.realpath(kp)
-            if rp2 in seen or os.path.basename(os.path.dirname(kp)) in _tag_vocab() or _name_key(os.path.basename(kp)) in mem: continue
+            qq = kp if os.path.isfile(kp) else None  # RETRAY-RESOLVE v85.1: a stale skip path is re-found by name, like every other door; only a vanished paper stays skipped
+            if qq is None:
+                bn = os.path.basename(kp)
+                for sc in desk_paths():
+                    for dp, dn, fn in os.walk(sc):
+                        if bn in fn: qq = os.path.join(dp, bn); break
+                    if qq: break
+            if not qq: continue
+            rp2 = os.path.realpath(qq)
+            if rp2 in seen or os.path.basename(os.path.dirname(qq)) in _tag_vocab() or _name_key(os.path.basename(qq)) in mem: continue
             if any(os.path.realpath(it.get('p', '')) == rp2 for it in s0.get('items', [])): continue
-            items.append({'p': kp, 'name': os.path.splitext(os.path.basename(kp))[0], 'status': 'waiting', 'fp': _fp(kp), 're': True})
+            items.append({'p': qq, 'name': os.path.splitext(os.path.basename(qq))[0], 'status': 'waiting', 'fp': _fp(qq), 're': True})
             del skd[kp]; refed += 1; break
         if refed: json.dump(skd, open(SKIPS_PATH, 'w'), indent=1)
     waiting = [i for i in s0.get('items', []) if i.get('status') == 'waiting']
@@ -1437,8 +1447,6 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
         s['current'] = None; sheet_save(s)
         _stage_note(cur['name'], _tags_of(p), _tags_of(p), os.path.basename(os.path.dirname(p)), os.path.basename(os.path.dirname(p)), 'chair-nudge')
         say(f'🔔 nudged {cur["name"]} - no tag changed, nothing moved; his debts stay on the followup board')
-        say(f'🔚 {cur["name"]}: 🏷️ {tag} · 📦 moved · ' + ('📱 drafted' if _k != 't' else 'no 📱'))  # ACTION-ECHO v84.51: the beat you just played, summarised in the house's pictographs
-        desk_dashboard(say)
         w = [x for x in s.get('items', []) if x['status'] == 'waiting']
         if w: say(f'⏭️ next up: {w[0]["name"]} - type: up')
         else: say('🏁 sheet covered - every candidate has an outcome')
@@ -1465,7 +1473,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
             say(f"🏷️ {cur['name']}: {tag}" + (f' (dropped {", ".join(drops)})' if drops else ''))
             _stage_note(cur['name'], cur_tags, newtags, os.path.basename(os.path.dirname(p)), tag, 'chair')
             covered_add(_name_key(os.path.basename(p)), _fp(p), tag, os.path.basename(p))
-            _stage_move(p, tag, say)
+            _stage_move(p, tag, lambda *a, **k: None)
         except Exception as _te:
             say(f'⚠️ tag write failed: {_te}'); return
         for it in s.get('items', []):
@@ -1477,9 +1485,10 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
             if ph:
                 pos = _pos_of(p, root)
                 import wa
-                if _k == 't': say('🏷️ tagged only - WhatsApp skipped')  # SKIP-WA v84.38 + ONE-INPUT v84.47: the prompt retires, its law stays - the proposal's t already said it
+                if _k == 't': pass  # SKIP-WA v84.38 CINE-LINE v85.1: the deed line already says no 📱 - the retired prompt's law rides on
                 else: wa.send_review(ph, _chair_wa_text(draft, p, cur['name']), say)
             else: say(f'⚠️ no phone for {cur["name"]} - teach me: python3 butler.py teach {cur["name"].split()[0].lower()} <digits>, then retry')
+    say(f"✅ {cur['name']} · 🏷️ {tag} · 📦 {os.path.basename(os.path.dirname(p))} · " + ('📱 drafted' if (_k != 't' and draft) else ('no 📱' if draft else 'internal · no 📱')))  # ACTION-ECHO v84.51 CINE-LINE v85.1: one deed line, nothing repeated
     desk_dashboard(say)  # CENSUS-AFTER v84.12: every closed row ends with the living scoreboard
     w = [x for x in s.get('items', []) if x['status'] == 'waiting']  # ADVANCE v84.10b: the queue walks without being pushed
     if w: say(f'⏭️ next up: {w[0]["name"]} - type: up')
@@ -3819,6 +3828,8 @@ def _selftest(root):
     ck('S327 the tray refills only when empty and new blood always outranks it', (chr(35)+' RETRAY v84.55') in _src and ('key=lambda x: 1 if x.get(' + chr(39) + 're' + chr(39) + ') else 0' in _src))
     ck('S328 the tray offers one skipped soul per empty seed, oldest first', (chr(35)+' RETRAY-ONE v84.56') in _src and ('del skd[kp]; refed += 1; break' in _src))
     ck('S329 the freeze holds - v85.0 is the standing price of every future change', (chr(35)+' THE FREEZE v85.0') in _src and os.path.exists(os.path.join(BASE_DIR, 'README.md')) and os.path.exists(os.path.join(BASE_DIR, 'install.sh')))  # S329 repinned v85.0: a version is a fact about the source, so the guard reads the source, not a variable the book may reassign
+    ck('S330 a stale skip is re-found by name, so the tray never starves', (chr(35)+' RETRAY-RESOLVE v85.1') in _src)
+    ck('S331 the tray names its members whenever it is not empty', (chr(35)+' TRAY-NAMES v85.1') in _src)
     ck('S322 no dispatch line at module level passes a printer it cannot see', sum(1 for _l in open(os.path.join(BASE_DIR, 'briefing.py')).read().split(chr(10)) if (', root, ' + 'say); continue') in _l) == 0)
     ck('S323 the sheet speaks one line per beat and every door wears its face', (chr(35)+' ONE-LINE v84.51') in _src and (chr(35)+' EMOJI-CUE v84.51') in _src and (chr(35)+' ACTION-ECHO v84.51') in _src)
     ck('S324 no lap may bury a law - deleted lines carry their witnesses', (chr(35)+' WITNESS-CARRY v84.52') in _src)
