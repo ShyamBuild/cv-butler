@@ -9,10 +9,17 @@ try:
 except Exception:
     sync_playwright = None
 
+_PW = [None]
+def _pw():  # ONE-START v85.30: playwright is started once per process and shared by every door - the ladder proved a second sync start is the library's forbidden door, and its complaint about asyncio was a lie about arity
+    if _PW[0] is None:
+        from playwright.sync_api import sync_playwright
+        _PW[0] = sync_playwright().start()
+    return _PW[0]
+
 def _ctx():
     if 'ctx' not in _state:
         from playwright.sync_api import sync_playwright
-        pw = sync_playwright().start()
+        pw = _pw()
         ctx = pw.chromium.launch_persistent_context(
             PROFILE, headless=False, viewport={"width": 1280, "height": 900},
             args=["--disable-blink-features=AutomationControlled"])
@@ -112,7 +119,7 @@ def _key(prompt):  # ONE-KEY v84.46: the menu answers to the keystroke alone; En
 def watest(say=print):  # WA-STEP v85.29: each door of the ritual opened in order and named aloud, with a QR pause the moment one is visible - the master's instinct, made a ladder
     from playwright.sync_api import sync_playwright
     say('1 start…')
-    pw = sync_playwright().start()
+    pw = _pw()
     say('1 ok')
     page = None
     try:
@@ -154,7 +161,7 @@ def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  #
     digits = re.sub(r'\D', '', str(phone))
     if len(digits) == 10: digits = '91' + digits
     say(f"🌐 opening WhatsApp Web in the BUTLER window for +{digits}…")
-    pw = sync_playwright().start()
+    pw = _pw()
     browser = None
     page = None
     via_cdp = False
