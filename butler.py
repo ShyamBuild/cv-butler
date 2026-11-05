@@ -1634,7 +1634,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
             if isinstance(ph0, list): ph0 = ph0[0] if ph0 else None
             if ph0:
                 import wa
-                wa.send_review(ph0, _chair_wa_text('nudge', p, cur['name']), say)
+                _wr = wa.send_review(ph0, _chair_wa_text('nudge', p, cur['name']), say)
             else: say(f'⚠️ no phone for {cur["name"]} - teach me: python3 butler.py teach {cur["name"].split()[0].lower()} <digits>, then retry')
         for it in s.get('items', []):
             if it.get('status') == 'waiting' and (os.path.realpath(it.get('p', '')) == os.path.realpath(p) or _name_key(os.path.basename(it.get('p', ''))) == _name_key(os.path.basename(p))):
@@ -4021,6 +4021,7 @@ def _selftest(root):
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
     ck('S370 the deed line reports what the window actually did', (chr(39)+'📱 parked'+chr(39)) in _src and ('_wr = wa.send_review' in _src))
+    ck('S371 the deed'+chr(39)+'s witness stands on the sending line itself', any(('_wr = wa.send_review' in l) for l in _src.split('def outcome_cmd(')[1].split(chr(10) + 'def ')[0].split(chr(10))))
     ck('S358 in raw mode the writer is the driver - every raw newline carries its carriage', (chr(35)+' CRLF-RAW v85.22') in _src and (chr(35)+' CRLF-RAW v85.22') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' CRLF-RAW v85.22') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S359 the vision eye reads in its own thread and never lends the thumb its loop', (chr(35)+' VISION-THREAD v85.22') in _src and ('_vision_safe(p)' in _src))
     ck('S360 the whole-chair ceremony runs once per keystroke and each miss confesses once', (chr(35)+' ONCE-PER-COMMAND v85.22') in _src and ('_IN_CEREMONY' in _src))
