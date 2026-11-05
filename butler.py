@@ -1059,6 +1059,10 @@ def _ident_of(p):  # DUP-SEED v85.26: a paper's identity is its email-and-phone 
     except Exception:
         t = ''
     ids = set(emails_in_text(t)) | set(phones_in_text(t))
+    v2 = heuristic_name(p) or _name_from_first_line(p)  # DUP-SEED name-token v85.33: a scan has no contacts in its text layer, so the fast eyes lend identity a face - vision stays out of seeding for speed
+    if v2:
+        _cn = _canonical_person_name(v2) or v2
+        ids.add('name:' + _name_key(_cn))
     _IDC[p] = [st.st_mtime, st.st_size, sorted(ids)]
     try: _j.dump(_IDC, open(cf, 'w'))
     except Exception: pass
@@ -1682,7 +1686,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
                 import wa
                 _wr = True  # DEED-TRUTH v85.31: the deed line reports what the window actually did - drafted, parked, or internal
                 if _k == 't': pass  # SKIP-WA v84.38 # CINE-LINE v85.1: the deed line already says no 📱 - the retired prompt's law rides on
-                else: wa.send_review(ph, _chair_wa_text(draft, p, cur['name']), say)
+                else: _wr = wa.send_review(ph, _chair_wa_text(draft, p, cur['name']), say)
             else: say(f'⚠️ no phone for {cur["name"]} - teach me: python3 butler.py teach {cur["name"].split()[0].lower()} <digits>, then retry')
     say(f"✅ {cur['name']} · 🏷️ {tag} · 📦 {os.path.basename(os.path.dirname(p))} · " + ('📱 drafted' if (_k != 't' and draft and _wr) else ('📱 parked' if (_k != 't' and draft and not _wr) else ('no 📱' if draft else 'internal · no 📱'))))  # ACTION-ECHO v84.51 CINE-LINE v85.1: one deed line, nothing repeated
     desk_dashboard(say)  # CENSUS-AFTER v84.12: every closed row ends with the living scoreboard
@@ -4020,8 +4024,9 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S372 a scan is recognised by its face when its contacts are silent', (chr(39)+'name:'+chr(39)) in _src.split('def _ident_of(')[1].split(chr(10) + 'def ')[0])
     ck('S370 the deed line reports what the window actually did', (chr(39)+'📱 parked'+chr(39)) in _src and ('_wr = wa.send_review' in _src))
-    ck('S371 the deed'+chr(39)+'s witness stands on the sending line itself', any(('_wr = wa.send_review' in l) for l in _src.split('def outcome_cmd(')[1].split(chr(10) + 'def ')[0].split(chr(10))))
+    ck('S371 the deed'+chr(39)+'s witness stands on the draft-send line itself', any(('_wr = wa.send_review(ph,' in x and '_chair_wa_text(draft' in x) for x in _src.split('def outcome_cmd(')[1].split(chr(10) + 'def ')[0].split(chr(10))))  # S371 tightened v85.33: the postcode is the draft line, not any send line
     ck('S358 in raw mode the writer is the driver - every raw newline carries its carriage', (chr(35)+' CRLF-RAW v85.22') in _src and (chr(35)+' CRLF-RAW v85.22') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' CRLF-RAW v85.22') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S359 the vision eye reads in its own thread and never lends the thumb its loop', (chr(35)+' VISION-THREAD v85.22') in _src and ('_vision_safe(p)' in _src))
     ck('S360 the whole-chair ceremony runs once per keystroke and each miss confesses once', (chr(35)+' ONCE-PER-COMMAND v85.22') in _src and ('_IN_CEREMONY' in _src))
