@@ -169,7 +169,7 @@ def send_review(phone, text, say=print, ask=None):
             return bool(sent)
         say("📝 message is in the WhatsApp text field - the window STAYS open until you choose:")
         while True:
-            _pm = '   [s] I clicked send myself · [x] discard & clear · [q] leave in field & close · [Enter] keep waiting: '
+            _pm = '[s] I clicked send myself · [x] discard & clear · [q] leave in field & close · [Enter] keep waiting: '  # FLUSH-CUE v85.14
             c = (ask(_pm).strip().lower() if ask else _key(_pm))  # ONE-KEY v84.46
             if c == '':
                 say("   …still open - take your time (s / x / q)")
