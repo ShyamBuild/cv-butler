@@ -1078,41 +1078,58 @@ def _renamer(root):  # REUSE-RENAME v85.12: discover the house's own renamer cla
                 pass
     return None
 
-def seat_rename_check(root, say=print):  # SEAT-RENAME v85.11 (whole v85.13): the focused chair's papers wear their humans' names before any draft greets them; the wider root stays untouched
-    d = desk_load()
-    chair = d.get('primary')
+def seat_rename_check(root, say=print, only=None):  # SEAT-RENAME v85.11 (announced + once-per-day v85.15): the focused chair's papers wear their humans' names before any draft greets them; the duty announces itself and never repeats its whole-chair pass
+    dd = desk_load()
+    chair = dd.get('primary')
     if not chair or not os.path.isdir(chair): return 0
+    import time as _t, json as _j
+    flag = os.path.join(BASE_DIR, '.seatrenamed.json')
+    try: done_map = _j.load(open(flag))
+    except Exception: done_map = {}
+    today = _t.strftime('%Y-%m-%d')
+    whole = (only is None) and (done_map.get(chair) != today)
     R = _renamer(root)
     n = 0
-    for dp, dn, fn in os.walk(chair):
-        for x in fn:
-            p = os.path.join(dp, x)
-            if not _is_desk_candidate(x): continue
-            if _jd_like_name(x) or _portal_name(x): continue
-            v = get_visual_name(p)
-            if not v: continue
-            canon = _canonical_person_name(v)
-            if not canon: continue
-            if _name_key(os.path.splitext(x)[0]) == _name_key(canon): continue
-            q = os.path.join(dp, canon + os.path.splitext(x)[1])
-            if os.path.exists(q): continue
-            try:
-                if R is not None:
-                    try:
-                        R._rename(p, canon, say, _tags_of(p))  # REUSE-RENAME v85.12: the developed hands do the developed deed
-                    except TypeError:
-                        R._rename(p, canon, say)
-                else:
-                    os.rename(p, q)
-                    _rename_ledger(p, canon, 'seat-check', once=True)
-                    _repath_ledgers(p, q)
-                s = sheet_load()
-                for it in s.get('items', []):
-                    if os.path.realpath(it.get('p', '')) in (os.path.realpath(p), os.path.realpath(q)): it['p'] = q
-                sheet_save(s)
-                n += 1
-            except Exception:
-                continue
+    targets = []
+    if whole:
+        say('✏️ naming the focused chair - the developed eyes read each paper once, then the day is free')  # NO-SILENT-WORK v85.15
+        for dp, dn, fn in os.walk(chair):
+            for x in fn:
+                targets.append(os.path.join(dp, x))
+    if only:
+        targets = [only]
+    for p in targets:
+        x = os.path.basename(p)
+        if not _is_desk_candidate(x): continue
+        if _jd_like_name(x) or _portal_name(x): continue
+        v = get_visual_name(p)
+        if not v: continue
+        canon = _canonical_person_name(v)
+        if not canon: continue
+        if _name_key(os.path.splitext(x)[0]) == _name_key(canon): continue
+        q = os.path.join(os.path.dirname(p), canon + os.path.splitext(x)[1])
+        if os.path.exists(q): continue
+        try:
+            if R is not None:
+                try:
+                    R._rename(p, canon, say, _tags_of(p))  # REUSE-RENAME v85.12: the developed hands do the developed deed
+                except TypeError:
+                    R._rename(p, canon, say)
+            else:
+                os.rename(p, q)
+                _rename_ledger(p, canon, 'seat-check', once=True)
+                _repath_ledgers(p, q)
+            s = sheet_load()
+            for it in s.get('items', []):
+                if os.path.realpath(it.get('p', '')) in (os.path.realpath(p), os.path.realpath(q)): it['p'] = q
+            sheet_save(s)
+            n += 1
+        except Exception:
+            continue
+    if whole:
+        done_map[chair] = today
+        try: _j.dump(done_map, open(flag, 'w'))
+        except Exception: pass
     return n
 
 def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes, and the seat itself re-checks coverage
@@ -1175,6 +1192,7 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
             except Exception: pass
     tgs = _tags_of(p)
     if tgs: say('   tags: ' + ', '.join(tgs))
+    seat_rename_check(root, say, only=p)  # SEAT-RENAME v85.15: the seated paper is named even on days the whole-chair pass rests
     say(f"🛰️ {i['name']} · {os.path.basename(os.path.dirname(p))} · ✉️ {_em} · 📱 {ph or 'none (teach me)'}")  # HORIZONTAL v85.9 (re-seated v85.10): the dossier stands AFTER the block that births _em and ph - no variable answers before its birth  # HORIZONTAL v85.9  # WITNESS-CARRY v84.52: deleted lines hand their laws to the line that survives
     say_identity_for(p, say)  # IDENTITY-AT-SEAT v84.39: the master asked for the triple at the seat as well; S277 keeps the proposal's
     say('   1 📤 jd→JD-Conf · 2 🙅 refer→Closed · 3 📝 cv→CV-Update · 4 🔔 nudge→reminder(no tag) · 5 📵 missed→Call-Sched · 6 🏆 internal→Ready · 7 ⏭️ skip→tray (one returns per empty seed)')  # EMOJI-CUE v84.51: each door wears its face, and no face wears a banned glyph  # EMOJI-CUE v84.51 # MAP-COMPACT v84.37 # WITNESS-CARRY v84.52  # WITNESS-CARRY v84.52: deleted lines hand their laws to the line that survives
@@ -3882,6 +3900,7 @@ def _selftest(root):
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
     ck('S346 the seat check delegates the deed to the developed renamer', (chr(35)+' REUSE-RENAME v85.12') in _src and ('def _renamer(' in _src) and ('R._rename(p, canon, say' in _src))
     ck('S347 every interactive prompt stands at column zero', (chr(35)+' FLUSH-CUE v85.14') in _src and ((chr(39) + '   y = ' + chr(127991) + chr(65039)) not in _src) and ((chr(39) + '   [s] I clicked') not in open(os.path.join(BASE_DIR, 'wa.py')).read()))
+    ck('S348 no duty works in silence and no whole-chair pass repeats within a day', (chr(35)+' NO-SILENT-WORK v85.15') in _src and ('.seatrenamed.json' in _src) and ('seat_rename_check(root, say, only=p)' in _src))
     ck('S339 no guard may pin a read-call - prompts are law, readers are manners', sum(1 for _l in _src.split(chr(10)) if _l.strip().startswith('ck(') and ('q = ' + 'input(') in _l) == 0)
     ck('S340 no state may downgrade the keyboard - the REPL always hears keys', (chr(35)+' ALWAYS-RAW v85.6') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and ('_seated' not in open(os.path.join(BASE_DIR, 'briefing.py')).read().split('def _smart_input(')[1].split(chr(10) + 'def ')[0]))
     ck('S341 a scenario branch stands at its own column, never inside its sibling', _src.count(chr(10) + "    if kind == 'refer':") == 1)
