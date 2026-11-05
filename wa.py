@@ -228,5 +228,13 @@ def send_review(phone, text, say=print, *a, **k):  # PLAYWRIGHT-THREAD v85.23  #
     r = subprocess.call([sys.executable, '-c', code], cwd=os.path.dirname(os.path.abspath(__file__)))
     if r != 0:
         say('⚠️ whatsapp failed in its own process - retry with: python3 -c "import wa; wa._send_review_body(' + repr(phone) + ', ' + repr(text) + ', print)"')
+        try:  # PARK-DRAFT v85.27: a broken window must never cost a courtesy - the exact draft parks by phone and names its own path
+            pd = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'drafts', 'parked')
+            os.makedirs(pd, exist_ok=True)
+            fn = os.path.join(pd, re.sub(r'\D', '', str(phone)) + '.txt')
+            open(fn, 'w').write(text)
+            say('📥 draft parked at ' + fn + ' - send it by hand or retry once the window is cured')
+        except Exception:
+            pass
         return False
     return True
