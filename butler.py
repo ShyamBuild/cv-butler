@@ -1352,9 +1352,12 @@ def _chair_wa_text(kind, p, name):  # ONE-VOICE v84.19: the chair drafts through
     if kind == 'cv':  # SCENARIO-3 v84.41: outcome 3 speaks the master's combo - acknowledge the JD and send the updated CV - from the scenario store; the legacy nudge stays the later touchpoint
         t3 = _draft_text('cv', name, _pos_of(p, _pl_root()), p)
         if t3: return t3
-        if kind == 'refer':  # SCENARIO-REFER v85.4: the refer voice speaks the master's own courtesy, verbatim, from the scenario store
-            t4 = _draft_text('refer', name, _pos_of(p, _pl_root()), p)
-            if t4: return t4
+    if kind == 'refer':  # SCENARIO-REFER v85.4 (dedented v85.8): the refer branch stands beside the cv branch at column four, never buried inside it
+        try:
+            _rp = os.path.join(DRAFTS_DIR, 'refer.txt')
+            if os.path.exists(_rp): return open(_rp).read().strip().format_map(_draft_fields(name, _pos_of(p, _pl_root()), p))
+        except Exception:
+            pass
     try:
         import briefing as _br
         sc = CHAIR_SCENARIO.get(kind)
@@ -3835,6 +3838,8 @@ def _selftest(root):
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
     ck('S339 no guard may pin a read-call - prompts are law, readers are manners', sum(1 for _l in _src.split(chr(10)) if _l.strip().startswith('ck(') and ('q = ' + 'input(') in _l) == 0)
+    ck('S340 no state may downgrade the keyboard - the REPL always hears keys', (chr(35)+' ALWAYS-RAW v85.6') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and ('_seated' not in open(os.path.join(BASE_DIR, 'briefing.py')).read().split('def _smart_input(')[1].split(chr(10) + 'def ')[0]))
+    ck('S341 a scenario branch stands at its own column, never inside its sibling', _src.count(chr(10) + "    if kind == 'refer':") == 1)
     ck('S337 at the chair a digit is a keystroke and a word is a line', (chr(35)+' LISTEN-REPL v85.4') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and ('1234567' in open(os.path.join(BASE_DIR, 'briefing.py')).read()))
     ck('S338 the refer voice speaks the master'+chr(39)+'s courtesy verbatim', (chr(35)+' SCENARIO-REFER v85.4') in _src and os.path.exists(os.path.join(BASE_DIR, 'drafts', 'refer.txt')) and ('I have emailed you the JD for the' in open(os.path.join(BASE_DIR, 'drafts', 'refer.txt')).read()))
     ck('S335 no candidate-facing text claims the details travelled on WhatsApp', all((('on ' + 'WhatsApp') not in open(os.path.join(BASE_DIR, dd, ff)).read()) for dd in ('templates', 'drafts') for ff in os.listdir(os.path.join(BASE_DIR, dd)) if ff.endswith('.txt')))  # S335 repinned v85.4: the law guards truth, not vocabulary
