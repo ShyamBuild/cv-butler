@@ -148,6 +148,12 @@ def emails_in_text(t):  # EMAIL-WITNESS v81.64: the second anchor, unique to a p
         if m.group(0) not in out: out.append(m.group(0))
     return out
 
+def _email_cheap(p):  # CHEAP-MAIL v85.16: seating discovers email from the text layer only; the pixel bill is never paid at the seat
+    try:
+        return emails_in_text(extract_text(p) or '')
+    except Exception:
+        return ''
+
 def emails_of(p):  # EMAIL-OF v81.74: the picker confirms humans by email, the anchor the master chose
     try:
         with pdfplumber.open(p) as pdf:
@@ -186,8 +192,12 @@ def _full_text(p):  # FULL-TEXT v81.76: text layer first, vision second - design
     except Exception:
         t = ''
     if not t.strip():
-        try: t = extract_text_ocr(p) or ''
+        t = ''  # TEXT-FIRST v85.16: the text layer is read before any pixel is summoned
+        try: t = extract_text(p) or ''
         except Exception: t = ''
+        if not t.strip():
+            try: t = extract_text_ocr(p) or ''
+            except Exception: t = ''
     return t
 
 def _provenance_lines(ap, ph):  # PROVENANCE v81.90 (refactored v81.92): one source of truth for where each number lives in the paper (module level: briefing calls it too)
@@ -294,7 +304,7 @@ def extract_text_ocr(fp):
     if not os.path.exists(OCRBIN): return ""
     try:
         with OCR_SEM:
-            r = subprocess.run([OCRBIN, fp], capture_output=True, text=True, timeout=180)
+            r = subprocess.run([OCRBIN, fp], capture_output=True, text=True, timeout=25)  # OCR-CAP v85.16: three minutes of patience per paper was a hang wearing a timeout
         return r.stdout or ""
     except Exception:
         return ""
@@ -1102,11 +1112,12 @@ def seat_rename_check(root, say=print, only=None):  # SEAT-RENAME v85.11 (announ
         x = os.path.basename(p)
         if not _is_desk_candidate(x): continue
         if _jd_like_name(x) or _portal_name(x): continue
-        v = get_visual_name(p)
+        v = heuristic_name(p) or get_visual_name(p)  # TEXT-EYES v85.16: the text eyes are asked before the vision eyes; vision remains the fallback, not the first resort
         if not v: continue
         canon = _canonical_person_name(v)
         if not canon: continue
         if _name_key(os.path.splitext(x)[0]) == _name_key(canon): continue
+        if canon and _name_key(canon) != _name_key(os.path.splitext(x)[0]): say(f'👁️ {x} → eyes {v!r} → canon {canon!r}')  # NAME-EVIDENCE v85.16: when the eyes and the filename disagree, the receipt names every gate between them
         q = os.path.join(os.path.dirname(p), canon + os.path.splitext(x)[1])
         if os.path.exists(q): continue
         try:
@@ -1182,7 +1193,7 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
     if isinstance(ph, list): ph = ph[0] if ph else None
     _preview_open(p, say)
     _em = ''  # CONTACT-ONCE v84.39: every truth exactly once - email and phone in a single line
-    for _fn in ('email_of', '_email_of', '_email_witness', 'emails_of'):
+    for _fn in ('_email_cheap', 'email_of', '_email_of', '_email_witness', 'emails_of'):
         _f = globals().get(_fn)
         if callable(_f):
             try:
@@ -1820,7 +1831,7 @@ def convert_pages(p, pdf_path):
               '  close d saving no\n'
               'end tell\n')
     try:
-        r = subprocess.run(['osascript', '-e', script], capture_output=True, timeout=180)
+        r = subprocess.run(['osascript', '-e', script], capture_output=True, timeout=25)  # OCR-CAP v85.16: three minutes of patience per paper was a hang wearing a timeout
         okp = r.returncode == 0 and os.path.exists(pdf_path) and os.path.getsize(pdf_path) > 0
         if not okp:
             try: log.error(f"pages failed {os.path.basename(p)}: rc={r.returncode} {r.stderr.decode()[:300]}")
@@ -3901,6 +3912,8 @@ def _selftest(root):
     ck('S346 the seat check delegates the deed to the developed renamer', (chr(35)+' REUSE-RENAME v85.12') in _src and ('def _renamer(' in _src) and ('R._rename(p, canon, say' in _src))
     ck('S347 every interactive prompt stands at column zero', (chr(35)+' FLUSH-CUE v85.14') in _src and ((chr(39) + '   y = ' + chr(127991) + chr(65039)) not in _src) and ((chr(39) + '   [s] I clicked') not in open(os.path.join(BASE_DIR, 'wa.py')).read()))
     ck('S348 no duty works in silence and no whole-chair pass repeats within a day', (chr(35)+' NO-SILENT-WORK v85.15') in _src and ('.seatrenamed.json' in _src) and ('seat_rename_check(root, say, only=p)' in _src))
+    ck('S349 no pixel is summoned before the text layer is asked, and no OCR may wait beyond twenty-five seconds', (chr(35)+' TEXT-FIRST v85.16') in _src and (('timeout=' + '180') not in _src) and (chr(35)+' OCR-CAP v85.16') in _src)
+    ck('S350 when the eyes and the filename disagree, the receipt names every gate between them', (chr(35)+' NAME-EVIDENCE v85.16') in _src and (chr(35)+' TEXT-EYES v85.16') in _src)
     ck('S339 no guard may pin a read-call - prompts are law, readers are manners', sum(1 for _l in _src.split(chr(10)) if _l.strip().startswith('ck(') and ('q = ' + 'input(') in _l) == 0)
     ck('S340 no state may downgrade the keyboard - the REPL always hears keys', (chr(35)+' ALWAYS-RAW v85.6') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and ('_seated' not in open(os.path.join(BASE_DIR, 'briefing.py')).read().split('def _smart_input(')[1].split(chr(10) + 'def ')[0]))
     ck('S341 a scenario branch stands at its own column, never inside its sibling', _src.count(chr(10) + "    if kind == 'refer':") == 1)
