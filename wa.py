@@ -109,7 +109,7 @@ def _key(prompt):  # ONE-KEY v84.46: the menu answers to the keystroke alone; En
     sys.stdout.write(k + '\r\n'); sys.stdout.flush()  # CRLF-RAW v85.22: in raw mode the writer is the driver - LF alone leaves the column where it stood
     return k.strip().lower()
 
-def send_review(phone, text, say=print, ask=None):
+def _send_review_body(phone, text, say=print, ask=None):
     try:
         import asyncio as _a
         _a.set_event_loop(None)  # LOOP-CLEAN v85.21: the thumb's window refuses a process carrying a live wire
@@ -207,3 +207,20 @@ def send_review(phone, text, say=print, ask=None):
             if via_cdp: pw.stop()  # PERSISTENT-WA v84.38: only the CDP playwright instance stops; the living one rests in _state
         except Exception:
             pass
+
+
+def send_review(*a, **k):  # PLAYWRIGHT-THREAD v85.23: the whole window ritual runs in its own thread, so no loop anywhere in the caller's process can reach playwright's check - raw tty reads are process-wide, so the menu still answers to a bare key
+    import threading
+    box = []
+    def _w():
+        try:
+            box.append(_send_review_body(*a, **k))
+        except Exception as e:
+            box.append(e)
+    th = threading.Thread(target=_w, daemon=True)
+    th.start(); th.join(240)
+    r = box[0] if box else None
+    if isinstance(r, Exception):
+        print('⚠️ whatsapp failed: %s' % r)
+        return False
+    return r
