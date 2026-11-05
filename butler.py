@@ -1069,7 +1069,54 @@ def options_cmd(arg, root, say=print):  # OPTIONS-MAP v84.32
     say('📋 option = tag = keyword = draft:')
     for ln in OPTION_MAP: say('   ' + ln)
 
+def _renamer(root):  # REUSE-RENAME v85.12: discover the house's own renamer class; the seat check delegates, never re-rolls
+    for _vn, _vc in list(globals().items()):
+        if isinstance(_vc, type) and '_rename' in getattr(_vc, '__dict__', {}):
+            try:
+                return _vc(root)
+            except Exception:
+                pass
+    return None
+
+def seat_rename_check(root, say=print):  # SEAT-RENAME v85.11 (whole v85.13): the focused chair's papers wear their humans' names before any draft greets them; the wider root stays untouched
+    d = desk_load()
+    chair = d.get('primary')
+    if not chair or not os.path.isdir(chair): return 0
+    R = _renamer(root)
+    n = 0
+    for dp, dn, fn in os.walk(chair):
+        for x in fn:
+            p = os.path.join(dp, x)
+            if not _is_desk_candidate(x): continue
+            if _jd_like_name(x) or _portal_name(x): continue
+            v = get_visual_name(p)
+            if not v: continue
+            canon = _canonical_person_name(v)
+            if not canon: continue
+            if _name_key(os.path.splitext(x)[0]) == _name_key(canon): continue
+            q = os.path.join(dp, canon + os.path.splitext(x)[1])
+            if os.path.exists(q): continue
+            try:
+                if R is not None:
+                    try:
+                        R._rename(p, canon, say, _tags_of(p))  # REUSE-RENAME v85.12: the developed hands do the developed deed
+                    except TypeError:
+                        R._rename(p, canon, say)
+                else:
+                    os.rename(p, q)
+                    _rename_ledger(p, canon, 'seat-check', once=True)
+                    _repath_ledgers(p, q)
+                s = sheet_load()
+                for it in s.get('items', []):
+                    if os.path.realpath(it.get('p', '')) in (os.path.realpath(p), os.path.realpath(q)): it['p'] = q
+                sheet_save(s)
+                n += 1
+            except Exception:
+                continue
+    return n
+
 def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes, and the seat itself re-checks coverage
+    seat_rename_check(root, say)  # SEAT-RENAME v85.11: check the focused chair before seating anyone
     s = sheet_load()
     sk = skips_load()
     mem = set(covered_load())  # FOLDER-TRUTH v84.30: outcome memory guards duplicates; the folders decide the rest
@@ -3833,11 +3880,14 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S346 the seat check delegates the deed to the developed renamer', (chr(35)+' REUSE-RENAME v85.12') in _src and ('def _renamer(' in _src) and ('R._rename(p, canon, say' in _src))
     ck('S339 no guard may pin a read-call - prompts are law, readers are manners', sum(1 for _l in _src.split(chr(10)) if _l.strip().startswith('ck(') and ('q = ' + 'input(') in _l) == 0)
     ck('S340 no state may downgrade the keyboard - the REPL always hears keys', (chr(35)+' ALWAYS-RAW v85.6') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and ('_seated' not in open(os.path.join(BASE_DIR, 'briefing.py')).read().split('def _smart_input(')[1].split(chr(10) + 'def ')[0]))
     ck('S341 a scenario branch stands at its own column, never inside its sibling', _src.count(chr(10) + "    if kind == 'refer':") == 1)
     ck('S342 the seat speaks in three lines and the scroll belongs to the candidates', (chr(35)+' HORIZONTAL v85.9') in _src and ((chr(40) + 'options = full ' + 'grammar' + chr(41)) not in _src) and ('say_identity_for(p, say)' in _src))
     ck('S343 in the seat no variable answers before its birth', (lambda seg: seg.find(chr(35)+' HORIZONTAL v85.9') > seg.find("_em = ''") >= 0)(_src.split('def up_cmd(')[1].split('def covered_load(')[0]))
+    ck('S344 no line the chat speaks begins with a borrowed space', (chr(35)+' FLUSH-LEFT v85.11') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and ('.lstrip()' in open(os.path.join(BASE_DIR, 'briefing.py')).read()))
+    ck('S345 the focused chair'+chr(39)+'s papers wear their humans'+chr(39)+' names before any draft greets them', (chr(35)+' SEAT-RENAME v85.11') in _src and ('def seat_rename_check(' in _src) and ('seat_rename_check(root, say)' in _src))
     ck('S337 at the chair a digit is a keystroke and a word is a line', (chr(35)+' LISTEN-REPL v85.4') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and ('1234567' in open(os.path.join(BASE_DIR, 'briefing.py')).read()))
     ck('S338 the refer voice speaks the master'+chr(39)+'s courtesy verbatim', (chr(35)+' SCENARIO-REFER v85.4') in _src and os.path.exists(os.path.join(BASE_DIR, 'drafts', 'refer.txt')) and ('I have emailed you the JD for the' in open(os.path.join(BASE_DIR, 'drafts', 'refer.txt')).read()))
     ck('S335 no candidate-facing text claims the details travelled on WhatsApp', all((('on ' + 'WhatsApp') not in open(os.path.join(BASE_DIR, dd, ff)).read()) for dd in ('templates', 'drafts') for ff in os.listdir(os.path.join(BASE_DIR, dd)) if ff.endswith('.txt')))  # S335 repinned v85.4: the law guards truth, not vocabulary
