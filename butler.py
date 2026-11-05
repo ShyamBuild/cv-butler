@@ -945,7 +945,7 @@ def tags_tidy(say=print):  # TIDY v84.9: carry each misplaced paper home, one ke
                         _tag_write(p, newt); _stage_note(x, tgs, newt, stage, stage, 'tidy-folder')
                         say(f'🏷️ {x}: {stage}')
                 elif stage not in _tag_vocab() and st:
-                    say(f'🧭 {x} wears {st[0]} but rests outside the stage folders - untag it back to the contact list? y / n')
+                    say(f'🧭 {x} wears {st[0]} but rests loose - untag it back to the contact list? y / n')
                     if confirm_wait(say) == 'y':
                         newt = [t for t in tgs if t != st[0]]
                         _tag_write(p, newt); _stage_note(x, tgs, newt, stage, stage, 'tidy-folder')
@@ -1048,7 +1048,7 @@ def calls_cmd(arg, root, say=print, hint=True):  # CHAIR v84.10b (v84.30): FOLDE
     kept = [i for i in s0.get('items', []) if i.get('status') != 'waiting']
     s0['date'] = time.strftime('%Y-%m-%d'); s0['items'] = kept + waiting + items
     sheet_save(s0)
-    say(f'📞 call sheet seeded: {len(items) + reopened} outside the stage folders' + (f' · reopened {reopened}' if reopened else '') + (' · type: up' if hint and (items or reopened) else ''))  # ONE-LINE v84.51: the sheet speaks once, hint only when a hand must follow  # ONE-LINE v84.51  # WITNESS-CARRY v84.52: deleted lines hand their laws to the line that survives
+    say(f'📞 call sheet seeded: {len(items) + reopened} loose' + (f' · reopened {reopened}' if reopened else '') + (' · type: up' if hint and (items or reopened) else ''))  # ONE-LINE v84.51: the sheet speaks once, hint only when a hand must follow  # ONE-LINE v84.51  # WITNESS-CARRY v84.52: deleted lines hand their laws to the line that survives
 def sheet_cmd(arg, root, say=print):
     s = sheet_load()
     dn = [i for i in s.get('items', []) if i['status'] != 'waiting']; wt = [i for i in s.get('items', []) if i['status'] == 'waiting']
@@ -1094,7 +1094,7 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
                 if rq in known or rq in sk or os.path.basename(dp) in _tag_vocab() or _name_key(x) in mem or _in_nonqueue(q): continue  # FOLDER-TRUTH v84.30
                 s.setdefault('items', []).append({'p': q, 'name': os.path.splitext(x)[0], 'status': 'waiting', 'fp': _fp(q)})
                 known.add(rq)
-                say(f'➕ new paper joined the sheet: {x}')
+                say(f'🆕 joined the sheet: {x}')
     i = None  # SEAT-CHECK v84.15: coverage is enforced at the chair, not merely at the seed
     for it in sorted(s.get('items', []), key=lambda x: 1 if x.get('re') else 0):  # RETRAY v84.55: new blood outranks the re-review tray in the chair
         if it.get('status') != 'waiting': continue
@@ -1111,12 +1111,12 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
     if not i:  # SELF-REFRESH v84.32: an empty sheet re-seeds itself from the living folders, so a dragged-out paper rises without a command
         calls_cmd('', root, say, False)  # ONE-LINE v84.51: the self-refresh reseeds without the throat-clearing hint
         if any(x.get('status') == 'waiting' for x in sheet_load().get('items', [])): return up_cmd(arg, root, say)
-        say('📭 sheet empty - every loose paper is seated, skipped or remembered'); return
+        say('📭 tray clear - every loose paper seated, skipped or remembered'); return
     s['current'] = i; sheet_save(s)
     if i.get('re'): say('🔄 re-review: skipped earlier, the tray is empty now - one soul per seed, new loose papers still outrank him')  # RETRAY v84.55
     p = i['p']; ph = taught_digits(i['name']) or phones_of(p, True) or None  # QUIET-CHAIR v84.37: the dossier takes the number without the clerk's ceremony
     if isinstance(ph, list): ph = ph[0] if ph else None
-    say(f"📞 UP: {i['name']} · in {os.path.basename(os.path.dirname(p))}")
+    say(f"🛰️ CHAIR · {i['name']} · {os.path.basename(os.path.dirname(p))}")
     _preview_open(p, say)
     say_identity_for(p, say)  # IDENTITY-AT-SEAT v84.39: the master asked for the triple at the seat as well; S277 keeps the proposal's
     _em = ''  # CONTACT-ONCE v84.39: every truth exactly once - email and phone in a single line
@@ -1129,12 +1129,12 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
                 if _v: _em = _v[0] if isinstance(_v, (list, tuple)) else str(_v); break
             except Exception: pass
     if ph: say(f'   ✉️ {_em} · 📱 {ph}' if _em else f'   📱 {ph}')
-    else: say((f'   ✉️ {_em}' if _em else f'   phone: none readable - teach me: python3 butler.py teach {i["name"].split()[0].lower()} <digits>'))
+    else: say((f'   ✉️ {_em}' if _em else f'   📵 no phone - teach: python3 butler.py teach {i["name"].split()[0].lower()} <digits>'))
     tgs = _tags_of(p)
     if tgs: say('   tags: ' + ', '.join(tgs))
-    say('   after the call, one digit or one word closes his row:')
+    say('   ⌨️ one key closes his row:')
     say('   1 📤 jd→JD-Conf · 2 🙅 refer→Closed · 3 📝 cv→CV-Update · 4 🔔 nudge→reminder(no tag) · 5 📵 missed→Call-Sched · 6 🏆 internal→Ready · 7 ⏭️ skip→tray (one returns per empty seed)')  # EMOJI-CUE v84.51: each door wears its face, and no face wears a banned glyph  # EMOJI-CUE v84.51 # MAP-COMPACT v84.37 # WITNESS-CARRY v84.52  # WITNESS-CARRY v84.52: deleted lines hand their laws to the line that survives
-    say('   (options prints the full grammar with keywords and both draft moments)')
+    say('   (options = full grammar)')
 
 def covered_load():
     try: return json.load(open(COVERED_PATH))
@@ -1408,7 +1408,7 @@ SKIPS_PATH = os.path.join(BASE_DIR, 'skips.json')  # SKIP v84.11: today's list, 
 
 def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair remembers the paper, not merely its path
     s = sheet_load(); cur = s.get('current')
-    if not cur: say('🤷 nobody is in the chair - type: up'); return
+    if not cur: say('🪑 chair empty - type up'); return
     o = OUTCOMES.get(key)
     if not o: say('🤷 unknown outcome - digits 1 to 7, or missed / jd / cv / not interested / ready / skip'); return
     tag, outcome, draft = o; p = cur['p']
@@ -1416,22 +1416,22 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
         q = _find_by_fp(cur.get('fp'), root)
         if q:
             p = cur['p'] = q; sheet_save(s)
-            say(f'🔁 the paper moved - found it again in {os.path.basename(os.path.dirname(q))}')
+            say(f'🔁 repathed - found him in {os.path.basename(os.path.dirname(q))}')
             if not p.lower().endswith(('.pdf', '.docx')): say('⚠️ he lost his .pdf/.docx extension in the rename - most doors ignore extension-less papers; rename him back when convenient')  # EXT-LOSS v84.14
         else:
             say('🤷 the paper moved and I cannot find it by fingerprint - re-seed with calls, or tag it by its new name'); return
     pass  # IDENTITY-ONCE v84.41: the triple speaks at the seat; the proposal carries only the decision, the draft carries the truth inside
     _tagpart = 'SKIPPED, untagged, unmoved' if tag is None else ('[no tag change - reminder only]' if tag == '' else f'[{tag}]')  # NUDGE-OPTION v84.44
-    say(f"🤖 Proposal: {cur['name']} → " + _tagpart + f" ({outcome})" + (f' · WhatsApp {draft} draft will open, unsent' if draft else ' · no message - this one stays in the house'))  # ASK-LINE v84.49: the statement ends in its own line
+    say(f"🤖 Proposal: {cur['name']} → " + _tagpart + f" ({outcome})" + (f' · 📱 {draft} draft unsent' if draft else ' · no 📱 - stays in the house'))  # ASK-LINE v84.49: the statement ends in its own line
     k = menu_key('   y = 🏷️ tag + 📦 move + 📱 WhatsApp draft · t = 🏷️ tag + 📦 move, no 📱 · n = cancel, he stays in the chair ›  ')  # ASK-LINE v84.49: the question waits at a visible cue and the key signs it  # PLAIN-CUE v84.50: the cue names the deeds in the master's words - tag, move, text
     if k == 'n':
-        say('· row left open - he stays in the chair'); return
+        say('⏸️ row open - he stays in the chair'); return
     if k not in ('y', 't'):  # PROPOSE-WAIT v84.15: Enter or silence leaves a typed answer pending
         import json as _j2
         try: _j2.dump({'p': p, 'tag': tag, 'on': True, 'move_to': True, 'ts': int(time.time())}, open(os.path.join(BASE_DIR, 'pending_action.json'), 'w'))
         except Exception: pass
         say('')
-        say('· proposal waiting - type y or n on the next line'); return
+        say('· proposal waiting - type y / t / n'); return
     _k = k
     if tag == '':  # NUDGE-OPTION v84.44: a reminder changes no tag and moves nothing - the debt stays, the row closes, the thread continues
         if _k != 't':  # ONE-INPUT v84.47: the nudge's draft decision lives in the same keystroke
@@ -1448,8 +1448,8 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
         _stage_note(cur['name'], _tags_of(p), _tags_of(p), os.path.basename(os.path.dirname(p)), os.path.basename(os.path.dirname(p)), 'chair-nudge')
         say(f'🔔 nudged {cur["name"]} - no tag changed, nothing moved; his debts stay on the followup board')
         w = [x for x in s.get('items', []) if x['status'] == 'waiting']
-        if w: say(f'⏭️ next up: {w[0]["name"]} - type: up')
-        else: say('🏁 sheet covered - every candidate has an outcome')
+        if w: say(f'⏭️ next: {w[0]["name"]} · up when ready')
+        else: say('🏁 sheet covered - every soul has an outcome')
         return
     if tag is None:  # SKIP v84.11: remembered, untagged, unmoved, silent
         sk = skips_load(); sk[os.path.realpath(p)] = {'name': cur['name'], 'ts': int(time.time()), 'in': os.path.basename(os.path.dirname(p))}
@@ -1485,14 +1485,14 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
             if ph:
                 pos = _pos_of(p, root)
                 import wa
-                if _k == 't': pass  # SKIP-WA v84.38 CINE-LINE v85.1: the deed line already says no 📱 - the retired prompt's law rides on
+                if _k == 't': pass  # SKIP-WA v84.38 # CINE-LINE v85.1: the deed line already says no 📱 - the retired prompt's law rides on
                 else: wa.send_review(ph, _chair_wa_text(draft, p, cur['name']), say)
             else: say(f'⚠️ no phone for {cur["name"]} - teach me: python3 butler.py teach {cur["name"].split()[0].lower()} <digits>, then retry')
     say(f"✅ {cur['name']} · 🏷️ {tag} · 📦 {os.path.basename(os.path.dirname(p))} · " + ('📱 drafted' if (_k != 't' and draft) else ('no 📱' if draft else 'internal · no 📱')))  # ACTION-ECHO v84.51 CINE-LINE v85.1: one deed line, nothing repeated
     desk_dashboard(say)  # CENSUS-AFTER v84.12: every closed row ends with the living scoreboard
     w = [x for x in s.get('items', []) if x['status'] == 'waiting']  # ADVANCE v84.10b: the queue walks without being pushed
-    if w: say(f'⏭️ next up: {w[0]["name"]} - type: up')
-    else: say('🏁 sheet covered - every candidate has an outcome')
+    if w: say(f'⏭️ next: {w[0]["name"]} · up when ready')
+    else: say('🏁 sheet covered - every soul has an outcome')
 
 def _chase_draft(p, tag):  # CHASE v84.0 (v84.19): the background chase speaks through the same composer too
     name = os.path.splitext(os.path.basename(p))[0]
@@ -3830,6 +3830,8 @@ def _selftest(root):
     ck('S329 the freeze holds - v85.0 is the standing price of every future change', (chr(35)+' THE FREEZE v85.0') in _src and os.path.exists(os.path.join(BASE_DIR, 'README.md')) and os.path.exists(os.path.join(BASE_DIR, 'install.sh')))  # S329 repinned v85.0: a version is a fact about the source, so the guard reads the source, not a variable the book may reassign
     ck('S330 a stale skip is re-found by name, so the tray never starves', (chr(35)+' RETRAY-RESOLVE v85.1') in _src)
     ck('S331 the tray names its members whenever it is not empty', (chr(35)+' TRAY-NAMES v85.1') in _src)
+    ck('S332 the deed speaks once, in one line, and silence never swallows a warning', (chr(35)+' CINE-LINE v85.1') in _src and ('lambda *a, **k: None' in _src))
+    ck('S333 the terminal speaks crisp - every line keeps its information and loses its fat', ('one key closes his row' in _src) and ('CHAIR · ' in _src) and ('options = full grammar' in _src))
     ck('S322 no dispatch line at module level passes a printer it cannot see', sum(1 for _l in open(os.path.join(BASE_DIR, 'briefing.py')).read().split(chr(10)) if (', root, ' + 'say); continue') in _l) == 0)
     ck('S323 the sheet speaks one line per beat and every door wears its face', (chr(35)+' ONE-LINE v84.51') in _src and (chr(35)+' EMOJI-CUE v84.51') in _src and (chr(35)+' ACTION-ECHO v84.51') in _src)
     ck('S324 no lap may bury a law - deleted lines carry their witnesses', (chr(35)+' WITNESS-CARRY v84.52') in _src)
