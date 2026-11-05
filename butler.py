@@ -1110,42 +1110,52 @@ def _renamer(root):  # REUSE-RENAME v85.12: discover the house's own renamer cla
                 pass
     return None
 
-def seat_rename_check(root, say=print, only=None):  # SEAT-RENAME v85.11 (announced + once-per-day v85.15): the focused chair's papers wear their humans' names before any draft greets them; the duty announces itself and never repeats its whole-chair pass
+def seat_rename_check(root, say=print, only=None):  # SEAT-RENAME v85.11 (examined-list v85.19): the flag remembers named papers, not visited days - silence never earns a pass
+    import json as _j
     dd = desk_load()
     chair = dd.get('primary')
     if not chair or not os.path.isdir(chair): return 0
-    import json as _j
     flag = os.path.join(BASE_DIR, '.seatrenamed.json')
-    try: done_map = _j.load(open(flag))
-    except Exception: done_map = {}
+    try: rec = _j.load(open(flag))
+    except Exception: rec = {}
     today = time.strftime('%Y-%m-%d')
-    whole = (only is None) and (done_map.get(chair) != today)
-    R = _renamer(root)
-    n = 0
+    if rec.get('day') != today: rec = {'day': today, 'examined': []}
+    ex = set(rec.get('examined', []))
+    whole = (only is None)
     targets = []
     if whole:
-        say('✏️ naming the focused chair - the developed eyes read each paper once, then the day is free')  # NO-SILENT-WORK v85.15
         for dp, dn, fn in os.walk(chair):
             for x in fn:
-                targets.append(os.path.join(dp, x))
+                if _is_desk_candidate(x) and x not in ex: targets.append(os.path.join(dp, x))
+        if targets: say(f'✏️ naming the focused chair ({len(targets)} unexamined papers) - text eyes first, pixels only if silent, ninety seconds per up')  # NO-SILENT-WORK v85.15
     if only:
         targets = [only]
+    R = None
+    n = 0
+    t0 = time.time()
     for p in targets:
+        if whole and (time.time() - t0) > 90:  # CEREMONY-BUDGET v85.17
+            say('⏳ naming pauses here - the next up resumes the chair')
+            break
         x = os.path.basename(p)
         if not _is_desk_candidate(x): continue
         if _jd_like_name(x) or _portal_name(x): continue
-        v = heuristic_name(p) or get_visual_name(p)  # TEXT-EYES v85.16: the text eyes are asked before the vision eyes; vision remains the fallback, not the first resort
-        if not v: continue
+        v = heuristic_name(p) or get_visual_name(p)  # TEXT-EYES v85.16
+        if not v:
+            say(f'👁️ {x}: text silent, vision silent - left for the next up')  # MISS-EVIDENCE v85.19: a paper the eyes cannot read is never marked examined, and its silence is spoken
+            continue
+        ex.add(x)
         canon = _canonical_person_name(v)
         if not canon: continue
         if _name_key(os.path.splitext(x)[0]) == _name_key(canon): continue
-        if canon and _name_key(canon) != _name_key(os.path.splitext(x)[0]): say(f'👁️ {x} → eyes {v!r} → canon {canon!r}')  # NAME-EVIDENCE v85.16: when the eyes and the filename disagree, the receipt names every gate between them
         q = os.path.join(os.path.dirname(p), canon + os.path.splitext(x)[1])
         if os.path.exists(q): continue
+        say(f'👁️ {x} → eyes {v!r} → canon {canon!r}')  # NAME-EVIDENCE v85.16
         try:
+            if R is None: R = _renamer(root)  # LAZY-RENAMER v85.17
             if R is not None:
                 try:
-                    R._rename(p, canon, say, _tags_of(p))  # REUSE-RENAME v85.12: the developed hands do the developed deed
+                    R._rename(p, canon, say, _tags_of(p))  # REUSE-RENAME v85.12
                 except TypeError:
                     R._rename(p, canon, say)
             else:
@@ -1160,8 +1170,8 @@ def seat_rename_check(root, say=print, only=None):  # SEAT-RENAME v85.11 (announ
         except Exception:
             continue
     if whole:
-        done_map[chair] = today
-        try: _j.dump(done_map, open(flag, 'w'))
+        rec['day'] = today; rec['examined'] = sorted(ex)
+        try: _j.dump(rec, open(flag, 'w'))
         except Exception: pass
     return n
 
@@ -3934,6 +3944,7 @@ def _selftest(root):
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
     ck('S352 no line the house prints may begin mid-line - stdout remembers its own endings', (chr(35)+' NEWLINE-DISCIPLINE v85.18') in _src and (chr(35)+' NEWLINE-DISCIPLINE v85.18') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' NEWLINE-DISCIPLINE v85.18') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S353 a fingerprint is computed once per content and the seed never works in silence', (chr(35)+' FP-CACHE v85.18') in _src and (chr(35)+' SEED-SAY v85.18') in _src and ('_fp_fast(p)' in _src))
+    ck('S354 silence never earns a pass - unnamed papers are spoken and retried', (chr(35)+' MISS-EVIDENCE v85.19') in _src and ('examined' in _src) and (chr(35)+' SEAT-RENAME v85.11' in _src))
     ck('S346 the seat check delegates the deed to the developed renamer', (chr(35)+' REUSE-RENAME v85.12') in _src and ('def _renamer(' in _src) and ('R._rename(p, canon, say' in _src))
     ck('S347 every interactive prompt stands at column zero', (chr(35)+' FLUSH-CUE v85.14') in _src and ((chr(39) + '   y = ' + chr(127991) + chr(65039)) not in _src) and ((chr(39) + '   [s] I clicked') not in open(os.path.join(BASE_DIR, 'wa.py')).read()))
     ck('S348 no duty works in silence and no whole-chair pass repeats within a day', (chr(35)+' NO-SILENT-WORK v85.15') in _src and ('.seatrenamed.json' in _src) and ('seat_rename_check(root, say, only=p)' in _src))
