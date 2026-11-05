@@ -109,36 +109,51 @@ def _key(prompt):  # ONE-KEY v84.46: the menu answers to the keystroke alone; En
     sys.stdout.write(k + '\r\n'); sys.stdout.flush()  # CRLF-RAW v85.22: in raw mode the writer is the driver - LF alone leaves the column where it stood
     return k.strip().lower()
 
-def _send_review_body(phone, text, say=print, ask=None):
+def watest(say=print):  # WA-STEP v85.29: each door of the ritual opened in order and named aloud, with a QR pause the moment one is visible - the master's instinct, made a ladder
+    from playwright.sync_api import sync_playwright
+    say('1 start…')
+    pw = sync_playwright().start()
+    say('1 ok')
+    page = None
+    try:
+        say('2 cdp connect…')
+        d = pw.chromium.connect_over_cdp('http://127.0.0.1:9222')
+        page = (d.contexts[0] if d.contexts else d.new_context()).new_page()
+        say('2 ok - the shared warm door answered')
+    except Exception as e:
+        say('2 cdp refused: %r - opening the persistent BUTLER window' % (e,))
+        ctx = _ctx()
+        page = ctx.pages[0] if ctx.pages else ctx.new_page()
+        say('2 ok - persistent window opened')
+    try:
+        say('3 goto whatsapp…')
+        page.goto('https://web.whatsapp.com/', timeout=60000)
+        say('3 ok')
+    except Exception as e:
+        say('3 goto refused: %r' % (e,))
+        return False
+    html = page.content()
+    if 'Link your phone' in html or 'qr code' in html.lower():
+        say('🔐 QR visible - scan it now with your phone; the window stays open; press any key when linked')
+        _key('')
+        try:
+            page.reload(timeout=60000)
+        except Exception:
+            pass
+        html = page.content()
+    ok = ('conversation' in html) or ('chat' in html.lower()) or ('Link your phone' not in html and 'qr code' not in html.lower())
+    say('4 logged-in markers present: %s' % ok)
+    say('watest complete - the window stays open for the next send')
+    return bool(ok)
+
+def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  # POLICY-RESET v85.25  # QUIET-ASYNCIO v85.28  # WA-DIAG v85.28 (retired v85.29: the DIAG traceback proved the shadow silenced playwright's own heartbeat inside its fiber; the laws rest here as witnesses, their guards repinned)
     try:
         import asyncio as _a
-        import asyncio as _a  # QUIET-ASYNCIO v85.28  # POLICY-RESET v85.25  # LOOP-CLEAN v85.21: whichever probe this playwright consults, the ritual supplies the quiet room itself - default policy, private idle loop, and both asyncio probes shadowed to tell the truth a clean process would tell
-        _q = _a.new_event_loop()
-        _a.set_event_loop_policy(_a.DefaultEventLoopPolicy())
-        _a.set_event_loop(_q)
-        def _no_running(*_a2, **_k2):
-            raise RuntimeError('no running event loop')
-        _a.get_running_loop = _no_running
-        _a.get_event_loop = lambda *_a2, **_k2: _q
     except Exception:
         pass
     digits = re.sub(r'\D', '', str(phone))
     if len(digits) == 10: digits = '91' + digits
     say(f"🌐 opening WhatsApp Web in the BUTLER window for +{digits}…")
-    if os.environ.get('WA_DIAG'):  # WA-DIAG v85.28: when the window still refuses, the body confesses the loop's true face before the call
-        import asyncio as _d
-        try:
-            _d.get_running_loop(); print('DIAG: running loop PRESENT')
-        except RuntimeError:
-            print('DIAG: no running loop')
-        try:
-            print('DIAG: get_event_loop().is_running() =', _d.get_event_loop().is_running())
-        except Exception as _e:
-            print('DIAG: get_event_loop raised', _e)
-        try:
-            print('DIAG: policy =', type(_d.get_event_loop_policy()).__name__)
-        except Exception:
-            pass
     pw = sync_playwright().start()
     browser = None
     page = None
