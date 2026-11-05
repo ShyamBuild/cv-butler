@@ -1110,6 +1110,22 @@ def _renamer(root):  # REUSE-RENAME v85.12: discover the house's own renamer cla
                 pass
     return None
 
+def _name_from_first_line(p):  # FIRST-LINE v85.20: when both developed eyes stay silent, the paper's own first line speaks in title case - the humblest eye, and the fastest
+    try:
+        t = extract_text(p) or ''
+    except Exception:
+        return ''
+    for ln in t.split('\n'):
+        ln = ln.strip()
+        if not ln: continue
+        if any(ch.isdigit() for ch in ln): continue
+        if '@' in ln: continue
+        ws = ln.split()
+        if 2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws):
+            return ' '.join(w.capitalize() for w in ws)
+        return ''
+    return ''
+
 def seat_rename_check(root, say=print, only=None):  # SEAT-RENAME v85.11 (examined-list v85.19): the flag remembers named papers, not visited days - silence never earns a pass
     import json as _j
     dd = desk_load()
@@ -1140,9 +1156,14 @@ def seat_rename_check(root, say=print, only=None):  # SEAT-RENAME v85.11 (examin
         x = os.path.basename(p)
         if not _is_desk_candidate(x): continue
         if _jd_like_name(x) or _portal_name(x): continue
-        v = heuristic_name(p) or get_visual_name(p)  # TEXT-EYES v85.16
+        v = heuristic_name(p) or get_visual_name(p) or _name_from_first_line(p)  # TEXT-EYES v85.16  # FIRST-LINE v85.20: the third eye, last resort - and the first eye's witness rides along
+        try:
+            import asyncio as _a
+            _a.set_event_loop(None)  # LOOP-CLEAN v85.21: the vision eye may leave an idle loop behind; playwright sync must find none
+        except Exception:
+            pass
         if not v:
-            say(f'👁️ {x}: text silent, vision silent - left for the next up')  # MISS-EVIDENCE v85.19: a paper the eyes cannot read is never marked examined, and its silence is spoken
+            if whole: say(f'👁️ {x}: text silent, vision silent - left for the next up')  # MISS-EVIDENCE v85.19 (once v85.21): a miss confesses in the whole-chair pass, never twice
             continue
         ex.add(x)
         canon = _canonical_person_name(v)
@@ -3942,9 +3963,12 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S356 no line begins with borrowed space and no content continues a prompt', (chr(35)+' FLUSH-ABSOLUTE v85.20') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
+    ck('S357 no idle loop may lie across the thumb'+chr(39)+'s path', (chr(35)+' LOOP-CLEAN v85.21') in _src and (chr(35)+' LOOP-CLEAN v85.21') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S352 no line the house prints may begin mid-line - stdout remembers its own endings', (chr(35)+' NEWLINE-DISCIPLINE v85.18') in _src and (chr(35)+' NEWLINE-DISCIPLINE v85.18') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' NEWLINE-DISCIPLINE v85.18') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S353 a fingerprint is computed once per content and the seed never works in silence', (chr(35)+' FP-CACHE v85.18') in _src and (chr(35)+' SEED-SAY v85.18') in _src and ('_fp_fast(p)' in _src))
     ck('S354 silence never earns a pass - unnamed papers are spoken and retried', (chr(35)+' MISS-EVIDENCE v85.19') in _src and ('examined' in _src) and (chr(35)+' SEAT-RENAME v85.11' in _src))
+    ck('S355 when both developed eyes stay silent, the paper'+chr(39)+'s own first line speaks', (chr(35)+' FIRST-LINE v85.20') in _src and ('_name_from_first_line(p)' in _src))
     ck('S346 the seat check delegates the deed to the developed renamer', (chr(35)+' REUSE-RENAME v85.12') in _src and ('def _renamer(' in _src) and ('R._rename(p, canon, say' in _src))
     ck('S347 every interactive prompt stands at column zero', (chr(35)+' FLUSH-CUE v85.14') in _src and ((chr(39) + '   y = ' + chr(127991) + chr(65039)) not in _src) and ((chr(39) + '   [s] I clicked') not in open(os.path.join(BASE_DIR, 'wa.py')).read()))
     ck('S348 no duty works in silence and no whole-chair pass repeats within a day', (chr(35)+' NO-SILENT-WORK v85.15') in _src and ('.seatrenamed.json' in _src) and ('seat_rename_check(root, say, only=p)' in _src))

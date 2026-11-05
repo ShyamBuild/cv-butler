@@ -110,6 +110,11 @@ def _key(prompt):  # ONE-KEY v84.46: the menu answers to the keystroke alone; En
     return k.strip().lower()
 
 def send_review(phone, text, say=print, ask=None):
+    try:
+        import asyncio as _a
+        _a.set_event_loop(None)  # LOOP-CLEAN v85.21: the thumb's window refuses a process carrying a live wire
+    except Exception:
+        pass
     digits = re.sub(r'\D', '', str(phone))
     if len(digits) == 10: digits = '91' + digits
     say(f"🌐 opening WhatsApp Web in the BUTLER window for +{digits}…")

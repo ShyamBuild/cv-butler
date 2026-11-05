@@ -44,6 +44,10 @@ class _NLOut:  # NEWLINE-DISCIPLINE v85.18: stdout remembers whether the last wr
         self._s = s; self.last = '\n'
     def write(self, t):
         if t:
+            if self.last == '\n':  # FLUSH-ABSOLUTE v85.20: a line that begins, begins at column zero - no string from any module may open a line with borrowed space
+                t = t.lstrip(' ')
+            if t and self.last not in ('\n', '') and len(t) > 24:  # FLUSH-ABSOLUTE v85.20: long content never continues a line; it takes its own newline first
+                self._s.write('\n'); self.last = '\n'
             self._s.write(t); self.last = t[-1]
         return len(t) if t else 0
     def flush(self):
