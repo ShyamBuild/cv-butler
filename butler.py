@@ -586,6 +586,7 @@ def _stage_note(file, from_tag, to_tag, from_dir, to_dir, srcs):  # STAGE-LOG v8
     except Exception: pass
 def menu_key(prompt='', allowed=('y', 't', 'n')):  # ONE-INPUT v84.47 (ASK-LINE v84.49): the statement ends in its own line; the question ends in a visible cue; the key signs it; Enter re-asks once; Ctrl+C cancels like everywhere else
     import sys, termios, tty
+    if getattr(sys.stdout, 'last', '\n') != '\n': sys.stdout.write('\n')  # NEWLINE-DISCIPLINE v85.18: a prompt never begins mid-line; if the previous writer forgot its end, the next one supplies it
     for attempt in (0, 1):
         sys.stdout.write(prompt if attempt == 0 else '   one key, master: y / t / n › '); sys.stdout.flush()
         try:
@@ -1017,6 +1018,27 @@ def skipfolder_cmd(arg, root, say=print):  # NON-QUEUE v84.39
     json.dump(d, open(NONQUEUE_PATH, 'w'), indent=1)
     say(f'🚫 never queue: {arg} - its residents are derivatives or archives, not candidates')
 
+_FPC = {}
+def _fp_fast(p):  # FP-CACHE v85.18: a fingerprint is computed once per content and remembered by mtime+size; only new or edited papers pay the hash
+    global _FPC
+    import json as _j
+    cf = os.path.join(BASE_DIR, '.fpcache.json')
+    if not _FPC:
+        try: _FPC.update(_j.load(open(cf)))
+        except Exception: pass
+    try:
+        st = os.stat(p)
+    except Exception:
+        return _fp(p)
+    e = _FPC.get(p)
+    if e and e[0] == st.st_mtime and e[1] == st.st_size:
+        return e[2]
+    v = _fp(p)
+    _FPC[p] = [st.st_mtime, st.st_size, v]
+    try: _j.dump(_FPC, open(cf, 'w'))
+    except Exception: pass
+    return v
+
 def calls_cmd(arg, root, say=print, hint=True):  # CHAIR v84.10b (v84.30): FOLDER-TRUTH - the sheet maps the folders, not the tags
     scopes = [desk_resolve(arg, root)] if arg else (desk_paths() or [root])
     s0 = sheet_load(); sk = skips_load(); mem = set(covered_load())
@@ -1035,7 +1057,7 @@ def calls_cmd(arg, root, say=print, hint=True):  # CHAIR v84.10b (v84.30): FOLDE
                 if row and row.get('status') == 'waiting': continue
                 if row:
                     row['status'] = 'waiting'; row['outcome'] = ''; reopened += 1; continue  # FOLDER-TRUTH v84.30: dragged out means to be contacted again
-                items.append({'p': p, 'name': os.path.splitext(x)[0], 'status': 'waiting', 'fp': _fp(p)})
+                items.append({'p': p, 'name': os.path.splitext(x)[0], 'status': 'waiting', 'fp': _fp_fast(p)})
     refed = 0
     if not items and not reopened:  # RETRAY v84.55: when no loose paper waits, the skipped return for re-review - one per empty seed, oldest skip first, and the skip is consumed so no man re-feds endlessly
         skd = skips_load()
@@ -1092,11 +1114,11 @@ def seat_rename_check(root, say=print, only=None):  # SEAT-RENAME v85.11 (announ
     dd = desk_load()
     chair = dd.get('primary')
     if not chair or not os.path.isdir(chair): return 0
-    import time as _t, json as _j
+    import json as _j
     flag = os.path.join(BASE_DIR, '.seatrenamed.json')
     try: done_map = _j.load(open(flag))
     except Exception: done_map = {}
-    today = _t.strftime('%Y-%m-%d')
+    today = time.strftime('%Y-%m-%d')
     whole = (only is None) and (done_map.get(chair) != today)
     R = _renamer(root)
     n = 0
@@ -1184,6 +1206,7 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
         i = it; break
     sheet_save(s)
     if not i:  # SELF-REFRESH v84.32: an empty sheet re-seeds itself from the living folders, so a dragged-out paper rises without a command
+        say('🔎 seeding the sheet - fingerprints cached, new papers hashed once')  # SEED-SAY v85.18: even a cold pass speaks while it works
         calls_cmd('', root, say, False)  # ONE-LINE v84.51: the self-refresh reseeds without the throat-clearing hint
         if any(x.get('status') == 'waiting' for x in sheet_load().get('items', [])): return up_cmd(arg, root, say)
         say('📭 tray clear - every loose paper seated, skipped or remembered'); return
@@ -3909,6 +3932,8 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S352 no line the house prints may begin mid-line - stdout remembers its own endings', (chr(35)+' NEWLINE-DISCIPLINE v85.18') in _src and (chr(35)+' NEWLINE-DISCIPLINE v85.18') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' NEWLINE-DISCIPLINE v85.18') in open(os.path.join(BASE_DIR, 'wa.py')).read())
+    ck('S353 a fingerprint is computed once per content and the seed never works in silence', (chr(35)+' FP-CACHE v85.18') in _src and (chr(35)+' SEED-SAY v85.18') in _src and ('_fp_fast(p)' in _src))
     ck('S346 the seat check delegates the deed to the developed renamer', (chr(35)+' REUSE-RENAME v85.12') in _src and ('def _renamer(' in _src) and ('R._rename(p, canon, say' in _src))
     ck('S347 every interactive prompt stands at column zero', (chr(35)+' FLUSH-CUE v85.14') in _src and ((chr(39) + '   y = ' + chr(127991) + chr(65039)) not in _src) and ((chr(39) + '   [s] I clicked') not in open(os.path.join(BASE_DIR, 'wa.py')).read()))
     ck('S348 no duty works in silence and no whole-chair pass repeats within a day', (chr(35)+' NO-SILENT-WORK v85.15') in _src and ('.seatrenamed.json' in _src) and ('seat_rename_check(root, say, only=p)' in _src))

@@ -94,6 +94,7 @@ def _arm(phone, text):
 
 def _key(prompt):  # ONE-KEY v84.46: the menu answers to the keystroke alone; Enter still means take your time
     import sys, termios, tty
+    if getattr(sys.stdout, 'last', '\n') != '\n': sys.stdout.write('\n')  # NEWLINE-DISCIPLINE v85.18
     sys.stdout.write(prompt); sys.stdout.flush()
     try:
         fd = sys.stdin.fileno(); old = termios.tcgetattr(fd)

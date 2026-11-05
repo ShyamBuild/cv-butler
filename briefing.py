@@ -39,6 +39,21 @@ def _say(t='', *a, **k):  # FLUSH-LEFT v85.11: born before every def that names 
     sys.stdout.write(str(t).lstrip() + end)
     sys.stdout.flush()
 
+class _NLOut:  # NEWLINE-DISCIPLINE v85.18: stdout remembers whether the last write ended a line, so no print may ever begin mid-line again
+    def __init__(self, s):
+        self._s = s; self.last = '\n'
+    def write(self, t):
+        if t:
+            self._s.write(t); self.last = t[-1]
+        return len(t) if t else 0
+    def flush(self):
+        self._s.flush()
+    def __getattr__(self, n):
+        return getattr(self._s, n)
+import sys as _sysnl
+if not isinstance(_sysnl.stdout, _NLOut):
+    _sysnl.stdout = _NLOut(_sysnl.stdout)
+
 def clean_pos(name):
     name = (name or '').replace('|', ' ')  # PIPE-CLEAN v67
     n = re.sub(r'^jd[\s_-]+', '', name, flags=re.I)
@@ -524,6 +539,7 @@ def _ear_intent(q, root, say=_say):  # EAR v84.35: a sentence about a human beco
 
 def _smart_input(prompt):  # LISTEN-REPL v85.4  # ALWAYS-RAW v85.6: the REPL always hears keys - a digit or y/t/n lands on the press; a word accumulates with live echo and backspace; Enter terminates words only
     import sys, termios, tty
+    if getattr(sys.stdout, 'last', '\n') != '\n': sys.stdout.write('\n')  # NEWLINE-DISCIPLINE v85.18
     sys.stdout.write(prompt); sys.stdout.flush()
     try:
         fd = sys.stdin.fileno(); old = termios.tcgetattr(fd)
