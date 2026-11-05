@@ -1116,8 +1116,6 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
     if i.get('re'): say('🔄 re-review: skipped earlier, the tray is empty now - one soul per seed, new loose papers still outrank him')  # RETRAY v84.55
     p = i['p']; ph = taught_digits(i['name']) or phones_of(p, True) or None  # QUIET-CHAIR v84.37: the dossier takes the number without the clerk's ceremony
     if isinstance(ph, list): ph = ph[0] if ph else None
-    say(f"🛰️ {i['name']} · {os.path.basename(os.path.dirname(p))} · ✉️ {_em} · 📱 {ph or 'none (teach me)'}")  # HORIZONTAL v85.9: name, folder, email, phone in one flush line, indented like the body it lives in - the scroll belongs to the candidates, not the chrome
-    say_identity_for(p, say)  # IDENTITY-AT-SEAT v84.39: the master asked for the triple at the seat as well; S277 keeps the proposal's
     _preview_open(p, say)
     _em = ''  # CONTACT-ONCE v84.39: every truth exactly once - email and phone in a single line
     for _fn in ('email_of', '_email_of', '_email_witness', 'emails_of'):
@@ -1130,6 +1128,8 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
             except Exception: pass
     tgs = _tags_of(p)
     if tgs: say('   tags: ' + ', '.join(tgs))
+    say(f"🛰️ {i['name']} · {os.path.basename(os.path.dirname(p))} · ✉️ {_em} · 📱 {ph or 'none (teach me)'}")  # HORIZONTAL v85.9 (re-seated v85.10): the dossier stands AFTER the block that births _em and ph - no variable answers before its birth  # HORIZONTAL v85.9  # WITNESS-CARRY v84.52: deleted lines hand their laws to the line that survives
+    say_identity_for(p, say)  # IDENTITY-AT-SEAT v84.39: the master asked for the triple at the seat as well; S277 keeps the proposal's
     say('   1 📤 jd→JD-Conf · 2 🙅 refer→Closed · 3 📝 cv→CV-Update · 4 🔔 nudge→reminder(no tag) · 5 📵 missed→Call-Sched · 6 🏆 internal→Ready · 7 ⏭️ skip→tray (one returns per empty seed)')  # EMOJI-CUE v84.51: each door wears its face, and no face wears a banned glyph  # EMOJI-CUE v84.51 # MAP-COMPACT v84.37 # WITNESS-CARRY v84.52  # WITNESS-CARRY v84.52: deleted lines hand their laws to the line that survives
 
 def covered_load():
@@ -3837,6 +3837,7 @@ def _selftest(root):
     ck('S340 no state may downgrade the keyboard - the REPL always hears keys', (chr(35)+' ALWAYS-RAW v85.6') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and ('_seated' not in open(os.path.join(BASE_DIR, 'briefing.py')).read().split('def _smart_input(')[1].split(chr(10) + 'def ')[0]))
     ck('S341 a scenario branch stands at its own column, never inside its sibling', _src.count(chr(10) + "    if kind == 'refer':") == 1)
     ck('S342 the seat speaks in three lines and the scroll belongs to the candidates', (chr(35)+' HORIZONTAL v85.9') in _src and ((chr(40) + 'options = full ' + 'grammar' + chr(41)) not in _src) and ('say_identity_for(p, say)' in _src))
+    ck('S343 in the seat no variable answers before its birth', (lambda seg: seg.find(chr(35)+' HORIZONTAL v85.9') > seg.find("_em = ''") >= 0)(_src.split('def up_cmd(')[1].split('def covered_load(')[0]))
     ck('S337 at the chair a digit is a keystroke and a word is a line', (chr(35)+' LISTEN-REPL v85.4') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and ('1234567' in open(os.path.join(BASE_DIR, 'briefing.py')).read()))
     ck('S338 the refer voice speaks the master'+chr(39)+'s courtesy verbatim', (chr(35)+' SCENARIO-REFER v85.4') in _src and os.path.exists(os.path.join(BASE_DIR, 'drafts', 'refer.txt')) and ('I have emailed you the JD for the' in open(os.path.join(BASE_DIR, 'drafts', 'refer.txt')).read()))
     ck('S335 no candidate-facing text claims the details travelled on WhatsApp', all((('on ' + 'WhatsApp') not in open(os.path.join(BASE_DIR, dd, ff)).read()) for dd in ('templates', 'drafts') for ff in os.listdir(os.path.join(BASE_DIR, dd)) if ff.endswith('.txt')))  # S335 repinned v85.4: the law guards truth, not vocabulary
