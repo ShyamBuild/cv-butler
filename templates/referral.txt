@@ -1,6 +1,6 @@
-Hi {name}, Sundeep Rana here from Sunsoft Technology. 🙏
-Thank you for your time regarding the {position} role at {where}.
-If any colleague or friend may fit, kindly share their contact - or ask them to email me a PDF CV, or call me directly.
-I will keep you in mind for future matches. ✨
+Hi {name}, Sundeep Rana here. Thank you for your time on our call earlier.
+As discussed, I have emailed you the JD for the {position} role at {company} in {location}.
+If you know one or two individuals who might be a good fit, please share this with them directly. They can WhatsApp me their CV in PDF format from their own number, or give me a call.
+Thank you for your support.
 Regards,
 Sundeep Rana

@@ -1352,6 +1352,9 @@ def _chair_wa_text(kind, p, name):  # ONE-VOICE v84.19: the chair drafts through
     if kind == 'cv':  # SCENARIO-3 v84.41: outcome 3 speaks the master's combo - acknowledge the JD and send the updated CV - from the scenario store; the legacy nudge stays the later touchpoint
         t3 = _draft_text('cv', name, _pos_of(p, _pl_root()), p)
         if t3: return t3
+        if kind == 'refer':  # SCENARIO-REFER v85.4: the refer voice speaks the master's own courtesy, verbatim, from the scenario store
+            t4 = _draft_text('refer', name, _pos_of(p, _pl_root()), p)
+            if t4: return t4
     try:
         import briefing as _br
         sc = CHAIR_SCENARIO.get(kind)
@@ -3690,7 +3693,7 @@ def _selftest(root):
     ck('S62 tpltest + split hardening', 'def do_tpltest(' in _br and (chr(35) + ' SPLIT-HARD') in _br)
     ck('S63 referral voice for closed candidates', os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates', 'referral.txt')) and "cmd == 'refer'" in _br and "'closed' in st: return ['referral']" in _br)
     ck('S64 referral voice not shadowed', "'referral': 'reference'" not in _br and os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates', 'referral.txt')))
-    ck('S65 chat ctrl-c graceful', 'except KeyboardInterrupt:' in _br.split('q = input("you> ")')[1][:300])
+    ck('S65 chat ctrl-c graceful', 'except KeyboardInterrupt:' in _br.split('"you> "')[1][:300])  # READ-REPIN v85.5: guards pin the prompt, not the reader - listen mode changed the reader, the prompt stays
     _body = _src.split('def _selftest')[0]
     ck('S66 settle-gate on every mutating door', 'def _settling(' in _src and all(_body.count(m) == 1 for m in (chr(35)+' ROUTE-GATE', chr(35)+' TAGS-GATE', chr(35)+' RECONCILE-GATE')))
     ck('S67 heal sweep + debris archive', 'def _heal(' in _src and 'download_debris' in _src and 'B._heal(hsay)' in _src.split('last_hb > 120')[1])
@@ -3831,7 +3834,10 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
-    ck('S335 no candidate-facing text says WhatsApp - the details travel by email', all(('WhatsApp' not in open(os.path.join(BASE_DIR, d, f)).read()) for d in ('templates', 'drafts') for f in os.listdir(os.path.join(BASE_DIR, d)) if f.endswith('.txt')))
+    ck('S339 no guard may pin a read-call - prompts are law, readers are manners', sum(1 for _l in _src.split(chr(10)) if _l.strip().startswith('ck(') and ('q = ' + 'input(') in _l) == 0)
+    ck('S337 at the chair a digit is a keystroke and a word is a line', (chr(35)+' LISTEN-REPL v85.4') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and ('1234567' in open(os.path.join(BASE_DIR, 'briefing.py')).read()))
+    ck('S338 the refer voice speaks the master'+chr(39)+'s courtesy verbatim', (chr(35)+' SCENARIO-REFER v85.4') in _src and os.path.exists(os.path.join(BASE_DIR, 'drafts', 'refer.txt')) and ('I have emailed you the JD for the' in open(os.path.join(BASE_DIR, 'drafts', 'refer.txt')).read()))
+    ck('S335 no candidate-facing text claims the details travelled on WhatsApp', all((('on ' + 'WhatsApp') not in open(os.path.join(BASE_DIR, dd, ff)).read()) for dd in ('templates', 'drafts') for ff in os.listdir(os.path.join(BASE_DIR, dd)) if ff.endswith('.txt')))  # S335 repinned v85.4: the law guards truth, not vocabulary
     ck('S336 every single-key answer is a keystroke - no Enter in the copilot'+chr(39)+'s mouth', (chr(35)+' LISTEN v85.3') in _src and ('_listen(' in open(os.path.join(BASE_DIR, 'briefing.py')).read().split('def _pick_phone(')[1].split(chr(10) + 'def ')[0]))
     ck('S326 the cue says aloud what cancel leaves behind', (chr(35)+' ASK-LINE v84.49') in _src and ('n = cancel, he stays in the chair' in _src))
     ck('S327 the tray refills only when empty and new blood always outranks it', (chr(35)+' RETRAY v84.55') in _src and ('key=lambda x: 1 if x.get(' + chr(39) + 're' + chr(39) + ') else 0' in _src))

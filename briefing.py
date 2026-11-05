@@ -516,6 +516,37 @@ def _ear_intent(q, root, say=print):  # EAR v84.35: a sentence about a human bec
     say('· proposal waiting - type y or n on the next line')
     return True
 
+def _smart_input(prompt):  # LISTEN-REPL v85.4: at the chair a digit is a keystroke; words still take a line
+    import sys, termios, tty
+    import butler as _bt
+    try: _seated = _bt.sheet_current() and not _bt.action_pending()
+    except Exception: _seated = False
+    if not _seated:
+        return input(prompt)
+    sys.stdout.write(prompt); sys.stdout.flush()
+    try:
+        fd = sys.stdin.fileno(); old = termios.tcgetattr(fd)
+        tty.setraw(fd)
+        try:
+            c = sys.stdin.read(1)
+            if c == '\x03':
+                sys.stdout.write('^C\n'); sys.stdout.flush(); raise KeyboardInterrupt
+            if c in '1234567':
+                sys.stdout.write(c + '\n'); sys.stdout.flush()
+                return c
+            buf = c
+            while c not in ('\r', '\n'):
+                sys.stdout.write(c); sys.stdout.flush()
+                c = sys.stdin.read(1)
+            sys.stdout.write('\n'); sys.stdout.flush()
+            return buf.strip()
+        finally:
+            termios.tcsetattr(fd, termios.TCSADRAIN, old)
+    except KeyboardInterrupt:
+        raise
+    except Exception:
+        return input('')
+
 def answer(root, q, say=print):
     if _ear_intent(q, root, say): return  # EAR v84.35: a sentence about a human becomes a proposal before the brain wanders
     ql = q.lower()
@@ -1554,7 +1585,7 @@ if __name__ == "__main__":
             print(f"   🎯 focus synced to running butler: {os.path.relpath(pickr, root)}")
         while True:
             try:
-                q = input("you> ").strip()
+                q = _smart_input("you> ").strip()
                 if butler.listen_teach(q): continue  # LISTEN v81.67: after a no-phone confession, the master's bare ten digits are the lesson
             except EOFError:
                 break
