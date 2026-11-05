@@ -4027,6 +4027,7 @@ def _selftest(root):
     ck('S363 a second download never re-enters the chair wearing a portal mask', (chr(35)+' DUP-SEED v85.26') in _src and ('second download of' in _src))
     ck('S364 a logged-out window asks for one scan, named aloud', (chr(35)+' QR-RESCAN v85.26') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S365 a broken window never costs a courtesy - the draft parks and names its path', (chr(35)+' PARK-DRAFT v85.27') in open(os.path.join(BASE_DIR, 'wa.py')).read())
+    ck('S366 the ritual supplies its own quiet room whichever probe playwright consults', (chr(35)+' QUIET-ASYNCIO v85.28') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S356 no line begins with borrowed space and no content continues a prompt', (chr(35)+' FLUSH-ABSOLUTE v85.20') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S357 no idle loop may lie across the thumb'+chr(39)+'s path', (chr(35)+' LOOP-CLEAN v85.21') in _src and (chr(35)+' LOOP-CLEAN v85.21') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S352 no line the house prints may begin mid-line - stdout remembers its own endings', (chr(35)+' NEWLINE-DISCIPLINE v85.18') in _src and (chr(35)+' NEWLINE-DISCIPLINE v85.18') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' NEWLINE-DISCIPLINE v85.18') in open(os.path.join(BASE_DIR, 'wa.py')).read())
