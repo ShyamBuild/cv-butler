@@ -112,7 +112,8 @@ def _key(prompt):  # ONE-KEY v84.46: the menu answers to the keystroke alone; En
 def _send_review_body(phone, text, say=print, ask=None):
     try:
         import asyncio as _a
-        _a.set_event_loop(None)  # LOOP-CLEAN v85.21: the thumb's window refuses a process carrying a live wire
+        _a.set_event_loop_policy(_a.DefaultEventLoopPolicy())  # POLICY-RESET v85.25  # LOOP-CLEAN v85.21: the loop-clean law promoted - from clearing a loop to refusing the policy that lends one
+        _a.set_event_loop(_a.new_event_loop())  # POLICY-RESET v85.25: a private idle loop nobody runs
     except Exception:
         pass
     digits = re.sub(r'\D', '', str(phone))
@@ -136,6 +137,18 @@ def _send_review_body(phone, text, say=print, ask=None):
         if not _goto(page, f"https://web.whatsapp.com/send?phone={digits}", say):
             say('⚠️ chat page did not load - scan QR in the opened window if asked, then retry')
             return False
+        try:
+            _html = page.content()
+        except Exception:
+            _html = ''
+        if ('Link your phone' in _html or 'qr code' in _html.lower()) and 'conversation' not in _html:  # QR-RESCAN v85.26: a logged-out window asks for one scan, named aloud, instead of failing as a library complaint
+            say('🔐 WhatsApp Web is logged out in the BUTLER window - scan the QR with your phone once, then press any key here')
+            _key('')
+            try:
+                page.reload(wait_until='domcontentloaded', timeout=60000)
+                _goto(page, f'https://web.whatsapp.com/send?phone={digits}', say)
+            except Exception:
+                pass
         try:
             try:  # EARLY-DOOR v81.92: ask WhatsApp within the first beats, not after the placement wait - poll four seconds for the modal or the field, whichever speaks first (inserted before the modal-check if, at its own indent; the late path stays as fallback)
                 for _i in range(48):  # MODAL-WATCH v81.98: the door is asked until it answers - twenty-four beats, not four; the modal confesses, the composer releases, and only true ambiguity pays the full count
@@ -209,18 +222,11 @@ def _send_review_body(phone, text, say=print, ask=None):
             pass
 
 
-def send_review(*a, **k):  # PLAYWRIGHT-THREAD v85.23: the whole window ritual runs in its own thread, so no loop anywhere in the caller's process can reach playwright's check - raw tty reads are process-wide, so the menu still answers to a bare key
-    import threading
-    box = []
-    def _w():
-        try:
-            box.append(_send_review_body(*a, **k))
-        except Exception as e:
-            box.append(e)
-    th = threading.Thread(target=_w, daemon=True)
-    th.start(); th.join(240)
-    r = box[0] if box else None
-    if isinstance(r, Exception):
-        print('⚠️ whatsapp failed: %s' % r)
+def send_review(phone, text, say=print, *a, **k):  # PLAYWRIGHT-THREAD v85.23  # PLAYWRIGHT-PROCESS v85.24: the ritual runs in a brand-new process - born without loops or policies - inheriting the tty so bare keys still answer; the exit code carries the truth home
+    import subprocess, sys
+    code = 'import sys, wa; sys.exit(0 if wa._send_review_body(%r, %r, print) else 1)' % (phone, text)
+    r = subprocess.call([sys.executable, '-c', code], cwd=os.path.dirname(os.path.abspath(__file__)))
+    if r != 0:
+        say('⚠️ whatsapp failed in its own process - retry with: python3 -c "import wa; wa._send_review_body(' + repr(phone) + ', ' + repr(text) + ', print)"')
         return False
-    return r
+    return True

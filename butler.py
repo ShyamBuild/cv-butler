@@ -1039,6 +1039,31 @@ def _fp_fast(p):  # FP-CACHE v85.18: a fingerprint is computed once per content 
     except Exception: pass
     return v
 
+_IDC = {}
+def _ident_of(p):  # DUP-SEED v85.26: a paper's identity is its email-and-phone set, cached by mtime+size - filenames lie, contacts do not
+    global _IDC
+    import json as _j
+    cf = os.path.join(BASE_DIR, '.idcache.json')
+    if not _IDC:
+        try: _IDC.update(_j.load(open(cf)))
+        except Exception: pass
+    try:
+        st = os.stat(p)
+    except Exception:
+        return set()
+    e = _IDC.get(p)
+    if e and e[0] == st.st_mtime and e[1] == st.st_size:
+        return set(e[2])
+    try:
+        t = extract_text(p) or ''
+    except Exception:
+        t = ''
+    ids = set(emails_in_text(t)) | set(phones_in_text(t))
+    _IDC[p] = [st.st_mtime, st.st_size, sorted(ids)]
+    try: _j.dump(_IDC, open(cf, 'w'))
+    except Exception: pass
+    return ids
+
 def calls_cmd(arg, root, say=print, hint=True):  # CHAIR v84.10b (v84.30): FOLDER-TRUTH - the sheet maps the folders, not the tags
     scopes = [desk_resolve(arg, root)] if arg else (desk_paths() or [root])
     s0 = sheet_load(); sk = skips_load(); mem = set(covered_load())
@@ -1057,6 +1082,11 @@ def calls_cmd(arg, root, say=print, hint=True):  # CHAIR v84.10b (v84.30): FOLDE
                 if row and row.get('status') == 'waiting': continue
                 if row:
                     row['status'] = 'waiting'; row['outcome'] = ''; reopened += 1; continue  # FOLDER-TRUTH v84.30: dragged out means to be contacted again
+                _ids = _ident_of(p)
+                _hit = next((v for k2, v in res_id.items() if _ids and (_ids & set(k2))), None)
+                if _hit:
+                    say(f'👥 {os.path.basename(p)} is a second download of {_hit[0]} ({_hit[1]}) - not seated')
+                    continue
                 items.append({'p': p, 'name': os.path.splitext(x)[0], 'status': 'waiting', 'fp': _fp_fast(p)})
     refed = 0
     if not items and not reopened:  # RETRAY v84.55: when no loose paper waits, the skipped return for re-review - one per empty seed, oldest skip first, and the skip is consumed so no man re-feds endlessly
@@ -1076,6 +1106,14 @@ def calls_cmd(arg, root, say=print, hint=True):  # CHAIR v84.10b (v84.30): FOLDE
             items.append({'p': qq, 'name': os.path.splitext(os.path.basename(qq))[0], 'status': 'waiting', 'fp': _fp(qq), 're': True})
             del skd[kp]; refed += 1; break
         if refed: json.dump(skd, open(SKIPS_PATH, 'w'), indent=1)
+    res_id = {}  # DUP-SEED v85.26: the residents' identities, gathered once per seed, so a second download may never re-enter the chair wearing a portal mask
+    for _st in _tag_vocab():
+        _sd = os.path.join(root, _st)
+        if not os.path.isdir(_sd): continue
+        for _dp, _dn, _fn in os.walk(_sd):
+            for _x in _fn:
+                _ids = _ident_of(os.path.join(_dp, _x))
+                if _ids: res_id[frozenset(_ids)] = (_x, _st)
     waiting = [i for i in s0.get('items', []) if i.get('status') == 'waiting']
     kept = [i for i in s0.get('items', []) if i.get('status') != 'waiting']
     s0['date'] = time.strftime('%Y-%m-%d'); s0['items'] = kept + waiting + items
@@ -3984,7 +4022,10 @@ def _selftest(root):
     ck('S358 in raw mode the writer is the driver - every raw newline carries its carriage', (chr(35)+' CRLF-RAW v85.22') in _src and (chr(35)+' CRLF-RAW v85.22') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' CRLF-RAW v85.22') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S359 the vision eye reads in its own thread and never lends the thumb its loop', (chr(35)+' VISION-THREAD v85.22') in _src and ('_vision_safe(p)' in _src))
     ck('S360 the whole-chair ceremony runs once per keystroke and each miss confesses once', (chr(35)+' ONCE-PER-COMMAND v85.22') in _src and ('_IN_CEREMONY' in _src))
-    ck('S361 the window ritual lives in its own thread and no loop may reach it', (chr(35)+' PLAYWRIGHT-THREAD v85.23') in open(os.path.join(BASE_DIR, 'wa.py')).read() and ('def _send_review_body(' in open(os.path.join(BASE_DIR, 'wa.py')).read()))
+    ck('S361 the window ritual lives in its own process where no loop or policy may reach it', (chr(35)+' PLAYWRIGHT-PROCESS v85.24') in open(os.path.join(BASE_DIR, 'wa.py')).read() and ('subprocess.call' in open(os.path.join(BASE_DIR, 'wa.py')).read()))  # S361 repinned v85.25: thread isolation was outrun; the process boundary is the guarantee
+    ck('S362 the ritual installs its own policy and a loop nobody runs', (chr(35)+' POLICY-RESET v85.25') in open(os.path.join(BASE_DIR, 'wa.py')).read())
+    ck('S363 a second download never re-enters the chair wearing a portal mask', (chr(35)+' DUP-SEED v85.26') in _src and ('second download of' in _src))
+    ck('S364 a logged-out window asks for one scan, named aloud', (chr(35)+' QR-RESCAN v85.26') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S356 no line begins with borrowed space and no content continues a prompt', (chr(35)+' FLUSH-ABSOLUTE v85.20') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S357 no idle loop may lie across the thumb'+chr(39)+'s path', (chr(35)+' LOOP-CLEAN v85.21') in _src and (chr(35)+' LOOP-CLEAN v85.21') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S352 no line the house prints may begin mid-line - stdout remembers its own endings', (chr(35)+' NEWLINE-DISCIPLINE v85.18') in _src and (chr(35)+' NEWLINE-DISCIPLINE v85.18') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' NEWLINE-DISCIPLINE v85.18') in open(os.path.join(BASE_DIR, 'wa.py')).read())
