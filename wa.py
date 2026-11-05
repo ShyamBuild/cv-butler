@@ -266,9 +266,27 @@ def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  #
 
 def send_review(phone, text, say=print, *a, **k):  # PLAYWRIGHT-THREAD v85.23  # PLAYWRIGHT-PROCESS v85.24: the ritual runs in a brand-new process - born without loops or policies - inheriting the tty so bare keys still answer; the exit code carries the truth home
     import subprocess, sys
-    code = 'import sys, wa; sys.exit(0 if wa._send_review_body(%r, %r, print) else 1)' % (phone, text)
-    r = subprocess.call([sys.executable, '-c', code], cwd=os.path.dirname(os.path.abspath(__file__)))
-    if r != 0:
+    st = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.wa_status')  # WA-STATUS v85.31: the child reports ok / discard / fail in one word, so a deliberate discard never wears a failure's coat
+    try:
+        os.remove(st)
+    except Exception:
+        pass
+    nl = chr(10)
+    code = 'import sys, wa' + nl
+    code += '_seen = []' + nl
+    code += "def _s(t='', *a, **k):" + nl
+    code += '    _seen.append(str(t)); print(t)' + nl
+    code += ('r = wa._send_review_body(%r, %r, _s)' % (phone, text)) + nl
+    code += "st = 'ok'" + nl
+    code += "if any('whatsapp failed' in x for x in _seen): st = 'fail'" + nl
+    code += "elif any('discarded' in x for x in _seen): st = 'discard'" + nl
+    code += ("open(%r, 'w').write(st)" % st) + nl
+    rr = subprocess.call([sys.executable, '-c', code], cwd=os.path.dirname(os.path.abspath(__file__)))
+    try:
+        outcome = open(st).read().strip()
+    except Exception:
+        outcome = 'fail' if rr != 0 else 'ok'
+    if outcome == 'fail' or rr != 0:  # WA-STATUS v85.31: only a true failure parks; discard and ok return in silence - the index is recomputed after the slice, because an index computed before a mutation is a rumor
         say('⚠️ whatsapp failed in its own process - retry with: python3 -c "import wa; wa._send_review_body(' + repr(phone) + ', ' + repr(text) + ', print)"')
         try:  # PARK-DRAFT v85.27: a broken window must never cost a courtesy - the exact draft parks by phone and names its own path
             pd = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'drafts', 'parked')

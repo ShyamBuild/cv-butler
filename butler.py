@@ -1680,10 +1680,11 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
             if ph:
                 pos = _pos_of(p, root)
                 import wa
+                _wr = True  # DEED-TRUTH v85.31: the deed line reports what the window actually did - drafted, parked, or internal
                 if _k == 't': pass  # SKIP-WA v84.38 # CINE-LINE v85.1: the deed line already says no 📱 - the retired prompt's law rides on
                 else: wa.send_review(ph, _chair_wa_text(draft, p, cur['name']), say)
             else: say(f'⚠️ no phone for {cur["name"]} - teach me: python3 butler.py teach {cur["name"].split()[0].lower()} <digits>, then retry')
-    say(f"✅ {cur['name']} · 🏷️ {tag} · 📦 {os.path.basename(os.path.dirname(p))} · " + ('📱 drafted' if (_k != 't' and draft) else ('no 📱' if draft else 'internal · no 📱')))  # ACTION-ECHO v84.51 CINE-LINE v85.1: one deed line, nothing repeated
+    say(f"✅ {cur['name']} · 🏷️ {tag} · 📦 {os.path.basename(os.path.dirname(p))} · " + ('📱 drafted' if (_k != 't' and draft and _wr) else ('📱 parked' if (_k != 't' and draft and not _wr) else ('no 📱' if draft else 'internal · no 📱'))))  # ACTION-ECHO v84.51 CINE-LINE v85.1: one deed line, nothing repeated
     desk_dashboard(say)  # CENSUS-AFTER v84.12: every closed row ends with the living scoreboard
     w = [x for x in s.get('items', []) if x['status'] == 'waiting']  # ADVANCE v84.10b: the queue walks without being pushed
     if w: say(f'⏭️ next: {w[0]["name"]} · up when ready')
@@ -4019,6 +4020,7 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S370 the deed line reports what the window actually did', (chr(39)+'📱 parked'+chr(39)) in _src and ('_wr = wa.send_review' in _src))
     ck('S358 in raw mode the writer is the driver - every raw newline carries its carriage', (chr(35)+' CRLF-RAW v85.22') in _src and (chr(35)+' CRLF-RAW v85.22') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' CRLF-RAW v85.22') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S359 the vision eye reads in its own thread and never lends the thumb its loop', (chr(35)+' VISION-THREAD v85.22') in _src and ('_vision_safe(p)' in _src))
     ck('S360 the whole-chair ceremony runs once per keystroke and each miss confesses once', (chr(35)+' ONCE-PER-COMMAND v85.22') in _src and ('_IN_CEREMONY' in _src))
@@ -4030,6 +4032,7 @@ def _selftest(root):
     ck('S366 the ladder stands where the quiet room stood', ('def watest(' in open(os.path.join(BASE_DIR, 'wa.py')).read()))  # S366 repinned v85.29: the ritual's guarantee is now a named ladder of doors, not a shadowed probe
     ck('S367 no shadow may stand between playwright and its own heartbeat', ('_no_running' not in open(os.path.join(BASE_DIR, 'wa.py')).read()) and ('get_running_loop = ' not in open(os.path.join(BASE_DIR, 'wa.py')).read()) and ('def watest(' in open(os.path.join(BASE_DIR, 'wa.py')).read()))
     ck('S368 playwright is started once per process and shared by every door', open(os.path.join(BASE_DIR, 'wa.py')).read().count('sync_playwright().start()') == 1 and ('def _pw(' in open(os.path.join(BASE_DIR, 'wa.py')).read()))
+    ck('S369 a deliberate discard never wears a failure'+chr(39)+'s coat', (chr(35)+' WA-STATUS v85.31') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S356 no line begins with borrowed space and no content continues a prompt', (chr(35)+' FLUSH-ABSOLUTE v85.20') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S357 no idle loop may lie across the thumb'+chr(39)+'s path - wa never touches the loop machinery', (chr(35)+' LOOP-CLEAN v85.21') in _src and ('set_event_loop' not in open(os.path.join(BASE_DIR, 'wa.py')).read()))  # S357 repinned v85.29: the loop-clean law promoted again - from clearing a loop, to refusing the policy, to never touching the machinery at all
     ck('S352 no line the house prints may begin mid-line - stdout remembers its own endings', (chr(35)+' NEWLINE-DISCIPLINE v85.18') in _src and (chr(35)+' NEWLINE-DISCIPLINE v85.18') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' NEWLINE-DISCIPLINE v85.18') in open(os.path.join(BASE_DIR, 'wa.py')).read())
