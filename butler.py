@@ -586,7 +586,7 @@ def _stage_note(file, from_tag, to_tag, from_dir, to_dir, srcs):  # STAGE-LOG v8
     except Exception: pass
 def menu_key(prompt='', allowed=('y', 't', 'n')):  # ONE-INPUT v84.47 (ASK-LINE v84.49): the statement ends in its own line; the question ends in a visible cue; the key signs it; Enter re-asks once; Ctrl+C cancels like everywhere else
     import sys, termios, tty
-    if getattr(sys.stdout, 'last', '\n') != '\n': sys.stdout.write('\n')  # NEWLINE-DISCIPLINE v85.18: a prompt never begins mid-line; if the previous writer forgot its end, the next one supplies it
+    if getattr(sys.stdout, 'last', '\n') != '\n': sys.stdout.write('\r\n')  # NEWLINE-DISCIPLINE v85.18: a prompt never begins mid-line; if the previous writer forgot its end, the next one supplies it  # CRLF-RAW v85.22: in raw mode the writer is the driver - LF alone leaves the column where it stood
     for attempt in (0, 1):
         sys.stdout.write(prompt if attempt == 0 else '   one key, master: y / t / n › '); sys.stdout.flush()
         try:
@@ -598,12 +598,12 @@ def menu_key(prompt='', allowed=('y', 't', 'n')):  # ONE-INPUT v84.47 (ASK-LINE 
         except Exception:
             return (input() or '').strip().lower()
         if k == '\x03':
-            sys.stdout.write('^C\n'); sys.stdout.flush(); return 'n'
+            sys.stdout.write('^C\r\n'); sys.stdout.flush(); return 'n'  # CRLF-RAW v85.22: in raw mode the writer is the driver - LF alone leaves the column where it stood
         if k in ('\r', '\n'):
-            sys.stdout.write('\n'); sys.stdout.flush()
+            sys.stdout.write('\r\n'); sys.stdout.flush()  # CRLF-RAW v85.22: in raw mode the writer is the driver - LF alone leaves the column where it stood
             if attempt == 0: continue
             return ''
-        sys.stdout.write(k + '\n'); sys.stdout.flush()
+        sys.stdout.write(k + '\r\n'); sys.stdout.flush()  # CRLF-RAW v85.22: in raw mode the writer is the driver - LF alone leaves the column where it stood
         return k.strip().lower()
     return ''
 
@@ -1113,6 +1113,9 @@ def _renamer(root):  # REUSE-RENAME v85.12: discover the house's own renamer cla
 def _name_from_first_line(p):  # FIRST-LINE v85.20: when both developed eyes stay silent, the paper's own first line speaks in title case - the humblest eye, and the fastest
     try:
         t = extract_text(p) or ''
+        if not t.strip():
+            try: t = extract_text_ocr(p) or ''  # FIRST-LINE v85.20 (ocr-fallback v85.22): a text layer that refuses to open yields to the capped pixels
+            except Exception: t = ''
     except Exception:
         return ''
     for ln in t.split('\n'):
@@ -1126,6 +1129,19 @@ def _name_from_first_line(p):  # FIRST-LINE v85.20: when both developed eyes sta
         return ''
     return ''
 
+_IN_CEREMONY = [False]
+def _vision_safe(p):  # VISION-THREAD v85.22: the vision eye reads in its own thread, so whatever loop it borrows lives and dies in its own room and never lies across the thumb's path
+    import threading
+    out = []
+    def _w():
+        try:
+            out.append(get_visual_name(p))
+        except Exception:
+            out.append('')
+    th = threading.Thread(target=_w, daemon=True)
+    th.start(); th.join(45)
+    return out[0] if out else ''
+
 def seat_rename_check(root, say=print, only=None):  # SEAT-RENAME v85.11 (examined-list v85.19): the flag remembers named papers, not visited days - silence never earns a pass
     import json as _j
     dd = desk_load()
@@ -1138,6 +1154,8 @@ def seat_rename_check(root, say=print, only=None):  # SEAT-RENAME v85.11 (examin
     if rec.get('day') != today: rec = {'day': today, 'examined': []}
     ex = set(rec.get('examined', []))
     whole = (only is None)
+    if whole and _IN_CEREMONY[0]: return 0  # ONCE-PER-COMMAND v85.22: up's self-refresh re-enters up_cmd; the whole-chair pass runs once per keystroke, and each miss confesses once
+    if whole: _IN_CEREMONY[0] = True
     targets = []
     if whole:
         for dp, dn, fn in os.walk(chair):
@@ -1156,7 +1174,7 @@ def seat_rename_check(root, say=print, only=None):  # SEAT-RENAME v85.11 (examin
         x = os.path.basename(p)
         if not _is_desk_candidate(x): continue
         if _jd_like_name(x) or _portal_name(x): continue
-        v = heuristic_name(p) or get_visual_name(p) or _name_from_first_line(p)  # TEXT-EYES v85.16  # FIRST-LINE v85.20: the third eye, last resort - and the first eye's witness rides along
+        v = heuristic_name(p) or _vision_safe(p) or _name_from_first_line(p)  # TEXT-EYES v85.16  # FIRST-LINE v85.20: the third eye, last resort - and the first eye's witness rides along
         try:
             import asyncio as _a
             _a.set_event_loop(None)  # LOOP-CLEAN v85.21: the vision eye may leave an idle loop behind; playwright sync must find none
@@ -3963,6 +3981,9 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S358 in raw mode the writer is the driver - every raw newline carries its carriage', (chr(35)+' CRLF-RAW v85.22') in _src and (chr(35)+' CRLF-RAW v85.22') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' CRLF-RAW v85.22') in open(os.path.join(BASE_DIR, 'wa.py')).read())
+    ck('S359 the vision eye reads in its own thread and never lends the thumb its loop', (chr(35)+' VISION-THREAD v85.22') in _src and ('_vision_safe(p)' in _src))
+    ck('S360 the whole-chair ceremony runs once per keystroke and each miss confesses once', (chr(35)+' ONCE-PER-COMMAND v85.22') in _src and ('_IN_CEREMONY' in _src))
     ck('S356 no line begins with borrowed space and no content continues a prompt', (chr(35)+' FLUSH-ABSOLUTE v85.20') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S357 no idle loop may lie across the thumb'+chr(39)+'s path', (chr(35)+' LOOP-CLEAN v85.21') in _src and (chr(35)+' LOOP-CLEAN v85.21') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S352 no line the house prints may begin mid-line - stdout remembers its own endings', (chr(35)+' NEWLINE-DISCIPLINE v85.18') in _src and (chr(35)+' NEWLINE-DISCIPLINE v85.18') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' NEWLINE-DISCIPLINE v85.18') in open(os.path.join(BASE_DIR, 'wa.py')).read())

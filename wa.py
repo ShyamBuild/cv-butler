@@ -94,7 +94,7 @@ def _arm(phone, text):
 
 def _key(prompt):  # ONE-KEY v84.46: the menu answers to the keystroke alone; Enter still means take your time
     import sys, termios, tty
-    if getattr(sys.stdout, 'last', '\n') != '\n': sys.stdout.write('\n')  # NEWLINE-DISCIPLINE v85.18
+    if getattr(sys.stdout, 'last', '\n') != '\n': sys.stdout.write('\r\n')  # NEWLINE-DISCIPLINE v85.18  # CRLF-RAW v85.22: in raw mode the writer is the driver - LF alone leaves the column where it stood
     sys.stdout.write(prompt); sys.stdout.flush()
     try:
         fd = sys.stdin.fileno(); old = termios.tcgetattr(fd)
@@ -105,8 +105,8 @@ def _key(prompt):  # ONE-KEY v84.46: the menu answers to the keystroke alone; En
     except Exception:
         return (input() or '').strip().lower()
     if k in ('\r', '\n'):
-        sys.stdout.write('\n'); sys.stdout.flush(); return ''
-    sys.stdout.write(k + '\n'); sys.stdout.flush()
+        sys.stdout.write('\r\n'); sys.stdout.flush(); return ''  # CRLF-RAW v85.22: in raw mode the writer is the driver - LF alone leaves the column where it stood
+    sys.stdout.write(k + '\r\n'); sys.stdout.flush()  # CRLF-RAW v85.22: in raw mode the writer is the driver - LF alone leaves the column where it stood
     return k.strip().lower()
 
 def send_review(phone, text, say=print, ask=None):

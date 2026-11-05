@@ -543,7 +543,7 @@ def _ear_intent(q, root, say=_say):  # EAR v84.35: a sentence about a human beco
 
 def _smart_input(prompt):  # LISTEN-REPL v85.4  # ALWAYS-RAW v85.6: the REPL always hears keys - a digit or y/t/n lands on the press; a word accumulates with live echo and backspace; Enter terminates words only
     import sys, termios, tty
-    if getattr(sys.stdout, 'last', '\n') != '\n': sys.stdout.write('\n')  # NEWLINE-DISCIPLINE v85.18
+    if getattr(sys.stdout, 'last', '\n') != '\n': sys.stdout.write('\r\n')  # NEWLINE-DISCIPLINE v85.18  # CRLF-RAW v85.22: in raw mode the writer is the driver - LF alone leaves the column where it stood
     sys.stdout.write(prompt); sys.stdout.flush()
     try:
         fd = sys.stdin.fileno(); old = termios.tcgetattr(fd)
@@ -553,16 +553,16 @@ def _smart_input(prompt):  # LISTEN-REPL v85.4  # ALWAYS-RAW v85.6: the REPL alw
             while True:
                 c = sys.stdin.read(1)
                 if c == '\x03':
-                    sys.stdout.write('^C\n'); sys.stdout.flush(); raise KeyboardInterrupt
+                    sys.stdout.write('^C\r\n'); sys.stdout.flush(); raise KeyboardInterrupt  # CRLF-RAW v85.22: in raw mode the writer is the driver - LF alone leaves the column where it stood
                 if c in ('\r', '\n'):
-                    sys.stdout.write('\n'); sys.stdout.flush()
+                    sys.stdout.write('\r\n'); sys.stdout.flush()  # CRLF-RAW v85.22: in raw mode the writer is the driver - LF alone leaves the column where it stood
                     return buf.strip()
                 if c == '\x7f':
                     if buf:
                         buf = buf[:-1]; sys.stdout.write('\b '); sys.stdout.flush()
                     continue
                 if not buf and c in '1234567ytn':
-                    sys.stdout.write(c + '\n'); sys.stdout.flush()
+                    sys.stdout.write(c + '\r\n'); sys.stdout.flush()  # CRLF-RAW v85.22: in raw mode the writer is the driver - LF alone leaves the column where it stood
                     return c
                 buf += c
                 sys.stdout.write(c); sys.stdout.flush()
