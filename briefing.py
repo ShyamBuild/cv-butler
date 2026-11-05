@@ -96,6 +96,10 @@ def _phones_of_local(path):  # ONE-CLERK v81.72: the old clerk, kept as last res
     try: json.dump(store, open(PHONES_FILE, 'w'))
     except Exception: pass
     return ph
+def _listen(prompt):  # LISTEN v85.3: one keystroke, no Enter - the copilot's mouth hears keys
+    import butler as _bt
+    return _bt.menu_key(prompt)
+
 def _pick_phone(ps, say=print, ask=None, path=None):
     if path is not None and len(ps) > 1:  # PROVENANCE-AT-PICK v81.92 # CANDIDATE-FIRST v81.93: when the paper distinguishes the human from a referee, the machine picks the human and says so; the list returns only for true ambiguity (markers separated by space-hash, never by plus: each witness keeps its own hash)
         try:
@@ -109,7 +113,7 @@ def _pick_phone(ps, say=print, ask=None, path=None):
     if not ps: return ''
     if len(ps) == 1: return ps[0]
     for i, x in enumerate(ps): say(f"   {i+1}) {x}")
-    a = ask or (lambda pr: input(pr))
+    a = ask or (lambda pr: _listen(pr))
     try: return ps[int(a("   pick phone #: ").strip()) - 1]
     except Exception: return ps[0]
 def phone_of(path):
@@ -229,6 +233,12 @@ def _fmt_tpl(tpl, hit, f, name):
         if _idn.get('role'): title = _idn['role']
         if _idn.get('loc'): loc = _idn['loc']
         _dz = _idn.get('designation') or title  # DESIG-FALLBACK v84.29: the designation slot is never blank - it borrows the position's name when untold
+        if not _idn.get('company'):  # META-COMPANY v85.3: when no client folder exists, the desk's taught company answers - a taught name may not sit unused while a guess speaks
+            try:
+                _mc = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'desk_meta.json'))).get(_bt.desk_load().get('primary') or '', {}).get('company')
+            except Exception:
+                _mc = None
+            if _mc: cli = _mc
     except Exception:
         _dz = ''
     where = f"Company: {cli}" + (f" | Location: {loc}" if loc else "")

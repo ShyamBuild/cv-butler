@@ -1430,8 +1430,15 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
         import json as _j2
         try: _j2.dump({'p': p, 'tag': tag, 'on': True, 'move_to': True, 'ts': int(time.time())}, open(os.path.join(BASE_DIR, 'pending_action.json'), 'w'))
         except Exception: pass
-        say('')
-        say('· proposal waiting - type y / t / n'); return
+        k2 = menu_key('· proposal waiting - one key: ')  # LISTEN v85.3: the deferred answer is a keystroke too - no Enter in the copilot's mouth
+        if k2 == 'n':
+            say('⏸️ row open - he stays in the chair'); return
+        if k2 in ('y', 't'):
+            try: os.remove(os.path.join(BASE_DIR, 'pending_action.json'))  # LISTEN v85.3: a keystroke that executes retires the deferred file, so no stray y may re-execute it
+            except Exception: pass
+            _k = k2
+        else:
+            return
     _k = k
     if tag == '':  # NUDGE-OPTION v84.44: a reminder changes no tag and moves nothing - the debt stays, the row closes, the thread continues
         if _k != 't':  # ONE-INPUT v84.47: the nudge's draft decision lives in the same keystroke
@@ -3824,6 +3831,8 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S335 no candidate-facing text says WhatsApp - the details travel by email', all(('WhatsApp' not in open(os.path.join(BASE_DIR, d, f)).read()) for d in ('templates', 'drafts') for f in os.listdir(os.path.join(BASE_DIR, d)) if f.endswith('.txt')))
+    ck('S336 every single-key answer is a keystroke - no Enter in the copilot'+chr(39)+'s mouth', (chr(35)+' LISTEN v85.3') in _src and ('_listen(' in open(os.path.join(BASE_DIR, 'briefing.py')).read().split('def _pick_phone(')[1].split(chr(10) + 'def ')[0]))
     ck('S326 the cue says aloud what cancel leaves behind', (chr(35)+' ASK-LINE v84.49') in _src and ('n = cancel, he stays in the chair' in _src))
     ck('S327 the tray refills only when empty and new blood always outranks it', (chr(35)+' RETRAY v84.55') in _src and ('key=lambda x: 1 if x.get(' + chr(39) + 're' + chr(39) + ') else 0' in _src))
     ck('S328 the tray offers one skipped soul per empty seed, oldest first', (chr(35)+' RETRAY-ONE v84.56') in _src and ('del skd[kp]; refed += 1; break' in _src))
@@ -3832,6 +3841,7 @@ def _selftest(root):
     ck('S331 the tray names its members whenever it is not empty', (chr(35)+' TRAY-NAMES v85.1') in _src)
     ck('S332 the deed speaks once, in one line, and silence never swallows a warning', (chr(35)+' CINE-LINE v85.1') in _src and ('lambda *a, **k: None' in _src))
     ck('S333 the terminal speaks crisp - every line keeps its information and loses its fat', ('one key closes his row' in _src) and ('CHAIR · ' in _src) and ('options = full grammar' in _src))
+    ck('S334 the desk'+chr(39)+'s taught company answers when the registry is silent', (chr(35)+' META-COMPANY v85.3') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S322 no dispatch line at module level passes a printer it cannot see', sum(1 for _l in open(os.path.join(BASE_DIR, 'briefing.py')).read().split(chr(10)) if (', root, ' + 'say); continue') in _l) == 0)
     ck('S323 the sheet speaks one line per beat and every door wears its face', (chr(35)+' ONE-LINE v84.51') in _src and (chr(35)+' EMOJI-CUE v84.51') in _src and (chr(35)+' ACTION-ECHO v84.51') in _src)
     ck('S324 no lap may bury a law - deleted lines carry their witnesses', (chr(35)+' WITNESS-CARRY v84.52') in _src)
