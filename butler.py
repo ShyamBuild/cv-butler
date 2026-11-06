@@ -1339,6 +1339,51 @@ def _lock_root():  # LOCK-ROOT v85.54: when a verb is called from a folder that 
         pass
     return ''
 
+def rename_diag(paths, say=print):  # RENAME-DIAG v85.58: the butler opens its eyes in public - per file, every reader's yield, every eye's verdict and the decision with its reason, so a miss is a datum and not a mystery
+    for p in paths:
+        x = os.path.basename(p)
+        stem = os.path.splitext(x)[0]
+        try:
+            jd = 'jd' if _jd_like_name(x) else ('portal' if _portal_name(x) else '')
+        except Exception:
+            jd = '?'
+        wt = _word_text(p)
+        tt = ''
+        try:
+            tt = extract_text(p) or ''
+        except Exception:
+            tt = ''
+        txt = wt or tt
+        fl = ''
+        for ln in txt.split('\n'):
+            ln = ln.strip()
+            if ln:
+                fl = ln[:70]; break
+        h = ''
+        try:
+            h = heuristic_name(p) or ''
+        except Exception:
+            h = 'err'
+        f1 = ''
+        if txt.strip():
+            try:
+                f1 = _name_from_first_line(p) or ''
+            except Exception:
+                f1 = 'err'
+        c = ''
+        try:
+            c = _canonical_person_name(h or f1) or ''
+        except Exception:
+            c = 'err'
+        disp = _display_name(c) if c else ''
+        if jd: dec = 'SKIP ' + jd
+        elif not txt.strip(): dec = 'SKIP text-silent (vision not summoned in diag)'
+        elif not c: dec = 'SKIP no-name-from-eyes'
+        elif _name_key(stem) != _name_key(c): dec = 'SKIP different-human'
+        elif stem == disp: dec = 'OK already-cased'
+        else: dec = 'RENAME -> ' + disp
+        say('🔎 %s | word=%d pdf=%d | first-line: %s | heuristic: %s | firstline-eye: %s | canon: %s | display: %s | %s' % (x, len(wt), len(tt), fl, h, f1, c, disp, dec))
+
 def _case_sweep(root, log):  # CASE-SWEEP v85.57: casing is a property of the name, not of the ceremony's memory - every human-shaped filename is title-cased on the doorbell, examined or not, so no shout outlives its own arrival
     try:
         dirs = [root] + [os.path.join(root, s) for s in _tag_vocab() if os.path.isdir(os.path.join(root, s))]
@@ -1375,6 +1420,19 @@ def _case_sweep(root, log):  # CASE-SWEEP v85.57: casing is a property of the na
 
 def _event_tick(root, log=print):  # RENAME-WATCH v85.52 + CONVERT-WATCH v85.52: directory mtimes are the doorbells - one stat per folder per heartbeat, no hashing, no OCR, no pings; the house rests between rings
     try:
+        _qf = os.path.join(BASE_DIR, '.rename_queue')  # SERVICE-QUEUE v85.58: the master's Finder selection arrives as lines in a queue; the bell drains it each beat and runs the whole arrival pipeline in the background, no terminal opened
+        if os.path.exists(_qf):
+            try:
+                _qs = [l.strip() for l in open(_qf) if l.strip()]
+                os.remove(_qf)
+                for _qp in _qs:
+                    if not os.path.isfile(_qp): continue
+                    log('🖱 service queued: %s' % os.path.basename(_qp))
+                    _ext = os.path.splitext(_qp)[1].lower()
+                    if _ext in ('.docx', '.doc', '.rtf', '.png', '.jpg', '.jpeg', '.heic'): _convert_to_pdf(_qp, log)
+                    elif _ext == '.pdf': _fast_rename(_qp, root, log)
+            except Exception:
+                pass
         _case_sweep(root, log)  # CASE-SWEEP v85.57: the doorbell sweeps casing every beat, so a shout never outlives its arrival
         dirs = [root] + [os.path.join(root, s) for s in _tag_vocab() if os.path.isdir(os.path.join(root, s))]
     except Exception:
@@ -4294,6 +4352,8 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S402 the master'+chr(39)+'s Finder selection is drained by the bell, in the background, each beat', (chr(35)+' SERVICE-QUEUE v85.58') in _src and ('.rename_queue' in _src))
+    ck('S401 the butler'+chr(39)+'s eyes open in public, one honest row per file', ('def rename_diag(' in _src) and (chr(35)+' RENAME-DIAG v85.58') in _src and os.path.exists(os.path.join(BASE_DIR, 'rendiag.py')))
     ck('S400 casing is a property of the name, not of the ceremony'+chr(39)+'s memory', (chr(35)+' CASE-SWEEP v85.57') in _src and ('def _case_sweep(' in _src))
     ck('S394 a Word paper is converted the moment it lands, source untouched, twice never', ('def _convert_to_pdf(' in _src) and (chr(35)+' CONVERT-WATCH v85.52') in _src and ('.converted.json' in _src))
     ck('S395 the doorbell owns its heartbeat and one process alone may ring it', ('def _tick_loop(' in _src) and (chr(35)+' WATCH-HOOK v85.53') in _src and ('.tick.lock' in _src))
