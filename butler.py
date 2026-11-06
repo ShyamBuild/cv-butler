@@ -1733,6 +1733,8 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
                 import wa
                 _wr = wa.send_review(ph0, _chair_wa_text('nudge', p, cur['name']), say)
             else: say(f'⚠️ no phone for {cur["name"]} - teach me: python3 butler.py teach {cur["name"].split()[0].lower()} <digits>, then retry')
+            _td = teach_digits_inline(cur['name'], os.path.basename(p), say)  # TEACH-IN-PLACE v85.49: ten digits spoken here become the number, the book entry and the window's address in one breath
+            if _td: ph = _td  # TEACH-WIRE v85.50: the taught digits enter the same variable the window reads - one breath, one door
         for it in s.get('items', []):
             if it.get('status') == 'waiting' and (os.path.realpath(it.get('p', '')) == os.path.realpath(p) or _name_key(os.path.basename(it.get('p', ''))) == _name_key(os.path.basename(p))):
                 it['status'] = 'done'; it['outcome'] = 'nudged'; it['ts'] = int(time.time())
@@ -4122,7 +4124,7 @@ def _selftest(root):
     ck('S387 a slow load reads as work in progress, and a thinking master is never mistaken for a wedged child', (chr(35)+' WAIT-SAY v85.45') in open(os.path.join(BASE_DIR, 'wa.py')).read() and ('timeout=1500' in open(os.path.join(BASE_DIR, 'wa.py')).read()))
     ck('S388 every shape a mobile wears is read, and no pincode ever qualifies', (chr(35)+' PHONE-MASTER v85.48') in _src and ('[6-9]' in _src))
     ck('S389 the butler knows a number as it knows a name - learned once, known forever', (chr(35)+' PHONEBOOK v85.48') in _src and (chr(35)+' LEARN-PHONE v85.48') in _src and ('.phonebook.json' in _src))
-    ck('S390 a silent paper becomes a ten-second conversation, then the same breath continues', (chr(35)+' TEACH-IN-PLACE v85.49') in _src and ('def teach_digits_inline(' in _src) and ('if _td: ph = _td' in _src))
+    ck('S390 a silent paper becomes a ten-second conversation, then the same breath continues', (chr(35)+' TEACH-WIRE v85.50') in _src and ('_td = teach_digits_inline(' in _src))  # S390 repinned v85.50: the probe reads only strings the real wire wears - a guard that quotes its own probe grades its own handwriting
     ck('S391 the picked paper'+chr(39)+'s own eyes stand before any shared store', (chr(35)+' OWN-FIRST v85.49') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' TEACH-IN-PLACE v85.49') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S379 a door and its keyword voice speak one sentence because they read one file', (chr(35)+' ONE-VOICE-FIRST v85.40') in _src and ('def _draft_local_text(' in _src))
     ck('S380 the driver is bid goodbye before any pipe closes, and no child may hang an evening', (chr(35)+' DRIVER-GOODBYE v85.42') in open(os.path.join(BASE_DIR, 'wa.py')).read() and (chr(35)+' HANG-CEILING v85.42') in open(os.path.join(BASE_DIR, 'wa.py')).read())
