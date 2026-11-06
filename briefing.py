@@ -33,6 +33,17 @@ FOCUS_SKIP = {t for t, _, _ in TAGS} | {'rejected by client', 'closed – not pr
     'position on hold', 'position closed', 'awaiting jd confirmation', 'awaiting cv update', 'ready for manager review',
     'converted doc files', 'converted files', 'duplicates', 'nvites', 'ta_output'}
 
+def _armor(f):  # CHAT-ARMOR v85.43: a stumbling command confesses and the chat stays open - the master never restarts an evening for a traceback; Ctrl-C remains a choice, the only door out
+    def _w(*a, **k):
+        try:
+            return f(*a, **k)
+        except KeyboardInterrupt:
+            raise
+        except Exception as e:
+            print('⚠️ the house stumbled: %r - the chat stays open; nothing half-done is hidden' % (e,))
+            return None
+    return _w
+
 def _say(t='', *a, **k):  # FLUSH-LEFT v85.11: born before every def that names it - no line the chat speaks begins with a borrowed space, and every line ends its own newline
     import sys
     end = k.get('end', '\n')
@@ -284,6 +295,7 @@ def _pos_client_for(hit, f=None):
             pos_path = os.path.join(comp, parts[0])
             return clean_pos(parts[0]), _client_full(parts[0], pos_path)
     return 'the discussed role', 'our client'
+@_armor
 def do_draftwhy(arg, root, say=_say):  # DRAFT-WHY v84.33: eyes behind every draft - which guess, which truth, which fields, which files (display-only; _fmt_tpl stays witnessed and untouched)
     hits = _hits_for((arg or '').strip(), root)
     if not hits: say(f'🤷 no CV matches {arg!r}'); return
@@ -305,6 +317,7 @@ def do_draftwhy(arg, root, say=_say):  # DRAFT-WHY v84.33: eyes behind every dra
     for ln in _fmt_tpl(_tpl_for(['jd']), p, None, nm).split(chr(10)): say('     ' + ln)
     say('   queued chases     : ad_wait.build_text now drinks from the same registry (QUEUE-REGISTRY v84.34)')
 
+@_armor
 def do_adlog(arg, root, say=_say):  # ADLOG v81.2 (read-only)
     n = 10
     try: n = max(1, int((arg or '').strip()))
@@ -316,6 +329,7 @@ def do_adlog(arg, root, say=_say):  # ADLOG v81.2 (read-only)
     if not hits: say('📭 no autodraft lines yet - tag a file and watch this space'); return
     for x in hits: say(x)
 
+@_armor
 def do_renwhy(arg, root, say=_say):
     import butler, fitrank
     hits = _hits_for((arg or '').strip(), root)
@@ -332,6 +346,7 @@ def do_renwhy(arg, root, say=_say):
     t = fitrank._text(p)
     say(f'   text head: {" | ".join(t.split(chr(10))[:3])[:200]}')
 
+@_armor
 def do_clientname(arg, root, say=_say):
     if '=' not in arg: say('usage: clientname <short> = <Full Client Name>'); return
     q, full = [x.strip() for x in arg.split('=', 1)]
@@ -678,6 +693,7 @@ def _start_watch(root, say=_say):
     say(f"   ⚠️ watcher for {os.path.basename(root)} did not stay up")
     return None
 
+@_armor
 def do_focus(arg, root, say=_say):
     arg = (arg or '').strip()
     if not arg:
@@ -793,6 +809,7 @@ def _scan_path(num, root=None):
         hit = (d.get('idx') or {}).get(str(num))
         if hit and os.path.exists(hit): return hit
     return None
+@_armor
 def do_history(arg, root, say=_say):
     from butler import StageLog
     if not arg: say('usage: history <name>'); return
@@ -804,6 +821,7 @@ def do_history(arg, root, say=_say):
     for r in rows:
         d = _dt.datetime.fromtimestamp(r['ts']).strftime('%Y-%m-%d')
         say(f"  {d} · {r['stage']} · {r.get('position','')}")
+@_armor
 def do_stale(arg, root, say=_say):
     from butler import StageLog
     days = int(arg) if (arg or '').strip().isdigit() else 7
@@ -821,6 +839,7 @@ def do_stale(arg, root, say=_say):
     for age, nm, st, ps in sorted(out, reverse=True):
         say(f'  {age:3d}d · {nm:<24s} · {st} · {ps}')
 
+@_armor
 def do_fixphone(arg, root, say=_say):
     parts = (arg or '').split()
     if len(parts) < 2: say('usage: fixphone <name or scan#> <10-digit phone>'); return
@@ -877,49 +896,66 @@ def _tpl_name(words):
     except Exception: pass
     return 'awaiting (fallback)'
 
+@_armor
 def do_desk(arg, root, say=_say):  # DESK v84.0
     butler.desk_cmd(arg, root, say)
+@_armor
 def do_briefing(arg, root, say=_say):  # BRIEFING v84.0
     butler.daily_briefing(say)
+@_armor
 def do_confirm(arg, root, say=_say):  # PROPOSE-FIRST v84.4
     butler.action_execute(say)
+@_armor
 def do_cancel(arg, root, say=_say):  # PROPOSE-FIRST v84.4
     butler.action_cancel(say)
 
+@_armor
 def do_dash(arg, root, say=_say):  # DASH v84.7
     butler.desk_dashboard(say)
+@_armor
 def do_calls(arg, root, say=_say):  # CHAIR v84.10b
     butler.calls_cmd(arg, root, say)
+@_armor
 def do_sheet(arg, root, say=_say):  # CHAIR v84.10b
     butler.sheet_cmd(arg, root, say)
+@_armor
 def do_up(arg, root, say=_say):  # CHAIR v84.10b
     butler.up_cmd(arg, root, say)
+@_armor
 def do_outcome(arg, root, say=_say):  # CHAIR v84.10b
     butler.outcome_cmd(arg, root, say)
 
+@_armor
 def do_tidy(arg, root, say=_say):  # TIDY v84.9
     butler.tags_tidy(say)
 
+@_armor
 def do_audit(arg, root, say=_say):  # AUDIT v84.7
     butler.tags_audit(say)
 
+@_armor
 def do_tagcmd(arg, root, say=_say):  # TAG-VOICE v84.2c: the whole sentence goes to the clerk; the tag is read from its tail
     if arg.startswith('off '): butler.tag_voice(arg[4:], False, say); return
     butler.tag_voice(arg, True, say)
 
 
+@_armor
 def do_chase(arg, root, say=_say):  # CHASE v84.0
     butler.chase_cmd(arg, root, say)
 
+@_armor
 def do_pending(arg, root, say=_say):
     butler.pipeline_pending(arg or None, say)
+@_armor
 def do_status(arg, root, say=_say):
     butler.pipeline_status(arg, say)
+@_armor
 def do_note(arg, root, say=_say):
     parts = arg.split(' ', 1)
     if len(parts) < 2: say('usage: note <name> <text>'); return
     butler.pipeline_note(parts[0], parts[1], say)
 
+@_armor
 def do_missed(arg, root, say=print, ask=None, words=None):
     arg = (arg or '').strip()
     f = _read_focus()
@@ -1007,6 +1043,7 @@ def _tpl_for(words):
     p = os.path.join(TPL_DIR, 'awaiting.txt')
     return open(p).read().strip() if os.path.exists(p) else _read_tpl()
 
+@_armor
 def do_reject(arg, root, say=print, ask=None):
     f = _read_focus()
     if not f:
@@ -1041,6 +1078,7 @@ def do_reject(arg, root, say=print, ask=None):
     except Exception as e:
         say(f"⚠️ whatsapp failed: {e}")
 
+@_armor
 def do_send(arg, root, tpl_words, say=print, ask=None):
     arg = (arg or '').strip()
     f = _read_focus()
@@ -1092,6 +1130,7 @@ def do_send(arg, root, tpl_words, say=print, ask=None):
     except Exception as e:
         say(f"⚠️ whatsapp failed: {e}")
 
+@_armor
 def do_name(arg, root, say=_say):
     if '=' not in arg:
         say("usage: name <file words> = <Correct Name>"); return
@@ -1124,6 +1163,7 @@ def do_name(arg, root, say=_say):
     except Exception: pass
     say(f"✅ named + locked: {os.path.basename(target)} (butler will never fight this name; future readable copies auto-learn it)")
 
+@_armor
 def do_text(arg, root, say=print, ask=None):
     words = [w for w in arg.lower().split() if len(w) > 2]
     if not words:
@@ -1182,6 +1222,7 @@ def _name_from(q):
     toks = [t.strip('.,!?') for t in q.split() if t.strip('.,!?')[:1].isupper() and t.strip('.,!?').lower() not in stop]
     return ' '.join(toks[:4]) if toks else None
 
+@_armor
 def do_where(arg, root, say=_say):
     q = arg.lower().strip()
     if not q:
@@ -1201,6 +1242,7 @@ def do_where(arg, root, say=_say):
     if len(hits) > 1:
         say(f"   (+{len(hits)-1} more copy/ies listed above - revealed the first)")
 
+@_armor
 def do_update(arg, root, say=_say):
     import datetime as _dt
     f = _read_focus()
@@ -1242,6 +1284,7 @@ def do_update(arg, root, say=_say):
     os.rename(new, target)
     say(f"✅ updated: {os.path.basename(target)} · old copy safe in Previous Versions/")
 
+@_armor
 def do_log(n=25):
     lp = os.path.join(BASE_DIR, 'butler_live.log')
     try:
@@ -1251,6 +1294,7 @@ def do_log(n=25):
     except Exception:
         print("   (no live log yet - use: start <folder>)")
 
+@_armor
 def do_start(arg, say=_say):
     import subprocess
     lr = os.path.expanduser('~/.cvtool_last_root')
@@ -1265,6 +1309,7 @@ def do_start(arg, say=_say):
                      stdout=lg, stderr=lg, stdin=subprocess.DEVNULL, start_new_session=True)
     say(f"🤵 butler running in background on: {os.path.basename(root)}  ·  peek: log  ·  end: stop")
 
+@_armor
 def do_stop(say=_say):
     import subprocess
     subprocess.run(['pkill', '-f', 'butler.py'], capture_output=True)
@@ -1317,6 +1362,7 @@ def _llm_prose(s):
         return t if 20 < len(t) < 400 else None
     except Exception:
         return None
+@_armor
 def do_summarize(arg, root, say=_say):
     q = (arg or '').strip()
     if not q: say('usage: summarize <candidate name>'); return
@@ -1353,6 +1399,7 @@ def do_summarize(arg, root, say=_say):
     p = _llm_prose(line1 + '. ' + line2)
     if p: say(f'   polished: {p}')
 
+@_armor
 def do_tpltest(arg, root, say=_say):
     hits = _hits_for((arg or '').strip(), root)
     if not hits: say(f'🤷 no CV matches {arg!r}'); return
@@ -1370,9 +1417,11 @@ def do_tpltest(arg, root, say=_say):
     for ln in _fmt_tpl(_tpl_for(['awaiting']), hit, None, _full_name(hit)).split('\n'):
         say(f'     {ln}')
 
+@_armor
 def do_help(say=_say):
     say(HELP_CARD)
 
+@_armor
 def do_open(arg, root, say=_say):
     q = arg.lower().strip()
     if not q:
@@ -1390,6 +1439,7 @@ def do_open(arg, root, say=_say):
     subprocess.run(['open', matches[0]])
     say(f"📂 opened: {os.path.relpath(matches[0], root)}" + (f"   (+{len(matches)-1} more matched)" if len(matches) > 1 else ""))
 
+@_armor
 def do_recent(arg, root, say=_say):
     import time as _tm, datetime as _dt
     try: days = float(arg.strip() or 1)
@@ -1417,6 +1467,7 @@ def _fix_load():
     try: return json.load(open(PHONE_FIX))
     except Exception: return {}
 
+@_armor
 def do_phonefix(arg, root, say=_say):
     if '=' not in arg:
         say("usage: phonefix <name or scan#> = <10-digit number>[, <another>]   (right side 'clear' removes)"); return
@@ -1450,6 +1501,7 @@ def do_phonefix(arg, root, say=_say):
         say(f"✅ phone fixed for {os.path.basename(hit)}: {', '.join(digs)} - every draft, table and command uses this now")
     json.dump(store, open(PHONE_FIX, 'w'), indent=2)
 
+@_armor
 def do_phone(arg, root, say=_say):
     if arg.strip().isdigit():
         pp = _scan_path(arg.strip(), root)
@@ -1462,6 +1514,7 @@ def do_phone(arg, root, say=_say):
     for h in hits[:5]:
         say(f"📞 {os.path.basename(h)}: {phone_of(h) or 'no phone inside CV'}")
 
+@_armor
 def do_wa(arg, root, say=print, ask=None):
     arg = (arg or '').strip()
     f = _read_focus()
@@ -1747,6 +1800,7 @@ if __name__ == "__main__":
     else:
         print_briefing(root)
 
+@_armor
 def do_list(root, say=_say):
     rows = []
     for dp, dn, fn in os.walk(root):

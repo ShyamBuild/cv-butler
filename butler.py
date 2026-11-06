@@ -4068,6 +4068,7 @@ def _selftest(root):
     ck('S380 the driver is bid goodbye before any pipe closes, and no child may hang an evening', (chr(35)+' DRIVER-GOODBYE v85.42') in open(os.path.join(BASE_DIR, 'wa.py')).read() and (chr(35)+' HANG-CEILING v85.42') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S381 a returned tray paper never pays the pixel bill', _src.count('emails_of(') <= 2 and ('_email_cheap(' in _src))
     ck('S382 the tray belongs to its desk', (chr(35)+' TRAY-SCOPE v85.41') in _src)
+    ck('S383 a stumbling command confesses and the chat stays open', (chr(35)+' CHAT-ARMOR v85.43') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and open(os.path.join(BASE_DIR, 'briefing.py')).read().count('@_armor') >= 2)
     ck('S372 a scan is recognised by its face when its contacts are silent', (chr(39)+'name:'+chr(39)) in _src.split('def _ident_of(')[1].split(chr(10) + 'def ')[0])
     ck('S373 the composer is emptied before it is filled - no ghost sentence rides along', (chr(35)+' FIELD-CLEAR v85.34') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S374 the courtesy formats from truths the house holds and the lines read quiet', (chr(35)+' REFER-FIELDS v85.34') in _src and (chr(35)+' TIDY-TRAY v85.34') in _src and (chr(35)+' TIDY-CENSUS v85.34') in _src)

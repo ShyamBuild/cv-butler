@@ -290,7 +290,7 @@ def send_review(phone, text, say=print, *a, **k):  # PLAYWRIGHT-THREAD v85.23  #
     code += '    wa._pw().stop()  # DRIVER-GOODBYE v85.42: an orderly goodbye so the node driver exits before any pipe closes beneath it' + nl
     code += 'except Exception:' + nl
     code += '    pass' + nl
-    rr = subprocess.call([sys.executable, '-c', code], cwd=os.path.dirname(os.path.abspath(__file__, timeout=240)))  # HANG-CEILING v85.42: a child that ignores even four minutes is killed, its status read, its draft parked - a hung ritual never owns an evening
+    rr = subprocess.call([sys.executable, '-c', code], cwd=os.path.dirname(os.path.abspath(__file__)), timeout=240)  # HANG-CEILING v85.42: a child that ignores even four minutes is killed, its status read, its draft parked - a hung ritual never owns an evening
     try:
         outcome = open(st).read().strip()
     except Exception:
