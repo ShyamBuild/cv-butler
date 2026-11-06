@@ -1330,6 +1330,23 @@ def _event_tick(root, log=print):  # RENAME-WATCH v85.52 + CONVERT-WATCH v85.52:
             elif ext == '.pdf':
                 _fast_rename(p, root, log)
 
+def _tick_loop():  # WATCH-HOOK v85.53: the doorbell owns its heartbeat when the watcher's cannot be found - one stat per folder every five seconds, single tenant by flock, silence between rings
+    import time as _tt, fcntl as _fc
+    lf = os.path.join(BASE_DIR, '.tick.lock')
+    try:
+        _lh = open(lf, 'w')
+        _fc.flock(_lh, _fc.LOCK_EX | _fc.LOCK_NB)
+    except Exception:
+        return
+    while True:
+        try:
+            _event_tick((desk_load() or {}).get('primary') or os.getcwd())
+        except Exception:
+            pass
+        _tt.sleep(5)
+import threading as _thd
+_thd.Thread(target=_tick_loop, daemon=True).start()  # WATCH-HOOK v85.53: every butler process offers a ticker; the flock chooses the one that rings
+
 def seat_rename_check(root, say=print, only=None):  # SEAT-RENAME v85.11 (examined-list v85.19): the flag remembers named papers, not visited days - silence never earns a pass
     import json as _j
     dd = desk_load()
@@ -4198,6 +4215,7 @@ def _selftest(root):
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
     ck('S394 a Word paper is converted the moment it lands, source untouched, twice never', ('def _convert_to_pdf(' in _src) and (chr(35)+' CONVERT-WATCH v85.52') in _src and ('.converted.json' in _src))
+    ck('S395 the doorbell owns its heartbeat and one process alone may ring it', ('def _tick_loop(' in _src) and (chr(35)+' WATCH-HOOK v85.53') in _src and ('.tick.lock' in _src))
     ck('S392 every exit names itself - a bare shell prompt is never the only evidence', (chr(35)+' NO-SILENT-EXIT v85.51') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' HARD-CRASH-VOICE v85.51') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S393 the background renames with the ceremony'+chr(39)+'s fast half the moment a paper lands', ('def _fast_rename(' in _src) and (chr(35)+' RENAME-WATCH v85.52') in _src)
     ck('S385 when several papers answer the spoken words, the master picks among them all', (chr(35)+' FULL-NAME-PICK v85.45') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' WHOLE-WORD-WALK v81.81') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
