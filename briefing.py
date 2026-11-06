@@ -1044,9 +1044,11 @@ def do_missed(arg, root, say=print, ask=None, words=None):
     if words == 'AUTO': words = _stage_words(hit) or ['outbox']
     elif words: words = _stage_words(hit) or words
     say(f'   🗣 voice: {_tpl_name(words)}')
-    phone = _pick_phone(_phones_by_basename(hit) or phones_of(hit), say, path=hit)
+    phone = _pick_phone(phones_of(hit) or _phones_by_basename(hit), say, path=hit)  # OWN-FIRST v85.49: the picked paper's own eyes before any shared store - a borrowed twin number becomes structurally impossible
     if not phone:
-        say("🤷 no phone found in that CV"); return
+        _td = butler.teach_digits_inline(q or os.path.splitext(os.path.basename(hit))[0], os.path.basename(hit), say)  # TEACH-IN-PLACE v85.49: the picker's silence becomes a ten-second conversation, then the same breath drafts and opens
+        if _td: phone = [_td]
+        if not phone: say("🤷 no phone found in that CV"); return  # TEACH-IN-PLACE v85.49: the silence is a question, not a verdict - taught digits walk out of this block and into the draft
     name = _full_name(hit)
     text = _fmt_tpl(_tpl_for(words or ['missed']), hit, f, name)
     try:

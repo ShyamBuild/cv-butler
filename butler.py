@@ -227,6 +227,30 @@ def provenance_of(p, digits):  # PROVENANCE-AT-PICK v81.92: the pick-list speaks
         print('🔢 ' + str(len(digits)) + ' numbers in ' + os.path.basename(p) + ': ' + ' · '.join(f'{i}) {dd} ({w})' for i, (dd, w) in enumerate(_lv, 1)), flush=True)
     return _lv  # CANDIDATE-FIRST v81.93: provenance speaks AND hands back its list, so callers can act on it
 
+def teach_digits_inline(name, basename, say):  # TEACH-IN-PLACE v85.49: when the paper is silent and the flow needs a number, the house asks for ten digits right here, learns them by exact basename, and continues the same breath - no restart, no re-walk, no re-pick
+    while True:
+        try:
+            s = input('📱 teach me the number for %s (10 digits, or Enter to skip): ' % name).strip()
+        except (KeyboardInterrupt, EOFError):
+            say('👋 teach skipped - nothing sent')
+            return ''
+        if not s:
+            return ''
+        dgs = re.sub(r'\D', '', s)
+        if len(dgs) == 12 and dgs.startswith('91'): dgs = dgs[2:]
+        if len(dgs) == 11 and dgs.startswith('0'): dgs = dgs[1:]
+        if len(dgs) == 10 and dgs[0] in '6789':
+            pbk, pcf = _phonebook()
+            pbk[basename] = [dgs]
+            try:
+                import json as _j3
+                _j3.dump(pbk, open(pcf, 'w'))
+            except Exception:
+                pass
+            say('📚 learned: %s -> %s - remembered by exact filename, and the flow continues' % (basename, dgs))
+            return dgs
+        say('⚠️ that is not a 10-digit mobile (6-9 start) - try again, or Enter to skip')
+
 def phones_of(p, quiet=False):  # QUIET-CLERK v81.87: the picker may ask without the ceremony; the law of speaking identity still binds every voice that drafts
     _pbk, _pcf = _phonebook()  # PHONEBOOK-FIRST v85.48: a number learned once is known forever, in microseconds, even if the paper later goes silent
     _bn = os.path.basename(p)
@@ -4098,6 +4122,8 @@ def _selftest(root):
     ck('S387 a slow load reads as work in progress, and a thinking master is never mistaken for a wedged child', (chr(35)+' WAIT-SAY v85.45') in open(os.path.join(BASE_DIR, 'wa.py')).read() and ('timeout=1500' in open(os.path.join(BASE_DIR, 'wa.py')).read()))
     ck('S388 every shape a mobile wears is read, and no pincode ever qualifies', (chr(35)+' PHONE-MASTER v85.48') in _src and ('[6-9]' in _src))
     ck('S389 the butler knows a number as it knows a name - learned once, known forever', (chr(35)+' PHONEBOOK v85.48') in _src and (chr(35)+' LEARN-PHONE v85.48') in _src and ('.phonebook.json' in _src))
+    ck('S390 a silent paper becomes a ten-second conversation, then the same breath continues', (chr(35)+' TEACH-IN-PLACE v85.49') in _src and ('def teach_digits_inline(' in _src) and ('if _td: ph = _td' in _src))
+    ck('S391 the picked paper'+chr(39)+'s own eyes stand before any shared store', (chr(35)+' OWN-FIRST v85.49') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' TEACH-IN-PLACE v85.49') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S379 a door and its keyword voice speak one sentence because they read one file', (chr(35)+' ONE-VOICE-FIRST v85.40') in _src and ('def _draft_local_text(' in _src))
     ck('S380 the driver is bid goodbye before any pipe closes, and no child may hang an evening', (chr(35)+' DRIVER-GOODBYE v85.42') in open(os.path.join(BASE_DIR, 'wa.py')).read() and (chr(35)+' HANG-CEILING v85.42') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S381 a returned tray paper never pays the pixel bill', _src.count('emails_of(') <= 2 and ('_email_cheap(' in _src))
