@@ -1691,6 +1691,16 @@ if __name__ == "__main__":
                        'client': re.sub(r'^\d+[\s_-]*', '', os.path.basename(os.path.dirname(pickr))), 'also': []},
                       open(FOCUS_FILE, 'w'), indent=2)
             print(f"   🎯 focus synced to running butler: {os.path.relpath(pickr, root)}")
+        import faulthandler as _fh; _fh.enable()  # HARD-CRASH-VOICE v85.51: if the interpreter itself dies, the stack speaks to the terminal instead of vanishing
+        import atexit as _ax, sys as _sysx, traceback as _tbx
+        def _name_exit():  # NO-SILENT-EXIT v85.51: every process ending rings one bell, so a bare shell prompt is never the only evidence of an ending
+            print('👋 chat process ended - if you did not press ^C or quit, the lines above name the cause')
+        _ax.register(_name_exit)
+        def _hook(_t, _v, _tb):  # HARD-CRASH-VOICE v85.51 companion: an exception that escapes every armor names its kind and message on the way out
+            _tbx.print_exception(_t, _v, _tb)
+            print('👋 chat closed by uncaught %s: %s' % (_t.__name__, _v))
+        _sysx.excepthook = _hook
+
         while True:
             try:
                 q = _smart_input("you> ").strip()
