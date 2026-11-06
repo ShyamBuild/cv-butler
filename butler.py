@@ -1252,6 +1252,84 @@ def _display_name(s):  # CASE-LAW v85.35: the original butler's rule returns - a
         else: out.append(w)
     return ' '.join(out)
 
+_EVT = {}
+def _fast_rename(p, root, log):  # RENAME-WATCH v85.52: the ceremony's fast half in the background - text eyes, first-line eye, CASE-LAW; the expensive pupil stays with the chair's up
+    x = os.path.basename(p)
+    try:
+        if _jd_like_name(x) or _portal_name(x): return
+    except Exception:
+        return
+    stem = os.path.splitext(x)[0]
+    v = heuristic_name(p) or _name_from_first_line(p)
+    if not v: return
+    canon = _canonical_person_name(v)
+    if not canon: return
+    canon = _display_name(canon)
+    if stem == canon: return
+    if _name_key(stem) != _name_key(canon): return
+    q = os.path.join(os.path.dirname(p), canon + os.path.splitext(x)[1])
+    if os.path.exists(q): return
+    try:
+        os.rename(p, q)
+        _rename_ledger(p, canon, 'watch', once=True)
+        _repath_ledgers(p, q)
+        log('✏️ watch renamed: %s → %s' % (x, os.path.basename(q)))
+    except Exception:
+        pass
+def _convert_to_pdf(p, log):  # CONVERT-WATCH v85.52: a Word paper is not a scan, it is a locked eye - conversion is the key; the source stays untouched and the book remembers
+    import json as _jc, subprocess as _sp
+    cf = os.path.join(BASE_DIR, '.converted.json')
+    try:
+        done_map = _jc.load(open(cf))
+    except Exception:
+        done_map = {}
+    if done_map.get(p): return
+    out = os.path.splitext(p)[0] + '.pdf'
+    ext = os.path.splitext(p)[1].lower()
+    try:
+        if ext in ('.png', '.jpg', '.jpeg', '.heic'):
+            _sp.run(['sips', '-s', 'format', 'pdf', p, '--out', out], capture_output=True, timeout=120)
+        else:
+            _sp.run(['soffice', '--headless', '--convert-to', 'pdf', '--outdir', os.path.dirname(p), p], capture_output=True, timeout=300)
+    except FileNotFoundError:
+        if not done_map.get('_nosoffice'):
+            done_map['_nosoffice'] = 1
+            log('⚠️ no soffice - install LibreOffice for doc→pdf; images still convert via sips')
+        return
+    except Exception:
+        return
+    if os.path.exists(out):
+        done_map[p] = 1
+        try:
+            _jc.dump(done_map, open(cf, 'w'))
+        except Exception:
+            pass
+        log('🔁 converted: %s → %s' % (os.path.basename(p), os.path.basename(out)))
+def _event_tick(root, log=print):  # RENAME-WATCH v85.52 + CONVERT-WATCH v85.52: directory mtimes are the doorbells - one stat per folder per heartbeat, no hashing, no OCR, no pings; the house rests between rings
+    try:
+        dirs = [root] + [os.path.join(root, s) for s in _tag_vocab() if os.path.isdir(os.path.join(root, s))]
+    except Exception:
+        dirs = [root]
+    for dpath in dirs:
+        try:
+            mt = os.stat(dpath).st_mtime
+        except Exception:
+            continue
+        if _EVT.get(dpath) == mt: continue
+        _EVT[dpath] = mt
+        try:
+            names = os.listdir(dpath)
+        except Exception:
+            continue
+        for x in names:
+            p = os.path.join(dpath, x)
+            if not os.path.isfile(p): continue
+            ext = os.path.splitext(x)[1].lower()
+            if ext in ('.docx', '.doc', '.rtf', '.png', '.jpg', '.jpeg', '.heic'):
+                _convert_to_pdf(p, log)
+            elif ext == '.pdf':
+                _fast_rename(p, root, log)
+
 def seat_rename_check(root, say=print, only=None):  # SEAT-RENAME v85.11 (examined-list v85.19): the flag remembers named papers, not visited days - silence never earns a pass
     import json as _j
     dd = desk_load()
@@ -4119,7 +4197,9 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S394 a Word paper is converted the moment it lands, source untouched, twice never', ('def _convert_to_pdf(' in _src) and (chr(35)+' CONVERT-WATCH v85.52') in _src and ('.converted.json' in _src))
     ck('S392 every exit names itself - a bare shell prompt is never the only evidence', (chr(35)+' NO-SILENT-EXIT v85.51') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' HARD-CRASH-VOICE v85.51') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
+    ck('S393 the background renames with the ceremony'+chr(39)+'s fast half the moment a paper lands', ('def _fast_rename(' in _src) and (chr(35)+' RENAME-WATCH v85.52') in _src)
     ck('S385 when several papers answer the spoken words, the master picks among them all', (chr(35)+' FULL-NAME-PICK v85.45') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' WHOLE-WORD-WALK v81.81') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S386 the tray filter asks its room for the root before assuming one', ('locals().get' in _src) and (chr(35)+' TRAY-SCOPE v85.41') in _src)
     ck('S387 a slow load reads as work in progress, and a thinking master is never mistaken for a wedged child', (chr(35)+' WAIT-SAY v85.45') in open(os.path.join(BASE_DIR, 'wa.py')).read() and ('timeout=1500' in open(os.path.join(BASE_DIR, 'wa.py')).read()))
