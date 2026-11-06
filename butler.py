@@ -200,7 +200,7 @@ def _full_text(p):  # FULL-TEXT v81.76: text layer first, vision second - design
         t = ''
     if not t.strip():
         t = ''  # TEXT-FIRST v85.16: the text layer is read before any pixel is summoned
-        try: t = extract_text(p) or ''
+        try: t = _word_text(p) or extract_text(p) or ''
         except Exception: t = ''
         if not t.strip():
             try: t = extract_text_ocr(p) or ''
@@ -340,6 +340,8 @@ def ensure_ocr():
         return False
 
 def extract_text_ocr(fp):
+    _wt = _word_text(p)  # TEXT-DOCX v85.55: head eye - if the native reader speaks, the pdf eyes rest
+    if _wt.strip(): return _wt
     if not os.path.exists(OCRBIN): return ""
     try:
         with OCR_SEM:
@@ -1104,7 +1106,7 @@ def _ident_of(p):  # DUP-SEED v85.26: a paper's identity is its email-and-phone 
     if e and e[0] == st.st_mtime and e[1] == st.st_size:
         return set(e[2])
     try:
-        t = extract_text(p) or ''
+        t = _word_text(p) or extract_text(p) or ''
     except Exception:
         t = ''
     ids = set(emails_in_text(t)) | set(phones_in_text(t))
@@ -1211,9 +1213,18 @@ def _renamer(root):  # REUSE-RENAME v85.12: discover the house's own renamer cla
                 pass
     return None
 
+def _word_text(p):  # TEXT-DOCX v85.55: a Word paper reads natively through macOS textutil - full text in milliseconds, no LibreOffice, no pixels, no OCR cap; the converter's absence never blinds the eyes again
+    try:
+        if os.path.splitext(p)[1].lower() not in ('.docx', '.doc', '.rtf'): return ''
+        import subprocess as _sp2
+        _r = _sp2.run(['textutil', '-convert', 'txt', '-stdout', p], capture_output=True, timeout=60)
+        return _r.stdout.decode('utf-8', 'ignore') if _r.returncode == 0 else ''
+    except Exception:
+        return ''
+
 def _name_from_first_line(p):  # FIRST-LINE v85.20: when both developed eyes stay silent, the paper's own first line speaks in title case - the humblest eye, and the fastest
     try:
-        t = extract_text(p) or ''
+        t = _word_text(p) or extract_text(p) or ''
         if not t.strip():
             try: t = extract_text_ocr(p) or ''  # FIRST-LINE v85.20 (ocr-fallback v85.22): a text layer that refuses to open yields to the capped pixels
             except Exception: t = ''
@@ -1276,6 +1287,15 @@ def _fast_rename(p, root, log):  # RENAME-WATCH v85.52: the ceremony's fast half
         log('✏️ watch renamed: %s → %s' % (x, os.path.basename(q)))
     except Exception:
         pass
+def _pages_pdf(p, out, log):  # PAGES-FIRST v85.56: the master's first choice for doc to pdf is Pages, whose rendering keeps the paper's face; LibreOffice stands second, sips speaks for images
+    import subprocess as _sp3
+    scr = 'tell application "Pages"\n  set _d to open POSIX file "%s"\n  export _d to POSIX file "%s" as PDF\n  close _d saving no\nend tell\n' % (p.replace('"', '\\"'), out.replace('"', '\\"'))
+    try:
+        r = _sp3.run(['osascript', '-e', scr], capture_output=True, timeout=240)
+        return r.returncode == 0 and os.path.exists(out)
+    except Exception:
+        return False
+
 def _convert_to_pdf(p, log):  # CONVERT-WATCH v85.52: a Word paper is not a scan, it is a locked eye - conversion is the key; the source stays untouched and the book remembers
     import json as _jc, subprocess as _sp
     cf = os.path.join(BASE_DIR, '.converted.json')
@@ -1290,7 +1310,9 @@ def _convert_to_pdf(p, log):  # CONVERT-WATCH v85.52: a Word paper is not a scan
         if ext in ('.png', '.jpg', '.jpeg', '.heic'):
             _sp.run(['sips', '-s', 'format', 'pdf', p, '--out', out], capture_output=True, timeout=120)
         else:
-            _sp.run(['soffice', '--headless', '--convert-to', 'pdf', '--outdir', os.path.dirname(p), p], capture_output=True, timeout=300)
+            _okp = _pages_pdf(p, out, log)  # PAGES-FIRST v85.56: Pages renders, and only if Pages refuses does the second hand move
+            if not _okp:
+                _sp.run(['soffice', '--headless', '--convert-to', 'pdf', '--outdir', os.path.dirname(p), p], capture_output=True, timeout=300)
     except FileNotFoundError:
         if not done_map.get('_nosoffice'):
             done_map['_nosoffice'] = 1
@@ -1317,8 +1339,43 @@ def _lock_root():  # LOCK-ROOT v85.54: when a verb is called from a folder that 
         pass
     return ''
 
+def _case_sweep(root, log):  # CASE-SWEEP v85.57: casing is a property of the name, not of the ceremony's memory - every human-shaped filename is title-cased on the doorbell, examined or not, so no shout outlives its own arrival
+    try:
+        dirs = [root] + [os.path.join(root, s) for s in _tag_vocab() if os.path.isdir(os.path.join(root, s))]
+    except Exception:
+        dirs = [root]
+    for dpath in dirs:
+        try:
+            names = os.listdir(dpath)
+        except Exception:
+            continue
+        for x in names:
+            p = os.path.join(dpath, x)
+            if not os.path.isfile(p): continue
+            ext = os.path.splitext(x)[1].lower()
+            if ext not in ('.pdf', '.docx', '.doc', '.rtf'): continue
+            stem = os.path.splitext(x)[0]
+            try:
+                if _jd_like_name(x) or _portal_name(x): continue
+            except Exception:
+                continue
+            ws = stem.split()
+            if not (2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws)): continue
+            disp = _display_name(stem)
+            if disp == stem: continue
+            q = os.path.join(dpath, disp + ext)
+            if os.path.exists(q): continue
+            try:
+                os.rename(p, q)
+                _rename_ledger(p, disp, 'sweep', once=True)
+                _repath_ledgers(p, q)
+                log('✏️ case sweep: %s → %s' % (x, disp + ext))
+            except Exception:
+                pass
+
 def _event_tick(root, log=print):  # RENAME-WATCH v85.52 + CONVERT-WATCH v85.52: directory mtimes are the doorbells - one stat per folder per heartbeat, no hashing, no OCR, no pings; the house rests between rings
     try:
+        _case_sweep(root, log)  # CASE-SWEEP v85.57: the doorbell sweeps casing every beat, so a shout never outlives its arrival
         dirs = [root] + [os.path.join(root, s) for s in _tag_vocab() if os.path.isdir(os.path.join(root, s))]
     except Exception:
         dirs = [root]
@@ -1342,20 +1399,30 @@ def _event_tick(root, log=print):  # RENAME-WATCH v85.52 + CONVERT-WATCH v85.52:
             elif ext == '.pdf':
                 _fast_rename(p, root, log)
 
-def _tick_loop():  # WATCH-HOOK v85.53: the doorbell owns its heartbeat when the watcher's cannot be found - one stat per folder every five seconds, single tenant by flock, silence between rings
+def _tick_log(msg):  # BELL-TOWER v85.55: the bell keeps its own book - one timestamped line per deed, readable from any folder, independent of whichever process owns the key
+    try:
+        import time as _t2
+        open(os.path.join(BASE_DIR, 'tick.log'), 'a').write('%s %s\n' % (_t2.strftime('%H:%M:%S'), msg))
+    except Exception:
+        pass
+def _tick_loop():  # WATCH-HOOK v85.53 (retry v85.55): the doorbell owns its heartbeat - one stat per folder every five seconds, and the key is re-knocked until held
     import time as _tt, fcntl as _fc
     lf = os.path.join(BASE_DIR, '.tick.lock')
-    try:
-        _lh = open(lf, 'w')
-        _fc.flock(_lh, _fc.LOCK_EX | _fc.LOCK_NB)
-    except Exception:
-        return
+    _lh = None
+    while _lh is None:  # BELL-RETRY v85.55: a doorbell that gives up after one knock is not a doorbell - when the current owner exits, the next knock inherits the key
+        try:
+            _lh = open(lf, 'w')
+            _fc.flock(_lh, _fc.LOCK_EX | _fc.LOCK_NB)
+        except Exception:
+            _lh = None
+            _tt.sleep(10)
     while True:
         try:
-            _event_tick((desk_load() or {}).get('primary') or os.getcwd())
+            _event_tick((desk_load() or {}).get('primary') or os.getcwd(), _tick_log)
         except Exception:
             pass
         _tt.sleep(5)
+
 import threading as _thd
 _thd.Thread(target=_tick_loop, daemon=True).start()  # WATCH-HOOK v85.53: every butler process offers a ticker; the flock chooses the one that rings
 
@@ -4227,9 +4294,13 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S400 casing is a property of the name, not of the ceremony'+chr(39)+'s memory', (chr(35)+' CASE-SWEEP v85.57') in _src and ('def _case_sweep(' in _src))
     ck('S394 a Word paper is converted the moment it lands, source untouched, twice never', ('def _convert_to_pdf(' in _src) and (chr(35)+' CONVERT-WATCH v85.52') in _src and ('.converted.json' in _src))
     ck('S395 the doorbell owns its heartbeat and one process alone may ring it', ('def _tick_loop(' in _src) and (chr(35)+' WATCH-HOOK v85.53') in _src and ('.tick.lock' in _src))
     ck('S396 a verb called from anywhere serves the living desk', ('def _lock_root(' in _src) and ('root = _lock_root() or root' in _src))
+    ck('S397 a Word paper is never text-silent - the native reader opens it in milliseconds', (chr(35)+' TEXT-DOCX v85.55') in _src and ('textutil' in _src) and ('def _word_text(' in _src))
+    ck('S398 the bell re-knocks until it holds the key, and keeps its own book', (chr(35)+' BELL-RETRY v85.55') in _src and (chr(35)+' BELL-TOWER v85.55') in _src and ('tick.log' in _src))
+    ck('S399 the first hand that renders a Word paper is Pages, and only Pages'+chr(39)+' refusal moves the second', (chr(35)+' PAGES-FIRST v85.56') in _src and ('osascript' in _src) and ('def _pages_pdf(' in _src) and ('timeout=240' in _src))
     ck('S392 every exit names itself - a bare shell prompt is never the only evidence', (chr(35)+' NO-SILENT-EXIT v85.51') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' HARD-CRASH-VOICE v85.51') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S393 the background renames with the ceremony'+chr(39)+'s fast half the moment a paper lands', ('def _fast_rename(' in _src) and (chr(35)+' RENAME-WATCH v85.52') in _src)
     ck('S385 when several papers answer the spoken words, the master picks among them all', (chr(35)+' FULL-NAME-PICK v85.45') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' WHOLE-WORD-WALK v81.81') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
