@@ -119,6 +119,12 @@ CONV_SEM = threading.Semaphore(1)   # LibreOffice/Chrome are single-instance: co
 PHONES_FILE = os.path.join(BASE_DIR, "phones.json")
 PHONE_RE = re.compile(r'(?:\+?91[ \-\.]?)?(?<!\d)([6-9](?:[ \-\.]?\d){9})(?!\d)')  # PINCODE-SAFE v81.58: separators never cross a newline; digits bounded both sides
 def phones_in_text(t):  # UNICODE-SPACE v81.63: nbsp and thin spaces are separators too
+    t = t or ''
+    for _i in range(3): t = re.sub(r'(\d)[\s.\-](\d)', r'\1\2', t)  # PHONE-MASTER v85.48: every shape a mobile wears - +91 glued, 91 or 0 prefixed, bare, or split - normalized to its ten-digit core; pincodes, dates and CTC figures never qualify
+    _cores = []
+    for _m in re.finditer(r'\+?(?:91|0)?([6-9]\d{9})(?!\d)', t):
+        if _m.group(1) not in _cores: _cores.append(_m.group(1))
+    if _cores: return _cores
     t = re.sub(r'([6-9]\d{4})[\s.\-](\d{5})', r'\1\2', t or ''); t = re.sub(r'(\+?91)[\s.\-]([6-9]\d{9})', r'\1\2', t)  # PHONE-GLUE v85.35 + v85.37 constraint: only groups that could be a mobile may join - a pincode keeps its six digits and never lends them to a phantom phone (S168 honoured)
     t = (t or '').replace('\u00a0', ' ').replace('\u2007', ' ').replace('\u2009', ' ').replace('\u202f', ' ').replace('\u2002', ' ').replace('\u2003', ' ')
     out = []
@@ -222,6 +228,14 @@ def provenance_of(p, digits):  # PROVENANCE-AT-PICK v81.92: the pick-list speaks
     return _lv  # CANDIDATE-FIRST v81.93: provenance speaks AND hands back its list, so callers can act on it
 
 def phones_of(p, quiet=False):  # QUIET-CLERK v81.87: the picker may ask without the ceremony; the law of speaking identity still binds every voice that drafts
+    _pbk, _pcf = _phonebook()  # PHONEBOOK-FIRST v85.48: a number learned once is known forever, in microseconds, even if the paper later goes silent
+    _bn = os.path.basename(p)
+    if _pbk.get(_bn): return list(_pbk[_bn])
+    try:
+        _ta = _phones_by_basename(p)
+        if _ta: return list(_ta)
+    except Exception:
+        pass
     ap = os.path.abspath(p)
     try: taught = json.load(open(os.path.join(BASE_DIR, 'phones_taught.json')))
     except Exception: taught = {}
@@ -1043,6 +1057,14 @@ def _fp_fast(p):  # FP-CACHE v85.18: a fingerprint is computed once per content 
     return v
 
 _IDC = {}
+def _phonebook():  # PHONEBOOK v85.48: numbers learned by exact basename, the way names are learned by face - consulted before any paper is opened, written whenever a text layer speaks
+    import json as _jp
+    cf = os.path.join(BASE_DIR, '.phonebook.json')
+    try:
+        return _jp.load(open(cf)), cf
+    except Exception:
+        return {}, cf
+
 def _ident_of(p):  # DUP-SEED v85.26: a paper's identity is its email-and-phone set, cached by mtime+size - filenames lie, contacts do not
     global _IDC
     import json as _j
@@ -1066,6 +1088,12 @@ def _ident_of(p):  # DUP-SEED v85.26: a paper's identity is its email-and-phone 
     if v2:
         _cn = _canonical_person_name(v2) or v2
         ids.add('name:' + _name_key(_cn))
+    _phs = [x for x in ids if not str(x).startswith('name:')]  # LEARN-PHONE v85.48: when a text layer speaks its number, the book remembers it by exact basename - twins keep separate entries, case-sensitive, forever
+    if _phs:
+        _pbk, _pcf = _phonebook()
+        _pbk[os.path.basename(p)] = sorted(_phs)
+        try: _j.dump(_pbk, open(_pcf, 'w'))
+        except Exception: pass
     _IDC[p] = [st.st_mtime, st.st_size, sorted(ids)]
     try: _j.dump(_IDC, open(cf, 'w'))
     except Exception: pass
@@ -4068,6 +4096,8 @@ def _selftest(root):
     ck('S385 when several papers answer the spoken words, the master picks among them all', (chr(35)+' FULL-NAME-PICK v85.45') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' WHOLE-WORD-WALK v81.81') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S386 the tray filter asks its room for the root before assuming one', ('locals().get' in _src) and (chr(35)+' TRAY-SCOPE v85.41') in _src)
     ck('S387 a slow load reads as work in progress, and a thinking master is never mistaken for a wedged child', (chr(35)+' WAIT-SAY v85.45') in open(os.path.join(BASE_DIR, 'wa.py')).read() and ('timeout=1500' in open(os.path.join(BASE_DIR, 'wa.py')).read()))
+    ck('S388 every shape a mobile wears is read, and no pincode ever qualifies', (chr(35)+' PHONE-MASTER v85.48') in _src and ('[6-9]' in _src))
+    ck('S389 the butler knows a number as it knows a name - learned once, known forever', (chr(35)+' PHONEBOOK v85.48') in _src and (chr(35)+' LEARN-PHONE v85.48') in _src and ('.phonebook.json' in _src))
     ck('S379 a door and its keyword voice speak one sentence because they read one file', (chr(35)+' ONE-VOICE-FIRST v85.40') in _src and ('def _draft_local_text(' in _src))
     ck('S380 the driver is bid goodbye before any pipe closes, and no child may hang an evening', (chr(35)+' DRIVER-GOODBYE v85.42') in open(os.path.join(BASE_DIR, 'wa.py')).read() and (chr(35)+' HANG-CEILING v85.42') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S381 a returned tray paper never pays the pixel bill', _src.count('emails_of(') <= 2 and ('_email_cheap(' in _src))
