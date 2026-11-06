@@ -1305,6 +1305,18 @@ def _convert_to_pdf(p, log):  # CONVERT-WATCH v85.52: a Word paper is not a scan
         except Exception:
             pass
         log('🔁 converted: %s → %s' % (os.path.basename(p), os.path.basename(out)))
+def _lock_root():  # LOCK-ROOT v85.54: when a verb is called from a folder that is not a desk, the live lock names the desk the house is actually serving
+    try:
+        for fn in os.listdir(BASE_DIR):
+            if fn.startswith('butler_') and fn.endswith('.lock'):
+                txt = open(os.path.join(BASE_DIR, fn)).read().strip()
+                if '|' in txt:
+                    p = txt.split('|', 1)[1]
+                    if os.path.isdir(p): return p
+    except Exception:
+        pass
+    return ''
+
 def _event_tick(root, log=print):  # RENAME-WATCH v85.52 + CONVERT-WATCH v85.52: directory mtimes are the doorbells - one stat per folder per heartbeat, no hashing, no OCR, no pings; the house rests between rings
     try:
         dirs = [root] + [os.path.join(root, s) for s in _tag_vocab() if os.path.isdir(os.path.join(root, s))]
@@ -3578,6 +3590,7 @@ def main():
             if _fn: _fn(_kw, _pl_root(), print)
             else: print('🤷 voice missing: ' + _v)
         sys.exit(0)
+    root = _lock_root() or root  # LOCK-ROOT v85.54: the lock is the house's address book - a verb called from the workshop serves the living desk instead of refusing
     if not os.path.isdir(root):
         print("Error: folder does not exist."); sys.exit(1)
         try:
@@ -4216,6 +4229,7 @@ def _selftest(root):
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
     ck('S394 a Word paper is converted the moment it lands, source untouched, twice never', ('def _convert_to_pdf(' in _src) and (chr(35)+' CONVERT-WATCH v85.52') in _src and ('.converted.json' in _src))
     ck('S395 the doorbell owns its heartbeat and one process alone may ring it', ('def _tick_loop(' in _src) and (chr(35)+' WATCH-HOOK v85.53') in _src and ('.tick.lock' in _src))
+    ck('S396 a verb called from anywhere serves the living desk', ('def _lock_root(' in _src) and ('root = _lock_root() or root' in _src))
     ck('S392 every exit names itself - a bare shell prompt is never the only evidence', (chr(35)+' NO-SILENT-EXIT v85.51') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' HARD-CRASH-VOICE v85.51') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S393 the background renames with the ceremony'+chr(39)+'s fast half the moment a paper lands', ('def _fast_rename(' in _src) and (chr(35)+' RENAME-WATCH v85.52') in _src)
     ck('S385 when several papers answer the spoken words, the master picks among them all', (chr(35)+' FULL-NAME-PICK v85.45') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' WHOLE-WORD-WALK v81.81') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
