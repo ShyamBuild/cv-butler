@@ -81,6 +81,11 @@ def _place_text(page, text, say=print):
                     continue
             if not box: continue
             page.click(box)
+            try:  # FIELD-CLEAR v85.34: the persistent composer keeps yesterday's sentence unless the ritual empties it first - select-all and delete before every fill
+                page.keyboard.press('Meta+a')
+                page.keyboard.press('Delete')
+            except Exception:
+                pass
             page.keyboard.insert_text(text)
             page.wait_for_timeout(400)
             got = page.eval_on_selector(box, "e => e.innerText || e.textContent || ''")

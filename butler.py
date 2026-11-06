@@ -119,6 +119,7 @@ CONV_SEM = threading.Semaphore(1)   # LibreOffice/Chrome are single-instance: co
 PHONES_FILE = os.path.join(BASE_DIR, "phones.json")
 PHONE_RE = re.compile(r'(?:\+?91[ \-\.]?)?(?<!\d)([6-9](?:[ \-\.]?\d){9})(?!\d)')  # PINCODE-SAFE v81.58: separators never cross a newline; digits bounded both sides
 def phones_in_text(t):  # UNICODE-SPACE v81.63: nbsp and thin spaces are separators too
+    t = re.sub(r'([6-9]\d{4})[\s.\-](\d{5})', r'\1\2', t or ''); t = re.sub(r'(\+?91)[\s.\-]([6-9]\d{9})', r'\1\2', t)  # PHONE-GLUE v85.35 + v85.37 constraint: only groups that could be a mobile may join - a pincode keeps its six digits and never lends them to a phantom phone (S168 honoured)
     t = (t or '').replace('\u00a0', ' ').replace('\u2007', ' ').replace('\u2009', ' ').replace('\u202f', ' ').replace('\u2002', ' ').replace('\u2003', ' ')
     out = []
     for m in PHONE_RE.finditer(t):
@@ -886,11 +887,11 @@ def desk_dashboard(say=print):  # DASH v84.7: the desk's census in one breath, r
     short = {'Ready for Manager Review': 'ready', 'Awaiting JD Confirmation': 'jd-ack', 'Awaiting CV Update': 'cv-wait', 'Feedback Pending': 'feedback', 'Call Scheduled': 'call', 'Shortlisted for Interview': 'short', 'Interview Scheduled': 'intv', 'Interview Today': 'intv-today', 'Interview Tomorrow': 'intv-tmrw', 'Interview Cleared': 'cleared', 'Expected to Join': 'join', 'Joined - Payment Pending': 'pay-pend', 'Payment Received': 'paid', 'Closed \u2013 Not Proceeding': 'closed', 'Rejected by Client': 'rejected', '(untagged)': 'untagged'}
     _sk = sum(1 for q in skips_load() if any(q.startswith(os.path.realpath(sc)) for sc in desk_paths()))
     line = ' · '.join(f'{short[t]}:{counts[t]}' for t in order if counts.get(t)) + (f' · skipped:{_sk}' if _sk else '')
-    say('📊 ' + (line or 'empty desk'))
+    say('📊 ' + (line or 'empty desk').replace(':', ' '))  # TIDY-CENSUS v85.34: spaces instead of colons - same truths, quieter type
     if multi: say('⚠️ wearing two stages: ' + ', '.join(multi[:6]) + (' …' if len(multi) > 6 else ''))
     if skips_load():  # TRAY-NAMES v85.1: a count without names is a queue of strangers - the tray names its members whenever it is not empty
         _sk = list(skips_load())
-        say('⏭️ tray: ' + ', '.join(os.path.basename(x) for x in _sk[:4]) + (f' +{len(_sk)-4}' if len(_sk) > 4 else '') + ' · one returns per empty seed')
+        say('⏭️ tray: ' + str(len(_sk)) + ': ' + ', '.join(os.path.basename(x).replace('.pdf', '').replace('.PDF', '') for x in _sk[:4]) + (f' +{len(_sk)-4}' if len(_sk) > 4 else '') + ' · one returns per empty seed')  # TIDY-TRAY v85.34: names without tails, count up front
 def tags_audit(say=print):  # AUDIT v84.7 (v84.9): two stages, or a stage away from its folder - named, never silently rewritten
     seen = set(); bad = 0; wrong = []
     for sc in desk_paths():
@@ -1071,6 +1072,10 @@ def _ident_of(p):  # DUP-SEED v85.26: a paper's identity is its email-and-phone 
 def calls_cmd(arg, root, say=print, hint=True):  # CHAIR v84.10b (v84.30): FOLDER-TRUTH - the sheet maps the folders, not the tags
     scopes = [desk_resolve(arg, root)] if arg else (desk_paths() or [root])
     s0 = sheet_load(); sk = skips_load(); mem = set(covered_load())
+    if s0.get('desk') != root:  # DESK-SCOPE v85.35: a new position's sheet forgets the old position's waiting rows in one breath - they belong to another chair
+        s0['items'] = [i for i in s0.get('items', []) if os.path.realpath(i.get('p', '')).startswith(os.path.realpath(root))]
+        s0['desk'] = root
+        sheet_save(s0)
     items = []; seen = set(); reopened = 0
     for sc in scopes:
         if not sc or not os.path.isdir(sc): continue
@@ -1184,6 +1189,15 @@ def _vision_safe(p):  # VISION-THREAD v85.22: the vision eye reads in its own th
     th.start(); th.join(45)
     return out[0] if out else ''
 
+def _display_name(s):  # CASE-LAW v85.35: the original butler's rule returns - a shout is not a name: RAHUL KUMAR becomes Rahul Kumar, single letters stay capital, short initial-blocks keep their form
+    out = []
+    for w in str(s).split():
+        if len(w) == 1: out.append(w.upper())
+        elif w.isalpha() and w.isupper() and len(w) <= 3: out.append(w)
+        elif w.isalpha() and (w.isupper() or w.islower()): out.append(w.capitalize())
+        else: out.append(w)
+    return ' '.join(out)
+
 def seat_rename_check(root, say=print, only=None):  # SEAT-RENAME v85.11 (examined-list v85.19): the flag remembers named papers, not visited days - silence never earns a pass
     import json as _j
     dd = desk_load()
@@ -1216,7 +1230,10 @@ def seat_rename_check(root, say=print, only=None):  # SEAT-RENAME v85.11 (examin
         x = os.path.basename(p)
         if not _is_desk_candidate(x): continue
         if _jd_like_name(x) or _portal_name(x): continue
-        v = heuristic_name(p) or _vision_safe(p) or _name_from_first_line(p)  # TEXT-EYES v85.16  # FIRST-LINE v85.20: the third eye, last resort - and the first eye's witness rides along
+        v = heuristic_name(p) or _name_from_first_line(p)  # TEXT-EYES v85.16  # FIRST-LINE v85.20: every rewritten line carries the witnesses it already wore
+        if not v and x not in rec.get('vtried', []):  # VISION-ONCE v85.35: the expensive pupil is asked once per paper per day; a silent answer rests, so misses cost milliseconds thereafter
+            v = _vision_safe(p)
+            rec.setdefault('vtried', []).append(x)
         try:
             import asyncio as _a
             _a.set_event_loop(None)  # LOOP-CLEAN v85.21: the vision eye may leave an idle loop behind; playwright sync must find none
@@ -1228,7 +1245,10 @@ def seat_rename_check(root, say=print, only=None):  # SEAT-RENAME v85.11 (examin
         ex.add(x)
         canon = _canonical_person_name(v)
         if not canon: continue
-        if _name_key(os.path.splitext(x)[0]) == _name_key(canon): continue
+        stem = os.path.splitext(x)[0]
+        if _name_key(stem) != _name_key(canon): continue
+        canon = _display_name(canon)  # CASE-LAW v85.35: rename when the human matches but the display does not - all-caps files are renamed at last
+        if stem == canon: continue
         q = os.path.join(os.path.dirname(p), canon + os.path.splitext(x)[1])
         if os.path.exists(q): continue
         say(f'👁️ {x} → eyes {v!r} → canon {canon!r}')  # NAME-EVIDENCE v85.16
@@ -1541,7 +1561,14 @@ def _chair_wa_text(kind, p, name):  # ONE-VOICE v84.19: the chair drafts through
     if kind == 'refer':  # SCENARIO-REFER v85.4 (dedented v85.8): the refer branch stands beside the cv branch at column four, never buried inside it
         try:
             _rp = os.path.join(DRAFTS_DIR, 'refer.txt')
-            if os.path.exists(_rp): return open(_rp).read().strip().format_map(_draft_fields(name, _pos_of(p, _pl_root()), p))
+            if os.path.exists(_rp):  # REFER-FIELDS v85.34: the courtesy formats from truths the house already holds - name from the row, role and company from the identity and the desk's teaching, location from the same witness
+                import collections as _cc, json as _j2
+                _pi = pos_identity(p)
+                _dm = {}
+                try: _dm = _j2.load(open(os.path.join(BASE_DIR, 'desk_meta.json'))).get(desk_load().get('primary') or '', {})
+                except Exception: pass
+                _fld = _cc.defaultdict(str, {'name': name, 'position': _pi.get('role') or os.path.basename(os.path.dirname(p)), 'company': _pi.get('company') or _dm.get('company') or '', 'location': _pi.get('loc') or _pi.get('location') or ''})
+                return open(_rp).read().strip().format_map(_fld)
         except Exception:
             pass
     try:
@@ -1599,6 +1626,7 @@ def followup_cmd(arg, root, say=print):  # FOLLOWUP v84.11: the debts, by name, 
 SKIPS_PATH = os.path.join(BASE_DIR, 'skips.json')  # SKIP v84.11: today's list, not today's verdicts
 
 def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair remembers the paper, not merely its path
+    _wr = True  # WR-FIRST v85.35: every path through the outcome carries its witness to the deed line, including the no-phone walk-on
     s = sheet_load(); cur = s.get('current')
     if not cur: say('🪑 chair empty - type up'); return
     o = OUTCOMES.get(key)
@@ -4025,6 +4053,11 @@ def _selftest(root):
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
     ck('S372 a scan is recognised by its face when its contacts are silent', (chr(39)+'name:'+chr(39)) in _src.split('def _ident_of(')[1].split(chr(10) + 'def ')[0])
+    ck('S373 the composer is emptied before it is filled - no ghost sentence rides along', (chr(35)+' FIELD-CLEAR v85.34') in open(os.path.join(BASE_DIR, 'wa.py')).read())
+    ck('S374 the courtesy formats from truths the house holds and the lines read quiet', (chr(35)+' REFER-FIELDS v85.34') in _src and (chr(35)+' TIDY-TRAY v85.34') in _src and (chr(35)+' TIDY-CENSUS v85.34') in _src)
+    ck('S375 every outcome path carries its witness and every sheet knows its desk', (chr(35)+' WR-FIRST v85.35') in _src and (chr(35)+' DESK-SCOPE v85.35') in _src)
+    ck('S376 the expensive pupil is asked once per paper per day', (chr(35)+' VISION-ONCE v85.35') in _src)
+    ck('S377 a shout is not a name and a split mobile is one number, while pincodes keep their digits', (chr(35)+' CASE-LAW v85.35') in _src and (chr(35)+' PHONE-GLUE v85.35') in _src and ('[6-9]' in _src))
     ck('S370 the deed line reports what the window actually did', (chr(39)+'📱 parked'+chr(39)) in _src and ('_wr = wa.send_review' in _src))
     ck('S371 the deed'+chr(39)+'s witness stands on the draft-send line itself', any(('_wr = wa.send_review(ph,' in x and '_chair_wa_text(draft' in x) for x in _src.split('def outcome_cmd(')[1].split(chr(10) + 'def ')[0].split(chr(10))))  # S371 tightened v85.33: the postcode is the draft line, not any send line
     ck('S358 in raw mode the writer is the driver - every raw newline carries its carriage', (chr(35)+' CRLF-RAW v85.22') in _src and (chr(35)+' CRLF-RAW v85.22') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' CRLF-RAW v85.22') in open(os.path.join(BASE_DIR, 'wa.py')).read())
