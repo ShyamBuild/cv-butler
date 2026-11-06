@@ -1463,18 +1463,38 @@ def _tick_log(msg):  # BELL-TOWER v85.55: the bell keeps its own book - one time
         open(os.path.join(BASE_DIR, 'tick.log'), 'a').write('%s %s\n' % (_t2.strftime('%H:%M:%S'), msg))
     except Exception:
         pass
-def _tick_loop():  # WATCH-HOOK v85.53 (retry v85.55): the doorbell owns its heartbeat - one stat per folder every five seconds, and the key is re-knocked until held
-    import time as _tt, fcntl as _fc
-    lf = os.path.join(BASE_DIR, '.tick.lock')
-    _lh = None
-    while _lh is None:  # BELL-RETRY v85.55: a doorbell that gives up after one knock is not a doorbell - when the current owner exits, the next knock inherits the key
+def _tick_loop():  # WATCH-HOOK v85.53 (heartbeat v85.59): the bell is owned by a pulse, not by a lock - the stamp proves life, and a stale or dead owner is inherited within half a minute
+    import time as _tt
+    pf = os.path.join(BASE_DIR, '.tick.pid')
+    while True:  # BELL-RETRY v85.55: a doorbell that gives up after one knock is not a doorbell
+        own = False
         try:
-            _lh = open(lf, 'w')
-            _fc.flock(_lh, _fc.LOCK_EX | _fc.LOCK_NB)
+            if not os.path.exists(pf):
+                own = True
+            else:
+                age = _tt.time() - os.stat(pf).st_mtime
+                txt = open(pf).read().strip()
+                dead = False
+                try:
+                    os.kill(int(txt), 0)
+                except Exception:
+                    dead = True
+                if dead or age > 30:  # BELL-HEARTBEAT v85.59: an orphan from an old commit never refreshes the stamp, so the living inherit the bell
+                    own = True
         except Exception:
-            _lh = None
-            _tt.sleep(10)
+            own = True
+        if own:
+            try:
+                open(pf, 'w').write(str(os.getpid()))
+            except Exception:
+                pass
+            break
+        _tt.sleep(10)
     while True:
+        try:
+            os.utime(pf, None)
+        except Exception:
+            pass
         try:
             _event_tick((desk_load() or {}).get('primary') or os.getcwd(), _tick_log)
         except Exception:
@@ -4352,8 +4372,9 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S403 the bell is owned by a pulse, and orphans inherit nothing but silence', (chr(35)+' BELL-HEARTBEAT v85.59') in _src and ('.tick.pid' in _src))
     ck('S402 the master'+chr(39)+'s Finder selection is drained by the bell, in the background, each beat', (chr(35)+' SERVICE-QUEUE v85.58') in _src and ('.rename_queue' in _src))
-    ck('S401 the butler'+chr(39)+'s eyes open in public, one honest row per file', ('def rename_diag(' in _src) and (chr(35)+' RENAME-DIAG v85.58') in _src and os.path.exists(os.path.join(BASE_DIR, 'rendiag.py')))
+    ck('S401 the butler'+chr(39)+'s eyes open in public, one honest row per file', ('def rename_diag(' in _src) and (chr(35)+' RENAME-DIAG v85.58') in _src and os.path.exists(os.path.join(BASE_DIR, 'archive', 'rendiag.py')))  # S401 repinned v85.59: the diagnostic lives where untracked survivors live
     ck('S400 casing is a property of the name, not of the ceremony'+chr(39)+'s memory', (chr(35)+' CASE-SWEEP v85.57') in _src and ('def _case_sweep(' in _src))
     ck('S394 a Word paper is converted the moment it lands, source untouched, twice never', ('def _convert_to_pdf(' in _src) and (chr(35)+' CONVERT-WATCH v85.52') in _src and ('.converted.json' in _src))
     ck('S395 the doorbell owns its heartbeat and one process alone may ring it', ('def _tick_loop(' in _src) and (chr(35)+' WATCH-HOOK v85.53') in _src and ('.tick.lock' in _src))
