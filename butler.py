@@ -724,7 +724,7 @@ def _stage_move(p, tag, say=print):  # STAGE-SYNC v84.3: a tagged paper rests in
         newp = os.path.join(tgt, os.path.basename(p))
         if os.path.exists(newp): say(f'📦 a paper already rests in {tag} - left in place'); return
         os.rename(p, newp)
-        _repath_ledgers(p, newp)
+        _safe_repath_ledgers(p, newp)
         say(f'📦 moved {os.path.basename(p)} into {tag}')
     except Exception as _me:
         say(f'⚠️ stage move skipped: {_me}')
@@ -983,7 +983,7 @@ def tags_tidy(say=print):  # TIDY v84.9: carry each misplaced paper home, one ke
                     try:
                         os.makedirs(tgt, exist_ok=True)
                         os.rename(p, twin)
-                        _repath_ledgers(p, twin)
+                        _safe_repath_ledgers(p, twin)
                         _stage_note(x, st[0], st[0], par, st[0], 'chat/terminal')
                         say(f'📦 moved {x} into {st[0]}'); moved += 1
                     except Exception as _me:
@@ -1294,8 +1294,8 @@ def _fast_rename(p, root, log):  # RENAME-WATCH v85.52: the ceremony's fast half
     if os.path.exists(q): return
     try:
         os.rename(p, q)
-        _rename_ledger(p, canon, 'watch', once=True)
-        _repath_ledgers(p, q)
+        _safe_rename_ledger(p, canon, 'watch', once=True)
+        _safe_repath_ledgers(p, q)
         log('✏️ watch renamed: %s → %s' % (x, os.path.basename(q)))
     except Exception:
         pass
@@ -1424,8 +1424,8 @@ def _case_sweep(root, log):  # CASE-SWEEP v85.57: casing is a property of the na
             if os.path.exists(q): continue
             try:
                 os.rename(p, q)
-                _rename_ledger(p, disp, 'sweep', once=True)
-                _repath_ledgers(p, q)
+                _safe_rename_ledger(p, disp, 'sweep', once=True)
+                _safe_repath_ledgers(p, q)
                 log('✏️ case sweep: %s → %s' % (x, disp + ext))
             except Exception:
                 pass
@@ -1583,8 +1583,8 @@ def seat_rename_check(root, say=print, only=None):  # SEAT-RENAME v85.11 (examin
                     R._rename(p, canon, say)
             else:
                 os.rename(p, q)
-                _rename_ledger(p, canon, 'seat-check', once=True)
-                _repath_ledgers(p, q)
+                _safe_rename_ledger(p, canon, 'seat-check', once=True)
+                _safe_repath_ledgers(p, q)
             s = sheet_load()
             for it in s.get('items', []):
                 if os.path.realpath(it.get('p', '')) in (os.path.realpath(p), os.path.realpath(q)): it['p'] = q
@@ -2169,6 +2169,17 @@ def _canonical_person_name(s):  # CANON-FORM v82.0: a pipeline name carries the 
     t = re.sub(r'\s+', ' ', t).strip(' -_.')
     if t and t.isupper(): t = t.title()
     return t
+def _safe_rename_ledger(*a, **k):  # DEED-LOG-FIRST v85.62: the books may complain in private; the receipt must never die with them
+    try:
+        return _rename_ledger(*a, **k)
+    except Exception:
+        return None
+def _safe_repath_ledgers(*a, **k):  # DEED-LOG-FIRST v85.62: a ledger exception is swallowed alone, never taking the deed line down
+    try:
+        return _repath_ledgers(*a, **k)
+    except Exception:
+        return None
+
 def _rename_ledger(old, new, why, once=False):  # RENAME-LEDGER v82.0: every rename is written down so your word can undo it
     try:
         lp = os.path.join(BASE_DIR, 'rename_log.json')
@@ -2552,10 +2563,10 @@ class Butler:
             if not _is_candidate_paper(fp):  # RENAME-GATE v82.0: portal glue and JDs are left untouched, silently - they were never candidates
                 pass
             elif not os.path.exists(fp):  # RENAME-PREFLIGHT v82.0: a stale decision rests once and is never re-knocked
-                if _rename_ledger(os.path.basename(fp), os.path.basename(target), 'suffix-canonical-stale', once=True):
+                if _safe_rename_ledger(os.path.basename(fp), os.path.basename(target), 'suffix-canonical-stale', once=True):
                     say(f'⏭️ [rename] rested: {os.path.basename(fp)} already wears its new name - stale decision, not retried')
             else:
-                _rename_ledger(os.path.basename(fp), os.path.basename(target), 'suffix-canonical')
+                _safe_rename_ledger(os.path.basename(fp), os.path.basename(target), 'suffix-canonical')
                 self._rename(fp, target, say, 'suffix-canonical')
         for f in sorted(os.listdir(folder)):
             if f.lower().endswith(".pdf"):
@@ -3369,7 +3380,7 @@ class Butler:
                                 if _cand != p and e.get('tag') in _tags_of(_cand): _mv = _cand; break
                         if _mv: break
                     if _mv:
-                        led[_mv] = led.pop(p); _repath_ledgers(p, _mv); changed = True
+                        led[_mv] = led.pop(p); _safe_repath_ledgers(p, _mv); changed = True
                         _stage_note(os.path.basename(p), e.get('tag'), e.get('tag'), os.path.basename(os.path.dirname(p)), os.path.basename(os.path.dirname(_mv)), 'finder')
                         say(f"👀 noticed in Finder: {os.path.basename(p)} now rests in {os.path.basename(os.path.dirname(_mv))}"); continue
                     e['history'].append([e['tag'], e['since'], now]); e['closed'] = now; e['closed_tag'] = 'file gone'; changed = True
@@ -3751,7 +3762,7 @@ def main():
             if _fn: _fn(_kw, _pl_root(), print)
             else: print('🤷 voice missing: ' + _v)
         sys.exit(0)
-    root = _lock_root() or root  # LOCK-ROOT v85.54: the lock is the house's address book - a verb called from the workshop serves the living desk instead of refusing
+    root = _lock_root() or (desk_load() or {}).get('primary') or root  # LOCK-ROOT v85.54 + desk-book fallback v85.63: a dead watcher takes its lock to the grave, but the desk remembers its own primary
     if not os.path.isdir(root):
         print("Error: folder does not exist."); sys.exit(1)
         try:
@@ -4392,6 +4403,8 @@ def _selftest(root):
     ck('S404 the broom passes over what the ignore-list names', ('archive/rendiag.py' in open(os.path.join(BASE_DIR, '.gitignore')).read()) and os.path.exists(os.path.join(BASE_DIR, 'archive', 'rendiag.py')))
     ck('S405 every text-layer pdf has a native eye the house can always ask', (chr(35)+' PDF-SPOTLIGHT v85.61') in _src and ('kMDItemTextContent' in _src))
     ck('S406 a human-shaped filename is the last witness when every eye is silent', _src.count(chr(35)+' STEM-FALLBACK v85.61') >= 2)
+    ck('S407 every done deed leaves its line, books or no books', ('def _safe_rename_ledger(' in _src) and ('def _safe_repath_ledgers(' in _src) and _src.count('_safe_rename_ledger(') >= 2)
+    ck('S408 the diagnostic names its own path or confesses the whole list', ('expanduser' in open(os.path.join(BASE_DIR, 'archive', 'rendiag.py')).read()) and ('sys.path was' in open(os.path.join(BASE_DIR, 'archive', 'rendiag.py')).read()))
     ck('S402 the master'+chr(39)+'s Finder selection is drained by the bell, in the background, each beat', (chr(35)+' SERVICE-QUEUE v85.58') in _src and ('.rename_queue' in _src))
     ck('S401 the butler'+chr(39)+'s eyes open in public, one honest row per file', ('def rename_diag(' in _src) and (chr(35)+' RENAME-DIAG v85.58') in _src and os.path.exists(os.path.join(BASE_DIR, 'archive', 'rendiag.py')))  # S401 repinned v85.59: the diagnostic lives where untracked survivors live
     ck('S400 casing is a property of the name, not of the ceremony'+chr(39)+'s memory', (chr(35)+' CASE-SWEEP v85.57') in _src and ('def _case_sweep(' in _src))
