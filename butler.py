@@ -891,7 +891,8 @@ def desk_dashboard(say=print):  # DASH v84.7: the desk's census in one breath, r
     if multi: say('⚠️ wearing two stages: ' + ', '.join(multi[:6]) + (' …' if len(multi) > 6 else ''))
     if skips_load():  # TRAY-NAMES v85.1: a count without names is a queue of strangers - the tray names its members whenever it is not empty
         _sk = list(skips_load())
-        _sk = [x for x in _sk if os.path.realpath(x).startswith(os.path.realpath(root))]  # TRAY-SCOPE v85.41: the tray belongs to its desk - a new position starts with an empty tray, and the old chair's souls rest where they were skipped
+        _rt = locals().get('root') or desk_load().get('primary') or os.sep  # TRAY-SCOPE scope-safe v85.45: the filter asks the room for its root before assuming one
+        _sk = [x for x in _sk if os.path.realpath(x).startswith(os.path.realpath(_rt))]  # TRAY-SCOPE v85.41: the tray belongs to its desk - a new position starts with an empty tray
         say('⏭️ tray: ' + str(len(_sk)) + ': ' + ', '.join(os.path.basename(x).replace('.pdf', '').replace('.PDF', '') for x in _sk[:4]) + (f' +{len(_sk)-4}' if len(_sk) > 4 else '') + ' · one returns per empty seed')  # TIDY-TRAY v85.34: names without tails, count up front
 def tags_audit(say=print):  # AUDIT v84.7 (v84.9): two stages, or a stage away from its folder - named, never silently rewritten
     seen = set(); bad = 0; wrong = []
@@ -4064,6 +4065,9 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S385 when several papers answer the spoken words, the master picks among them all', (chr(35)+' FULL-NAME-PICK v85.45') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' WHOLE-WORD-WALK v81.81') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
+    ck('S386 the tray filter asks its room for the root before assuming one', ('locals().get' in _src) and (chr(35)+' TRAY-SCOPE v85.41') in _src)
+    ck('S387 a slow load reads as work in progress, and a thinking master is never mistaken for a wedged child', (chr(35)+' WAIT-SAY v85.45') in open(os.path.join(BASE_DIR, 'wa.py')).read() and ('timeout=1500' in open(os.path.join(BASE_DIR, 'wa.py')).read()))
     ck('S379 a door and its keyword voice speak one sentence because they read one file', (chr(35)+' ONE-VOICE-FIRST v85.40') in _src and ('def _draft_local_text(' in _src))
     ck('S380 the driver is bid goodbye before any pipe closes, and no child may hang an evening', (chr(35)+' DRIVER-GOODBYE v85.42') in open(os.path.join(BASE_DIR, 'wa.py')).read() and (chr(35)+' HANG-CEILING v85.42') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S381 a returned tray paper never pays the pixel bill', _src.count('emails_of(') <= 2 and ('_email_cheap(' in _src))

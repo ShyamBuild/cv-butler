@@ -196,6 +196,7 @@ def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  #
                 _goto(page, f'https://web.whatsapp.com/send?phone={digits}', say)
             except Exception:
                 pass
+        say('⏳ waiting for the composer - the window is loading, not hung')  # WAIT-SAY v85.45: a slow load reads as work in progress, never as a corpse
         try:
             try:  # EARLY-DOOR v81.92: ask WhatsApp within the first beats, not after the placement wait - poll four seconds for the modal or the field, whichever speaks first (inserted before the modal-check if, at its own indent; the late path stays as fallback)
                 for _i in range(48):  # MODAL-WATCH v81.98: the door is asked until it answers - twenty-four beats, not four; the modal confesses, the composer releases, and only true ambiguity pays the full count
@@ -290,7 +291,7 @@ def send_review(phone, text, say=print, *a, **k):  # PLAYWRIGHT-THREAD v85.23  #
     code += '    wa._pw().stop()  # DRIVER-GOODBYE v85.42: an orderly goodbye so the node driver exits before any pipe closes beneath it' + nl
     code += 'except Exception:' + nl
     code += '    pass' + nl
-    rr = subprocess.call([sys.executable, '-c', code], cwd=os.path.dirname(os.path.abspath(__file__)), timeout=240)  # HANG-CEILING v85.42: a child that ignores even four minutes is killed, its status read, its draft parked - a hung ritual never owns an evening
+    rr = subprocess.call([sys.executable, '-c', code], cwd=os.path.dirname(os.path.abspath(__file__)), timeout=1500)  # HANG-CEILING v85.42: a child that ignores even four minutes is killed, its status read, its draft parked - a hung ritual never owns an evening  # HANG-CEILING human-thought v85.46 (1500 v85.47): twenty-five minutes for a thinking master, death only for a wedged child - and a number no probe mistakes for the OCR cap
     try:
         outcome = open(st).read().strip()
     except Exception:

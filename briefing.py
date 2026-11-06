@@ -1012,6 +1012,33 @@ def do_missed(arg, root, say=print, ask=None, words=None):
                     hit = os.path.join(dp, x); break
             if hit: break
         if hit: break
+        if hit:  # FULL-NAME-PICK v85.45: the first match is a candidate, not a verdict - when several papers answer the same spoken words, the master picks among them all
+            _hits = []
+            for _sr in _roots:
+                for dp, dn, fn in os.walk(_sr):
+                    for x in fn:
+                        if x.lower().endswith('.pdf') and all(t in os.path.splitext(x)[0].lower().replace('_', ' ').split() for t in q.split()):
+                            _hits.append(os.path.join(dp, x))
+            if len(_hits) > 1:
+                say('🪪 several papers answer to those words - pick the human by email:')
+                for _n, _c in enumerate(_hits, 1):
+                    try:
+                        _ef = getattr(butler, '_email_cheap', None) or butler.emails_of
+                        _em = _ef(_c) or ['none readable']
+                        _em = _em[0] if isinstance(_em, list) else _em
+                    except Exception:
+                        _em = 'none readable'
+                    try:
+                        _ph = (butler.phones_of(_c, quiet=True) or ['none readable'])[0]
+                    except Exception:
+                        _ph = 'none readable'
+                say(f'   {_n}) {os.path.basename(_c)} · {_em} · {_ph} · {os.path.relpath(os.path.dirname(_c), root)}')
+                try:
+                    hit = _hits[int(input('   pick #: ').strip()) - 1]
+                except KeyboardInterrupt:
+                    say('👋 pick cancelled - nothing drafted'); hit = None
+                except Exception:
+                    say('🤷 pick skipped')
     if not hit:
         say(f"🤷 no candidate like '{arg}' under {f['display']}"); return
     if words == 'AUTO': words = _stage_words(hit) or ['outbox']
