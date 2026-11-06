@@ -891,6 +891,7 @@ def desk_dashboard(say=print):  # DASH v84.7: the desk's census in one breath, r
     if multi: say('⚠️ wearing two stages: ' + ', '.join(multi[:6]) + (' …' if len(multi) > 6 else ''))
     if skips_load():  # TRAY-NAMES v85.1: a count without names is a queue of strangers - the tray names its members whenever it is not empty
         _sk = list(skips_load())
+        _sk = [x for x in _sk if os.path.realpath(x).startswith(os.path.realpath(root))]  # TRAY-SCOPE v85.41: the tray belongs to its desk - a new position starts with an empty tray, and the old chair's souls rest where they were skipped
         say('⏭️ tray: ' + str(len(_sk)) + ': ' + ', '.join(os.path.basename(x).replace('.pdf', '').replace('.PDF', '') for x in _sk[:4]) + (f' +{len(_sk)-4}' if len(_sk) > 4 else '') + ' · one returns per empty seed')  # TIDY-TRAY v85.34: names without tails, count up front
 def tags_audit(say=print):  # AUDIT v84.7 (v84.9): two stages, or a stage away from its folder - named, never silently rewritten
     seen = set(); bad = 0; wrong = []
@@ -4038,7 +4039,7 @@ def _selftest(root):
     ck('S180 the whole paper is read, not an excerpt', (('pdf.pages[:'+'2]') not in _src[_src.find('def _full_'+'text('):_src.find(chr(10)+'def ', _src.find('def _full_'+'text(')+1)]) and ('txt = _full_'+'text(p)') in _src)  # S180-CONTRACT v81.78: pin the clerk's contract - whole pages inside _full_text, phones_of reads through it - not the old line's coordinates
     ck('S181 identity speaks before any number is used', (chr(35)+' IDENTITY-FIRST v81.73') in _src and (chr(35)+' IDENTITY-FIRST-EXTRACT v81.73') in _src)
     ck('S182 several humans become a question, never a guess', (chr(35)+' STRICT-RESOLVE v81.75') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and 'pick the human by email' in open(os.path.join(BASE_DIR, 'briefing.py')).read())
-    ck('S183 the picker reads emails from the paper', 'def emails_of(' in _src)
+    ck('S183 the picker reads emails from the paper', 'def _email_cheap(' in _src)
     ck('S184 designed CVs speak through vision when their layer is silent', ('def _full_'+'text(') in _src and ('return emails_in_text(_full_'+'text(p))') in _src)
     ck('S185 the picker labels humans by position, not client', (chr(35)+' POSITION-LABEL v81.76') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S186 a human is listed once, labelled by their whole trail', (chr(35)+' DEDUPE v81.79') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' PATH-LABEL v81.79') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
@@ -4064,6 +4065,9 @@ def _selftest(root):
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
     ck('S379 a door and its keyword voice speak one sentence because they read one file', (chr(35)+' ONE-VOICE-FIRST v85.40') in _src and ('def _draft_local_text(' in _src))
+    ck('S380 the driver is bid goodbye before any pipe closes, and no child may hang an evening', (chr(35)+' DRIVER-GOODBYE v85.42') in open(os.path.join(BASE_DIR, 'wa.py')).read() and (chr(35)+' HANG-CEILING v85.42') in open(os.path.join(BASE_DIR, 'wa.py')).read())
+    ck('S381 a returned tray paper never pays the pixel bill', _src.count('emails_of(') <= 2 and ('_email_cheap(' in _src))
+    ck('S382 the tray belongs to its desk', (chr(35)+' TRAY-SCOPE v85.41') in _src)
     ck('S372 a scan is recognised by its face when its contacts are silent', (chr(39)+'name:'+chr(39)) in _src.split('def _ident_of(')[1].split(chr(10) + 'def ')[0])
     ck('S373 the composer is emptied before it is filled - no ghost sentence rides along', (chr(35)+' FIELD-CLEAR v85.34') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S374 the courtesy formats from truths the house holds and the lines read quiet', (chr(35)+' REFER-FIELDS v85.34') in _src and (chr(35)+' TIDY-TRAY v85.34') in _src and (chr(35)+' TIDY-CENSUS v85.34') in _src)
