@@ -1561,7 +1561,7 @@ def _draft_local_text(path, name, p):  # ONE-VOICE-FIRST v85.40: one door serves
     _dm = {}
     try: _dm = _j2.load(open(os.path.join(BASE_DIR, 'desk_meta.json'))).get(desk_load().get('primary') or '', {})
     except Exception: pass
-    _fld = _cc.defaultdict(str, {'name': name, 'position': _pi.get('role') or os.path.basename(os.path.dirname(p)), 'company': _pi.get('company') or _dm.get('company') or '', 'location': _pi.get('loc') or _pi.get('location') or ''})
+    _fld = _cc.defaultdict(str, {'name': name, 'full': name, 'position': _pi.get('role') or os.path.basename(os.path.dirname(p)), 'role': _pi.get('role') or os.path.basename(os.path.dirname(p)), 'roleline': _pi.get('role') or os.path.basename(os.path.dirname(p)), 'company': _pi.get('company') or _dm.get('company') or '', 'location': _pi.get('loc') or _pi.get('location') or ''})  # PLACEHOLDER-DIALECT v85.44: the door speaks the master's files' dialect - full, role and roleline arrive dressed, so no courtesy renders an empty name or a blank role
     return open(path).read().strip().format_map(_fld)
 
 def _chair_wa_text(kind, p, name):  # ONE-VOICE v84.19: the chair drafts through the same composer the keywords have always used; drafts/ and built-ins are fallbacks, not rivals
@@ -4069,6 +4069,7 @@ def _selftest(root):
     ck('S381 a returned tray paper never pays the pixel bill', _src.count('emails_of(') <= 2 and ('_email_cheap(' in _src))
     ck('S382 the tray belongs to its desk', (chr(35)+' TRAY-SCOPE v85.41') in _src)
     ck('S383 a stumbling command confesses and the chat stays open', (chr(35)+' CHAT-ARMOR v85.43') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and open(os.path.join(BASE_DIR, 'briefing.py')).read().count('@_armor') >= 2)
+    ck('S384 the door speaks the master'+chr(39)+'s files'+chr(39)+' dialect - no courtesy renders an empty name', (chr(39)+'full'+chr(39)+': name') in _src and (chr(35)+' PLACEHOLDER-DIALECT v85.44') in _src)
     ck('S372 a scan is recognised by its face when its contacts are silent', (chr(39)+'name:'+chr(39)) in _src.split('def _ident_of(')[1].split(chr(10) + 'def ')[0])
     ck('S373 the composer is emptied before it is filled - no ghost sentence rides along', (chr(35)+' FIELD-CLEAR v85.34') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S374 the courtesy formats from truths the house holds and the lines read quiet', (chr(35)+' REFER-FIELDS v85.34') in _src and (chr(35)+' TIDY-TRAY v85.34') in _src and (chr(35)+' TIDY-CENSUS v85.34') in _src)
