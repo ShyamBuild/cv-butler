@@ -1554,10 +1554,21 @@ def meta_cmd(arg, root, say=print):  # TEMPLATES v84.16: teach the company once 
     say(f'🏢 company for this desk: {arg.strip()}')
 
 CHAIR_SCENARIO = {'jd': 'jd', 'refer': 'refer', 'cv': 'nudge', 'missed': 'missed'}  # ONE-VOICE v84.19: the chair's outcomes map onto the keywords' scenarios
+def _draft_local_text(path, name, p):  # ONE-VOICE-FIRST v85.40: one door serves every voice - the master's own file for a kind, formatted from truths the house holds
+    import collections as _cc, json as _j2
+    _pi = pos_identity(p)
+    _dm = {}
+    try: _dm = _j2.load(open(os.path.join(BASE_DIR, 'desk_meta.json'))).get(desk_load().get('primary') or '', {})
+    except Exception: pass
+    _fld = _cc.defaultdict(str, {'name': name, 'position': _pi.get('role') or os.path.basename(os.path.dirname(p)), 'company': _pi.get('company') or _dm.get('company') or '', 'location': _pi.get('loc') or _pi.get('location') or ''})
+    return open(path).read().strip().format_map(_fld)
+
 def _chair_wa_text(kind, p, name):  # ONE-VOICE v84.19: the chair drafts through the same composer the keywords have always used; drafts/ and built-ins are fallbacks, not rivals
     if kind == 'cv':  # SCENARIO-3 v84.41: outcome 3 speaks the master's combo - acknowledge the JD and send the updated CV - from the scenario store; the legacy nudge stays the later touchpoint
         t3 = _draft_text('cv', name, _pos_of(p, _pl_root()), p)
         if t3: return t3
+        _lp = os.path.join(DRAFTS_DIR, kind + '.txt')  # ONE-VOICE-FIRST v85.40: every kind reads the master's own file before any legacy template is consulted - door and keyword voice speak one sentence because they read one file
+        if os.path.exists(_lp): return _draft_local_text(_lp, name, p)
     if kind == 'refer':  # SCENARIO-REFER v85.4 (dedented v85.8): the refer branch stands beside the cv branch at column four, never buried inside it
         try:
             _rp = os.path.join(DRAFTS_DIR, 'refer.txt')
@@ -4052,6 +4063,7 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S379 a door and its keyword voice speak one sentence because they read one file', (chr(35)+' ONE-VOICE-FIRST v85.40') in _src and ('def _draft_local_text(' in _src))
     ck('S372 a scan is recognised by its face when its contacts are silent', (chr(39)+'name:'+chr(39)) in _src.split('def _ident_of(')[1].split(chr(10) + 'def ')[0])
     ck('S373 the composer is emptied before it is filled - no ghost sentence rides along', (chr(35)+' FIELD-CLEAR v85.34') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S374 the courtesy formats from truths the house holds and the lines read quiet', (chr(35)+' REFER-FIELDS v85.34') in _src and (chr(35)+' TIDY-TRAY v85.34') in _src and (chr(35)+' TIDY-CENSUS v85.34') in _src)
