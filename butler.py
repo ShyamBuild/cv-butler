@@ -342,6 +342,14 @@ def ensure_ocr():
 def extract_text_ocr(fp):
     _wt = _word_text(p)  # TEXT-DOCX v85.55: head eye - if the native reader speaks, the pdf eyes rest
     if _wt.strip(): return _wt
+    if os.path.splitext(p)[1].lower() == '.pdf':  # PDF-SPOTLIGHT v85.61: the library reader is dead on this machine, but macOS already indexes every text-layer pdf - Spotlight's kMDItemTextContent is the native eye, milliseconds and no pixels
+        try:
+            import subprocess as _sp4
+            _r4 = _sp4.run(['mdls', '-raw', '-name', 'kMDItemTextContent', p], capture_output=True, timeout=30)
+            _s4 = _r4.stdout.decode('utf-8', 'ignore')
+            if _s4.strip() and _s4.strip() != '(null)': return _s4
+        except Exception:
+            pass
     if not os.path.exists(OCRBIN): return ""
     try:
         with OCR_SEM:
@@ -1272,6 +1280,10 @@ def _fast_rename(p, root, log):  # RENAME-WATCH v85.52: the ceremony's fast half
         return
     stem = os.path.splitext(x)[0]
     v = heuristic_name(p) or _name_from_first_line(p)
+    if not v:  # STEM-FALLBACK v85.61: the fast half trusts a human-shaped filename when every eye is silent
+        _ws = os.path.splitext(x)[0].split()
+        if 2 <= len(_ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _ws):
+            v = os.path.splitext(x)[0]
     if not v: return
     canon = _canonical_person_name(v)
     if not canon: return
@@ -1540,6 +1552,10 @@ def seat_rename_check(root, say=print, only=None):  # SEAT-RENAME v85.11 (examin
         if not v and x not in rec.get('vtried', []):  # VISION-ONCE v85.35: the expensive pupil is asked once per paper per day; a silent answer rests, so misses cost milliseconds thereafter
             v = _vision_safe(p)
             rec.setdefault('vtried', []).append(x)
+            if not v:  # STEM-FALLBACK v85.61: when every eye is silent and the filename itself is a human shape, the filename becomes the candidate - masks stay excluded by law, twins stay safe by the key compare
+                _ws = os.path.splitext(x)[0].split()
+                if 2 <= len(_ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _ws):
+                    v = os.path.splitext(x)[0]
         try:
             import asyncio as _a
             _a.set_event_loop(None)  # LOOP-CLEAN v85.21: the vision eye may leave an idle loop behind; playwright sync must find none
@@ -4373,6 +4389,9 @@ def _selftest(root):
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
     ck('S403 the bell is owned by a pulse, and orphans inherit nothing but silence', (chr(35)+' BELL-HEARTBEAT v85.59') in _src and ('.tick.pid' in _src))
+    ck('S404 the broom passes over what the ignore-list names', ('archive/rendiag.py' in open(os.path.join(BASE_DIR, '.gitignore')).read()) and os.path.exists(os.path.join(BASE_DIR, 'archive', 'rendiag.py')))
+    ck('S405 every text-layer pdf has a native eye the house can always ask', (chr(35)+' PDF-SPOTLIGHT v85.61') in _src and ('kMDItemTextContent' in _src))
+    ck('S406 a human-shaped filename is the last witness when every eye is silent', _src.count(chr(35)+' STEM-FALLBACK v85.61') >= 2)
     ck('S402 the master'+chr(39)+'s Finder selection is drained by the bell, in the background, each beat', (chr(35)+' SERVICE-QUEUE v85.58') in _src and ('.rename_queue' in _src))
     ck('S401 the butler'+chr(39)+'s eyes open in public, one honest row per file', ('def rename_diag(' in _src) and (chr(35)+' RENAME-DIAG v85.58') in _src and os.path.exists(os.path.join(BASE_DIR, 'archive', 'rendiag.py')))  # S401 repinned v85.59: the diagnostic lives where untracked survivors live
     ck('S400 casing is a property of the name, not of the ceremony'+chr(39)+'s memory', (chr(35)+' CASE-SWEEP v85.57') in _src and ('def _case_sweep(' in _src))
