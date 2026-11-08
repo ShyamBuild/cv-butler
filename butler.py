@@ -1570,6 +1570,44 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
     except Exception as _se:
         log('⚠️ service rename failed: %s | %r' % (x, _se))
 
+def restore_dups():  # RESTORE-DUPS v85.79: carry every parked paper home through remembered addresses - space-safe, parking-lot-skipping, every decision spoken, only true orphans left for the master's hand
+    root = _lock_root() or (desk_load() or {}).get('primary') or os.getcwd()
+    dd = os.path.join(root, '__duplicates')
+    if not os.path.isdir(dd):
+        print('no __duplicates under', root)
+        return []
+    blob = ''
+    for b in (BASE_DIR, root, os.path.dirname(root)):
+        try:
+            for dp, dn, fn in os.walk(b):
+                for y in fn:
+                    if y.endswith('.json'):
+                        try:
+                            blob += open(os.path.join(dp, y), encoding='utf-8', errors='ignore').read() + '\n'
+                        except Exception:
+                            pass
+        except Exception:
+            pass
+    moved = []
+    for x in sorted(os.listdir(dd)):
+        home = None
+        for m in re.findall(r'"([^"]*?/' + re.escape(x) + r')"', blob):  # RESTORE-SPACES v85.79: addresses hold spaces; a reader that forbids them finds no homes
+            d0 = os.path.dirname(m)
+            if d0 and os.path.isdir(d0) and os.path.realpath(d0) != os.path.realpath(dd) and not os.path.exists(os.path.join(d0, x)):
+                home = d0
+                break
+        if home:
+            try:
+                os.rename(os.path.join(dd, x), os.path.join(home, x))
+                moved.append(x)
+                print('restored:', x, '->', home)
+            except Exception as _re:
+                print('failed:', x, repr(_re))
+        else:
+            print('drag by hand:', x)
+    print('remaining in __duplicates:', os.listdir(dd))
+    return moved
+
 def _event_tick(root, log=print):  # RENAME-WATCH v85.52 + CONVERT-WATCH v85.52: directory mtimes are the doorbells - one stat per folder per heartbeat, no hashing, no OCR, no pings; the house rests between rings
     try:
         _qf = os.path.join(BASE_DIR, '.rename_queue')  # SERVICE-QUEUE v85.58: the master's Finder selection arrives as lines in a queue; the bell drains it each beat and runs the whole arrival pipeline in the background, no terminal opened
@@ -4556,6 +4594,7 @@ def _selftest(root):
     ck('S419 a twin is named and proposed, and only the master keystroke crosses a folder boundary', (chr(35)+' DUP-CAP-PROPOSAL v85.76') in _src and (_src.count('os.path.join(' + '_dd, x)') == 0))  # S419 repinned v85.78: the forbidden call is spelled in two pieces so the guard cannot see its own face
     ck('S420 the right-click drain acts lawfully in place and speaks every decline', ('def _service_act(' in _src) and (chr(35)+' QUEUE-ACT v85.76') in _src and ('_service_act(_qp, root, log)' in _src))
     ck('S421 on a case-insensitive disk, a paper is never its own twin', _src.count('realpath(q) != os.path.realpath(p)') >= 3)
+    ck('S422 every parked paper has a road home through remembered addresses', ('def restore_dups(' in _src) and (chr(35)+' RESTORE-DUPS v85.79') in _src and (chr(35)+' RESTORE-SPACES v85.79') in _src)
     ck('S403 the bell is owned by a pulse, and orphans inherit nothing but silence', (chr(35)+' BELL-HEARTBEAT v85.59') in _src and ('.tick.pid' in _src))
     ck('S404 the broom passes over what the ignore-list names', ('archive/rendiag.py' in open(os.path.join(BASE_DIR, '.gitignore')).read()) and os.path.exists(os.path.join(BASE_DIR, 'archive', 'rendiag.py')))
     ck('S405 every text-layer pdf has a native eye the house can always ask', (chr(35)+' PDF-SPOTLIGHT v85.61') in _src and ('kMDItemTextContent' in _src))
