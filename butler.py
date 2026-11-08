@@ -1362,7 +1362,7 @@ def _fast_rename(p, root, log):  # RENAME-WATCH v85.52: the ceremony's fast half
     if stem == canon: return
     if _name_key(stem) != _name_key(canon): return
     q = os.path.join(os.path.dirname(p), canon + os.path.splitext(x)[1])
-    if os.path.exists(q): return
+    if (os.path.exists(q) and os.path.realpath(q) != os.path.realpath(p)): return
     try:
         os.rename(p, q)
         _safe_rename_ledger(p, canon, 'watch', once=True)
@@ -1516,63 +1516,8 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
             disp = _display_name(stem)
             if disp == stem: continue
             q = os.path.join(dpath, disp + ext)
-            if os.path.exists(q):  # DUP-CAP v85.75 (insertive v85.72 law): a caps file whose titled twin already seats is a duplicate, not a citizen - this block parks or suffixes and otherwise declines, deleting nothing and touching no neighbour
-                try:
-                    _same = os.path.getsize(p) == os.path.getsize(q)
-                    if _same:
-                        import hashlib as _hl
-                        _hp = _hl.md5(open(p, 'rb').read(8192) + open(p, 'rb').read()[-8192:]).hexdigest()
-                        _hq = _hl.md5(open(q, 'rb').read(8192) + open(q, 'rb').read()[-8192:]).hexdigest()
-                        _same = _hp == _hq
-                except Exception:
-                    _same = False
-                if _same:
-                    _dd = os.path.join(root, '__duplicates')
-                    try:
-                        os.makedirs(_dd, exist_ok=True)
-                        os.rename(p, os.path.join(_dd, x))
-                        log('🧮 duplicate parked: %s -> __duplicates/ (titled twin already seats)' % x)
-                        continue
-                    except Exception:
-                        pass
-                else:
-                    _q2 = os.path.join(dpath, disp + ' (2)' + ext)
-                    if not os.path.exists(_q2):
-                        try:
-                            os.rename(p, _q2)
-                            log('✏️ case sweep (twin): %s -> %s' % (x, disp + ' (2)' + ext))
-                            continue
-                        except Exception:
-                            pass
-            if os.path.exists(q):  # DUP-CAP v85.75 (insertive v85.72 law): a caps file whose titled twin already seats is a duplicate, not a citizen - this block parks or suffixes and otherwise declines, deleting nothing and touching no neighbour
-                try:
-                    _same = os.path.getsize(p) == os.path.getsize(q)
-                    if _same:
-                        import hashlib as _hl
-                        _hp = _hl.md5(open(p, 'rb').read(8192) + open(p, 'rb').read()[-8192:]).hexdigest()
-                        _hq = _hl.md5(open(q, 'rb').read(8192) + open(q, 'rb').read()[-8192:]).hexdigest()
-                        _same = _hp == _hq
-                except Exception:
-                    _same = False
-                if _same:
-                    _dd = os.path.join(root, '__duplicates')
-                    try:
-                        os.makedirs(_dd, exist_ok=True)
-                        os.rename(p, os.path.join(_dd, x))
-                        log('🧮 duplicate parked: %s -> __duplicates/ (titled twin already seats)' % x)
-                        continue
-                    except Exception:
-                        pass
-                else:
-                    _q2 = os.path.join(dpath, disp + ' (2)' + ext)
-                    if not os.path.exists(_q2):
-                        try:
-                            os.rename(p, _q2)
-                            log('✏️ case sweep (twin): %s -> %s' % (x, disp + ' (2)' + ext))
-                            continue
-                        except Exception:
-                            pass
-            if os.path.exists(q):
+            # DUP-CAP v85.75 (retired v85.76)  # DUP-CAP-PROPOSAL v85.76: a twin is named and proposed, never relocated by the background - only the master's keystroke crosses a folder boundary, and __duplicates is retired forever
+            if (os.path.exists(q) and os.path.realpath(q) != os.path.realpath(p)):
                 if trace: log('🧭 sweep: %s | twin-exists %s' % (x, disp + ext))
                 continue
             try:
@@ -1586,6 +1531,45 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
             except Exception as _ce:
                 if trace: log('🧭 sweep: %s | rename-failed %r' % (x, _ce))
 
+def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawful and local - convert Word and images in place, case-fix pdfs in place, and propose (never perform) anything that would cross a folder boundary
+    x = os.path.basename(p)
+    ext = os.path.splitext(x)[1].lower()
+    if ext in ('.docx', '.doc', '.rtf', '.png', '.jpg', '.jpeg', '.heic'):
+        _convert_to_pdf(p, log)
+        return
+    if ext != '.pdf':
+        log('🧭 service: %s | not a paper kind I act on' % x)
+        return
+    stem = os.path.splitext(x)[0]
+    try:
+        if _jd_like_name(x) or _portal_name(x):
+            log('🧭 service: %s | masked (jd/portal) - name kept by law' % x)
+            return
+    except Exception:
+        return
+    ws = stem.split()
+    if not (2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws)):
+        log('🧭 service: %s | not a human-shaped name - left as is' % x)
+        return
+    disp = _display_name(stem)
+    if disp == stem:
+        log('🧭 service: %s | already cased correctly' % x)
+        return
+    q = os.path.join(os.path.dirname(p), disp + ext)
+    if os.path.exists(q) and os.path.realpath(q) != os.path.realpath(p):  # CASE-INSENSITIVE v85.77: on this disk a case-variant of yourself is not a twin - only another inode is
+        log('🧭 service: %s | twin %s rests beside it - proposal only: keep one, or ask me to suffix' % (x, disp + ext))
+        return
+    try:
+        os.rename(p, q)
+        log('✏️ service renamed: %s → %s' % (x, disp + ext))
+        try:
+            _safe_rename_ledger(p, disp, 'service', once=True)
+            _safe_repath_ledgers(p, q)
+        except Exception:
+            pass
+    except Exception as _se:
+        log('⚠️ service rename failed: %s | %r' % (x, _se))
+
 def _event_tick(root, log=print):  # RENAME-WATCH v85.52 + CONVERT-WATCH v85.52: directory mtimes are the doorbells - one stat per folder per heartbeat, no hashing, no OCR, no pings; the house rests between rings
     try:
         _qf = os.path.join(BASE_DIR, '.rename_queue')  # SERVICE-QUEUE v85.58: the master's Finder selection arrives as lines in a queue; the bell drains it each beat and runs the whole arrival pipeline in the background, no terminal opened
@@ -1598,7 +1582,7 @@ def _event_tick(root, log=print):  # RENAME-WATCH v85.52 + CONVERT-WATCH v85.52:
                     log('🖱 service queued: %s' % os.path.basename(_qp))
                     _ext = os.path.splitext(_qp)[1].lower()
                     if _ext in ('.docx', '.doc', '.rtf', '.png', '.jpg', '.jpeg', '.heic'): _convert_to_pdf(_qp, log)
-                    elif _ext == '.pdf': _fast_rename(_qp, root, log)
+                    _service_act(_qp, root, log)  # QUEUE-ACT v85.76: the drain acts lawfully in place - renames and conversions stay inside their own folder, every outcome spoken
                 if _qs: log('✅ service batch done: %d paper(s) - deeds above' % len(_qs))  # SERVICE-RECEIPT v85.64  # RECEIPT-INDENT v85.65: the total stands inside the try body among the deeds it counts - each name wears its own hash, because the census reads addresses, not intentions
             except Exception:
                 pass
@@ -1737,7 +1721,7 @@ def seat_rename_check(root, say=print, only=None):  # SEAT-RENAME v85.11 (examin
         canon = _display_name(canon)  # CASE-LAW v85.35: rename when the human matches but the display does not - all-caps files are renamed at last
         if stem == canon: continue
         q = os.path.join(os.path.dirname(p), canon + os.path.splitext(x)[1])
-        if os.path.exists(q): continue
+        if (os.path.exists(q) and os.path.realpath(q) != os.path.realpath(p)): continue
         say(f'👁️ {x} → eyes {v!r} → canon {canon!r}')  # NAME-EVIDENCE v85.16
         try:
             if R is None: R = _renamer(root)  # LAZY-RENAMER v85.17
@@ -4569,7 +4553,9 @@ def _selftest(root):
     ck('S416 a silent sweep names the guard that silenced each file', (chr(35)+' SWEEP-TRACE v85.70') in _src and ('trace=False' in _src))
     ck('S417 the pure eye wears every decoder a producer wears, and the venv reader speaks CID', (chr(35)+' PDF-PURE-HARD v85.71') in _src and ('a85decode' in _src) and (chr(35)+' PY-PYPDF v85.72') in _src)
     ck('S418 a silent pdf names its stream costumes', (chr(35)+' DIAG-FILTERS v85.71') in _src and ('/Filter' in _src) and ('_flt' in _src))
-    ck('S419 a caps duplicate parks, a differing twin suffixes, and nothing is ever deleted', (chr(35)+' DUP-CAP v85.75') in _src and ('__duplicates' in _src))
+    ck('S419 a twin is named and proposed, and only the master keystroke crosses a folder boundary', (chr(35)+' DUP-CAP-PROPOSAL v85.76') in _src and (_src.count('os.path.join(' + '_dd, x)') == 0))  # S419 repinned v85.78: the forbidden call is spelled in two pieces so the guard cannot see its own face
+    ck('S420 the right-click drain acts lawfully in place and speaks every decline', ('def _service_act(' in _src) and (chr(35)+' QUEUE-ACT v85.76') in _src and ('_service_act(_qp, root, log)' in _src))
+    ck('S421 on a case-insensitive disk, a paper is never its own twin', _src.count('realpath(q) != os.path.realpath(p)') >= 3)
     ck('S403 the bell is owned by a pulse, and orphans inherit nothing but silence', (chr(35)+' BELL-HEARTBEAT v85.59') in _src and ('.tick.pid' in _src))
     ck('S404 the broom passes over what the ignore-list names', ('archive/rendiag.py' in open(os.path.join(BASE_DIR, '.gitignore')).read()) and os.path.exists(os.path.join(BASE_DIR, 'archive', 'rendiag.py')))
     ck('S405 every text-layer pdf has a native eye the house can always ask', (chr(35)+' PDF-SPOTLIGHT v85.61') in _src and ('kMDItemTextContent' in _src))
