@@ -1428,7 +1428,7 @@ def _lock_root():  # LOCK-ROOT v85.54: when a verb is called from a folder that 
         pass
     return ''
 
-def rename_diag(paths, say=print):  # RENAME-DIAG v85.58: the butler opens its eyes in public - per file, every reader's yield, every eye's verdict and the decision with its reason, so a miss is a datum and not a mystery
+def rename_diag(paths, say=print, deep=False):  # RENDIAG-DEEP v85.86: opt-in depth - a silent row may summon the capped OCR eye for its first-line name, because tuning needs the datum the fast table refuses to pay for  # RENAME-DIAG v85.58: the butler opens its eyes in public - per file, every reader's yield, every eye's verdict and the decision with its reason, so a miss is a datum and not a mystery
     for p in paths:
         x = os.path.basename(p)
         stem = os.path.splitext(x)[0]
@@ -1454,7 +1454,7 @@ def rename_diag(paths, say=print):  # RENAME-DIAG v85.58: the butler opens its e
         except Exception:
             h = 'err'
         f1 = ''
-        if txt.strip():
+        if txt.strip() or deep:  # RENDIAG-DEEP v85.86: in deep mode the first-line eye may pay the OCR cap for silent papers
             try:
                 f1 = _name_from_first_line(p) or ''
             except Exception:
@@ -4621,6 +4621,7 @@ def _selftest(root):
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
     ck('S427 any chair diagnoses in one command, folder by folder', ('RENDIAG-FOLDERS v85.85' in open(os.path.join(BASE_DIR, 'archive', 'rendiag.py')).read()) and ('isdir' in open(os.path.join(BASE_DIR, 'archive', 'rendiag.py')).read()))
+    ck('S428 depth is a choice the master makes, and a closed pipe is a quiet goodbye', (chr(35)+' RENDIAG-DEEP v85.86') in _src and ('BrokenPipeError' in open(os.path.join(BASE_DIR, 'archive', 'rendiag.py')).read()))
     ck('S415 the text layer is readable by the standard library alone, permissions or no permissions', (chr(35)+' PDF-PURE v85.70') in _src and ('def _pdf_pure_text(' in _src) and ('zlib' in _src))
     ck('S416 a silent sweep names the guard that silenced each file', (chr(35)+' SWEEP-TRACE v85.70') in _src and ('trace=False' in _src))
     ck('S417 the pure eye wears every decoder a producer wears, and the venv reader speaks CID', (chr(35)+' PDF-PURE-HARD v85.71') in _src and ('a85decode' in _src) and (chr(35)+' PY-PYPDF v85.72') in _src)
