@@ -342,6 +342,16 @@ def ensure_ocr():
 def extract_text_ocr(fp):
     _wt = _word_text(p)  # TEXT-DOCX v85.55: head eye - if the native reader speaks, the pdf eyes rest
     if _wt.strip(): return _wt
+    if os.path.splitext(p)[1].lower() == '.pdf':  # PDF-PDFKIT v85.65: when the library is dead and Spotlight has no index, PDFKit reads the text layer natively through JavaScript for Automation - no libraries, no pixels, no index required
+        try:
+            import subprocess as _sp6
+            _pj = p.replace('\\', '\\\\').replace('"', '\\"')
+            _js = 'ObjC.import("Quartz"); var d = $.PDFDocument.alloc.initWithURL($.NSURL.fileURLWithPath("' + _pj + '")); (d.isNil() || !d.string) ? "" : d.string.js'
+            _r6 = _sp6.run(['osascript', '-l', 'JavaScript', '-e', _js], capture_output=True, timeout=60)
+            _s6 = _r6.stdout.decode('utf-8', 'ignore')
+            if _s6.strip(): return _s6
+        except Exception:
+            pass
     if os.path.splitext(p)[1].lower() == '.pdf':  # PDF-SPOTLIGHT v85.61: the library reader is dead on this machine, but macOS already indexes every text-layer pdf - Spotlight's kMDItemTextContent is the native eye, milliseconds and no pixels
         try:
             import subprocess as _sp4
@@ -1443,6 +1453,7 @@ def _event_tick(root, log=print):  # RENAME-WATCH v85.52 + CONVERT-WATCH v85.52:
                     _ext = os.path.splitext(_qp)[1].lower()
                     if _ext in ('.docx', '.doc', '.rtf', '.png', '.jpg', '.jpeg', '.heic'): _convert_to_pdf(_qp, log)
                     elif _ext == '.pdf': _fast_rename(_qp, root, log)
+                if _qs: log('✅ service batch done: %d paper(s) - deeds above' % len(_qs))  # SERVICE-RECEIPT v85.64  # RECEIPT-INDENT v85.65: the total stands inside the try body among the deeds it counts - each name wears its own hash, because the census reads addresses, not intentions
             except Exception:
                 pass
         _case_sweep(root, log)  # CASE-SWEEP v85.57: the doorbell sweeps casing every beat, so a shout never outlives its arrival
@@ -1475,8 +1486,12 @@ def _tick_log(msg):  # BELL-TOWER v85.55: the bell keeps its own book - one time
         open(os.path.join(BASE_DIR, 'tick.log'), 'a').write('%s %s\n' % (_t2.strftime('%H:%M:%S'), msg))
     except Exception:
         pass
-def _tick_loop():  # WATCH-HOOK v85.53 (heartbeat v85.59): the bell is owned by a pulse, not by a lock - the stamp proves life, and a stale or dead owner is inherited within half a minute
-    import time as _tt
+def _tick_loop():  # WATCH-HOOK v85.53 (version v85.64): the bell is owned by the newest living code - the stamp carries a git hash, and a stale owner is inherited around, never fought
+    import time as _tt, subprocess as _sp5
+    try:
+        _me = _sp5.run(['git', 'rev-parse', '--short', 'HEAD'], capture_output=True, cwd=BASE_DIR).stdout.decode().strip()
+    except Exception:
+        _me = 'unknown'
     pf = os.path.join(BASE_DIR, '.tick.pid')
     while True:  # BELL-RETRY v85.55: a doorbell that gives up after one knock is not a doorbell
         own = False
@@ -1485,26 +1500,30 @@ def _tick_loop():  # WATCH-HOOK v85.53 (heartbeat v85.59): the bell is owned by 
                 own = True
             else:
                 age = _tt.time() - os.stat(pf).st_mtime
-                txt = open(pf).read().strip()
+                raw = open(pf).read().strip()
+                pid_s = raw.split('|')[0]
+                ver_s = raw.split('|')[1] if '|' in raw else ''
                 dead = False
                 try:
-                    os.kill(int(txt), 0)
+                    os.kill(int(pid_s), 0)
                 except Exception:
                     dead = True
-                if dead or age > 30:  # BELL-HEARTBEAT v85.59: an orphan from an old commit never refreshes the stamp, so the living inherit the bell
+                if dead or age > 30 or ver_s != _me:  # BELL-VERSION v85.64: a living owner running old code is still the wrong owner - the hash decides, not the pulse alone
                     own = True
         except Exception:
             own = True
         if own:
             try:
-                open(pf, 'w').write(str(os.getpid()))
+                open(pf, 'w').write('%s|%s' % (os.getpid(), _me))
             except Exception:
                 pass
             break
         _tt.sleep(10)
     while True:
         try:
-            os.utime(pf, None)
+            if open(pf).read().strip().split('|')[0] != str(os.getpid()):  # BELL-ABDICATE v85.64: an ousted owner stops beating on its next breath - abdication, not rivalry
+                return
+            os.utime(pf, None)  # BELL-HEARTBEAT v85.59: the stamp is refreshed every beat - a pulse, not a lock; the witness of the rewritten block rides the line that is the heartbeat
         except Exception:
             pass
         try:
@@ -4405,6 +4424,9 @@ def _selftest(root):
     ck('S406 a human-shaped filename is the last witness when every eye is silent', _src.count(chr(35)+' STEM-FALLBACK v85.61') >= 2)
     ck('S407 every done deed leaves its line, books or no books', ('def _safe_rename_ledger(' in _src) and ('def _safe_repath_ledgers(' in _src) and _src.count('_safe_rename_ledger(') >= 2)
     ck('S408 the diagnostic names its own path or confesses the whole list', ('expanduser' in open(os.path.join(BASE_DIR, 'archive', 'rendiag.py')).read()) and ('sys.path was' in open(os.path.join(BASE_DIR, 'archive', 'rendiag.py')).read()))
+    ck('S409 the bell belongs to the newest living code, and an ousted owner abdicates', (chr(35)+' BELL-VERSION v85.64') in _src and (chr(35)+' BELL-ABDICATE v85.64') in _src and (chr(35)+' BELL-HEARTBEAT v85.59') in _src)
+    ck('S410 a drained queue always ends with a spoken total', (chr(35)+' SERVICE-RECEIPT v85.64') in _src and (chr(35)+' RECEIPT-INDENT v85.65') in _src)
+    ck('S411 every pdf has a native text eye that needs no index and no pixels', (chr(35)+' PDF-PDFKIT v85.65') in _src and ('PDFDocument' in _src))
     ck('S402 the master'+chr(39)+'s Finder selection is drained by the bell, in the background, each beat', (chr(35)+' SERVICE-QUEUE v85.58') in _src and ('.rename_queue' in _src))
     ck('S401 the butler'+chr(39)+'s eyes open in public, one honest row per file', ('def rename_diag(' in _src) and (chr(35)+' RENAME-DIAG v85.58') in _src and os.path.exists(os.path.join(BASE_DIR, 'archive', 'rendiag.py')))  # S401 repinned v85.59: the diagnostic lives where untracked survivors live
     ck('S400 casing is a property of the name, not of the ceremony'+chr(39)+'s memory', (chr(35)+' CASE-SWEEP v85.57') in _src and ('def _case_sweep(' in _src))
