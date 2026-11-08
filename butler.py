@@ -395,7 +395,7 @@ def extract_text_ocr(p):  # PARAM-FIX v85.89: one parameter, one name - for week
             return ''
     try:
         with OCR_SEM:
-            r = subprocess.run([OCRBIN, _tgt], capture_output=True, text=True, timeout=25)  # OCR-CAP v85.16: twenty-five seconds of patience per paper, never more
+            r = subprocess.run([OCRBIN, _tgt, 'stdout'], capture_output=True, text=True, timeout=25)  # OCR-CAP v85.16: twenty-five seconds of patience per paper, never more  # OCR-STDOUT v85.95: tesseract needs an outputbase and stdout is the word - for months the eye handed an image and no destination, and read usage text
         return r.stdout or ''
     except Exception:
         return ''
@@ -1543,11 +1543,14 @@ def _eyename_of(p, trace=False, log=None):  # EYES-IN-SWEEP v85.90: the OCR-back
  except Exception:
   t = ''
  fl = ''
- for ln in t.split('\n'):
-  ln = ln.strip()
-  if ln:
-   fl = ln
-   break
+ _lines = [l.strip() for l in t.split('\n') if l.strip()][:12]  # NAME-SCAN v85.95: a name may sit below a title line or a photo caption - scan the head, not just the first breath
+ for _ln in _lines:
+     _cut = re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:\-]?', _ln, flags=re.I)[0].strip()
+     _wsc = _cut.split()
+     if 2 <= len(_wsc) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _wsc) and (_canonical_person_name(_cut) or ''):
+         fl = _cut
+         break
+ if not fl and _lines: fl = _lines[0]
  fl = re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:\-]?', fl, flags=re.I)[0].strip()  # LINE-CUT v85.90: a first line that ends in a phone still begins with a human
  ws = fl.split()
  if 2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws):
@@ -1655,7 +1658,7 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
     return
    except Exception as _se: log('⚠️ service rename failed: %s | %r' % (x, _se)); return
   v = ''
-  try: v = heuristic_name(p) or _name_from_first_line(p)
+  try: v = heuristic_name(p) or _name_from_first_line(p) or _eyename_of(p)  # NAME-SCAN-SERVICE v85.95: the right-click borrows the scanning eye and its cache, so a photo-headed CV is named from its own head
   except Exception: v = ''
   if not v: log('🧭 service: %s | every eye silent (text, word, ocr) - vision or teaching needed' % x); return
   c = ''
@@ -4704,6 +4707,8 @@ def _selftest(root):
     ck('S434 no right-click dies without a line in the tower', (chr(35)+' DRAIN-ARMOR v85.92') in _src and ('service crashed on' in _src))
     ck('S435 the mirror carries the dump and the primitives, so reading precedes every edit', ('MIRROR-TOOLS v85.93' in open(os.path.join(BASE_DIR, 'ship.sh')).read()))
     ck('S436 a bad lap dies childless, before any file is written', ('def preflight(' in open(os.path.join(BASE_DIR, 'archive', 'patchlib.py')).read()) and ('def write_raw(' in open(os.path.join(BASE_DIR, 'archive', 'patchlib.py')).read()))
+    ck('S437 the capped eye names its destination, and reads', (chr(35)+' OCR-STDOUT v85.95') in _src and (chr(39)+'stdout'+chr(39) in _src))
+    ck('S438 a name below the first line is still a name', (chr(35)+' NAME-SCAN v85.95') in _src and (chr(35)+' NAME-SCAN-SERVICE v85.95') in _src)
     ck('S415 the text layer is readable by the standard library alone, permissions or no permissions', (chr(35)+' PDF-PURE v85.70') in _src and ('def _pdf_pure_text(' in _src) and ('zlib' in _src))
     ck('S416 a silent sweep names the guard that silenced each file', (chr(35)+' SWEEP-TRACE v85.70') in _src and ('trace=False' in _src))
     ck('S417 the pure eye wears every decoder a producer wears, and the venv reader speaks CID', (chr(35)+' PDF-PURE-HARD v85.71') in _src and ('a85decode' in _src) and (chr(35)+' PY-PYPDF v85.72') in _src)
