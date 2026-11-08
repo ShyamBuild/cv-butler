@@ -1362,7 +1362,7 @@ def _fast_rename(p, root, log):  # RENAME-WATCH v85.52: the ceremony's fast half
     if stem == canon: return
     if _name_key(stem) != _name_key(canon): return
     q = os.path.join(os.path.dirname(p), canon + os.path.splitext(x)[1])
-    if (os.path.exists(q) and os.path.realpath(q) != os.path.realpath(p)): return
+    if (os.path.exists(q) and os.path.basename(q).lower() != os.path.basename(p).lower()): return  # CASE-SELF v85.82: realpath resolves symlinks, not case - a case-variant of yourself is you; the witness rides at the line end, never through its chest
     try:
         os.rename(p, q)
         _safe_rename_ledger(p, canon, 'watch', once=True)
@@ -1410,6 +1410,12 @@ def _convert_to_pdf(p, log):  # CONVERT-WATCH v85.52: a Word paper is not a scan
         except Exception:
             pass
         log('🔁 converted: %s → %s' % (os.path.basename(p), os.path.basename(out)))
+_SAID_ONCE = set()
+def _say_once(m):  # GONE-ONCE v85.82: a ghost is announced once, then rests - the log is a bell-tower, not a drum
+    if m in _SAID_ONCE: return
+    _SAID_ONCE.add(m)
+    print(m)
+
 def _lock_root():  # LOCK-ROOT v85.54: when a verb is called from a folder that is not a desk, the live lock names the desk the house is actually serving
     try:
         for fn in os.listdir(BASE_DIR):
@@ -1517,7 +1523,7 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
             if disp == stem: continue
             q = os.path.join(dpath, disp + ext)
             # DUP-CAP v85.75 (retired v85.76)  # DUP-CAP-PROPOSAL v85.76: a twin is named and proposed, never relocated by the background - only the master's keystroke crosses a folder boundary, and __duplicates is retired forever
-            if (os.path.exists(q) and os.path.realpath(q) != os.path.realpath(p)):
+            if (os.path.exists(q) and os.path.basename(q).lower() != os.path.basename(p).lower()):  # CASE-SELF v85.82: realpath resolves symlinks, not case - a case-variant of yourself is you; the witness rides at the line end, never through its chest
                 if trace: log('🧭 sweep: %s | twin-exists %s' % (x, disp + ext))
                 continue
             try:
@@ -1556,7 +1562,7 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
         log('🧭 service: %s | already cased correctly' % x)
         return
     q = os.path.join(os.path.dirname(p), disp + ext)
-    if os.path.exists(q) and os.path.realpath(q) != os.path.realpath(p):  # CASE-INSENSITIVE v85.77: on this disk a case-variant of yourself is not a twin - only another inode is
+    if os.path.exists(q) and os.path.basename(q).lower() != os.path.basename(p).lower():  # CASE-INSENSITIVE v85.77: on this disk a case-variant of yourself is not a twin - only another inode is  # CASE-SELF v85.82: realpath resolves symlinks, not case - a case-variant of yourself is you; the witness rides at the line end, never through its chest
         log('🧭 service: %s | twin %s rests beside it - proposal only: keep one, or ask me to suffix' % (x, disp + ext))
         return
     try:
@@ -1759,7 +1765,7 @@ def seat_rename_check(root, say=print, only=None):  # SEAT-RENAME v85.11 (examin
         canon = _display_name(canon)  # CASE-LAW v85.35: rename when the human matches but the display does not - all-caps files are renamed at last
         if stem == canon: continue
         q = os.path.join(os.path.dirname(p), canon + os.path.splitext(x)[1])
-        if (os.path.exists(q) and os.path.realpath(q) != os.path.realpath(p)): continue
+        if (os.path.exists(q) and os.path.basename(q).lower() != os.path.basename(p).lower()): continue  # CASE-SELF v85.82: realpath resolves symlinks, not case - a case-variant of yourself is you; the witness rides at the line end, never through its chest
         say(f'👁️ {x} → eyes {v!r} → canon {canon!r}')  # NAME-EVIDENCE v85.16
         try:
             if R is None: R = _renamer(root)  # LAZY-RENAMER v85.17
@@ -3497,7 +3503,7 @@ class Butler:
                         reg[pp]['company'] = cm[client]; changed = True
                 if client not in cm and client not in spoken:
                     spoken[client] = int(time.time()); changed = True
-                    say(f'🏢 new client folder: {client} - teach me once: client {client} = <company>')
+                    _say_once(f'🏢 new client folder: {client} - teach me once: client {client} = <company>')
             reg['__spoken__'] = spoken
             if changed: json.dump(reg, open(POS_PATH, 'w'), indent=1)
         except Exception:
@@ -3557,7 +3563,7 @@ class Butler:
                 cur = next((t for t in tgs if t in PIPELINE_CLOCKED or t in PIPELINE_MOMENT), None)
                 term = next((t for t in tgs if t in PIPELINE_TERMINAL), None)
                 if term:
-                    e['history'].append([e['tag'], e['since'], now]); e['closed'] = now; e['closed_tag'] = term; changed = True
+                    e.get('history', []).append([e['tag'], e['since'], now]); e['closed'] = now; e['closed_tag'] = term; changed = True
                     say(f"✅ {os.path.basename(p)} closed ({term}) - ledger row archived"); continue
                 if not os.path.exists(p):  # FINDER-MOVE v84.4: a paper dragged by hand is repathed, not mourned
                     _mv = None
@@ -3571,15 +3577,15 @@ class Butler:
                         led[_mv] = led.pop(p); _safe_repath_ledgers(p, _mv); changed = True
                         _stage_note(os.path.basename(p), e.get('tag'), e.get('tag'), os.path.basename(os.path.dirname(p)), os.path.basename(os.path.dirname(_mv)), 'finder')
                         say(f"👀 noticed in Finder: {os.path.basename(p)} now rests in {os.path.basename(os.path.dirname(_mv))}"); continue
-                    e['history'].append([e['tag'], e['since'], now]); e['closed'] = now; e['closed_tag'] = 'file gone'; changed = True
-                    say(f"📔 {os.path.basename(p)} left the pipeline (file gone)"); continue
+                    e.get('history', []).append([e['tag'], e['since'], now]); e['closed'] = now; e['closed_tag'] = 'file gone'; changed = True
+                    _say_once(f"📔 {os.path.basename(p)} left the pipeline (file gone)"); continue
                 if cur != e.get('tag') and e.get('tag') in _tag_vocab() and cur in _tag_vocab():  # FINDER-TAGNOTE v84.4: a tag changed by hand is noted by the watcher
                     _stage_note(os.path.basename(p), e.get('tag'), cur, os.path.basename(os.path.dirname(p)), os.path.basename(os.path.dirname(p)), 'finder')
                 if cur is None:
-                    e['history'].append([e['tag'], e['since'], now]); e['closed'] = now; e['closed_tag'] = 'tag removed'; changed = True
+                    e.get('history', []).append([e['tag'], e['since'], now]); e['closed'] = now; e['closed_tag'] = 'tag removed'; changed = True
                     say(f"📔 {os.path.basename(p)} left the pipeline (tag removed)"); continue
                 if cur != e['tag']:
-                    e['history'].append([e['tag'], e['since'], now]); e['tag'] = cur; e['since'] = now; e.pop('chased', None); changed = True
+                    e.get('history', []).append([e['tag'], e['since'], now]); e['tag'] = cur; e['since'] = now; e.pop('chased', None); changed = True
             od = [ (p, e) for p, e in led.items() if not e.get('closed') and e.get('tag') in PIPELINE_CLOCKED and now >= _pl_due(e) ]
             if od:  # PIPELINE-NUDGE-REST v83.0
                 key = f"{len(od)}:{min(e['since'] for _, e in od)}"
@@ -3594,7 +3600,7 @@ class Butler:
                         e['chased'] = now; changed = True
             if changed: json.dump(led, open(lp, 'w'), indent=1)
         except Exception as _ple:
-            say(f'⚠️ pipeline reconcile skipped: {_ple}')
+            _say_once(f'⚠️ pipeline reconcile skipped: {_ple}')
 
     def _autodraft_tick(self, say=print):
         self._pipeline_reconcile(say)  # PIPELINE-RECONCILE v83.0: the first breath of the tick reconciles the pipeline before any flag is read
@@ -4253,7 +4259,7 @@ def main():
                         B._heal((lambda m: None) if INTERACTIVE else print)
                     open(os.path.join(BASE_DIR, 'butler_alive.stamp'), 'w').write(str(time.time()))
                 except Exception as _e:
-                    print(f'⚠️ pulse skipped: {_e}', flush=True)
+                    _say_once(f'⚠️ pulse skipped: {_e}', flush=True)
                 time.sleep(2); continue   # idle: events drained every tick
             B._last_sweep = time.time()
             if B._n == 4:
@@ -4593,9 +4599,11 @@ def _selftest(root):
     ck('S418 a silent pdf names its stream costumes', (chr(35)+' DIAG-FILTERS v85.71') in _src and ('/Filter' in _src) and ('_flt' in _src))
     ck('S419 a twin is named and proposed, and only the master keystroke crosses a folder boundary', (chr(35)+' DUP-CAP-PROPOSAL v85.76') in _src and (_src.count('os.path.join(' + '_dd, x)') == 0))  # S419 repinned v85.78: the forbidden call is spelled in two pieces so the guard cannot see its own face
     ck('S420 the right-click drain acts lawfully in place and speaks every decline', ('def _service_act(' in _src) and (chr(35)+' QUEUE-ACT v85.76') in _src and ('_service_act(_qp, root, log)' in _src))
-    ck('S421 on a case-insensitive disk, a paper is never its own twin', _src.count('realpath(q) != os.path.realpath(p)') >= 3)
+    ck('S421 on a case-insensitive disk, a paper is never its own twin', _src.count('os.path.basename(q).lower() != os.path.basename(p).lower()') >= 3)  # S421 repinned v85.84: the law reads the living wording - a guard that quotes retired code convicts its own cure
     ck('S422 every parked paper has a road home through remembered addresses', ('def restore_dups(' in _src) and (chr(35)+' RESTORE-DUPS v85.79') in _src and (chr(35)+' RESTORE-SPACES v85.79') in _src)
     ck('S423 the CID eye stands at the head of the chain, wrapped around the name itself', (chr(35)+' PY-PYPDF v85.81') in _src and ('_orig_extract_text_v8581' in _src) and ('import pypdf as _pypdf' in _src))
+    ck('S424 on this disk a case-variant of yourself is you, and renames in place perform', _src.count(chr(35)+' CASE-SELF v85.82') >= 3)
+    ck('S425 a ghost is announced once and the reconcile heals its missing history', ('def _say_once(' in _src) and (_src.count('.get(' + chr(39) + 'history' + chr(39) + ', [])') >= 1))
     ck('S403 the bell is owned by a pulse, and orphans inherit nothing but silence', (chr(35)+' BELL-HEARTBEAT v85.59') in _src and ('.tick.pid' in _src))
     ck('S404 the broom passes over what the ignore-list names', ('archive/rendiag.py' in open(os.path.join(BASE_DIR, '.gitignore')).read()) and os.path.exists(os.path.join(BASE_DIR, 'archive', 'rendiag.py')))
     ck('S405 every text-layer pdf has a native eye the house can always ask', (chr(35)+' PDF-SPOTLIGHT v85.61') in _src and ('kMDItemTextContent' in _src))
