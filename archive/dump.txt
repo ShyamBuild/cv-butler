@@ -1,0 +1,665 @@
+🔒 live lock: butler_05428046.lock -> 9497|/Users/apple/Downloads/Sunsoft Technology/09 MBL/JD-MBL-Coca-cola}_-_Asst.Mgr__Dy__Mgr_Manager_Production_and_maintenance-Krones_{Beverage_industry}_for_DHAULANA,_Location_
+==== _service_act ====
+def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawful and local  # DRAIN-ARMOR v85.92: no path returns silent and a crash logs itself
+ x = os.path.basename(p)
+ try:
+  ext = os.path.splitext(x)[1].lower()
+  if ext in ('.docx', '.doc', '.rtf', '.png', '.jpg', '.jpeg', '.heic'): _convert_to_pdf(p, log); return
+  if ext != '.pdf': log('🧭 service: %s | not a paper kind I act on' % x); return
+  stem = os.path.splitext(x)[0]
+  try:
+   if _jd_like_name(x) or _portal_name(x): log('🧭 service: %s | masked (jd/portal) - name kept by law' % x); return
+  except Exception: log('🧭 service: %s | mask check failed - left as is' % x); return
+  disp = _display_name(stem)
+  q = os.path.join(os.path.dirname(p), disp + ext)
+  if disp != stem and not (os.path.exists(q) and os.path.basename(q).lower() != x.lower()):  # CASE-SELF v85.82: a case-variant of yourself is you
+   try:
+    os.rename(p, q); log('✏️ service renamed: %s → %s' % (x, disp + ext))
+    try:
+     _safe_rename_ledger(p, disp, 'service', once=True); _safe_repath_ledgers(p, q)
+    except Exception: pass
+    return
+   except Exception as _se: log('⚠️ service rename failed: %s | %r' % (x, _se)); return
+  v = ''
+  try: v = heuristic_name(p) or _name_from_first_line(p)
+  except Exception: v = ''
+  if not v: log('🧭 service: %s | every eye silent (text, word, ocr) - vision or teaching needed' % x); return
+  c = ''
+  try: c = _canonical_person_name(v) if v else ''
+  except Exception: c = ''
+  if not c: log('🧭 service: %s | eyes read text but no human name in it (first line: %s)' % (x, (v or '')[:40])); return
+  d2 = _display_name(c)
+  if d2 == stem: log('🧭 service: %s | already named correctly by the eyes' % x); return
+  q2 = os.path.join(os.path.dirname(p), d2 + ext)
+  if os.path.exists(q2) and os.path.basename(q2).lower() != x.lower():  # CASE-INSENSITIVE v85.77: a held name is a proposal, never a deed
+   log('🧭 service: %s | eyes say %s but another paper holds that name - proposal only' % (x, d2)); return
+  _sn = _stem_norm(stem); _w0 = _sn.split()
+  if _name_key(_sn) != _name_key(d2) and 2 <= len(_w0) <= 4: log('🧭 service: %s | eyes say %s, a different human - proposal only, never a guess' % (x, d2)); return
+  try:
+   os.rename(p, q2); log('✏️ service renamed (eyes): %s → %s' % (x, d2 + ext))  # SERVICE-EYES v85.85: an improper name yields to the paper's own witness, in place
+   try:
+    _safe_rename_ledger(p, d2, 'service-eyes', once=True); _safe_repath_ledgers(p, q2)
+   except Exception: pass
+  except Exception as _se2: log('⚠️ service eyes-rename failed: %s | %r' % (x, _se2))
+ except Exception as _ce:
+  log('⚠️ service crashed on %s: %r' % (os.path.basename(p), _ce))  # DRAIN-ARMOR v85.92
+
+==== _case_sweep ====
+def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a property of the name, not of the ceremony's memory  # SWEEP-TRACE v85.70: with trace on, every file speaks its verdict, so a silent sweep names the guard that silenced it
+    try:
+        dirs = [root] + [os.path.join(root, s) for s in os.listdir(root) if os.path.isdir(os.path.join(root, s)) and not s.startswith('.') and not s.startswith('__')]  # DIRS-ALL v85.69: every immediate folder of the chair is swept
+    except Exception:
+        dirs = [root]
+    for dpath in dirs:
+        try:
+            names = os.listdir(dpath)
+        except Exception:
+            continue
+        for x in names:
+            p = os.path.join(dpath, x)
+            if not os.path.isfile(p):
+                if trace: log('🧭 sweep: %s | not-a-file' % x)
+                continue
+            ext = os.path.splitext(x)[1].lower()
+            if ext not in ('.pdf', '.docx', '.doc', '.rtf'): continue
+            stem = os.path.splitext(x)[0]
+            try:
+                if _jd_like_name(x) or _portal_name(x):
+                    if trace: log('🧭 sweep: %s | masked (jd/portal)' % x)
+                    continue
+            except Exception:
+                continue
+            _en = _eyename_of(p)  # EYES-IN-SWEEP v85.90: the background sweep carries the same OCR eye the diagnostic proved, in place and cached, so the main butler renames what the table renames
+            if _en and _en != stem:
+             _sn = _stem_norm(stem)
+             _w0 = _sn.split()
+             _shape_ok = 2 <= len(_w0) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _w0)
+             if not _shape_ok or _name_key(_sn) == _name_key(_en):
+              _q3 = os.path.join(dpath, _en + ext)
+              if os.path.exists(_q3) and os.path.basename(_q3).lower() != x.lower():
+               if trace: log('🧭 sweep: %s | eyes say %s but another paper holds that name - proposal only' % (x, _en))
+              else:
+               try:
+                os.rename(p, _q3)
+                log('✏️ sweep renamed (eyes): %s → %s' % (x, _en + ext))
+                try:
+                 _safe_rename_ledger(p, _en, 'sweep-eyes', once=True)
+                 _safe_repath_ledgers(p, _q3)
+                except Exception:
+                 pass
+                continue
+               except Exception as _se3:
+                if trace: log('⚠️ sweep eyes-rename failed: %s | %r' % (x, _se3))
+            ws = stem.split()
+            if not (2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws)):
+                if trace: log('🧭 sweep: %s | not-human-shape' % x)
+                continue
+            disp = _display_name(stem)
+            if disp == stem: continue
+            q = os.path.join(dpath, disp + ext)
+            # DUP-CAP v85.75 (retired v85.76)  # DUP-CAP-PROPOSAL v85.76: a twin is named and proposed, never relocated by the background - only the master's keystroke crosses a folder boundary, and __duplicates is retired forever
+            if (os.path.exists(q) and os.path.basename(q).lower() != os.path.basename(p).lower()):  # CASE-SELF v85.82: realpath resolves symlinks, not case - a case-variant of yourself is you; the witness rides at the line end, never through its chest
+                if trace: log('🧭 sweep: %s | twin-exists %s' % (x, disp + ext))
+                continue
+            try:
+                os.rename(p, q)
+                log('✏️ case sweep: %s → %s' % (x, disp + ext))
+                try:
+                    _safe_rename_ledger(p, disp, 'sweep', once=True)
+                    _safe_repath_ledgers(p, q)
+                except Exception:
+                    pass
+            except Exception as _ce:
+                if trace: log('🧭 sweep: %s | rename-failed %r' % (x, _ce))
+
+==== _event_tick ====
+def _event_tick(root, log=print):  # RENAME-WATCH v85.52 + CONVERT-WATCH v85.52: directory mtimes are the doorbells - one stat per folder per heartbeat, no hashing, no OCR, no pings; the house rests between rings
+    try:
+        _qf = os.path.join(BASE_DIR, '.rename_queue')  # SERVICE-QUEUE v85.58: the master's Finder selection arrives as lines in a queue; the bell drains it each beat and runs the whole arrival pipeline in the background, no terminal opened
+        if os.path.exists(_qf):
+            try:
+                _qs = [l.strip() for l in open(_qf) if l.strip()]
+                os.remove(_qf)
+                for _qp in _qs:
+                    if not os.path.isfile(_qp): continue
+                    log('🖱 service queued: %s' % os.path.basename(_qp))
+                    _ext = os.path.splitext(_qp)[1].lower()
+                    if _ext in ('.docx', '.doc', '.rtf', '.png', '.jpg', '.jpeg', '.heic'): _convert_to_pdf(_qp, log)
+                    _service_act(_qp, root, log)  # QUEUE-ACT v85.76: the drain acts lawfully in place - renames and conversions stay inside their own folder, every outcome spoken
+                if _qs: log('✅ service batch done: %d paper(s) - deeds above' % len(_qs))  # SERVICE-RECEIPT v85.64  # RECEIPT-INDENT v85.65: the total stands inside the try body among the deeds it counts - each name wears its own hash, because the census reads addresses, not intentions
+            except Exception:
+                pass
+        _case_sweep(root, log)  # CASE-SWEEP v85.57: the doorbell sweeps casing every beat, so a shout never outlives its arrival
+        dirs = [root] + [os.path.join(root, s) for s in os.listdir(root) if os.path.isdir(os.path.join(root, s)) and not s.startswith('.') and not s.startswith('__')]  # DIRS-ALL v85.69: every immediate folder of the chair is swept - the stage folders hold every seated paper, and a bell that walks only the root walks an empty hall
+    except Exception:
+        dirs = [root]
+    for dpath in dirs:
+        try:
+            mt = os.stat(dpath).st_mtime
+        except Exception:
+            continue
+        if _EVT.get(dpath) == mt: continue
+        _EVT[dpath] = mt
+        try:
+            names = os.listdir(dpath)
+        except Exception:
+            continue
+        for x in names:
+            p = os.path.join(dpath, x)
+            if not os.path.isfile(p): continue
+            ext = os.path.splitext(x)[1].lower()
+            if ext in ('.docx', '.doc', '.rtf', '.png', '.jpg', '.jpeg', '.heic'):
+                _convert_to_pdf(p, log)
+            elif ext == '.pdf':
+                _fast_rename(p, root, log)
+
+==== _tick_loop ====
+def _tick_loop():  # WATCH-HOOK v85.53 (version v85.64): the bell is owned by the newest living code - the stamp carries a git hash, and a stale owner is inherited around, never fought
+    import time as _tt, subprocess as _sp5
+    try:
+        _me = _sp5.run(['git', 'rev-parse', '--short', 'HEAD'], capture_output=True, cwd=BASE_DIR).stdout.decode().strip()
+    except Exception:
+        _me = 'unknown'
+    pf = os.path.join(BASE_DIR, '.tick.pid')
+    while True:  # BELL-RETRY v85.55: a doorbell that gives up after one knock is not a doorbell
+        own = False
+        try:
+            if not os.path.exists(pf):
+                own = True
+            else:
+                age = _tt.time() - os.stat(pf).st_mtime
+                raw = open(pf).read().strip()
+                pid_s = raw.split('|')[0]
+                ver_s = raw.split('|')[1] if '|' in raw else ''
+                dead = False
+                try:
+                    os.kill(int(pid_s), 0)
+                except Exception:
+                    dead = True
+                if dead or age > 30 or ver_s != _me:  # BELL-VERSION v85.64: a living owner running old code is still the wrong owner - the hash decides, not the pulse alone
+                    own = True
+        except Exception:
+            own = True
+        if own:
+            try:
+                open(pf, 'w').write('%s|%s' % (os.getpid(), _me))
+            except Exception:
+                pass
+            break
+        _tt.sleep(10)
+    while True:
+        try:
+            if open(pf).read().strip().split('|')[0] != str(os.getpid()):  # BELL-ABDICATE v85.64: an ousted owner stops beating on its next breath - abdication, not rivalry
+                return
+            os.utime(pf, None)  # BELL-HEARTBEAT v85.59: the stamp is refreshed every beat - a pulse, not a lock; the witness of the rewritten block rides the line that is the heartbeat
+        except Exception:
+            pass
+        try:
+            _event_tick((desk_load() or {}).get('primary') or os.getcwd(), _tick_log)
+        except Exception:
+            pass
+        _tt.sleep(5)
+
+==== _tick_log ====
+def _tick_log(msg):  # BELL-TOWER v85.55: the bell keeps its own book - one timestamped line per deed, readable from any folder, independent of whichever process owns the key
+    try:
+        import time as _t2
+        open(os.path.join(BASE_DIR, 'tick.log'), 'a').write('%s %s\n' % (_t2.strftime('%H:%M:%S'), msg))
+    except Exception:
+        pass
+
+==== extract_text_ocr ====
+def extract_text_ocr(p):  # PARAM-FIX v85.89: one parameter, one name - for weeks every eye inside this function spoke p while the signature said fp, and the NameError swallowed the whole chain
+    try:  # PY-PYPDF v85.72: the venv's own reader, once installed, speaks every pdf dialect including CID glyph maps - the true cure for a silent text layer
+        import pypdf as _pypdf
+        _pr = _pypdf.PdfReader(p)
+        _ptx = '\n'.join((pg.extract_text() or '') for pg in _pr.pages)
+        if _ptx.strip(): return _ptx
+    except Exception:  # PY-PYPDF indent v85.73: an except stands at its try's column, never at the body's - a door hung inside the room it locks
+        pass
+    _wt = _word_text(p)  # TEXT-DOCX v85.55: head eye - if the native reader speaks, the pdf eyes rest
+    if _wt.strip(): return _wt
+    _pt = _pdf_pure_text(p)  # PDF-PURE v85.70: the permission-free eye is asked before any framework that macOS may silently refuse
+    if len(_pt) > 40 and re.search(r'[A-Za-z]{4,}', _pt): return _pt
+    if os.path.splitext(p)[1].lower() == '.pdf':  # PDF-PDFKIT v85.65: when the library is dead and Spotlight has no index, PDFKit reads the text layer natively through JavaScript for Automation - no libraries, no pixels, no index required
+        try:
+            import subprocess as _sp6
+            _pj = p.replace('\\', '\\\\').replace('"', '\\"')
+            _js = 'ObjC.import("PDFKit"); ObjC.import("Quartz"); var d = $.PDFDocument.alloc.initWithURL($.NSURL.fileURLWithPath("' + _pj + '")); (d.isNil() || !d.string) ? "" : d.string.js'
+            _r6 = _sp6.run(['osascript', '-l', 'JavaScript', '-e', _js], capture_output=True, timeout=60)
+            _s6 = _r6.stdout.decode('utf-8', 'ignore')
+            if _s6.strip(): return _s6
+        except Exception:
+            pass
+    if os.path.splitext(p)[1].lower() == '.pdf':  # PDF-SPOTLIGHT v85.61: the library reader is dead on this machine, but macOS already indexes every text-layer pdf - Spotlight's kMDItemTextContent is the native eye, milliseconds and no pixels
+        try:
+            import subprocess as _sp4
+            _r4 = _sp4.run(['mdls', '-raw', '-name', 'kMDItemTextContent', p], capture_output=True, timeout=30)
+            _s4 = _r4.stdout.decode('utf-8', 'ignore')
+            if _s4.strip() and _s4.strip() != '(null)': return _s4
+        except Exception:
+            pass
+    if not os.path.exists(OCRBIN): return ""
+    _tgt = p
+    if os.path.splitext(_tgt)[1].lower() == '.pdf':  # OCR-RASTER v85.89: tesseract reads ink, not documents - sips renders the first page into a png the eye can hold, no poppler required
+        try:
+            import tempfile as _tf
+            _png = os.path.join(_tf.gettempdir(), 'cvocr_%d.png' % os.getpid())
+            _rs = subprocess.run(['sips', '-s', 'format', 'png', _tgt, '--out', _png], capture_output=True, timeout=90)
+            if _rs.returncode != 0 or not os.path.exists(_png): return ''
+            _tgt = _png
+        except Exception:
+            return ''
+    try:
+        with OCR_SEM:
+            r = subprocess.run([OCRBIN, _tgt], capture_output=True, text=True, timeout=25)  # OCR-CAP v85.16: twenty-five seconds of patience per paper, never more
+        return r.stdout or ''
+    except Exception:
+        return ''
+    except Exception:
+        return ""
+
+==== _name_from_first_line ====
+def _name_from_first_line(p):  # FIRST-LINE v85.20: when both developed eyes stay silent, the paper's own first line speaks in title case - the humblest eye, and the fastest
+    try:
+        t = _word_text(p) or extract_text(p) or ''
+        if not t.strip():
+            try: t = extract_text_ocr(p) or ''  # FIRST-LINE v85.20 (ocr-fallback v85.22): a text layer that refuses to open yields to the capped pixels
+            except Exception: t = ''
+    except Exception:
+        return ''
+    for ln in t.split('\n'):
+        ln = ln.strip()
+        if not ln: continue
+        if any(ch.isdigit() for ch in ln): continue
+        if '@' in ln: continue
+        ws = ln.split()
+        if 2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws):
+            return ' '.join(w.capitalize() for w in ws)
+        return ''
+    return ''
+
+==== heuristic_name ====
+def heuristic_name(text):
+    for line in [l.strip() for l in text.split('\n') if l.strip()][:8]:
+        run = leading_name_run(compact_text(line))
+        if 2 <= len(run) <= 4 and sum(len(t) for t in run) >= 6:
+            j = ' '.join(run)
+            if j.isupper() or j.istitle(): return j
+    return None
+
+==== _canonical_person_name ====
+def _canonical_person_name(s):  # CANON-FORM v82.0: a pipeline name carries the human, not the paper's shout
+    t = (s or '')
+    t = re.sub(r'\b\d{1,2}[./-]\d{1,2}[./-]\d{2,4}\b', ' ', t)
+    t = re.sub(r'\b(20\d{2}|19\d{2})\b', ' ', t)
+    t = re.sub(r'\bcv\b', ' ', t, flags=re.I)
+    t = re.sub(r'\s+', ' ', t).strip(' -_.')
+    if t and t.isupper(): t = t.title()
+    return t
+
+==== _display_name ====
+def _display_name(s):  # CASE-LAW v85.35: the original butler's rule returns - a shout is not a name: RAHUL KUMAR becomes Rahul Kumar, single letters stay capital, short initial-blocks keep their form
+    out = []
+    for w in str(s).split():
+        if len(w) == 1: out.append(w.upper())
+        elif w.isalpha() and w.isupper() and len(w) <= 3: out.append(w)
+        elif w.isalpha() and (w.isupper() or w.islower()): out.append(w.capitalize())
+        else: out.append(w)
+    return ' '.join(out)
+
+==== _fast_rename ====
+def _fast_rename(p, root, log):  # RENAME-WATCH v85.52: the ceremony's fast half in the background - text eyes, first-line eye, CASE-LAW; the expensive pupil stays with the chair's up
+    x = os.path.basename(p)
+    try:
+        if _jd_like_name(x) or _portal_name(x): return
+    except Exception:
+        return
+    stem = os.path.splitext(x)[0]
+    v = heuristic_name(p) or _name_from_first_line(p)
+    if not v:  # STEM-FALLBACK v85.61: the fast half trusts a human-shaped filename when every eye is silent
+        _ws = os.path.splitext(x)[0].split()
+        if 2 <= len(_ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _ws):
+            v = os.path.splitext(x)[0]
+    if not v: return
+    canon = _canonical_person_name(v)
+    if not canon: return
+    canon = _display_name(canon)
+    if stem == canon: return
+    if _name_key(_stem_norm(stem)) != _name_key(canon): return  # STEM-NORM v85.90: a suffix is not a surname
+    q = os.path.join(os.path.dirname(p), canon + os.path.splitext(x)[1])
+    if (os.path.exists(q) and os.path.basename(q).lower() != os.path.basename(p).lower()): return  # CASE-SELF v85.82: realpath resolves symlinks, not case - a case-variant of yourself is you; the witness rides at the line end, never through its chest
+    try:
+        os.rename(p, q)
+        _safe_rename_ledger(p, canon, 'watch', once=True)
+        _safe_repath_ledgers(p, q)
+        log('✏️ watch renamed: %s → %s' % (x, os.path.basename(q)))
+    except Exception:
+        pass
+
+==== rename_diag ====
+def rename_diag(paths, say=print, deep=False):  # RENDIAG-DEEP v85.86: opt-in depth - a silent row may summon the capped OCR eye for its first-line name, because tuning needs the datum the fast table refuses to pay for  # RENAME-DIAG v85.58: the butler opens its eyes in public - per file, every reader's yield, every eye's verdict and the decision with its reason, so a miss is a datum and not a mystery
+    for p in paths:
+        x = os.path.basename(p)
+        stem = os.path.splitext(x)[0]
+        try:
+            jd = 'jd' if _jd_like_name(x) else ('portal' if _portal_name(x) else '')
+        except Exception:
+            jd = '?'
+        wt = _word_text(p)
+        tt = ''
+        try:
+            tt = extract_text(p) or ''
+        except Exception:
+            tt = ''
+        txt = wt or tt
+        fl = ''
+        for ln in txt.split('\n'):
+            ln = ln.strip()
+            if ln:
+                fl = ln[:70]; break
+        h = ''
+        try:
+            h = heuristic_name(p) or ''
+        except Exception:
+            h = 'err'
+        f1 = ''
+        if txt.strip() or deep:  # RENDIAG-DEEP v85.86: in deep mode the first-line eye may pay the OCR cap for silent papers
+            try:
+                f1 = _name_from_first_line(p) or ''
+            except Exception:
+                f1 = 'err'
+        c = ''
+        try:
+            c = _canonical_person_name(h or f1) or ''
+        except Exception:
+            c = 'err'
+        disp = _display_name(c) if c else ''
+        _flt = ''
+        if x.lower().endswith('.pdf') and not (wt.strip() or tt.strip()):  # DIAG-FILTERS v85.71: the costumes are counted above the verdict ladder, where plain statements belong - a block dropped between two elifs severs the ladder
+            try:
+                _fr = open(p, 'rb').read(300000)
+                _flt = ' | filters: ' + ','.join(sorted(set(m.decode() for m in re.findall(rb'/Filter\s*/?([A-Za-z0-9]+)', _fr)))[:4])
+            except Exception:
+                _flt = ''
+        if jd: dec = 'SKIP ' + jd
+        elif not txt.strip() and not (deep and c): dec = 'SKIP text-silent (vision not summoned in diag)' + _flt  # DEEP-VERDICT v85.87: in deep mode an OCR-born canon name becomes a RENAME verdict, because a datum hidden behind a silence tunes nothing
+        elif not c: dec = 'SKIP no-name-from-eyes'
+        elif _name_key(stem) != _name_key(c): dec = 'SKIP different-human'
+        elif stem == disp: dec = 'OK already-cased'
+        else: dec = 'RENAME -> ' + disp
+        _perr = ''
+        if x.lower().endswith('.pdf') and not wt.strip() and not tt.strip():  # DIAG-STDERR v85.68: a silent pdf row carries the osascript complaint, so the next receipt names the failure instead of another zero
+            try:
+                import subprocess as _sp7
+                _pj7 = p.replace('\\', '\\\\').replace('"', '\\"')
+                _js7 = 'ObjC.import("PDFKit"); ObjC.import("Quartz"); var d = $.PDFDocument.alloc.initWithURL($.NSURL.fileURLWithPath("' + _pj7 + '")); (d.isNil() || !d.string) ? "" : d.string.js'
+                _r7 = _sp7.run(['osascript', '-l', 'JavaScript', '-e', _js7], capture_output=True, timeout=60)
+                _perr = (_r7.stderr.decode('utf-8', 'ignore') or '')[:80].strip()
+            except Exception as _e7:
+                _perr = repr(_e7)[:80]
+        if _perr: dec += ' | pdfkit-err: ' + _perr
+        say('🔎 %s | word=%d pdf=%d | first-line: %s | heuristic: %s | firstline-eye: %s | canon: %s | display: %s | %s' % (x, len(wt), len(tt), fl, h, f1, c, disp, dec))
+
+==== _eyename_of ====
+def _eyename_of(p, trace=False, log=None):  # EYES-IN-SWEEP v85.90: the OCR-backed first line names a paper the filename cannot - cached by size and mtime so each paper pays the cap once  # EYECACHE v85.90
+ try:
+  st = os.stat(p)
+ except Exception:
+  return ''
+ key = os.path.basename(p)
+ c, cf = _eyename_cache()
+ e = c.get(key)
+ if e and e[0] == st.st_size and abs(e[1] - st.st_mtime) < 1:
+  return e[2]
+ name = ''
+ t = ''
+ try:
+  t = extract_text(p) or ''
+ except Exception:
+  t = ''
+ fl = ''
+ for ln in t.split('\n'):
+  ln = ln.strip()
+  if ln:
+   fl = ln
+   break
+ fl = re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:\-]?', fl, flags=re.I)[0].strip()  # LINE-CUT v85.90: a first line that ends in a phone still begins with a human
+ ws = fl.split()
+ if 2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws):
+  cn = _canonical_person_name(fl) or ''
+  name = _display_name(cn) if cn else ''
+ if not name:
+  try:
+   v = _name_from_first_line(p) or ''
+   cn = _canonical_person_name(v) if v else ''
+   name = _display_name(cn) if cn else ''
+  except Exception:
+   name = ''
+ c[key] = [st.st_size, st.st_mtime, name]
+ try:
+  import json as _je2
+  _je2.dump(c, open(cf, 'w'))
+ except Exception:
+  pass
+ return name
+
+==== _stem_norm ====
+def _stem_norm(s):  # STEM-NORM v85.90: download artifacts (_1, (2), trailing digits) are not part of a human's name
+ return re.sub(r'[_\s]*(?:\(\d+\)|\d+)$', '', s).strip()
+
+==== _convert_to_pdf ====
+def _convert_to_pdf(p, log):  # CONVERT-WATCH v85.52: a Word paper is not a scan, it is a locked eye - conversion is the key; the source stays untouched and the book remembers
+    import json as _jc, subprocess as _sp
+    cf = os.path.join(BASE_DIR, '.converted.json')
+    try:
+        done_map = _jc.load(open(cf))
+    except Exception:
+        done_map = {}
+    if done_map.get(p): return
+    out = os.path.splitext(p)[0] + '.pdf'
+    ext = os.path.splitext(p)[1].lower()
+    try:
+        if ext in ('.png', '.jpg', '.jpeg', '.heic'):
+            _sp.run(['sips', '-s', 'format', 'pdf', p, '--out', out], capture_output=True, timeout=120)
+        else:
+            _okp = _pages_pdf(p, out, log)  # PAGES-FIRST v85.56: Pages renders, and only if Pages refuses does the second hand move
+            if not _okp:
+                _sp.run(['soffice', '--headless', '--convert-to', 'pdf', '--outdir', os.path.dirname(p), p], capture_output=True, timeout=300)
+    except FileNotFoundError:
+        if not done_map.get('_nosoffice'):
+            done_map['_nosoffice'] = 1
+            log('⚠️ no soffice - install LibreOffice for doc→pdf; images still convert via sips')
+        return
+    except Exception:
+        return
+    if os.path.exists(out):
+        done_map[p] = 1
+        try:
+            _jc.dump(done_map, open(cf, 'w'))
+        except Exception:
+            pass
+        log('🔁 converted: %s → %s' % (os.path.basename(p), os.path.basename(out)))
+
+==== _pages_pdf ====
+def _pages_pdf(p, out, log):  # PAGES-FIRST v85.56: the master's first choice for doc to pdf is Pages, whose rendering keeps the paper's face; LibreOffice stands second, sips speaks for images
+    import subprocess as _sp3
+    scr = 'tell application "Pages"\n  set _d to open POSIX file "%s"\n  export _d to POSIX file "%s" as PDF\n  close _d saving no\nend tell\n' % (p.replace('"', '\\"'), out.replace('"', '\\"'))
+    try:
+        r = _sp3.run(['osascript', '-e', scr], capture_output=True, timeout=240)
+        return r.returncode == 0 and os.path.exists(out)
+    except Exception:
+        return False
+
+==== _jd_like_name ====
+def _jd_like_name(st):  # RENAME-GATE v82.0: portal glue and JDs keep their names forever
+    lf = st.lower()
+    return lf.startswith('jd') or '_jd' in lf or ' jd' in lf or lf.endswith(('.eml', '.msg'))
+
+==== _portal_name ====
+def _portal_name(st):  # RENAME-GATE v82.0: saved searches, reports and backups are not humans
+    lf = st.lower()
+    return any(w in lf for w in ('save search', 'resdex', 'report', 'summary', 'backup', 'anythingllm', 'debris'))
+
+==== _rename_ledger ====
+def _rename_ledger(old, new, why, once=False):  # RENAME-LEDGER v82.0: every rename is written down so your word can undo it
+    try:
+        lp = os.path.join(BASE_DIR, 'rename_log.json')
+        lg = json.load(open(lp)) if os.path.exists(lp) else []
+        if once and any(e.get('old') == old and e.get('why') == why for e in lg): return False
+        lg.append({'old': old, 'new': new, 'why': why, 'ts': time.time()})
+        json.dump(lg[-200:], open(lp, 'w'), indent=1)
+        return True
+    except Exception:
+        return False
+
+==== _repath_ledgers ====
+def _repath_ledgers(old, new):  # STAGE-SYNC v84.3: clocks and history walk with the paper
+    import json as _j
+    for fn in ('pipeline.json', 'errands.json'):
+        lp = os.path.join(BASE_DIR, fn)
+        try:
+            d = _j.load(open(lp))
+        except Exception:
+            continue
+        if old in d:
+            d[new] = d.pop(old)
+            try: _j.dump(d, open(lp, 'w'), indent=1)
+            except Exception: pass
+
+==== _lock_root ====
+def _lock_root():  # LOCK-ROOT v85.54: when a verb is called from a folder that is not a desk, the live lock names the desk the house is actually serving
+    try:
+        for fn in os.listdir(BASE_DIR):
+            if fn.startswith('butler_') and fn.endswith('.lock'):
+                txt = open(os.path.join(BASE_DIR, fn)).read().strip()
+                if '|' in txt:
+                    p = txt.split('|', 1)[1]
+                    if os.path.isdir(p): return p
+    except Exception:
+        pass
+    return ''
+
+==== desk_load ====
+def desk_load():
+    try: return json.load(open(DESK_PATH))
+    except Exception: return {'primary': '', 'secondary': ''}
+
+==== seat_rename_check ====
+def seat_rename_check(root, say=print, only=None):  # SEAT-RENAME v85.11 (examined-list v85.19): the flag remembers named papers, not visited days - silence never earns a pass
+    import json as _j
+    dd = desk_load()
+    chair = dd.get('primary')
+    if not chair or not os.path.isdir(chair): return 0
+    flag = os.path.join(BASE_DIR, '.seatrenamed.json')
+    try: rec = _j.load(open(flag))
+    except Exception: rec = {}
+    today = time.strftime('%Y-%m-%d')
+    if rec.get('day') != today: rec = {'day': today, 'examined': []}
+    ex = set(rec.get('examined', []))
+    whole = (only is None)
+    if whole and _IN_CEREMONY[0]: return 0  # ONCE-PER-COMMAND v85.22: up's self-refresh re-enters up_cmd; the whole-chair pass runs once per keystroke, and each miss confesses once
+    if whole: _IN_CEREMONY[0] = True
+    targets = []
+    if whole:
+        for dp, dn, fn in os.walk(chair):
+            for x in fn:
+                if _is_desk_candidate(x) and x not in ex: targets.append(os.path.join(dp, x))
+        if targets: say(f'✏️ naming the focused chair ({len(targets)} unexamined papers) - text eyes first, pixels only if silent, ninety seconds per up')  # NO-SILENT-WORK v85.15
+    if only:
+        targets = [only]
+    R = None
+    n = 0
+    t0 = time.time()
+    for p in targets:
+        if whole and (time.time() - t0) > 90:  # CEREMONY-BUDGET v85.17
+            say('⏳ naming pauses here - the next up resumes the chair')
+            break
+        x = os.path.basename(p)
+        if not _is_desk_candidate(x): continue
+        if _jd_like_name(x) or _portal_name(x): continue
+        v = heuristic_name(p) or _name_from_first_line(p)  # TEXT-EYES v85.16  # FIRST-LINE v85.20: every rewritten line carries the witnesses it already wore
+        if not v and x not in rec.get('vtried', []):  # VISION-ONCE v85.35: the expensive pupil is asked once per paper per day; a silent answer rests, so misses cost milliseconds thereafter
+            v = _vision_safe(p)
+            rec.setdefault('vtried', []).append(x)
+            if not v:  # STEM-FALLBACK v85.61: when every eye is silent and the filename itself is a human shape, the filename becomes the candidate - masks stay excluded by law, twins stay safe by the key compare
+                _ws = os.path.splitext(x)[0].split()
+                if 2 <= len(_ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _ws):
+                    v = os.path.splitext(x)[0]
+        try:
+            import asyncio as _a
+            _a.set_event_loop(None)  # LOOP-CLEAN v85.21: the vision eye may leave an idle loop behind; playwright sync must find none
+        except Exception:
+            pass
+        if not v:
+            if whole: say(f'👁️ {x}: text silent, vision silent - left for the next up')  # MISS-EVIDENCE v85.19 (once v85.21): a miss confesses in the whole-chair pass, never twice
+            continue
+        ex.add(x)
+        canon = _canonical_person_name(v)
+        if not canon: continue
+        stem = os.path.splitext(x)[0]
+        if _name_key(_stem_norm(stem)) != _name_key(canon): continue  # STEM-NORM v85.90: a suffix is not a surname
+        canon = _display_name(canon)  # CASE-LAW v85.35: rename when the human matches but the display does not - all-caps files are renamed at last
+        if stem == canon: continue
+        q = os.path.join(os.path.dirname(p), canon + os.path.splitext(x)[1])
+        if (os.path.exists(q) and os.path.basename(q).lower() != os.path.basename(p).lower()): continue  # CASE-SELF v85.82: realpath resolves symlinks, not case - a case-variant of yourself is you; the witness rides at the line end, never through its chest
+        say(f'👁️ {x} → eyes {v!r} → canon {canon!r}')  # NAME-EVIDENCE v85.16
+        try:
+            if R is None: R = _renamer(root)  # LAZY-RENAMER v85.17
+            if R is not None:
+                try:
+                    R._rename(p, canon, say, _tags_of(p))  # REUSE-RENAME v85.12
+                except TypeError:
+                    R._rename(p, canon, say)
+            else:
+                os.rename(p, q)
+                _safe_rename_ledger(p, canon, 'seat-check', once=True)
+                _safe_repath_ledgers(p, q)
+            s = sheet_load()
+            for it in s.get('items', []):
+                if os.path.realpath(it.get('p', '')) in (os.path.realpath(p), os.path.realpath(q)): it['p'] = q
+            sheet_save(s)
+            n += 1
+        except Exception:
+            continue
+    if whole:
+        rec['day'] = today; rec['examined'] = sorted(ex)
+        try: _j.dump(rec, open(flag, 'w'))
+        except Exception: pass
+    return n
+
+==== drain region ====
+
+def _event_tick(root, log=print):  # RENAME-WATCH v85.52 + CONVERT-WATCH v85.52: directory mtimes are the doorbells - one stat per folder per heartbeat, no hashing, no OCR, no pings; the house rests between rings
+    try:
+        _qf = os.path.join(BASE_DIR, '.rename_queue')  # SERVICE-QUEUE v85.58: the master's Finder selection arrives as lines in a queue; the bell drains it each beat and runs the whole arrival pipeline in the background, no terminal opened
+        if os.path.exists(_qf):
+            try:
+                _qs = [l.strip() for l in open(_qf) if l.strip()]
+                os.remove(_qf)
+                for _qp in _qs:
+                    if not os.path.isfile(_qp): continue
+                    log('🖱 service queued: %s' % os.path.basename(_qp))
+                    _ext = os.path.splitext(_qp)[1].lower()
+                    if _ext in ('.docx', '.doc', '.rtf', '.png', '.jpg', '.jpeg', '.heic'): _convert_to_pdf(_qp, log)
+                    _service_act(_qp, root, log)  # QUEUE-ACT v85.76: the drain acts lawfully in place - renames and conversions stay inside their own folder, every outcome spoken
+                if _qs: log('✅ service batch done: %d paper(s) - deeds above' % len(_qs))  # SERVICE-RECEIPT v85.64  # RECEIPT-INDENT v85.65: the total stands inside the try body among the deeds it counts - each name wears its own hash, because the census reads addresses, not intentions
+            except Exception:
+                pass
+        _case_sweep(root, log)  # CASE-SWEEP v85.57: the doorbell sweeps casing every beat, so a shout never outlives its arrival
+        dirs = [root] + [os.path.join(root, s) for s in os.listdir(root) if os.path.isdir(os.path.join(root, s)) and not s.startswith('.') and not s.startswith('__')]  # DIRS-ALL v85.69: every immediate folder of the chair is swept - the stage folders hold every seated paper, and a bell that walks only the root walks an empty hall
+    except Exception:
+        dirs = [root]
+    for dpath in dirs:
+        try:
+            mt = os.stat(dpath).st_mtime
+        except Exception:
+==== module constants ====
+43 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+115 
+OCRBIN = os.path.join(BASE_DIR, "cvocr")
+117 
+OCR_SEM = threading.Semaphore(2)
+4957 
+extract_text = extract_text_ocr  # ALIAS v85.89: one name for the whole chain, bound after every def has landed - the diag pdf column, emails_in_text and every bare caller wake from swallowing NameError
