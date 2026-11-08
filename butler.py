@@ -342,6 +342,8 @@ def ensure_ocr():
 def extract_text_ocr(fp):
     _wt = _word_text(p)  # TEXT-DOCX v85.55: head eye - if the native reader speaks, the pdf eyes rest
     if _wt.strip(): return _wt
+    _pt = _pdf_pure_text(p)  # PDF-PURE v85.70: the permission-free eye is asked before any framework that macOS may silently refuse
+    if len(_pt) > 40 and re.search(r'[A-Za-z]{4,}', _pt): return _pt
     if os.path.splitext(p)[1].lower() == '.pdf':  # PDF-PDFKIT v85.65: when the library is dead and Spotlight has no index, PDFKit reads the text layer natively through JavaScript for Automation - no libraries, no pixels, no index required
         try:
             import subprocess as _sp6
@@ -1231,6 +1233,36 @@ def _renamer(root):  # REUSE-RENAME v85.12: discover the house's own renamer cla
                 pass
     return None
 
+def _pdf_pure_text(p):  # PDF-PURE v85.70: the standard library reads the text layer when frameworks are denied - zlib streams and text-show operators, no permissions, no pixels, no index
+    import zlib as _zl
+    try:
+        if os.path.splitext(p)[1].lower() != '.pdf': return ''
+        raw = open(p, 'rb').read()
+    except Exception:
+        return ''
+    out = []
+    pos = 0
+    while True:
+        i = raw.find(b'stream', pos)
+        if i < 0: break
+        j = raw.find(b'endstream', i)
+        if j < 0: break
+        chunk = raw[i+6:j]
+        if chunk[:2] in (b'\r\n', b'\n'): chunk = chunk[2:]
+        elif chunk[:1] in (b'\r', b' '): chunk = chunk[1:]
+        try:
+            dec = _zl.decompress(chunk)
+        except Exception:
+            dec = b''
+        if dec:
+            for m in re.finditer(rb'\((?:\\.|[^\\()])*)\)', dec):
+                s = m.group(0)[1:-1]
+                s = s.replace(b'\\(', b'(').replace(b'\\)', b')').replace(b'\\\\', b'\\')
+                t = s.decode('utf-8', 'ignore')
+                if t.strip(): out.append(t)
+        pos = j + 9
+    return '\n'.join(out)
+
 def _word_text(p):  # TEXT-DOCX v85.55: a Word paper reads natively through macOS textutil - full text in milliseconds, no LibreOffice, no pixels, no OCR cap; the converter's absence never blinds the eyes again
     try:
         if os.path.splitext(p)[1].lower() not in ('.docx', '.doc', '.rtf'): return ''
@@ -1417,9 +1449,9 @@ def rename_diag(paths, say=print):  # RENAME-DIAG v85.58: the butler opens its e
         if _perr: dec += ' | pdfkit-err: ' + _perr
         say('🔎 %s | word=%d pdf=%d | first-line: %s | heuristic: %s | firstline-eye: %s | canon: %s | display: %s | %s' % (x, len(wt), len(tt), fl, h, f1, c, disp, dec))
 
-def _case_sweep(root, log):  # CASE-SWEEP v85.57: casing is a property of the name, not of the ceremony's memory - every human-shaped filename is title-cased on the doorbell, examined or not, so no shout outlives its own arrival
+def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a property of the name, not of the ceremony's memory  # SWEEP-TRACE v85.70: with trace on, every file speaks its verdict, so a silent sweep names the guard that silenced it
     try:
-        dirs = [root] + [os.path.join(root, s) for s in os.listdir(root) if os.path.isdir(os.path.join(root, s)) and not s.startswith('.')]  # DIRS-ALL v85.69: every immediate folder of the chair is swept - the stage folders hold every seated paper, and a bell that walks only the root walks an empty hall
+        dirs = [root] + [os.path.join(root, s) for s in os.listdir(root) if os.path.isdir(os.path.join(root, s)) and not s.startswith('.')]  # DIRS-ALL v85.69: every immediate folder of the chair is swept
     except Exception:
         dirs = [root]
     for dpath in dirs:
@@ -1429,27 +1461,38 @@ def _case_sweep(root, log):  # CASE-SWEEP v85.57: casing is a property of the na
             continue
         for x in names:
             p = os.path.join(dpath, x)
-            if not os.path.isfile(p): continue
+            if not os.path.isfile(p):
+                if trace: log('🧭 sweep: %s | not-a-file' % x)
+                continue
             ext = os.path.splitext(x)[1].lower()
             if ext not in ('.pdf', '.docx', '.doc', '.rtf'): continue
             stem = os.path.splitext(x)[0]
             try:
-                if _jd_like_name(x) or _portal_name(x): continue
+                if _jd_like_name(x) or _portal_name(x):
+                    if trace: log('🧭 sweep: %s | masked (jd/portal)' % x)
+                    continue
             except Exception:
                 continue
             ws = stem.split()
-            if not (2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws)): continue
+            if not (2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws)):
+                if trace: log('🧭 sweep: %s | not-human-shape' % x)
+                continue
             disp = _display_name(stem)
             if disp == stem: continue
             q = os.path.join(dpath, disp + ext)
-            if os.path.exists(q): continue
+            if os.path.exists(q):
+                if trace: log('🧭 sweep: %s | twin-exists %s' % (x, disp + ext))
+                continue
             try:
                 os.rename(p, q)
-                _safe_rename_ledger(p, disp, 'sweep', once=True)
-                _safe_repath_ledgers(p, q)
                 log('✏️ case sweep: %s → %s' % (x, disp + ext))
-            except Exception:
-                pass
+                try:
+                    _safe_rename_ledger(p, disp, 'sweep', once=True)
+                    _safe_repath_ledgers(p, q)
+                except Exception:
+                    pass
+            except Exception as _ce:
+                if trace: log('🧭 sweep: %s | rename-failed %r' % (x, _ce))
 
 def _event_tick(root, log=print):  # RENAME-WATCH v85.52 + CONVERT-WATCH v85.52: directory mtimes are the doorbells - one stat per folder per heartbeat, no hashing, no OCR, no pings; the house rests between rings
     try:
@@ -4430,6 +4473,8 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S415 the text layer is readable by the standard library alone, permissions or no permissions', (chr(35)+' PDF-PURE v85.70') in _src and ('def _pdf_pure_text(' in _src) and ('zlib' in _src))
+    ck('S416 a silent sweep names the guard that silenced each file', (chr(35)+' SWEEP-TRACE v85.70') in _src and ('trace=False' in _src))
     ck('S403 the bell is owned by a pulse, and orphans inherit nothing but silence', (chr(35)+' BELL-HEARTBEAT v85.59') in _src and ('.tick.pid' in _src))
     ck('S404 the broom passes over what the ignore-list names', ('archive/rendiag.py' in open(os.path.join(BASE_DIR, '.gitignore')).read()) and os.path.exists(os.path.join(BASE_DIR, 'archive', 'rendiag.py')))
     ck('S405 every text-layer pdf has a native eye the house can always ask', (chr(35)+' PDF-SPOTLIGHT v85.61') in _src and ('kMDItemTextContent' in _src))
