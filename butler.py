@@ -4702,6 +4702,8 @@ def _selftest(root):
     ck('S432 the main butler renames through the same eye the diagnostic proved, once per paper', (chr(35)+' EYES-IN-SWEEP v85.90') in _src and (chr(35)+' EYECACHE v85.90') in _src and ('.eyename.json' in _src))
     ck('S433 a download suffix is not a surname', _src.count('_stem_norm(') >= 3)
     ck('S434 no right-click dies without a line in the tower', (chr(35)+' DRAIN-ARMOR v85.92') in _src and ('service crashed on' in _src))
+    ck('S435 the mirror carries the dump and the primitives, so reading precedes every edit', ('MIRROR-TOOLS v85.93' in open(os.path.join(BASE_DIR, 'ship.sh')).read()))
+    ck('S436 a bad lap dies childless, before any file is written', ('def preflight(' in open(os.path.join(BASE_DIR, 'archive', 'patchlib.py')).read()) and ('def write_raw(' in open(os.path.join(BASE_DIR, 'archive', 'patchlib.py')).read()))
     ck('S415 the text layer is readable by the standard library alone, permissions or no permissions', (chr(35)+' PDF-PURE v85.70') in _src and ('def _pdf_pure_text(' in _src) and ('zlib' in _src))
     ck('S416 a silent sweep names the guard that silenced each file', (chr(35)+' SWEEP-TRACE v85.70') in _src and ('trace=False' in _src))
     ck('S417 the pure eye wears every decoder a producer wears, and the venv reader speaks CID', (chr(35)+' PDF-PURE-HARD v85.71') in _src and ('a85decode' in _src) and (chr(35)+' PY-PYPDF v85.72') in _src)

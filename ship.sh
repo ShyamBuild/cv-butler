@@ -40,6 +40,8 @@ sync_mirror() {
   [ -d "$HOME/CV_Tool_pub/.git" ] || return 0
   cp "$HOME/CV_Tool/butler.py" "$HOME/CV_Tool/briefing.py" "$HOME/CV_Tool/wa.py" "$HOME/CV_Tool/cleaner.py" "$HOME/CV_Tool/ship.sh" "$HOME/CV_Tool/PROTOCOL.md" "$HOME/CV_Tool/butler_check.py" "$HOME/CV_Tool/requirements.txt" "$HOME/CV_Tool/fitrank.py" "$HOME/CV_Tool/ledger.py" "$HOME/CV_Tool/cadence.py" "$HOME/CV_Tool/sem.py" "$HOME/CV_Tool/waread.py" "$HOME/CV_Tool_pub/" || return 0
   cp "$HOME/CV_Tool/wa_template.txt" "$HOME/CV_Tool_pub/" 2>/dev/null
+  mkdir -p "$HOME/CV_Tool_pub/archive"
+  for _af in dump.txt patchlib.py rendiag.py verify.sh mkdump.sh; do cp "$HOME/CV_Tool/archive/$_af" "$HOME/CV_Tool_pub/archive/$_af" 2>/dev/null; done  # MIRROR-TOOLS v85.93: publish the dump and the primitives with every commit, so every future lap is written against read code fetched from the mirror
   mkdir -p "$HOME/CV_Tool_pub/templates"
   cp "$HOME/CV_Tool/templates/"*.txt "$HOME/CV_Tool_pub/templates/" 2>/dev/null
   git -C "$HOME/CV_Tool_pub" add -A || return 0
