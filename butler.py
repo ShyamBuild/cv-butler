@@ -1419,7 +1419,7 @@ def rename_diag(paths, say=print):  # RENAME-DIAG v85.58: the butler opens its e
 
 def _case_sweep(root, log):  # CASE-SWEEP v85.57: casing is a property of the name, not of the ceremony's memory - every human-shaped filename is title-cased on the doorbell, examined or not, so no shout outlives its own arrival
     try:
-        dirs = [root] + [os.path.join(root, s) for s in _tag_vocab() if os.path.isdir(os.path.join(root, s))]
+        dirs = [root] + [os.path.join(root, s) for s in os.listdir(root) if os.path.isdir(os.path.join(root, s)) and not s.startswith('.')]  # DIRS-ALL v85.69: every immediate folder of the chair is swept - the stage folders hold every seated paper, and a bell that walks only the root walks an empty hall
     except Exception:
         dirs = [root]
     for dpath in dirs:
@@ -1468,7 +1468,7 @@ def _event_tick(root, log=print):  # RENAME-WATCH v85.52 + CONVERT-WATCH v85.52:
             except Exception:
                 pass
         _case_sweep(root, log)  # CASE-SWEEP v85.57: the doorbell sweeps casing every beat, so a shout never outlives its arrival
-        dirs = [root] + [os.path.join(root, s) for s in _tag_vocab() if os.path.isdir(os.path.join(root, s))]
+        dirs = [root] + [os.path.join(root, s) for s in os.listdir(root) if os.path.isdir(os.path.join(root, s)) and not s.startswith('.')]  # DIRS-ALL v85.69: every immediate folder of the chair is swept - the stage folders hold every seated paper, and a bell that walks only the root walks an empty hall
     except Exception:
         dirs = [root]
     for dpath in dirs:
@@ -3132,7 +3132,8 @@ class Butler:
 
     def _snapshot(self, say=print):  # SNAPSHOT v69
         import subprocess, datetime, glob
-        ic = os.path.expanduser('~/Library/Mobile Documents/com~apple~CloudDocs')
+        ic = os.path.expanduser('~/Backup of Butler')  # BACKUP-LOCAL v85.69: the memory archives come home to a local folder - iCloud was filling with half-gigabyte weeks, and a backup that starves the master's cloud is a backup that owes an apology
+        os.makedirs(ic, exist_ok=True)
         if not os.path.isdir(ic): return
         now = datetime.date.today()
         mind = os.path.join(ic, f'cv-memory-week-{now.isocalendar()[0]}-{now.isocalendar()[1]}.tgz')
@@ -4439,6 +4440,8 @@ def _selftest(root):
     ck('S410 a drained queue always ends with a spoken total', (chr(35)+' SERVICE-RECEIPT v85.64') in _src and (chr(35)+' RECEIPT-INDENT v85.65') in _src)
     ck('S411 every pdf has a native text eye that needs no index and no pixels', (chr(35)+' PDF-PDFKIT v85.65') in _src and ('PDFDocument' in _src))
     ck('S412 a silent pdf row carries the complaint that silenced it', (chr(35)+' DIAG-STDERR v85.68') in _src and ('pdfkit-err' in _src))
+    ck('S413 the bell walks every room of the chair, not an empty hall', _src.count(chr(35)+' DIRS-ALL v85.69') >= 2)
+    ck('S414 the memory archives rest in a local folder, not in the master'+chr(39)+'s cloud', (chr(35)+' BACKUP-LOCAL v85.69') in _src and ('Backup of Butler' in _src))
     ck('S402 the master'+chr(39)+'s Finder selection is drained by the bell, in the background, each beat', (chr(35)+' SERVICE-QUEUE v85.58') in _src and ('.rename_queue' in _src))
     ck('S401 the butler'+chr(39)+'s eyes open in public, one honest row per file', ('def rename_diag(' in _src) and (chr(35)+' RENAME-DIAG v85.58') in _src and os.path.exists(os.path.join(BASE_DIR, 'archive', 'rendiag.py')))  # S401 repinned v85.59: the diagnostic lives where untracked survivors live
     ck('S400 casing is a property of the name, not of the ceremony'+chr(39)+'s memory', (chr(35)+' CASE-SWEEP v85.57') in _src and ('def _case_sweep(' in _src))
