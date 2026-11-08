@@ -1473,7 +1473,7 @@ def rename_diag(paths, say=print, deep=False):  # RENDIAG-DEEP v85.86: opt-in de
             except Exception:
                 _flt = ''
         if jd: dec = 'SKIP ' + jd
-        elif not txt.strip(): dec = 'SKIP text-silent (vision not summoned in diag)' + _flt  # DIAG-FILTERS v85.71: a silent pdf names its stream costumes on its own verdict line
+        elif not txt.strip() and not (deep and c): dec = 'SKIP text-silent (vision not summoned in diag)' + _flt  # DEEP-VERDICT v85.87: in deep mode an OCR-born canon name becomes a RENAME verdict, because a datum hidden behind a silence tunes nothing
         elif not c: dec = 'SKIP no-name-from-eyes'
         elif _name_key(stem) != _name_key(c): dec = 'SKIP different-human'
         elif stem == disp: dec = 'OK already-cased'
@@ -4622,6 +4622,7 @@ def _selftest(root):
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
     ck('S427 any chair diagnoses in one command, folder by folder', ('RENDIAG-FOLDERS v85.85' in open(os.path.join(BASE_DIR, 'archive', 'rendiag.py')).read()) and ('isdir' in open(os.path.join(BASE_DIR, 'archive', 'rendiag.py')).read()))
     ck('S428 depth is a choice the master makes, and a closed pipe is a quiet goodbye', (chr(35)+' RENDIAG-DEEP v85.86') in _src and ('BrokenPipeError' in open(os.path.join(BASE_DIR, 'archive', 'rendiag.py')).read()))
+    ck('S429 a deep row that earns a name shows its verdict, and a blind eye is named before it is cured', (chr(35)+' DEEP-VERDICT v85.87') in _src)
     ck('S415 the text layer is readable by the standard library alone, permissions or no permissions', (chr(35)+' PDF-PURE v85.70') in _src and ('def _pdf_pure_text(' in _src) and ('zlib' in _src))
     ck('S416 a silent sweep names the guard that silenced each file', (chr(35)+' SWEEP-TRACE v85.70') in _src and ('trace=False' in _src))
     ck('S417 the pure eye wears every decoder a producer wears, and the venv reader speaks CID', (chr(35)+' PDF-PURE-HARD v85.71') in _src and ('a85decode' in _src) and (chr(35)+' PY-PYPDF v85.72') in _src)
