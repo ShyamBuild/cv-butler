@@ -1385,7 +1385,7 @@ def _fast_rename(p, root, log):  # RENAME-WATCH v85.52: the ceremony's fast half
     if not canon: return
     canon = _display_name(canon)
     if stem == canon: return
-    if _name_key(stem) != _name_key(canon): return
+    if _name_key(_stem_norm(stem)) != _name_key(canon): return  # STEM-NORM v85.90: a suffix is not a surname
     q = os.path.join(os.path.dirname(p), canon + os.path.splitext(x)[1])
     if (os.path.exists(q) and os.path.basename(q).lower() != os.path.basename(p).lower()): return  # CASE-SELF v85.82: realpath resolves symlinks, not case - a case-variant of yourself is you; the witness rides at the line end, never through its chest
     try:
@@ -1516,6 +1516,57 @@ def rename_diag(paths, say=print, deep=False):  # RENDIAG-DEEP v85.86: opt-in de
         if _perr: dec += ' | pdfkit-err: ' + _perr
         say('🔎 %s | word=%d pdf=%d | first-line: %s | heuristic: %s | firstline-eye: %s | canon: %s | display: %s | %s' % (x, len(wt), len(tt), fl, h, f1, c, disp, dec))
 
+_EYEC = {}
+def _eyename_cache():
+ import json as _je
+ cf = os.path.join(BASE_DIR, '.eyename.json')
+ try:
+  return _je.load(open(cf)), cf
+ except Exception:
+  return {}, cf
+def _stem_norm(s):  # STEM-NORM v85.90: download artifacts (_1, (2), trailing digits) are not part of a human's name
+ return re.sub(r'[_\s]*(?:\(\d+\)|\d+)$', '', s).strip()
+def _eyename_of(p, trace=False, log=None):  # EYES-IN-SWEEP v85.90: the OCR-backed first line names a paper the filename cannot - cached by size and mtime so each paper pays the cap once  # EYECACHE v85.90
+ try:
+  st = os.stat(p)
+ except Exception:
+  return ''
+ key = os.path.basename(p)
+ c, cf = _eyename_cache()
+ e = c.get(key)
+ if e and e[0] == st.st_size and abs(e[1] - st.st_mtime) < 1:
+  return e[2]
+ name = ''
+ t = ''
+ try:
+  t = extract_text(p) or ''
+ except Exception:
+  t = ''
+ fl = ''
+ for ln in t.split('\n'):
+  ln = ln.strip()
+  if ln:
+   fl = ln
+   break
+ fl = re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:\-]?', fl, flags=re.I)[0].strip()  # LINE-CUT v85.90: a first line that ends in a phone still begins with a human
+ ws = fl.split()
+ if 2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws):
+  cn = _canonical_person_name(fl) or ''
+  name = _display_name(cn) if cn else ''
+ if not name:
+  try:
+   v = _name_from_first_line(p) or ''
+   cn = _canonical_person_name(v) if v else ''
+   name = _display_name(cn) if cn else ''
+  except Exception:
+   name = ''
+ c[key] = [st.st_size, st.st_mtime, name]
+ try:
+  import json as _je2
+  _je2.dump(c, open(cf, 'w'))
+ except Exception:
+  pass
+ return name
 def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a property of the name, not of the ceremony's memory  # SWEEP-TRACE v85.70: with trace on, every file speaks its verdict, so a silent sweep names the guard that silenced it
     try:
         dirs = [root] + [os.path.join(root, s) for s in os.listdir(root) if os.path.isdir(os.path.join(root, s)) and not s.startswith('.') and not s.startswith('__')]  # DIRS-ALL v85.69: every immediate folder of the chair is swept
@@ -1540,6 +1591,27 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
                     continue
             except Exception:
                 continue
+            _en = _eyename_of(p)  # EYES-IN-SWEEP v85.90: the background sweep carries the same OCR eye the diagnostic proved, in place and cached, so the main butler renames what the table renames
+            if _en and _en != stem:
+             _sn = _stem_norm(stem)
+             _w0 = _sn.split()
+             _shape_ok = 2 <= len(_w0) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _w0)
+             if not _shape_ok or _name_key(_sn) == _name_key(_en):
+              _q3 = os.path.join(dpath, _en + ext)
+              if os.path.exists(_q3) and os.path.basename(_q3).lower() != x.lower():
+               if trace: log('🧭 sweep: %s | eyes say %s but another paper holds that name - proposal only' % (x, _en))
+              else:
+               try:
+                os.rename(p, _q3)
+                log('✏️ sweep renamed (eyes): %s → %s' % (x, _en + ext))
+                try:
+                 _safe_rename_ledger(p, _en, 'sweep-eyes', once=True)
+                 _safe_repath_ledgers(p, _q3)
+                except Exception:
+                 pass
+                continue
+               except Exception as _se3:
+                if trace: log('⚠️ sweep eyes-rename failed: %s | %r' % (x, _se3))
             ws = stem.split()
             if not (2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws)):
                 if trace: log('🧭 sweep: %s | not-human-shape' % x)
@@ -1813,7 +1885,7 @@ def seat_rename_check(root, say=print, only=None):  # SEAT-RENAME v85.11 (examin
         canon = _canonical_person_name(v)
         if not canon: continue
         stem = os.path.splitext(x)[0]
-        if _name_key(stem) != _name_key(canon): continue
+        if _name_key(_stem_norm(stem)) != _name_key(canon): continue  # STEM-NORM v85.90: a suffix is not a surname
         canon = _display_name(canon)  # CASE-LAW v85.35: rename when the human matches but the display does not - all-caps files are renamed at last
         if stem == canon: continue
         q = os.path.join(os.path.dirname(p), canon + os.path.splitext(x)[1])
@@ -4650,6 +4722,8 @@ def _selftest(root):
     ck('S429 a deep row that earns a name shows its verdict, and a blind eye is named before it is cured', (chr(35)+' DEEP-VERDICT v85.87') in _src)
     ck('S430 the OCR eye can be probed by one command, timed and headed', ('def ocr_probe(' in _src) and (chr(35)+' OCR-PROBE v85.88') in _src)
     ck('S431 the reader chain has one name, one parameter and one raster hand', (chr(35)+' PARAM-FIX v85.89') in _src and (chr(35)+' OCR-RASTER v85.89') in _src and (chr(35)+' ALIAS v85.89') in _src)
+    ck('S432 the main butler renames through the same eye the diagnostic proved, once per paper', (chr(35)+' EYES-IN-SWEEP v85.90') in _src and (chr(35)+' EYECACHE v85.90') in _src and ('.eyename.json' in _src))
+    ck('S433 a download suffix is not a surname', _src.count('_stem_norm(') >= 3)
     ck('S415 the text layer is readable by the standard library alone, permissions or no permissions', (chr(35)+' PDF-PURE v85.70') in _src and ('def _pdf_pure_text(' in _src) and ('zlib' in _src))
     ck('S416 a silent sweep names the guard that silenced each file', (chr(35)+' SWEEP-TRACE v85.70') in _src and ('trace=False' in _src))
     ck('S417 the pure eye wears every decoder a producer wears, and the venv reader speaks CID', (chr(35)+' PDF-PURE-HARD v85.71') in _src and ('a85decode' in _src) and (chr(35)+' PY-PYPDF v85.72') in _src)
