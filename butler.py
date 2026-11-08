@@ -1517,6 +1517,7 @@ def rename_diag(paths, say=print, deep=False):  # RENDIAG-DEEP v85.86: opt-in de
         say('🔎 %s | word=%d pdf=%d | first-line: %s | heuristic: %s | firstline-eye: %s | canon: %s | display: %s | %s' % (x, len(wt), len(tt), fl, h, f1, c, disp, dec))
 
 _EYEC = {}
+_EYE_VSN = 'v85.96'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them
 def _eyename_cache():
  import json as _je
  cf = os.path.join(BASE_DIR, '.eyename.json')
@@ -1534,7 +1535,7 @@ def _eyename_of(p, trace=False, log=None):  # EYES-IN-SWEEP v85.90: the OCR-back
  key = os.path.basename(p)
  c, cf = _eyename_cache()
  e = c.get(key)
- if e and e[0] == st.st_size and abs(e[1] - st.st_mtime) < 1:
+ if e and len(e) > 3 and e[3] == _EYE_VSN and e[0] == st.st_size and abs(e[1] - st.st_mtime) < 1:  # EYECACHE-VSN v85.96: a naming-logic change invalidates every cached verdict, so stale blindness cannot outlive its cure
   return e[2]
  name = ''
  t = ''
@@ -1563,7 +1564,7 @@ def _eyename_of(p, trace=False, log=None):  # EYES-IN-SWEEP v85.90: the OCR-back
    name = _display_name(cn) if cn else ''
   except Exception:
    name = ''
- c[key] = [st.st_size, st.st_mtime, name]
+ c[key] = [st.st_size, st.st_mtime, name, _EYE_VSN]  # EYECACHE-VSN v85.96: the verdict carries its logic version into the book
  try:
   import json as _je2
   _je2.dump(c, open(cf, 'w'))
@@ -4709,6 +4710,7 @@ def _selftest(root):
     ck('S436 a bad lap dies childless, before any file is written', ('def preflight(' in open(os.path.join(BASE_DIR, 'archive', 'patchlib.py')).read()) and ('def write_raw(' in open(os.path.join(BASE_DIR, 'archive', 'patchlib.py')).read()))
     ck('S437 the capped eye names its destination, and reads', (chr(35)+' OCR-STDOUT v85.95') in _src and (chr(39)+'stdout'+chr(39) in _src))
     ck('S438 a name below the first line is still a name', (chr(35)+' NAME-SCAN v85.95') in _src and (chr(35)+' NAME-SCAN-SERVICE v85.95') in _src)
+    ck('S439 a cached blindness expires the day the logic learns', _src.count('_EYE_VSN') >= 3)
     ck('S415 the text layer is readable by the standard library alone, permissions or no permissions', (chr(35)+' PDF-PURE v85.70') in _src and ('def _pdf_pure_text(' in _src) and ('zlib' in _src))
     ck('S416 a silent sweep names the guard that silenced each file', (chr(35)+' SWEEP-TRACE v85.70') in _src and ('trace=False' in _src))
     ck('S417 the pure eye wears every decoder a producer wears, and the venv reader speaks CID', (chr(35)+' PDF-PURE-HARD v85.71') in _src and ('a85decode' in _src) and (chr(35)+' PY-PYPDF v85.72') in _src)

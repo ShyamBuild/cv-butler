@@ -1,4 +1,4 @@
-🔒 live lock: butler_05428046.lock -> 14917|/Users/apple/Downloads/Sunsoft Technology/09 MBL/JD-MBL-Coca-cola}_-_Asst.Mgr__Dy__Mgr_Manager_Production_and_maintenance-Krones_{Beverage_industry}_for_DHAULANA,_Location_
+🔒 live lock: butler_05428046.lock -> 16555|/Users/apple/Downloads/Sunsoft Technology/09 MBL/JD-MBL-Coca-cola}_-_Asst.Mgr__Dy__Mgr_Manager_Production_and_maintenance-Krones_{Beverage_industry}_for_DHAULANA,_Location_
 ==== _service_act ====
 def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawful and local  # DRAIN-ARMOR v85.92: no path returns silent and a crash logs itself
  x = os.path.basename(p)
@@ -21,7 +21,7 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
     return
    except Exception as _se: log('⚠️ service rename failed: %s | %r' % (x, _se)); return
   v = ''
-  try: v = heuristic_name(p) or _name_from_first_line(p)
+  try: v = heuristic_name(p) or _name_from_first_line(p) or _eyename_of(p)  # NAME-SCAN-SERVICE v85.95: the right-click borrows the scanning eye and its cache, so a photo-headed CV is named from its own head
   except Exception: v = ''
   if not v: log('🧭 service: %s | every eye silent (text, word, ocr) - vision or teaching needed' % x); return
   c = ''
@@ -252,7 +252,7 @@ def extract_text_ocr(p):  # PARAM-FIX v85.89: one parameter, one name - for week
             return ''
     try:
         with OCR_SEM:
-            r = subprocess.run([OCRBIN, _tgt], capture_output=True, text=True, timeout=25)  # OCR-CAP v85.16: twenty-five seconds of patience per paper, never more
+            r = subprocess.run([OCRBIN, _tgt, 'stdout'], capture_output=True, text=True, timeout=25)  # OCR-CAP v85.16: twenty-five seconds of patience per paper, never more  # OCR-STDOUT v85.95: tesseract needs an outputbase and stdout is the word - for months the eye handed an image and no destination, and read usage text
         return r.stdout or ''
     except Exception:
         return ''
@@ -419,11 +419,14 @@ def _eyename_of(p, trace=False, log=None):  # EYES-IN-SWEEP v85.90: the OCR-back
  except Exception:
   t = ''
  fl = ''
- for ln in t.split('\n'):
-  ln = ln.strip()
-  if ln:
-   fl = ln
-   break
+ _lines = [l.strip() for l in t.split('\n') if l.strip()][:12]  # NAME-SCAN v85.95: a name may sit below a title line or a photo caption - scan the head, not just the first breath
+ for _ln in _lines:
+     _cut = re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:\-]?', _ln, flags=re.I)[0].strip()
+     _wsc = _cut.split()
+     if 2 <= len(_wsc) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _wsc) and (_canonical_person_name(_cut) or ''):
+         fl = _cut
+         break
+ if not fl and _lines: fl = _lines[0]
  fl = re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:\-]?', fl, flags=re.I)[0].strip()  # LINE-CUT v85.90: a first line that ends in a phone still begins with a human
  ws = fl.split()
  if 2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws):
@@ -661,5 +664,5 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OCRBIN = os.path.join(BASE_DIR, "cvocr")
 117 
 OCR_SEM = threading.Semaphore(2)
-4959 
+4964 
 extract_text = extract_text_ocr  # ALIAS v85.89: one name for the whole chain, bound after every def has landed - the diag pdf column, emails_in_text and every bare caller wake from swallowing NameError
