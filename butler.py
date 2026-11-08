@@ -340,6 +340,13 @@ def ensure_ocr():
         return False
 
 def extract_text_ocr(fp):
+    try:  # PY-PYPDF v85.72: the venv's own reader, once installed, speaks every pdf dialect including CID glyph maps - the true cure for a silent text layer
+        import pypdf as _pypdf
+        _pr = _pypdf.PdfReader(p)
+        _ptx = '\n'.join((pg.extract_text() or '') for pg in _pr.pages)
+        if _ptx.strip(): return _ptx
+    except Exception:  # PY-PYPDF indent v85.73: an except stands at its try's column, never at the body's - a door hung inside the room it locks
+        pass
     _wt = _word_text(p)  # TEXT-DOCX v85.55: head eye - if the native reader speaks, the pdf eyes rest
     if _wt.strip(): return _wt
     _pt = _pdf_pure_text(p)  # PDF-PURE v85.70: the permission-free eye is asked before any framework that macOS may silently refuse
@@ -1233,8 +1240,8 @@ def _renamer(root):  # REUSE-RENAME v85.12: discover the house's own renamer cla
                 pass
     return None
 
-def _pdf_pure_text(p):  # PDF-PURE v85.70: the standard library reads the text layer when frameworks are denied - zlib streams and text-show operators, no permissions, no pixels, no index
-    import zlib as _zl
+def _pdf_pure_text(p):  # PDF-PURE v85.70: the standard library reads the text layer when frameworks are denied  # PDF-PURE-HARD v85.71: Flate, ASCII85, hex strings, concatenated blocks and plain streams - every costume a producer wears
+    import zlib as _zl, base64 as _b64
     try:
         if os.path.splitext(p)[1].lower() != '.pdf': return ''
         raw = open(p, 'rb').read()
@@ -1248,17 +1255,39 @@ def _pdf_pure_text(p):  # PDF-PURE v85.70: the standard library reads the text l
         j = raw.find(b'endstream', i)
         if j < 0: break
         chunk = raw[i+6:j]
-        if chunk[:2] in (b'\r\n', b'\n'): chunk = chunk[2:]
-        elif chunk[:1] in (b'\r', b' '): chunk = chunk[1:]
+        if chunk[:2] == b'\r\n': chunk = chunk[2:]
+        elif chunk[:1] in (b'\n', b'\r', b' '): chunk = chunk[1:]
+        dec = b''
         try:
             dec = _zl.decompress(chunk)
         except Exception:
-            dec = b''
+            try:
+                dec = _zl.decompressobj().decompress(chunk)
+            except Exception:
+                dec = b''
+        if not dec:
+            try:
+                dec = _b64.a85decode(chunk, adobe=False, ignorechars=b' \n\r\t')
+                try:
+                    dec = _zl.decompress(dec)
+                except Exception:
+                    pass
+            except Exception:
+                dec = b''
+        if not dec and chunk.strip():
+            dec = chunk
         if dec:
             for m in re.finditer(rb'\((?:\\.|[^\\()])*)\)', dec):
                 s = m.group(0)[1:-1]
                 s = s.replace(b'\\(', b'(').replace(b'\\)', b')').replace(b'\\\\', b'\\')
                 t = s.decode('utf-8', 'ignore')
+                if t.strip(): out.append(t)
+            for m in re.finditer(rb'<([0-9A-Fa-f\s]{8,})>', dec):
+                hx = re.sub(rb'\s', b'', m.group(1))
+                try:
+                    t = bytes.fromhex(hx.decode()).decode('utf-8', 'ignore')
+                except Exception:
+                    t = ''
                 if t.strip(): out.append(t)
         pos = j + 9
     return '\n'.join(out)
@@ -1430,8 +1459,15 @@ def rename_diag(paths, say=print):  # RENAME-DIAG v85.58: the butler opens its e
         except Exception:
             c = 'err'
         disp = _display_name(c) if c else ''
+        _flt = ''
+        if x.lower().endswith('.pdf') and not (wt.strip() or tt.strip()):  # DIAG-FILTERS v85.71: the costumes are counted above the verdict ladder, where plain statements belong - a block dropped between two elifs severs the ladder
+            try:
+                _fr = open(p, 'rb').read(300000)
+                _flt = ' | filters: ' + ','.join(sorted(set(m.decode() for m in re.findall(rb'/Filter\s*/?([A-Za-z0-9]+)', _fr)))[:4])
+            except Exception:
+                _flt = ''
         if jd: dec = 'SKIP ' + jd
-        elif not txt.strip(): dec = 'SKIP text-silent (vision not summoned in diag)'
+        elif not txt.strip(): dec = 'SKIP text-silent (vision not summoned in diag)' + _flt  # DIAG-FILTERS v85.71: a silent pdf names its stream costumes on its own verdict line
         elif not c: dec = 'SKIP no-name-from-eyes'
         elif _name_key(stem) != _name_key(c): dec = 'SKIP different-human'
         elif stem == disp: dec = 'OK already-cased'
@@ -1451,7 +1487,7 @@ def rename_diag(paths, say=print):  # RENAME-DIAG v85.58: the butler opens its e
 
 def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a property of the name, not of the ceremony's memory  # SWEEP-TRACE v85.70: with trace on, every file speaks its verdict, so a silent sweep names the guard that silenced it
     try:
-        dirs = [root] + [os.path.join(root, s) for s in os.listdir(root) if os.path.isdir(os.path.join(root, s)) and not s.startswith('.')]  # DIRS-ALL v85.69: every immediate folder of the chair is swept
+        dirs = [root] + [os.path.join(root, s) for s in os.listdir(root) if os.path.isdir(os.path.join(root, s)) and not s.startswith('.') and not s.startswith('__')]  # DIRS-ALL v85.69: every immediate folder of the chair is swept
     except Exception:
         dirs = [root]
     for dpath in dirs:
@@ -1480,6 +1516,34 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
             disp = _display_name(stem)
             if disp == stem: continue
             q = os.path.join(dpath, disp + ext)
+            if os.path.exists(q):  # DUP-CAP v85.75 (insertive v85.72 law): a caps file whose titled twin already seats is a duplicate, not a citizen - this block parks or suffixes and otherwise declines, deleting nothing and touching no neighbour
+                try:
+                    _same = os.path.getsize(p) == os.path.getsize(q)
+                    if _same:
+                        import hashlib as _hl
+                        _hp = _hl.md5(open(p, 'rb').read(8192) + open(p, 'rb').read()[-8192:]).hexdigest()
+                        _hq = _hl.md5(open(q, 'rb').read(8192) + open(q, 'rb').read()[-8192:]).hexdigest()
+                        _same = _hp == _hq
+                except Exception:
+                    _same = False
+                if _same:
+                    _dd = os.path.join(root, '__duplicates')
+                    try:
+                        os.makedirs(_dd, exist_ok=True)
+                        os.rename(p, os.path.join(_dd, x))
+                        log('🧮 duplicate parked: %s -> __duplicates/ (titled twin already seats)' % x)
+                        continue
+                    except Exception:
+                        pass
+                else:
+                    _q2 = os.path.join(dpath, disp + ' (2)' + ext)
+                    if not os.path.exists(_q2):
+                        try:
+                            os.rename(p, _q2)
+                            log('✏️ case sweep (twin): %s -> %s' % (x, disp + ' (2)' + ext))
+                            continue
+                        except Exception:
+                            pass
             if os.path.exists(q):
                 if trace: log('🧭 sweep: %s | twin-exists %s' % (x, disp + ext))
                 continue
@@ -1511,7 +1575,7 @@ def _event_tick(root, log=print):  # RENAME-WATCH v85.52 + CONVERT-WATCH v85.52:
             except Exception:
                 pass
         _case_sweep(root, log)  # CASE-SWEEP v85.57: the doorbell sweeps casing every beat, so a shout never outlives its arrival
-        dirs = [root] + [os.path.join(root, s) for s in os.listdir(root) if os.path.isdir(os.path.join(root, s)) and not s.startswith('.')]  # DIRS-ALL v85.69: every immediate folder of the chair is swept - the stage folders hold every seated paper, and a bell that walks only the root walks an empty hall
+        dirs = [root] + [os.path.join(root, s) for s in os.listdir(root) if os.path.isdir(os.path.join(root, s)) and not s.startswith('.') and not s.startswith('__')]  # DIRS-ALL v85.69: every immediate folder of the chair is swept - the stage folders hold every seated paper, and a bell that walks only the root walks an empty hall
     except Exception:
         dirs = [root]
     for dpath in dirs:
@@ -4475,6 +4539,9 @@ def _selftest(root):
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
     ck('S415 the text layer is readable by the standard library alone, permissions or no permissions', (chr(35)+' PDF-PURE v85.70') in _src and ('def _pdf_pure_text(' in _src) and ('zlib' in _src))
     ck('S416 a silent sweep names the guard that silenced each file', (chr(35)+' SWEEP-TRACE v85.70') in _src and ('trace=False' in _src))
+    ck('S417 the pure eye wears every decoder a producer wears, and the venv reader speaks CID', (chr(35)+' PDF-PURE-HARD v85.71') in _src and ('a85decode' in _src) and (chr(35)+' PY-PYPDF v85.72') in _src)
+    ck('S418 a silent pdf names its stream costumes', (chr(35)+' DIAG-FILTERS v85.71') in _src and ('/Filter' in _src) and ('_flt' in _src))
+    ck('S419 a caps duplicate parks, a differing twin suffixes, and nothing is ever deleted', (chr(35)+' DUP-CAP v85.75') in _src and ('__duplicates' in _src))
     ck('S403 the bell is owned by a pulse, and orphans inherit nothing but silence', (chr(35)+' BELL-HEARTBEAT v85.59') in _src and ('.tick.pid' in _src))
     ck('S404 the broom passes over what the ignore-list names', ('archive/rendiag.py' in open(os.path.join(BASE_DIR, '.gitignore')).read()) and os.path.exists(os.path.join(BASE_DIR, 'archive', 'rendiag.py')))
     ck('S405 every text-layer pdf has a native eye the house can always ask', (chr(35)+' PDF-SPOTLIGHT v85.61') in _src and ('kMDItemTextContent' in _src))
