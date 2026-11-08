@@ -4595,6 +4595,7 @@ def _selftest(root):
     ck('S420 the right-click drain acts lawfully in place and speaks every decline', ('def _service_act(' in _src) and (chr(35)+' QUEUE-ACT v85.76') in _src and ('_service_act(_qp, root, log)' in _src))
     ck('S421 on a case-insensitive disk, a paper is never its own twin', _src.count('realpath(q) != os.path.realpath(p)') >= 3)
     ck('S422 every parked paper has a road home through remembered addresses', ('def restore_dups(' in _src) and (chr(35)+' RESTORE-DUPS v85.79') in _src and (chr(35)+' RESTORE-SPACES v85.79') in _src)
+    ck('S423 the CID eye stands at the head of the chain, wrapped around the name itself', (chr(35)+' PY-PYPDF v85.81') in _src and ('_orig_extract_text_v8581' in _src) and ('import pypdf as _pypdf' in _src))
     ck('S403 the bell is owned by a pulse, and orphans inherit nothing but silence', (chr(35)+' BELL-HEARTBEAT v85.59') in _src and ('.tick.pid' in _src))
     ck('S404 the broom passes over what the ignore-list names', ('archive/rendiag.py' in open(os.path.join(BASE_DIR, '.gitignore')).read()) and os.path.exists(os.path.join(BASE_DIR, 'archive', 'rendiag.py')))
     ck('S405 every text-layer pdf has a native eye the house can always ask', (chr(35)+' PDF-SPOTLIGHT v85.61') in _src and ('kMDItemTextContent' in _src))
@@ -4820,3 +4821,17 @@ if __name__ == '__main__':
             pipeline_note(sys.argv[2], ' '.join(sys.argv[3:]), print); sys.exit(0)
         sys.exit(0 if _selftest(sys.argv[2]) else 1)
     main()
+
+try:  # PY-PYPDF v85.81: wrap the NAME, not the definition - the alias is rebind at module end around whichever reader it holds, because four laps of def-hunting proved the name wears no def in this book
+    _orig_extract_text_v8581 = extract_text
+    def extract_text(p, *a, **k):  # PY-PYPDF v85.81: the CID eye stands ahead of every other reader the alias names - pypdf first, the original beneath, no anchors and no hunting
+        try:
+            import pypdf as _pypdf
+            _pr = _pypdf.PdfReader(p)
+            _ptx = '\n'.join((pg.extract_text() or '') for pg in _pr.pages)
+            if _ptx.strip(): return _ptx
+        except Exception:
+            pass
+        return _orig_extract_text_v8581(p, *a, **k)
+except NameError:
+    pass
