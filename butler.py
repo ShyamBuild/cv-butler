@@ -1555,7 +1555,34 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
         return
     ws = stem.split()
     if not (2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws)):
-        log('🧭 service: %s | not a human-shaped name - left as is' % x)
+        _v = ''
+        try:
+            _v = heuristic_name(p) or _name_from_first_line(p)
+        except Exception:
+            _v = ''
+        _c = ''
+        try:
+            _c = _canonical_person_name(_v) if _v else ''
+        except Exception:
+            _c = ''
+        if _c:
+            _d2 = _display_name(_c)
+            _q2 = os.path.join(os.path.dirname(p), _d2 + ext)
+            if os.path.exists(_q2) and os.path.basename(_q2).lower() != x.lower():
+                log('🧭 service: %s | eyes say %s but a different paper holds that name - proposal only: confirm and I will suffix' % (x, _d2))  # SERVICE-EYES v85.85: twins are the master's decision, never the background's deed
+            else:
+                try:
+                    os.rename(p, _q2)
+                    log('✏️ service renamed (eyes): %s → %s' % (x, _d2 + ext))  # SERVICE-EYES v85.85: an improper name yields to the paper's own witness, in place, never across folders
+                    try:
+                        _safe_rename_ledger(p, _d2, 'service-eyes', once=True)
+                        _safe_repath_ledgers(p, _q2)
+                    except Exception:
+                        pass
+                except Exception as _se2:
+                    log('⚠️ service eyes-rename failed: %s | %r' % (x, _se2))
+        return
+        log('🧭 service: %s | name not human-shaped and eyes silent - teach me the human once and I will carry it' % x)
         return
     disp = _display_name(stem)
     if disp == stem:
@@ -4593,6 +4620,7 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S427 any chair diagnoses in one command, folder by folder', ('RENDIAG-FOLDERS v85.85' in open(os.path.join(BASE_DIR, 'archive', 'rendiag.py')).read()) and ('isdir' in open(os.path.join(BASE_DIR, 'archive', 'rendiag.py')).read()))
     ck('S415 the text layer is readable by the standard library alone, permissions or no permissions', (chr(35)+' PDF-PURE v85.70') in _src and ('def _pdf_pure_text(' in _src) and ('zlib' in _src))
     ck('S416 a silent sweep names the guard that silenced each file', (chr(35)+' SWEEP-TRACE v85.70') in _src and ('trace=False' in _src))
     ck('S417 the pure eye wears every decoder a producer wears, and the venv reader speaks CID', (chr(35)+' PDF-PURE-HARD v85.71') in _src and ('a85decode' in _src) and (chr(35)+' PY-PYPDF v85.72') in _src)
@@ -4604,6 +4632,7 @@ def _selftest(root):
     ck('S423 the CID eye stands at the head of the chain, wrapped around the name itself', (chr(35)+' PY-PYPDF v85.81') in _src and ('_orig_extract_text_v8581' in _src) and ('import pypdf as _pypdf' in _src))
     ck('S424 on this disk a case-variant of yourself is you, and renames in place perform', _src.count(chr(35)+' CASE-SELF v85.82') >= 3)
     ck('S425 a ghost is announced once and the reconcile heals its missing history', ('def _say_once(' in _src) and (_src.count('.get(' + chr(39) + 'history' + chr(39) + ', [])') >= 1))
+    ck('S426 an improper name yields to the paper'+chr(39)+'s own witness, in place, twins proposed never moved', (chr(35)+' SERVICE-EYES v85.85') in _src and ('service renamed (eyes)' in _src))
     ck('S403 the bell is owned by a pulse, and orphans inherit nothing but silence', (chr(35)+' BELL-HEARTBEAT v85.59') in _src and ('.tick.pid' in _src))
     ck('S404 the broom passes over what the ignore-list names', ('archive/rendiag.py' in open(os.path.join(BASE_DIR, '.gitignore')).read()) and os.path.exists(os.path.join(BASE_DIR, 'archive', 'rendiag.py')))
     ck('S405 every text-layer pdf has a native eye the house can always ask', (chr(35)+' PDF-SPOTLIGHT v85.61') in _src and ('kMDItemTextContent' in _src))
