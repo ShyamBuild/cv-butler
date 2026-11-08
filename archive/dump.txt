@@ -1,4 +1,4 @@
-🔒 live lock: butler_05428046.lock -> 16555|/Users/apple/Downloads/Sunsoft Technology/09 MBL/JD-MBL-Coca-cola}_-_Asst.Mgr__Dy__Mgr_Manager_Production_and_maintenance-Krones_{Beverage_industry}_for_DHAULANA,_Location_
+🔒 live lock: butler_05428046.lock -> 17596|/Users/apple/Downloads/Sunsoft Technology/09 MBL/JD-MBL-Coca-cola}_-_Asst.Mgr__Dy__Mgr_Manager_Production_and_maintenance-Krones_{Beverage_industry}_for_DHAULANA,_Location_
 ==== _service_act ====
 def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawful and local  # DRAIN-ARMOR v85.92: no path returns silent and a crash logs itself
  x = os.path.basename(p)
@@ -410,7 +410,7 @@ def _eyename_of(p, trace=False, log=None):  # EYES-IN-SWEEP v85.90: the OCR-back
  key = os.path.basename(p)
  c, cf = _eyename_cache()
  e = c.get(key)
- if e and e[0] == st.st_size and abs(e[1] - st.st_mtime) < 1:
+ if e and len(e) > 3 and e[3] == _EYE_VSN and e[0] == st.st_size and abs(e[1] - st.st_mtime) < 1:  # EYECACHE-VSN v85.96: a naming-logic change invalidates every cached verdict, so stale blindness cannot outlive its cure
   return e[2]
  name = ''
  t = ''
@@ -439,7 +439,7 @@ def _eyename_of(p, trace=False, log=None):  # EYES-IN-SWEEP v85.90: the OCR-back
    name = _display_name(cn) if cn else ''
   except Exception:
    name = ''
- c[key] = [st.st_size, st.st_mtime, name]
+ c[key] = [st.st_size, st.st_mtime, name, _EYE_VSN]  # EYECACHE-VSN v85.96: the verdict carries its logic version into the book
  try:
   import json as _je2
   _je2.dump(c, open(cf, 'w'))
@@ -664,5 +664,5 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OCRBIN = os.path.join(BASE_DIR, "cvocr")
 117 
 OCR_SEM = threading.Semaphore(2)
-4964 
+4966 
 extract_text = extract_text_ocr  # ALIAS v85.89: one name for the whole chain, bound after every def has landed - the diag pdf column, emails_in_text and every bare caller wake from swallowing NameError
