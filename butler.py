@@ -1544,6 +1544,34 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
                             continue
                         except Exception:
                             pass
+            if os.path.exists(q):  # DUP-CAP v85.75 (insertive v85.72 law): a caps file whose titled twin already seats is a duplicate, not a citizen - this block parks or suffixes and otherwise declines, deleting nothing and touching no neighbour
+                try:
+                    _same = os.path.getsize(p) == os.path.getsize(q)
+                    if _same:
+                        import hashlib as _hl
+                        _hp = _hl.md5(open(p, 'rb').read(8192) + open(p, 'rb').read()[-8192:]).hexdigest()
+                        _hq = _hl.md5(open(q, 'rb').read(8192) + open(q, 'rb').read()[-8192:]).hexdigest()
+                        _same = _hp == _hq
+                except Exception:
+                    _same = False
+                if _same:
+                    _dd = os.path.join(root, '__duplicates')
+                    try:
+                        os.makedirs(_dd, exist_ok=True)
+                        os.rename(p, os.path.join(_dd, x))
+                        log('🧮 duplicate parked: %s -> __duplicates/ (titled twin already seats)' % x)
+                        continue
+                    except Exception:
+                        pass
+                else:
+                    _q2 = os.path.join(dpath, disp + ' (2)' + ext)
+                    if not os.path.exists(_q2):
+                        try:
+                            os.rename(p, _q2)
+                            log('✏️ case sweep (twin): %s -> %s' % (x, disp + ' (2)' + ext))
+                            continue
+                        except Exception:
+                            pass
             if os.path.exists(q):
                 if trace: log('🧭 sweep: %s | twin-exists %s' % (x, disp + ext))
                 continue
