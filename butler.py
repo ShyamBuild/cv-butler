@@ -1634,72 +1634,49 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
             except Exception as _ce:
                 if trace: log('🧭 sweep: %s | rename-failed %r' % (x, _ce))
 
-def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawful and local - convert Word and images in place, case-fix pdfs in place, and propose (never perform) anything that would cross a folder boundary
-    x = os.path.basename(p)
-    ext = os.path.splitext(x)[1].lower()
-    if ext in ('.docx', '.doc', '.rtf', '.png', '.jpg', '.jpeg', '.heic'):
-        _convert_to_pdf(p, log)
-        return
-    if ext != '.pdf':
-        log('🧭 service: %s | not a paper kind I act on' % x)
-        return
-    stem = os.path.splitext(x)[0]
+def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawful and local  # DRAIN-ARMOR v85.92: no path returns silent and a crash logs itself
+ x = os.path.basename(p)
+ try:
+  ext = os.path.splitext(x)[1].lower()
+  if ext in ('.docx', '.doc', '.rtf', '.png', '.jpg', '.jpeg', '.heic'): _convert_to_pdf(p, log); return
+  if ext != '.pdf': log('🧭 service: %s | not a paper kind I act on' % x); return
+  stem = os.path.splitext(x)[0]
+  try:
+   if _jd_like_name(x) or _portal_name(x): log('🧭 service: %s | masked (jd/portal) - name kept by law' % x); return
+  except Exception: log('🧭 service: %s | mask check failed - left as is' % x); return
+  disp = _display_name(stem)
+  q = os.path.join(os.path.dirname(p), disp + ext)
+  if disp != stem and not (os.path.exists(q) and os.path.basename(q).lower() != x.lower()):  # CASE-SELF v85.82: a case-variant of yourself is you
+   try:
+    os.rename(p, q); log('✏️ service renamed: %s → %s' % (x, disp + ext))
     try:
-        if _jd_like_name(x) or _portal_name(x):
-            log('🧭 service: %s | masked (jd/portal) - name kept by law' % x)
-            return
-    except Exception:
-        return
-    ws = stem.split()
-    if not (2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws)):
-        _v = ''
-        try:
-            _v = heuristic_name(p) or _name_from_first_line(p)
-        except Exception:
-            _v = ''
-        _c = ''
-        try:
-            _c = _canonical_person_name(_v) if _v else ''
-        except Exception:
-            _c = ''
-        if _c:
-            _d2 = _display_name(_c)
-            _q2 = os.path.join(os.path.dirname(p), _d2 + ext)
-            if os.path.exists(_q2) and os.path.basename(_q2).lower() != x.lower():
-                log('🧭 service: %s | eyes say %s but a different paper holds that name - proposal only: confirm and I will suffix' % (x, _d2))  # SERVICE-EYES v85.85: twins are the master's decision, never the background's deed
-            else:
-                try:
-                    os.rename(p, _q2)
-                    log('✏️ service renamed (eyes): %s → %s' % (x, _d2 + ext))  # SERVICE-EYES v85.85: an improper name yields to the paper's own witness, in place, never across folders
-                    try:
-                        _safe_rename_ledger(p, _d2, 'service-eyes', once=True)
-                        _safe_repath_ledgers(p, _q2)
-                    except Exception:
-                        pass
-                except Exception as _se2:
-                    log('⚠️ service eyes-rename failed: %s | %r' % (x, _se2))
-        return
-        log('🧭 service: %s | name not human-shaped and eyes silent - teach me the human once and I will carry it' % x)
-        return
-    disp = _display_name(stem)
-    if disp == stem:
-        log('🧭 service: %s | already cased correctly' % x)
-        return
-    q = os.path.join(os.path.dirname(p), disp + ext)
-    if os.path.exists(q) and os.path.basename(q).lower() != os.path.basename(p).lower():  # CASE-INSENSITIVE v85.77: on this disk a case-variant of yourself is not a twin - only another inode is  # CASE-SELF v85.82: realpath resolves symlinks, not case - a case-variant of yourself is you; the witness rides at the line end, never through its chest
-        log('🧭 service: %s | twin %s rests beside it - proposal only: keep one, or ask me to suffix' % (x, disp + ext))
-        return
-    try:
-        os.rename(p, q)
-        log('✏️ service renamed: %s → %s' % (x, disp + ext))
-        try:
-            _safe_rename_ledger(p, disp, 'service', once=True)
-            _safe_repath_ledgers(p, q)
-        except Exception:
-            pass
-    except Exception as _se:
-        log('⚠️ service rename failed: %s | %r' % (x, _se))
-
+     _safe_rename_ledger(p, disp, 'service', once=True); _safe_repath_ledgers(p, q)
+    except Exception: pass
+    return
+   except Exception as _se: log('⚠️ service rename failed: %s | %r' % (x, _se)); return
+  v = ''
+  try: v = heuristic_name(p) or _name_from_first_line(p)
+  except Exception: v = ''
+  if not v: log('🧭 service: %s | every eye silent (text, word, ocr) - vision or teaching needed' % x); return
+  c = ''
+  try: c = _canonical_person_name(v) if v else ''
+  except Exception: c = ''
+  if not c: log('🧭 service: %s | eyes read text but no human name in it (first line: %s)' % (x, (v or '')[:40])); return
+  d2 = _display_name(c)
+  if d2 == stem: log('🧭 service: %s | already named correctly by the eyes' % x); return
+  q2 = os.path.join(os.path.dirname(p), d2 + ext)
+  if os.path.exists(q2) and os.path.basename(q2).lower() != x.lower():  # CASE-INSENSITIVE v85.77: a held name is a proposal, never a deed
+   log('🧭 service: %s | eyes say %s but another paper holds that name - proposal only' % (x, d2)); return
+  _sn = _stem_norm(stem); _w0 = _sn.split()
+  if _name_key(_sn) != _name_key(d2) and 2 <= len(_w0) <= 4: log('🧭 service: %s | eyes say %s, a different human - proposal only, never a guess' % (x, d2)); return
+  try:
+   os.rename(p, q2); log('✏️ service renamed (eyes): %s → %s' % (x, d2 + ext))  # SERVICE-EYES v85.85: an improper name yields to the paper's own witness, in place
+   try:
+    _safe_rename_ledger(p, d2, 'service-eyes', once=True); _safe_repath_ledgers(p, q2)
+   except Exception: pass
+  except Exception as _se2: log('⚠️ service eyes-rename failed: %s | %r' % (x, _se2))
+ except Exception as _ce:
+  log('⚠️ service crashed on %s: %r' % (os.path.basename(p), _ce))  # DRAIN-ARMOR v85.92
 def restore_dups():  # RESTORE-DUPS v85.79: carry every parked paper home through remembered addresses - space-safe, parking-lot-skipping, every decision spoken, only true orphans left for the master's hand
     root = _lock_root() or (desk_load() or {}).get('primary') or os.getcwd()
     dd = os.path.join(root, '__duplicates')
@@ -4724,6 +4701,7 @@ def _selftest(root):
     ck('S431 the reader chain has one name, one parameter and one raster hand', (chr(35)+' PARAM-FIX v85.89') in _src and (chr(35)+' OCR-RASTER v85.89') in _src and (chr(35)+' ALIAS v85.89') in _src)
     ck('S432 the main butler renames through the same eye the diagnostic proved, once per paper', (chr(35)+' EYES-IN-SWEEP v85.90') in _src and (chr(35)+' EYECACHE v85.90') in _src and ('.eyename.json' in _src))
     ck('S433 a download suffix is not a surname', _src.count('_stem_norm(') >= 3)
+    ck('S434 no right-click dies without a line in the tower', (chr(35)+' DRAIN-ARMOR v85.92') in _src and ('service crashed on' in _src))
     ck('S415 the text layer is readable by the standard library alone, permissions or no permissions', (chr(35)+' PDF-PURE v85.70') in _src and ('def _pdf_pure_text(' in _src) and ('zlib' in _src))
     ck('S416 a silent sweep names the guard that silenced each file', (chr(35)+' SWEEP-TRACE v85.70') in _src and ('trace=False' in _src))
     ck('S417 the pure eye wears every decoder a producer wears, and the venv reader speaks CID', (chr(35)+' PDF-PURE-HARD v85.71') in _src and ('a85decode' in _src) and (chr(35)+' PY-PYPDF v85.72') in _src)
