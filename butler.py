@@ -339,7 +339,20 @@ def ensure_ocr():
     except Exception:
         return False
 
-def extract_text_ocr(fp):
+def ocr_probe(p):  # OCR-PROBE v85.88: one command times the capped OCR eye on a named paper and prints what it reads - silence with a reason, speech with a head, never a guess
+    import time as _tm
+    t0 = _tm.time()
+    try:
+        t = extract_text_ocr(p) or ''
+    except Exception as _oe:
+        t = ''
+        print('ocr_probe error:', repr(_oe)[:120])
+    dt = _tm.time() - t0
+    print('ocr_probe: %.1fs · %d chars · %s' % (dt, len(t), p))
+    print('ocr_probe head:', t[:300].replace(chr(10), ' | '))
+    return t
+
+def extract_text_ocr(p):  # PARAM-FIX v85.89: one parameter, one name - for weeks every eye inside this function spoke p while the signature said fp, and the NameError swallowed the whole chain
     try:  # PY-PYPDF v85.72: the venv's own reader, once installed, speaks every pdf dialect including CID glyph maps - the true cure for a silent text layer
         import pypdf as _pypdf
         _pr = _pypdf.PdfReader(p)
@@ -370,10 +383,22 @@ def extract_text_ocr(fp):
         except Exception:
             pass
     if not os.path.exists(OCRBIN): return ""
+    _tgt = p
+    if os.path.splitext(_tgt)[1].lower() == '.pdf':  # OCR-RASTER v85.89: tesseract reads ink, not documents - sips renders the first page into a png the eye can hold, no poppler required
+        try:
+            import tempfile as _tf
+            _png = os.path.join(_tf.gettempdir(), 'cvocr_%d.png' % os.getpid())
+            _rs = subprocess.run(['sips', '-s', 'format', 'png', _tgt, '--out', _png], capture_output=True, timeout=90)
+            if _rs.returncode != 0 or not os.path.exists(_png): return ''
+            _tgt = _png
+        except Exception:
+            return ''
     try:
         with OCR_SEM:
-            r = subprocess.run([OCRBIN, fp], capture_output=True, text=True, timeout=25)  # OCR-CAP v85.16: three minutes of patience per paper was a hang wearing a timeout
-        return r.stdout or ""
+            r = subprocess.run([OCRBIN, _tgt], capture_output=True, text=True, timeout=25)  # OCR-CAP v85.16: twenty-five seconds of patience per paper, never more
+        return r.stdout or ''
+    except Exception:
+        return ''
     except Exception:
         return ""
 
@@ -4623,6 +4648,8 @@ def _selftest(root):
     ck('S427 any chair diagnoses in one command, folder by folder', ('RENDIAG-FOLDERS v85.85' in open(os.path.join(BASE_DIR, 'archive', 'rendiag.py')).read()) and ('isdir' in open(os.path.join(BASE_DIR, 'archive', 'rendiag.py')).read()))
     ck('S428 depth is a choice the master makes, and a closed pipe is a quiet goodbye', (chr(35)+' RENDIAG-DEEP v85.86') in _src and ('BrokenPipeError' in open(os.path.join(BASE_DIR, 'archive', 'rendiag.py')).read()))
     ck('S429 a deep row that earns a name shows its verdict, and a blind eye is named before it is cured', (chr(35)+' DEEP-VERDICT v85.87') in _src)
+    ck('S430 the OCR eye can be probed by one command, timed and headed', ('def ocr_probe(' in _src) and (chr(35)+' OCR-PROBE v85.88') in _src)
+    ck('S431 the reader chain has one name, one parameter and one raster hand', (chr(35)+' PARAM-FIX v85.89') in _src and (chr(35)+' OCR-RASTER v85.89') in _src and (chr(35)+' ALIAS v85.89') in _src)
     ck('S415 the text layer is readable by the standard library alone, permissions or no permissions', (chr(35)+' PDF-PURE v85.70') in _src and ('def _pdf_pure_text(' in _src) and ('zlib' in _src))
     ck('S416 a silent sweep names the guard that silenced each file', (chr(35)+' SWEEP-TRACE v85.70') in _src and ('trace=False' in _src))
     ck('S417 the pure eye wears every decoder a producer wears, and the venv reader speaks CID', (chr(35)+' PDF-PURE-HARD v85.71') in _src and ('a85decode' in _src) and (chr(35)+' PY-PYPDF v85.72') in _src)
@@ -4874,3 +4901,5 @@ try:  # PY-PYPDF v85.81: wrap the NAME, not the definition - the alias is rebind
         return _orig_extract_text_v8581(p, *a, **k)
 except NameError:
     pass
+
+extract_text = extract_text_ocr  # ALIAS v85.89: one name for the whole chain, bound after every def has landed - the diag pdf column, emails_in_text and every bare caller wake from swallowing NameError
