@@ -346,7 +346,7 @@ def extract_text_ocr(fp):
         try:
             import subprocess as _sp6
             _pj = p.replace('\\', '\\\\').replace('"', '\\"')
-            _js = 'ObjC.import("Quartz"); var d = $.PDFDocument.alloc.initWithURL($.NSURL.fileURLWithPath("' + _pj + '")); (d.isNil() || !d.string) ? "" : d.string.js'
+            _js = 'ObjC.import("PDFKit"); ObjC.import("Quartz"); var d = $.PDFDocument.alloc.initWithURL($.NSURL.fileURLWithPath("' + _pj + '")); (d.isNil() || !d.string) ? "" : d.string.js'
             _r6 = _sp6.run(['osascript', '-l', 'JavaScript', '-e', _js], capture_output=True, timeout=60)
             _s6 = _r6.stdout.decode('utf-8', 'ignore')
             if _s6.strip(): return _s6
@@ -1404,6 +1404,17 @@ def rename_diag(paths, say=print):  # RENAME-DIAG v85.58: the butler opens its e
         elif _name_key(stem) != _name_key(c): dec = 'SKIP different-human'
         elif stem == disp: dec = 'OK already-cased'
         else: dec = 'RENAME -> ' + disp
+        _perr = ''
+        if x.lower().endswith('.pdf') and not wt.strip() and not tt.strip():  # DIAG-STDERR v85.68: a silent pdf row carries the osascript complaint, so the next receipt names the failure instead of another zero
+            try:
+                import subprocess as _sp7
+                _pj7 = p.replace('\\', '\\\\').replace('"', '\\"')
+                _js7 = 'ObjC.import("PDFKit"); ObjC.import("Quartz"); var d = $.PDFDocument.alloc.initWithURL($.NSURL.fileURLWithPath("' + _pj7 + '")); (d.isNil() || !d.string) ? "" : d.string.js'
+                _r7 = _sp7.run(['osascript', '-l', 'JavaScript', '-e', _js7], capture_output=True, timeout=60)
+                _perr = (_r7.stderr.decode('utf-8', 'ignore') or '')[:80].strip()
+            except Exception as _e7:
+                _perr = repr(_e7)[:80]
+        if _perr: dec += ' | pdfkit-err: ' + _perr
         say('🔎 %s | word=%d pdf=%d | first-line: %s | heuristic: %s | firstline-eye: %s | canon: %s | display: %s | %s' % (x, len(wt), len(tt), fl, h, f1, c, disp, dec))
 
 def _case_sweep(root, log):  # CASE-SWEEP v85.57: casing is a property of the name, not of the ceremony's memory - every human-shaped filename is title-cased on the doorbell, examined or not, so no shout outlives its own arrival
@@ -4427,6 +4438,7 @@ def _selftest(root):
     ck('S409 the bell belongs to the newest living code, and an ousted owner abdicates', (chr(35)+' BELL-VERSION v85.64') in _src and (chr(35)+' BELL-ABDICATE v85.64') in _src and (chr(35)+' BELL-HEARTBEAT v85.59') in _src)
     ck('S410 a drained queue always ends with a spoken total', (chr(35)+' SERVICE-RECEIPT v85.64') in _src and (chr(35)+' RECEIPT-INDENT v85.65') in _src)
     ck('S411 every pdf has a native text eye that needs no index and no pixels', (chr(35)+' PDF-PDFKIT v85.65') in _src and ('PDFDocument' in _src))
+    ck('S412 a silent pdf row carries the complaint that silenced it', (chr(35)+' DIAG-STDERR v85.68') in _src and ('pdfkit-err' in _src))
     ck('S402 the master'+chr(39)+'s Finder selection is drained by the bell, in the background, each beat', (chr(35)+' SERVICE-QUEUE v85.58') in _src and ('.rename_queue' in _src))
     ck('S401 the butler'+chr(39)+'s eyes open in public, one honest row per file', ('def rename_diag(' in _src) and (chr(35)+' RENAME-DIAG v85.58') in _src and os.path.exists(os.path.join(BASE_DIR, 'archive', 'rendiag.py')))  # S401 repinned v85.59: the diagnostic lives where untracked survivors live
     ck('S400 casing is a property of the name, not of the ceremony'+chr(39)+'s memory', (chr(35)+' CASE-SWEEP v85.57') in _src and ('def _case_sweep(' in _src))
