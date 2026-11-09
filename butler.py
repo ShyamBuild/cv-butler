@@ -1340,7 +1340,7 @@ def _name_from_first_line(p):  # FIRST-LINE v85.20: when both developed eyes sta
         if any(ch.isdigit() for ch in ln): continue
         if '@' in ln: continue
         ws = ln.split()
-        if 2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws):
+        if 2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws) and not (set(w.lower() for w in ws) & _NAME_STOP):  # NAME-GATE v85.97: the fallback single-line path wears the same gate as the scan
             return ' '.join(w.capitalize() for w in ws)
         return ''
     return ''
@@ -1517,7 +1517,7 @@ def rename_diag(paths, say=print, deep=False):  # RENDIAG-DEEP v85.86: opt-in de
         say('🔎 %s | word=%d pdf=%d | first-line: %s | heuristic: %s | firstline-eye: %s | canon: %s | display: %s | %s' % (x, len(wt), len(tt), fl, h, f1, c, disp, dec))
 
 _EYEC = {}
-_EYE_VSN = 'v85.97'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once
+_EYE_VSN = 'v85.99'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire
 def _eyename_cache():
  import json as _je
  cf = os.path.join(BASE_DIR, '.eyename.json')
@@ -1528,6 +1528,7 @@ def _eyename_cache():
 def _stem_norm(s):  # STEM-NORM v85.90: download artifacts (_1, (2), trailing digits) are not part of a human's name
  return re.sub(r'[_\s]*(?:\(\d+\)|\d+)$', '', s).strip()
 _NAME_STOP = set('curriculum vitae resume summary profile objective challenging competitive dynamic results result oriented driven seeking looking opportunity position positions role roles manager engineer executive officer head director specialist consultant trainee intern fresher experienced professional personal contact educational education employment work experience skills strengths achievements awards certifications languages hobbies interests references address phone mobile email tel date birth age sex gender marital nationality indian india passport aadhar pan number ltd limited pvt inc co company companies industries industry technologies technology solutions services group corporation firm associates partners llc llp details information declaration father husband wife name'.split())  # NAME-GATE v85.97: a motto is not a man - any line touching the vocabulary of CVs-that-are-not-names is refused as a candidate
+_NAME_STOP |= set('objective education educational contact linkedin personal competencies competency summary profile work works employment career declaration interests hobbies skills skill father mother husband wife name names designation applied applying ref referral resume cv'.split())  # NAME-GATE v85.97 (extended v85.98): section headers and kin-words never pose as people
 def _eyename_of(p, trace=False, log=None):  # EYES-IN-SWEEP v85.90: the OCR-backed first line names a paper the filename cannot - cached by size and mtime so each paper pays the cap once  # EYECACHE v85.90
  try:
   st = os.stat(p)
@@ -1545,17 +1546,23 @@ def _eyename_of(p, trace=False, log=None):  # EYES-IN-SWEEP v85.90: the OCR-back
  except Exception:
   t = ''
  fl = ''
- _lines = [l.strip() for l in t.split('\n') if l.strip()][:12]  # NAME-SCAN v85.95: a name may sit below a title line or a photo caption - scan the head, not just the first breath
- for _ln in _lines:
-     _cut = re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:\-]?', _ln, flags=re.I)[0].strip()
-     _wsc = _cut.split()
-     if 2 <= len(_wsc) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _wsc) and not (set(w.lower() for w in _wsc) & _NAME_STOP) and (_canonical_person_name(_cut) or ''):  # NAME-GATE v85.97: the scanning eye refuses slogan-lines, so Challenging And Competitive can never again wear a man's coat
-         fl = _cut
-         break
+ _lines = [re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:\-]?', l.strip(), flags=re.I)[0].strip() for l in t.split('\n') if l.strip()][:8]  # NAME-SCAN v85.95  # NAME-JOIN v85.98: a name split across wrapped lines is still one name - read singly, in pairs and in triples; each witness wears its own hash
+ fl = ''
+ _i = 0
+ while _i < len(_lines) and not fl:
+     _cands = [_lines[_i]]
+     if _i + 1 < len(_lines): _cands.append(_lines[_i] + ' ' + _lines[_i+1])
+     if _i + 2 < len(_lines): _cands.append(_lines[_i] + ' ' + _lines[_i+1] + ' ' + _lines[_i+2])
+     for _cut in _cands:
+         _wsc = _cut.split()
+         if 2 <= len(_wsc) <= 4 and len(_cut) <= 40 and all(w.isalpha() or '-' in w or '.' in w for w in _wsc) and not (set(w.lower() for w in _wsc) & _NAME_STOP) and (_canonical_person_name(_cut) or ''):
+             fl = _cut
+             break
+     _i += 1
  if not fl and _lines: fl = _lines[0]
  fl = re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:\-]?', fl, flags=re.I)[0].strip()  # LINE-CUT v85.90: a first line that ends in a phone still begins with a human
  ws = fl.split()
- if 2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws):
+ if 2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws) and not (set(w.lower() for w in ws) & _NAME_STOP):  # NAME-GATE v85.97: the fallback single-line path wears the same gate as the scan
   cn = _canonical_person_name(fl) or ''
   name = _display_name(cn) if cn else ''
  if not name:
@@ -1596,27 +1603,6 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
                     continue
             except Exception:
                 continue
-            _en = _eyename_of(p)  # EYES-IN-SWEEP v85.90: the background sweep carries the same OCR eye the diagnostic proved, in place and cached, so the main butler renames what the table renames
-            if _en and _en != stem:
-             _sn = _stem_norm(stem)
-             _w0 = _sn.split()
-             _shape_ok = 2 <= len(_w0) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _w0)
-             if not _shape_ok or _name_key(_sn) == _name_key(_en):
-              _q3 = os.path.join(dpath, _en + ext)
-              if os.path.exists(_q3) and os.path.basename(_q3).lower() != x.lower():
-               if trace: log('🧭 sweep: %s | eyes say %s but another paper holds that name - proposal only' % (x, _en))
-              else:
-               try:
-                os.rename(p, _q3)
-                log('✏️ sweep renamed (eyes): %s → %s' % (x, _en + ext))
-                try:
-                 _safe_rename_ledger(p, _en, 'sweep-eyes', once=True)
-                 _safe_repath_ledgers(p, _q3)
-                except Exception:
-                 pass
-                continue
-               except Exception as _se3:
-                if trace: log('⚠️ sweep eyes-rename failed: %s | %r' % (x, _se3))
             ws = stem.split()
             if not (2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws)):
                 if trace: log('🧭 sweep: %s | not-human-shape' % x)
@@ -1675,10 +1661,7 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
   _sn = _stem_norm(stem); _w0 = _sn.split()
   if _name_key(_sn) != _name_key(d2) and 2 <= len(_w0) <= 4: log('🧭 service: %s | eyes say %s, a different human - proposal only, never a guess' % (x, d2)); return
   try:
-   os.rename(p, q2); log('✏️ service renamed (eyes): %s → %s' % (x, d2 + ext))  # SERVICE-EYES v85.85: an improper name yields to the paper's own witness, in place
-   try:
-    _safe_rename_ledger(p, d2, 'service-eyes', once=True); _safe_repath_ledgers(p, q2)
-   except Exception: pass
+   log('🧭 service proposes: %s reads as %s in its head - rename in Finder or teach me; the eye may name but never rename  # SERVICE-EYES v85.85 (propose-only v85.98)' % (x, d2))  # EYES-PROPOSE-ONLY v85.98: authority returns to the trained gates and the master's hand
   except Exception as _se2: log('⚠️ service eyes-rename failed: %s | %r' % (x, _se2))
  except Exception as _ce:
   log('⚠️ service crashed on %s: %r' % (os.path.basename(p), _ce))  # DRAIN-ARMOR v85.92
@@ -4699,6 +4682,8 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S442 a name split across wrapped lines is still one name', (chr(35)+' NAME-JOIN v85.98') in _src and ('_NAME_STOP |=' in _src))
+    ck('S443 a failed guard confesses its own probe', (chr(35)+' FAIL-LOUD v85.99') in _src and ('FAIL WHY' in _src))
     ck('S427 any chair diagnoses in one command, folder by folder', ('RENDIAG-FOLDERS v85.85' in open(os.path.join(BASE_DIR, 'archive', 'rendiag.py')).read()) and ('isdir' in open(os.path.join(BASE_DIR, 'archive', 'rendiag.py')).read()))
     ck('S428 depth is a choice the master makes, and a closed pipe is a quiet goodbye', (chr(35)+' RENDIAG-DEEP v85.86') in _src and ('BrokenPipeError' in open(os.path.join(BASE_DIR, 'archive', 'rendiag.py')).read()))
     ck('S429 a deep row that earns a name shows its verdict, and a blind eye is named before it is cured', (chr(35)+' DEEP-VERDICT v85.87') in _src)
@@ -4966,3 +4951,19 @@ except NameError:
     pass
 
 extract_text = extract_text_ocr  # ALIAS v85.89: one name for the whole chain, bound after every def has landed - the diag pdf column, emails_in_text and every bare caller wake from swallowing NameError
+
+try:  # FAIL-LOUD v85.99: a failed guard prints its own probe line, so no lap ever guesses why
+ _orig_ck_v8599 = ck
+ def ck(name, cond, *a, **k):
+  _r = _orig_ck_v8599(name, cond, *a, **k)
+  if not cond:
+   try:
+    import inspect as _ins
+    _fr = _ins.currentframe().f_back
+    _fl = open(_ins.getsourcefile(_fr)).read().split('\n')[_fr.f_lineno-1].strip()
+    print('🩸 FAIL WHY %s: %s' % (name, _fl[:200]))
+   except Exception:
+    pass
+  return _r
+except NameError:
+ pass
