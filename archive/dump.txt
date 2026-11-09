@@ -1,4 +1,4 @@
-🔒 live lock: butler_05428046.lock -> 18231|/Users/apple/Downloads/Sunsoft Technology/09 MBL/JD-MBL-Coca-cola}_-_Asst.Mgr__Dy__Mgr_Manager_Production_and_maintenance-Krones_{Beverage_industry}_for_DHAULANA,_Location_
+🔒 live lock: butler_05428046.lock -> 22945|/Users/apple/Downloads/Sunsoft Technology/09 MBL/JD-MBL-Coca-cola}_-_Asst.Mgr__Dy__Mgr_Manager_Production_and_maintenance-Krones_{Beverage_industry}_for_DHAULANA,_Location_
 ==== _service_act ====
 def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawful and local  # DRAIN-ARMOR v85.92: no path returns silent and a crash logs itself
  x = os.path.basename(p)
@@ -36,10 +36,7 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
   _sn = _stem_norm(stem); _w0 = _sn.split()
   if _name_key(_sn) != _name_key(d2) and 2 <= len(_w0) <= 4: log('🧭 service: %s | eyes say %s, a different human - proposal only, never a guess' % (x, d2)); return
   try:
-   os.rename(p, q2); log('✏️ service renamed (eyes): %s → %s' % (x, d2 + ext))  # SERVICE-EYES v85.85: an improper name yields to the paper's own witness, in place
-   try:
-    _safe_rename_ledger(p, d2, 'service-eyes', once=True); _safe_repath_ledgers(p, q2)
-   except Exception: pass
+   log('🧭 service proposes: %s reads as %s in its head - rename in Finder or teach me; the eye may name but never rename  # SERVICE-EYES v85.85 (propose-only v85.98)' % (x, d2))  # EYES-PROPOSE-ONLY v85.98: authority returns to the trained gates and the master's hand
   except Exception as _se2: log('⚠️ service eyes-rename failed: %s | %r' % (x, _se2))
  except Exception as _ce:
   log('⚠️ service crashed on %s: %r' % (os.path.basename(p), _ce))  # DRAIN-ARMOR v85.92
@@ -69,27 +66,6 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
                     continue
             except Exception:
                 continue
-            _en = _eyename_of(p)  # EYES-IN-SWEEP v85.90: the background sweep carries the same OCR eye the diagnostic proved, in place and cached, so the main butler renames what the table renames
-            if _en and _en != stem:
-             _sn = _stem_norm(stem)
-             _w0 = _sn.split()
-             _shape_ok = 2 <= len(_w0) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _w0)
-             if not _shape_ok or _name_key(_sn) == _name_key(_en):
-              _q3 = os.path.join(dpath, _en + ext)
-              if os.path.exists(_q3) and os.path.basename(_q3).lower() != x.lower():
-               if trace: log('🧭 sweep: %s | eyes say %s but another paper holds that name - proposal only' % (x, _en))
-              else:
-               try:
-                os.rename(p, _q3)
-                log('✏️ sweep renamed (eyes): %s → %s' % (x, _en + ext))
-                try:
-                 _safe_rename_ledger(p, _en, 'sweep-eyes', once=True)
-                 _safe_repath_ledgers(p, _q3)
-                except Exception:
-                 pass
-                continue
-               except Exception as _se3:
-                if trace: log('⚠️ sweep eyes-rename failed: %s | %r' % (x, _se3))
             ws = stem.split()
             if not (2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws)):
                 if trace: log('🧭 sweep: %s | not-human-shape' % x)
@@ -274,7 +250,7 @@ def _name_from_first_line(p):  # FIRST-LINE v85.20: when both developed eyes sta
         if any(ch.isdigit() for ch in ln): continue
         if '@' in ln: continue
         ws = ln.split()
-        if 2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws):
+        if 2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws) and not (set(w.lower() for w in ws) & _NAME_STOP):  # NAME-GATE v85.97: the fallback single-line path wears the same gate as the scan
             return ' '.join(w.capitalize() for w in ws)
         return ''
     return ''
@@ -419,17 +395,23 @@ def _eyename_of(p, trace=False, log=None):  # EYES-IN-SWEEP v85.90: the OCR-back
  except Exception:
   t = ''
  fl = ''
- _lines = [l.strip() for l in t.split('\n') if l.strip()][:12]  # NAME-SCAN v85.95: a name may sit below a title line or a photo caption - scan the head, not just the first breath
- for _ln in _lines:
-     _cut = re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:\-]?', _ln, flags=re.I)[0].strip()
-     _wsc = _cut.split()
-     if 2 <= len(_wsc) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _wsc) and not (set(w.lower() for w in _wsc) & _NAME_STOP) and (_canonical_person_name(_cut) or ''):  # NAME-GATE v85.97: the scanning eye refuses slogan-lines, so Challenging And Competitive can never again wear a man's coat
-         fl = _cut
-         break
+ _lines = [re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:\-]?', l.strip(), flags=re.I)[0].strip() for l in t.split('\n') if l.strip()][:8]  # NAME-SCAN v85.95  # NAME-JOIN v85.98: a name split across wrapped lines is still one name - read singly, in pairs and in triples; each witness wears its own hash
+ fl = ''
+ _i = 0
+ while _i < len(_lines) and not fl:
+     _cands = [_lines[_i]]
+     if _i + 1 < len(_lines): _cands.append(_lines[_i] + ' ' + _lines[_i+1])
+     if _i + 2 < len(_lines): _cands.append(_lines[_i] + ' ' + _lines[_i+1] + ' ' + _lines[_i+2])
+     for _cut in _cands:
+         _wsc = _cut.split()
+         if 2 <= len(_wsc) <= 4 and len(_cut) <= 40 and all(w.isalpha() or '-' in w or '.' in w for w in _wsc) and not (set(w.lower() for w in _wsc) & _NAME_STOP) and (_canonical_person_name(_cut) or ''):
+             fl = _cut
+             break
+     _i += 1
  if not fl and _lines: fl = _lines[0]
  fl = re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:\-]?', fl, flags=re.I)[0].strip()  # LINE-CUT v85.90: a first line that ends in a phone still begins with a human
  ws = fl.split()
- if 2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws):
+ if 2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws) and not (set(w.lower() for w in ws) & _NAME_STOP):  # NAME-GATE v85.97: the fallback single-line path wears the same gate as the scan
   cn = _canonical_person_name(fl) or ''
   name = _display_name(cn) if cn else ''
  if not name:
@@ -664,5 +646,5 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OCRBIN = os.path.join(BASE_DIR, "cvocr")
 117 
 OCR_SEM = threading.Semaphore(2)
-4968 
+4953 
 extract_text = extract_text_ocr  # ALIAS v85.89: one name for the whole chain, bound after every def has landed - the diag pdf column, emails_in_text and every bare caller wake from swallowing NameError
