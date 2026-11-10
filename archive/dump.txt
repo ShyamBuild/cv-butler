@@ -1,4 +1,4 @@
-🔒 live lock: butler_05428046.lock -> 22945|/Users/apple/Downloads/Sunsoft Technology/09 MBL/JD-MBL-Coca-cola}_-_Asst.Mgr__Dy__Mgr_Manager_Production_and_maintenance-Krones_{Beverage_industry}_for_DHAULANA,_Location_
+🔒 live lock: butler_05428046.lock -> 53915|/Users/apple/Downloads/Sunsoft Technology/09 MBL/JD-MBL-Coca-cola}_-_Asst.Mgr__Dy__Mgr_Manager_Production_and_maintenance-Krones_{Beverage_industry}_for_DHAULANA,_Location_
 ==== _service_act ====
 def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawful and local  # DRAIN-ARMOR v85.92: no path returns silent and a crash logs itself
  x = os.path.basename(p)
@@ -395,20 +395,7 @@ def _eyename_of(p, trace=False, log=None):  # EYES-IN-SWEEP v85.90: the OCR-back
  except Exception:
   t = ''
  fl = ''
- _lines = [re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:\-]?', l.strip(), flags=re.I)[0].strip() for l in t.split('\n') if l.strip()][:8]  # NAME-SCAN v85.95  # NAME-JOIN v85.98: a name split across wrapped lines is still one name - read singly, in pairs and in triples; each witness wears its own hash
- fl = ''
- _i = 0
- while _i < len(_lines) and not fl:
-     _cands = [_lines[_i]]
-     if _i + 1 < len(_lines): _cands.append(_lines[_i] + ' ' + _lines[_i+1])
-     if _i + 2 < len(_lines): _cands.append(_lines[_i] + ' ' + _lines[_i+1] + ' ' + _lines[_i+2])
-     for _cut in _cands:
-         _wsc = _cut.split()
-         if 2 <= len(_wsc) <= 4 and len(_cut) <= 40 and all(w.isalpha() or '-' in w or '.' in w for w in _wsc) and not (set(w.lower() for w in _wsc) & _NAME_STOP) and (_canonical_person_name(_cut) or ''):
-             fl = _cut
-             break
-     _i += 1
- if not fl and _lines: fl = _lines[0]
+ fl = _name_from_head_lines(t.split('\n'))  # NAME-SCAN v85.95  # NAME-JOIN v85.98 (delegated v85.102): one naming law in one place - the eye asks the fixture-tested brain and keeps only its answer
  fl = re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:\-]?', fl, flags=re.I)[0].strip()  # LINE-CUT v85.90: a first line that ends in a phone still begins with a human
  ws = fl.split()
  if 2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws) and not (set(w.lower() for w in ws) & _NAME_STOP):  # NAME-GATE v85.97: the fallback single-line path wears the same gate as the scan
@@ -646,5 +633,5 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OCRBIN = os.path.join(BASE_DIR, "cvocr")
 117 
 OCR_SEM = threading.Semaphore(2)
-4953 
+4976 
 extract_text = extract_text_ocr  # ALIAS v85.89: one name for the whole chain, bound after every def has landed - the diag pdf column, emails_in_text and every bare caller wake from swallowing NameError

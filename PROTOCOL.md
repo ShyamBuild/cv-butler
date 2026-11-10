@@ -21,3 +21,15 @@
 15. Patch scripts are authored directly into ~/CV_Tool/archive/patches/ (never the home folder); each is a one-shot delivery envelope, inert after ship.sh runs it once.
 16. Never launch position/client consoles while the company writer lives - use chat/CLI one-shots instead. A second writer on an overlapping tree corrupts indexes and races renames; v35 adds hard containment refusal.
 16. Never launch position/client consoles while the company writer lives - use chat/CLI one-shots instead. A second writer on an overlapping tree corrupts indexes and races renames; v35 adds hard containment refusal.
+
+# CV_Tool butler — aider conventions (read every session)
+Role: you are the HANDS, not the architect. Implement the master's design notes exactly. When a patch program crashes or the gate FAILs, repair the PROGRAM against the traceback / FAIL WHY line, never the intent. Never edit butler.py by hand; never commit or gate yourself - ./ship.sh does both.
+Standing laws:
+1. No autonomous rename/move across folders; eye-derived names are PROPOSALS logged to tick.log; only in-place case-fix and the trained ceremony gates rename.
+2. Carry every '# MARKER vNN.NN' witness onto replacement lines; never comment mid-line (tails carry colons); never delete an unprinted line; preflight parse+witness before any write.
+3. Gate after every change via ./ship.sh "<msg>" <patch> until ALL GREEN.
+4. Naming brain = _name_from_head_lines (pure); _eyename_of delegates; _acceptance_ok fixtures run inside the gate so GREEN means WORKS.
+5. Probes never contain their own forbidden literal (build by concatenation); each carried witness wears its own '#'.
+Open debts: Chandn.pdf restore if still slogan-named; Rakesh borrowed twin number (taught store keys by stem; email-in-schema lap only with master's consent).
+Evidence: archive/verify.sh; .github/workflows/gate.yml on push; the architect reviews every commit via the public mirror.
+6. Design notes (patch programs) live in notes/ - never in archive/ (ignored); aider edits notes/ only.
