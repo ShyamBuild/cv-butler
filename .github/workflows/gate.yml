@@ -1,0 +1,13 @@
+name: gate
+on: [push]
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install pypdf watchdog
+      - run: python -m py_compile butler.py briefing.py wa.py
+      - run: python -c "import butler; assert butler._acceptance_ok(); print('CI ACCEPTANCE GREEN')"
