@@ -385,15 +385,7 @@ def extract_text_ocr(p):  # PARAM-FIX v85.89: one parameter, one name - for week
             pass
     if not os.path.exists(OCRBIN): return ""
     _tgt = p
-    if os.path.splitext(_tgt)[1].lower() == '.pdf':  # OCR-RASTER v85.89: tesseract reads ink, not documents - sips renders the first page into a png the eye can hold, no poppler required
-        try:
-            import tempfile as _tf
-            _png = os.path.join(_tf.gettempdir(), 'cvocr_%d.png' % os.getpid())
-            _rs = subprocess.run(['sips', '-s', 'format', 'png', _tgt, '--out', _png], capture_output=True, timeout=90)
-            if _rs.returncode != 0 or not os.path.exists(_png): return ''
-            _tgt = _png
-        except Exception:
-            return ''
+    # OCR-RASTER v85.89 (retired v85.107): the png detour fed the Swift eye a picture it could not open - PDFKit reads pdfs natively, so the paper goes to the ink eye whole
     try:
         with OCR_SEM:
             r = subprocess.run([OCRBIN, _tgt, 'stdout'], capture_output=True, text=True, timeout=25)  # OCR-CAP v85.16: twenty-five seconds of patience per paper, never more  # OCR-STDOUT v85.95: tesseract needs an outputbase and stdout is the word - for months the eye handed an image and no destination, and read usage text
@@ -1518,7 +1510,7 @@ def rename_diag(paths, say=print, deep=False):  # RENDIAG-DEEP v85.86: opt-in de
         say('🔎 %s | word=%d pdf=%d | first-line: %s | heuristic: %s | firstline-eye: %s | canon: %s | display: %s | %s' % (x, len(wt), len(tt), fl, h, f1, c, disp, dec))
 
 _EYEC = {}
-_EYE_VSN = 'v85.105'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire  # EYE-REBIRTH v85.105: cached silences expire the day the ink eye opens, so no paper stays blind by memory
+_EYE_VSN = 'v85.107'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire  # EYE-REBIRTH v85.105: cached silences expire the day the ink eye opens, so no paper stays blind by memory  # EYE-REBIRTH v85.107: silences cached while the ink eye ate pictures expire the day it eats paper
 def _eyename_cache():
  import json as _je
  cf = os.path.join(BASE_DIR, '.eyename.json')
@@ -4708,8 +4700,9 @@ def _selftest(root):
     ck('S447 one naming law lives in one pure function, and the eye delegates to it', _src.count('def _name_from_head_' + 'lines(') == 1 and _src.count('_name_from_head_' + 'lines(t.split') >= 1)  # MIRROR-SAFE v85.103: a guard that counts a string must not contain it whole
     ck('S448 a guard never certifies its own text', _src.count('_name_from_head_' + 'lines(t.split') >= 1 and ('delegated v85.102' in _src))
     ck('S449 the deed stands behind the gate, in order', _src.find('os.rename(p, ' + 'q2)') > _src.find('a different human - proposal only') > -1)
-    ck('S450 a cached silence expires when a new eye opens', (chr(35)+' EYE-REBIRTH v85.105') in _src and _src.count('_EYE_VSN = ' + chr(39) + 'v85.105') >= 1)
+    ck('S450 a cached silence expires when a new eye opens', (chr(35)+' EYE-REBIRTH v85.1') in _src and _src.count('_EYE_VSN = ' + chr(39) + 'v85.1') >= 1)  # VERSION-FREE v85.107: a rebirth guard pins the mechanism, not the number, so the next bump never breaks the last law
     ck('S451 a falling eye never blinds the eye behind it', (chr(35)+' PURE-ARMOR v85.106') in _src and _src.count('try: _pt = _pdf_pure_' + 'text(p)') >= 1)
+    ck('S452 the ink eye receives the paper whole', ('cvocr_' + '%d.png') not in _src and (chr(35)+' OCR-RASTER v85.89 (retired v85.107)') in _src)
     ck('S442 a name split across wrapped lines is still one name', (chr(35)+' NAME-JOIN v85.98') in _src and ('_NAME_STOP |=' in _src))
     ck('S443 a failed guard confesses its own probe', (chr(35)+' FAIL-LOUD v85.99') in _src and ('FAIL WHY' in _src))
     ck('S427 any chair diagnoses in one command, folder by folder', ('RENDIAG-FOLDERS v85.85' in open(os.path.join(BASE_DIR, 'archive', 'rendiag.py')).read()) and ('isdir' in open(os.path.join(BASE_DIR, 'archive', 'rendiag.py')).read()))
