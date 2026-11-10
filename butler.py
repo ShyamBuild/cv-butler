@@ -1380,6 +1380,7 @@ def _fast_rename(p, root, log):  # RENAME-WATCH v85.52: the ceremony's fast half
     if stem == canon: return
     if _name_key(_stem_norm(stem)) != _name_key(canon): return  # STEM-NORM v85.90: a suffix is not a surname
     q = os.path.join(os.path.dirname(p), canon + os.path.splitext(x)[1])
+    if not (2 <= len(_stem_norm(stem).split()) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _stem_norm(stem).split())): disp = stem  # CASE-GATE v85.115: a garbage stem never earns the case-fix - it goes straight to the eyes, so one click is enough and the master pays no click-tax
     if (os.path.exists(q) and os.path.basename(q).lower() != os.path.basename(p).lower()): return  # CASE-SELF v85.82: realpath resolves symlinks, not case - a case-variant of yourself is you; the witness rides at the line end, never through its chest
     try:
         os.rename(p, q)
@@ -4758,6 +4759,7 @@ def _selftest(root):
     ck('S461 the eye cache bumps when the brain learns a new anchor rule', _src.count('_EYE_VSN = ' + chr(39) + 'v85.1') >= 1 and (chr(35)+' EYE-REBIRTH v85.1') in _src)  # VERSION-FREE v85.113: a rebirth guard pins the lineage prefix, never one number, so the next bump never breaks it
     ck('S462 the initial anchor speaks for deep title-case names', (chr(35)+' EMAIL-ANCHOR-INITIAL v85.113') in _src and _src.count('local.startswith(wa[0][0].lower' + '())') >= 1)
     ck('S463 the ink eye is given ninety seconds', (chr(35)+' OCR-PATIENT v85.114') in _src and _src.count('text=True, timeout=' + '90') >= 1)
+    ck('S464 the case-gate stands above the case-fix', 0 <= _src.find('CASE-GATE v85.115') < _src.find('CASE-SELF v85.82') < _src.find('NAME-SCAN-SERVICE v85.95'))
     ck('S445 the confession stands before the first guard it must explain', ('FAIL WHY' in _src) and ((chr(35)+' FAIL-LOUD v85.99') in _src))
     ck('S446 the gate tests behaviour on synthetic heads, so green means works', ('def _acceptance_ok(' in _src) and _acceptance_ok())
     ck('S447 one naming law lives in one pure function, and the eye delegates to it', _src.count('def _name_from_head_' + 'lines(') == 1 and _src.count('_name_from_head_' + 'lines(t.split') >= 1)  # MIRROR-SAFE v85.103: a guard that counts a string must not contain it whole
