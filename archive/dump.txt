@@ -1,4 +1,4 @@
-🔒 live lock: butler_05428046.lock -> 65843|/Users/apple/Downloads/Sunsoft Technology/09 MBL/JD-MBL-Coca-cola}_-_Asst.Mgr__Dy__Mgr_Manager_Production_and_maintenance-Krones_{Beverage_industry}_for_DHAULANA,_Location_
+🔒 live lock: butler_05428046.lock -> 66762|/Users/apple/Downloads/Sunsoft Technology/09 MBL/JD-MBL-Coca-cola}_-_Asst.Mgr__Dy__Mgr_Manager_Production_and_maintenance-Krones_{Beverage_industry}_for_DHAULANA,_Location_
 ==== _service_act ====
 def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawful and local  # DRAIN-ARMOR v85.92: no path returns silent and a crash logs itself
  x = os.path.basename(p)
@@ -649,5 +649,5 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OCRBIN = os.path.join(BASE_DIR, "cvocr")
 117 
 OCR_SEM = threading.Semaphore(2)
-5030 
+5031 
 extract_text = extract_text_ocr  # ALIAS v85.89: one name for the whole chain, bound after every def has landed - the diag pdf column, emails_in_text and every bare caller wake from swallowing NameError
