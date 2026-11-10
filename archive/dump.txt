@@ -1,4 +1,4 @@
-🔒 live lock: butler_05428046.lock -> 59512|/Users/apple/Downloads/Sunsoft Technology/09 MBL/JD-MBL-Coca-cola}_-_Asst.Mgr__Dy__Mgr_Manager_Production_and_maintenance-Krones_{Beverage_industry}_for_DHAULANA,_Location_
+🔒 live lock: butler_05428046.lock -> 61410|/Users/apple/Downloads/Sunsoft Technology/09 MBL/JD-MBL-Coca-cola}_-_Asst.Mgr__Dy__Mgr_Manager_Production_and_maintenance-Krones_{Beverage_industry}_for_DHAULANA,_Location_
 ==== _service_act ====
 def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawful and local  # DRAIN-ARMOR v85.92: no path returns silent and a crash logs itself
  x = os.path.basename(p)
@@ -222,15 +222,7 @@ def extract_text_ocr(p):  # PARAM-FIX v85.89: one parameter, one name - for week
             pass
     if not os.path.exists(OCRBIN): return ""
     _tgt = p
-    if os.path.splitext(_tgt)[1].lower() == '.pdf':  # OCR-RASTER v85.89: tesseract reads ink, not documents - sips renders the first page into a png the eye can hold, no poppler required
-        try:
-            import tempfile as _tf
-            _png = os.path.join(_tf.gettempdir(), 'cvocr_%d.png' % os.getpid())
-            _rs = subprocess.run(['sips', '-s', 'format', 'png', _tgt, '--out', _png], capture_output=True, timeout=90)
-            if _rs.returncode != 0 or not os.path.exists(_png): return ''
-            _tgt = _png
-        except Exception:
-            return ''
+    # OCR-RASTER v85.89 (retired v85.107): the png detour fed the Swift eye a picture it could not open - PDFKit reads pdfs natively, so the paper goes to the ink eye whole
     try:
         with OCR_SEM:
             r = subprocess.run([OCRBIN, _tgt, 'stdout'], capture_output=True, text=True, timeout=25)  # OCR-CAP v85.16: twenty-five seconds of patience per paper, never more  # OCR-STDOUT v85.95: tesseract needs an outputbase and stdout is the word - for months the eye handed an image and no destination, and read usage text
@@ -638,5 +630,5 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OCRBIN = os.path.join(BASE_DIR, "cvocr")
 117 
 OCR_SEM = threading.Semaphore(2)
-4984 
+4977 
 extract_text = extract_text_ocr  # ALIAS v85.89: one name for the whole chain, bound after every def has landed - the diag pdf column, emails_in_text and every bare caller wake from swallowing NameError

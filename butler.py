@@ -1523,19 +1523,30 @@ def _stem_norm(s):  # STEM-NORM v85.90: download artifacts (_1, (2), trailing di
 _NAME_STOP = set('curriculum vitae resume summary profile objective challenging competitive dynamic results result oriented driven seeking looking opportunity position positions role roles manager engineer executive officer head director specialist consultant trainee intern fresher experienced professional personal contact educational education employment work experience skills strengths achievements awards certifications languages hobbies interests references address phone mobile email tel date birth age sex gender marital nationality indian india passport aadhar pan number ltd limited pvt inc co company companies industries industry technologies technology solutions services group corporation firm associates partners llc llp details information declaration father husband wife name'.split())  # NAME-GATE v85.97: a motto is not a man - any line touching the vocabulary of CVs-that-are-not-names is refused as a candidate
 _NAME_STOP |= set('objective education educational contact linkedin personal competencies competency summary profile work works employment career declaration interests hobbies skills skill father mother husband wife name names designation applied applying ref referral resume cv'.split())  # NAME-GATE v85.97 (extended v85.98): section headers and kin-words never pose as people
 _NAME_STOP |= set('best ability of my the a an to in for with and or at on is are was were be been being i we you he she it they me him her us them where can will shall should would could may might must environment utilize utilizing maximum extent progress organization motivate motivating challenge challenges competition work'.split())  # STOP-EXT2 v85.101: articles, conjunctions and slogan-verbs join the gate, so no sentence fragment can pose as a human
-def _name_from_head_lines(lines):  # ACCEPTANCE v85.101: the naming brain as a pure function of head lines - fixtures test it inside the gate, so ALL GREEN means WORKS, not merely lawful
-    ls = [re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:\-]?', l.strip(), flags=re.I)[0].strip() for l in lines if l.strip()][:8]
+_NAME_STOP |= set('urdu english hindi arabic french german spanish marathi tamil telugu kannada bengali punjabi sanskrit mandarin chinese'.split())  # STOP-EXT3 v85.109: language names never pose as people
+def _name_from_head_lines(lines):  # ACCEPTANCE v85.101: the naming brain as a pure function of head lines - fixtures test it inside the gate, so ALL GREEN means WORKS, not merely lawful  # DEEP-CAPS v85.108: when the head is silent, two adjacent one-word all-caps lines anywhere on the first page join into one human  # HEAD-SCOPE v85.109: a head wears its name in its first three breaths, and an address is never a word of a name
+    ls = [re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:-]?', l.strip(), flags=re.I)[0].strip() for l in lines if l.strip()][:8]
     i = 0
-    while i < len(ls):
+    while i < len(ls) and i < 3:  # HEAD-SCOPE v85.109: later title-case pairs are prose, not people - mid-page caps belong to DEEP-CAPS alone
         cands = [ls[i]]
         if i + 1 < len(ls): cands.append(ls[i] + ' ' + ls[i+1])
         if i + 2 < len(ls): cands.append(ls[i] + ' ' + ls[i+1] + ' ' + ls[i+2])
         for cut in cands:
             ws = cut.split()
-            if 2 <= len(ws) <= 4 and len(cut) <= 40 and all(w.isalpha() or '-' in w or '.' in w for w in ws) and not (set(w.lower() for w in ws) & _NAME_STOP) and (_canonical_person_name(cut) or ''):
+            if 2 <= len(ws) <= 4 and len(cut) <= 40 and all(w.isalpha() or '-' in w or '.' in w for w in ws) and not any('@' in w for w in ws) and not (set(w.lower() for w in ws) & _NAME_STOP) and (_canonical_person_name(cut) or ''):  # MAIL-REFUSE v85.109: an address is never a word of a name
                 return _display_name(_canonical_person_name(cut))
         i += 1
+    j = 0
+    while j + 1 < len(lines):
+        a = lines[j].strip(); b = lines[j+1].strip()
+        if len(a.split()) == 1 and a.isupper() and a.isalpha() and len(b.split()) == 1 and b.isupper() and b.isalpha():
+            cut = a + ' ' + b
+            ws = cut.split()
+            if 2 <= len(ws) <= 4 and len(cut) <= 40 and not (set(w.lower() for w in ws) & _NAME_STOP) and (_canonical_person_name(cut) or ''):
+                return _display_name(_canonical_person_name(cut))
+        j += 1
     return ''
+
 def _eyename_of(p, trace=False, log=None):  # EYES-IN-SWEEP v85.90: the OCR-backed first line names a paper the filename cannot - cached by size and mtime so each paper pays the cap once  # EYECACHE v85.90
  try:
   st = os.stat(p)
@@ -4695,6 +4706,8 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S455 the head scope stops at three breaths', _src.count('while i < len(ls) and i < ' + '3:') >= 1 and (chr(35)+' HEAD-SCOPE v85.109') in _src)
+    ck('S456 an address is never a word of a name', _src.count('any(' + chr(39) + '@' + chr(39) + ' in w for w in ws)') >= 1 and (chr(35)+' MAIL-REFUSE v85.109') in _src)
     ck('S445 the confession stands before the first guard it must explain', ('FAIL WHY' in _src) and ((chr(35)+' FAIL-LOUD v85.99') in _src))
     ck('S446 the gate tests behaviour on synthetic heads, so green means works', ('def _acceptance_ok(' in _src) and _acceptance_ok())
     ck('S447 one naming law lives in one pure function, and the eye delegates to it', _src.count('def _name_from_head_' + 'lines(') == 1 and _src.count('_name_from_head_' + 'lines(t.split') >= 1)  # MIRROR-SAFE v85.103: a guard that counts a string must not contain it whole
