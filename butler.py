@@ -362,7 +362,8 @@ def extract_text_ocr(p):  # PARAM-FIX v85.89: one parameter, one name - for week
         pass
     _wt = _word_text(p)  # TEXT-DOCX v85.55: head eye - if the native reader speaks, the pdf eyes rest
     if _wt.strip(): return _wt
-    _pt = _pdf_pure_text(p)  # PDF-PURE v85.70: the permission-free eye is asked before any framework that macOS may silently refuse
+    try: _pt = _pdf_pure_text(p)  # PDF-PURE v85.70: the permission-free eye is asked before any framework that macOS may silently refuse  # PURE-ARMOR v85.106: a broken pure eye must never blind the ink eye behind it
+    except Exception: _pt = ''
     if len(_pt) > 40 and re.search(r'[A-Za-z]{4,}', _pt): return _pt
     if os.path.splitext(p)[1].lower() == '.pdf':  # PDF-PDFKIT v85.65: when the library is dead and Spotlight has no index, PDFKit reads the text layer natively through JavaScript for Automation - no libraries, no pixels, no index required
         try:
@@ -4708,6 +4709,7 @@ def _selftest(root):
     ck('S448 a guard never certifies its own text', _src.count('_name_from_head_' + 'lines(t.split') >= 1 and ('delegated v85.102' in _src))
     ck('S449 the deed stands behind the gate, in order', _src.find('os.rename(p, ' + 'q2)') > _src.find('a different human - proposal only') > -1)
     ck('S450 a cached silence expires when a new eye opens', (chr(35)+' EYE-REBIRTH v85.105') in _src and _src.count('_EYE_VSN = ' + chr(39) + 'v85.105') >= 1)
+    ck('S451 a falling eye never blinds the eye behind it', (chr(35)+' PURE-ARMOR v85.106') in _src and _src.count('try: _pt = _pdf_pure_' + 'text(p)') >= 1)
     ck('S442 a name split across wrapped lines is still one name', (chr(35)+' NAME-JOIN v85.98') in _src and ('_NAME_STOP |=' in _src))
     ck('S443 a failed guard confesses its own probe', (chr(35)+' FAIL-LOUD v85.99') in _src and ('FAIL WHY' in _src))
     ck('S427 any chair diagnoses in one command, folder by folder', ('RENDIAG-FOLDERS v85.85' in open(os.path.join(BASE_DIR, 'archive', 'rendiag.py')).read()) and ('isdir' in open(os.path.join(BASE_DIR, 'archive', 'rendiag.py')).read()))
