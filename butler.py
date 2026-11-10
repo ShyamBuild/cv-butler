@@ -1560,20 +1560,7 @@ def _eyename_of(p, trace=False, log=None):  # EYES-IN-SWEEP v85.90: the OCR-back
  except Exception:
   t = ''
  fl = ''
- _lines = [re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:\-]?', l.strip(), flags=re.I)[0].strip() for l in t.split('\n') if l.strip()][:8]  # NAME-SCAN v85.95  # NAME-JOIN v85.98: a name split across wrapped lines is still one name - read singly, in pairs and in triples; each witness wears its own hash
- fl = ''
- _i = 0
- while _i < len(_lines) and not fl:
-     _cands = [_lines[_i]]
-     if _i + 1 < len(_lines): _cands.append(_lines[_i] + ' ' + _lines[_i+1])
-     if _i + 2 < len(_lines): _cands.append(_lines[_i] + ' ' + _lines[_i+1] + ' ' + _lines[_i+2])
-     for _cut in _cands:
-         _wsc = _cut.split()
-         if 2 <= len(_wsc) <= 4 and len(_cut) <= 40 and all(w.isalpha() or '-' in w or '.' in w for w in _wsc) and not (set(w.lower() for w in _wsc) & _NAME_STOP) and (_canonical_person_name(_cut) or ''):
-             fl = _cut
-             break
-     _i += 1
- if not fl and _lines: fl = _lines[0]
+ fl = _name_from_head_lines(t.split('\n'))  # NAME-SCAN v85.95  # NAME-JOIN v85.98 (delegated v85.102): one naming law in one place - the eye asks the fixture-tested brain and keeps only its answer
  fl = re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:\-]?', fl, flags=re.I)[0].strip()  # LINE-CUT v85.90: a first line that ends in a phone still begins with a human
  ws = fl.split()
  if 2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws) and not (set(w.lower() for w in ws) & _NAME_STOP):  # NAME-GATE v85.97: the fallback single-line path wears the same gate as the scan
@@ -4713,7 +4700,8 @@ def _selftest(root):
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
     ck('S445 the confession stands before the first guard it must explain', ('FAIL WHY' in _src) and ((chr(35)+' FAIL-LOUD v85.99') in _src))
     ck('S446 the gate tests behaviour on synthetic heads, so green means works', ('def _acceptance_ok(' in _src) and _acceptance_ok())
-    ck('S447 one naming law lives in one pure function, and the eye delegates to it', ('def _name_from_head_lines(' in _src) and ('_name_from_head_lines(t.split' in _src))
+    ck('S447 one naming law lives in one pure function, and the eye delegates to it', _src.count('def _name_from_head_' + 'lines(') == 1 and _src.count('_name_from_head_' + 'lines(t.split') >= 1)  # MIRROR-SAFE v85.103: a guard that counts a string must not contain it whole
+    ck('S448 a guard never certifies its own text', _src.count('_name_from_head_' + 'lines(t.split') >= 1 and ('delegated v85.102' in _src))
     ck('S442 a name split across wrapped lines is still one name', (chr(35)+' NAME-JOIN v85.98') in _src and ('_NAME_STOP |=' in _src))
     ck('S443 a failed guard confesses its own probe', (chr(35)+' FAIL-LOUD v85.99') in _src and ('FAIL WHY' in _src))
     ck('S427 any chair diagnoses in one command, folder by folder', ('RENDIAG-FOLDERS v85.85' in open(os.path.join(BASE_DIR, 'archive', 'rendiag.py')).read()) and ('isdir' in open(os.path.join(BASE_DIR, 'archive', 'rendiag.py')).read()))
@@ -4730,6 +4718,9 @@ def _selftest(root):
     ck('S438 a name below the first line is still a name', (chr(35)+' NAME-SCAN v85.95') in _src and (chr(35)+' NAME-SCAN-SERVICE v85.95') in _src)
     ck('S439 a cached blindness expires the day the logic learns', _src.count('_EYE_VSN') >= 3)
     ck('S440 a motto never wears a man'+chr(39)+'s coat', ('_NAME_STOP' in _src) and (chr(35)+' NAME-GATE v85.97') in _src)
+    ck('S441 the eye may name but never rename - authority rests with the trained gates and the master'+chr(39)+'s hand', (chr(35)+' EYES-PROPOSE-ONLY v85.98') in _src)
+    ck('S441B no background sweep renames from eye text', _src.count('os.rename(p, ' + '_q3)') == 0)
+    ck('S441C no service renames from eye text, only proposes', _src.count('os.rename(p, ' + 'q2)') == 0 and ('service proposes:' in _src))
     ck('S415 the text layer is readable by the standard library alone, permissions or no permissions', (chr(35)+' PDF-PURE v85.70') in _src and ('def _pdf_pure_text(' in _src) and ('zlib' in _src))
     ck('S416 a silent sweep names the guard that silenced each file', (chr(35)+' SWEEP-TRACE v85.70') in _src and ('trace=False' in _src))
     ck('S417 the pure eye wears every decoder a producer wears, and the venv reader speaks CID', (chr(35)+' PDF-PURE-HARD v85.71') in _src and ('a85decode' in _src) and (chr(35)+' PY-PYPDF v85.72') in _src)
