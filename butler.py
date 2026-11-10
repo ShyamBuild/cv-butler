@@ -1510,7 +1510,7 @@ def rename_diag(paths, say=print, deep=False):  # RENDIAG-DEEP v85.86: opt-in de
         say('🔎 %s | word=%d pdf=%d | first-line: %s | heuristic: %s | firstline-eye: %s | canon: %s | display: %s | %s' % (x, len(wt), len(tt), fl, h, f1, c, disp, dec))
 
 _EYEC = {}
-_EYE_VSN = 'v85.110'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire  # EYE-REBIRTH v85.105: cached silences expire the day the ink eye opens, so no paper stays blind by memory  # EYE-REBIRTH v85.107: silences cached while the ink eye ate pictures expire the day it eats paper  # EYE-REBIRTH v85.110: silences and watermark names cached before the refusals expire tonight
+_EYE_VSN = 'v85.112'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire  # EYE-REBIRTH v85.105: cached silences expire the day the ink eye opens, so no paper stays blind by memory  # EYE-REBIRTH v85.107: silences cached while the ink eye ate pictures expire the day it eats paper  # EYE-REBIRTH v85.110: silences and watermark names cached before the refusals expire tonight  # EYE-REBIRTH v85.112: the EMAIL-ANCHOR brain needs a fresh cache so the deep Saurabh-class names are not served from the v85.110 SILENT memory
 def _eyename_cache():
  import json as _je
  cf = os.path.join(BASE_DIR, '.eyename.json')
@@ -4748,6 +4748,7 @@ def _selftest(root):
     ck('S458 every click writes its diagnosis', _src.count('service diag: ' + '%s') >= 2 and (chr(35)+' DIAG-EVERY-CLICK v85.110') in _src)
     ck('S459 a caps name wears its role beneath', (chr(35)+' ROLE-BENEATH v85.110') in _src and _src.count('manager' + chr(39) + ',' + chr(39) + 'engineer') >= 1)
     ck('S460 the email anchor speaks for mid-page caps names', (chr(35)+' EMAIL-ANCHOR v85.111') in _src and _src.count('wa[0].lower() in local or wa[-1].lower() in ' + 'local') >= 1)
+    ck('S461 the eye cache bumps when the brain learns a new anchor rule', _src.count('_EYE_VSN = ' + chr(39) + 'v85.112') >= 1 and (chr(35)+' EYE-REBIRTH v85.112') in _src)
     ck('S445 the confession stands before the first guard it must explain', ('FAIL WHY' in _src) and ((chr(35)+' FAIL-LOUD v85.99') in _src))
     ck('S446 the gate tests behaviour on synthetic heads, so green means works', ('def _acceptance_ok(' in _src) and _acceptance_ok())
     ck('S447 one naming law lives in one pure function, and the eye delegates to it', _src.count('def _name_from_head_' + 'lines(') == 1 and _src.count('_name_from_head_' + 'lines(t.split') >= 1)  # MIRROR-SAFE v85.103: a guard that counts a string must not contain it whole
