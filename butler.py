@@ -1510,7 +1510,7 @@ def rename_diag(paths, say=print, deep=False):  # RENDIAG-DEEP v85.86: opt-in de
         say('🔎 %s | word=%d pdf=%d | first-line: %s | heuristic: %s | firstline-eye: %s | canon: %s | display: %s | %s' % (x, len(wt), len(tt), fl, h, f1, c, disp, dec))
 
 _EYEC = {}
-_EYE_VSN = 'v85.107'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire  # EYE-REBIRTH v85.105: cached silences expire the day the ink eye opens, so no paper stays blind by memory  # EYE-REBIRTH v85.107: silences cached while the ink eye ate pictures expire the day it eats paper
+_EYE_VSN = 'v85.110'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire  # EYE-REBIRTH v85.105: cached silences expire the day the ink eye opens, so no paper stays blind by memory  # EYE-REBIRTH v85.107: silences cached while the ink eye ate pictures expire the day it eats paper  # EYE-REBIRTH v85.110: silences and watermark names cached before the refusals expire tonight
 def _eyename_cache():
  import json as _je
  cf = os.path.join(BASE_DIR, '.eyename.json')
@@ -1524,10 +1524,11 @@ _NAME_STOP = set('curriculum vitae resume summary profile objective challenging 
 _NAME_STOP |= set('objective education educational contact linkedin personal competencies competency summary profile work works employment career declaration interests hobbies skills skill father mother husband wife name names designation applied applying ref referral resume cv'.split())  # NAME-GATE v85.97 (extended v85.98): section headers and kin-words never pose as people
 _NAME_STOP |= set('best ability of my the a an to in for with and or at on is are was were be been being i we you he she it they me him her us them where can will shall should would could may might must environment utilize utilizing maximum extent progress organization motivate motivating challenge challenges competition work'.split())  # STOP-EXT2 v85.101: articles, conjunctions and slogan-verbs join the gate, so no sentence fragment can pose as a human
 _NAME_STOP |= set('urdu english hindi arabic french german spanish marathi tamil telugu kannada bengali punjabi sanskrit mandarin chinese'.split())  # STOP-EXT3 v85.109: language names never pose as people
-def _name_from_head_lines(lines):  # ACCEPTANCE v85.101: the naming brain as a pure function of head lines - fixtures test it inside the gate, so ALL GREEN means WORKS, not merely lawful  # DEEP-CAPS v85.108: when the head is silent, two adjacent one-word all-caps lines anywhere on the first page join into one human  # HEAD-SCOPE v85.109: a head wears its name in its first three breaths, and an address is never a word of a name
+_NAME_STOP |= set('by powered resumegemini gemini indeed monster naukri shine generated created prepared watermark zety visualcv'.split())  # STOP-EXT4 v85.110: watermarks and portal ghosts never pose as people
+def _name_from_head_lines(lines):  # ACCEPTANCE v85.101: the naming brain as a pure function of head lines - fixtures test it inside the gate, so ALL GREEN means WORKS, not merely lawful  # DEEP-CAPS v85.108: two adjacent one-word all-caps lines join into one human  # HEAD-SCOPE v85.109: a head wears its name in its first three breaths  # ROLE-BENEATH v85.110: a one-line caps name wears its role beneath, so a caps skill never does
     ls = [re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:-]?', l.strip(), flags=re.I)[0].strip() for l in lines if l.strip()][:8]
     i = 0
-    while i < len(ls) and i < 3:  # HEAD-SCOPE v85.109: later title-case pairs are prose, not people - mid-page caps belong to DEEP-CAPS alone
+    while i < len(ls) and i < 3:
         cands = [ls[i]]
         if i + 1 < len(ls): cands.append(ls[i] + ' ' + ls[i+1])
         if i + 2 < len(ls): cands.append(ls[i] + ' ' + ls[i+1] + ' ' + ls[i+2])
@@ -1539,7 +1540,11 @@ def _name_from_head_lines(lines):  # ACCEPTANCE v85.101: the naming brain as a p
     j = 0
     while j + 1 < len(lines):
         a = lines[j].strip(); b = lines[j+1].strip()
-        if len(a.split()) == 1 and a.isupper() and a.isalpha() and len(b.split()) == 1 and b.isupper() and b.isalpha():
+        wa = a.split()
+        if len(wa) == 2 and a.isupper() and all(w.isalpha() for w in wa) and any(r in b.lower() for r in ('manager','engineer','officer','executive','head','director','specialist','consultant','supervisor','technician','assistant')):  # ROLE-BENEATH v85.110: a caps name wears its role beneath, so a caps skill never does
+            if not (set(w.lower() for w in wa) & _NAME_STOP) and (_canonical_person_name(a) or ''):
+                return _display_name(_canonical_person_name(a))
+        if len(wa) == 1 and a.isupper() and a.isalpha() and len(b.split()) == 1 and b.isupper() and b.isalpha():
             cut = a + ' ' + b
             ws = cut.split()
             if 2 <= len(ws) <= 4 and len(cut) <= 40 and not (set(w.lower() for w in ws) & _NAME_STOP) and (_canonical_person_name(cut) or ''):
@@ -1609,7 +1614,23 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
             except Exception:
                 continue
             ws = stem.split()
-            if not (2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws)):
+            if not (2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws)) or bool(set(stem.lower().split()) & _NAME_STOP):  # GARBAGE-WIDE v85.110: watermark stems are scars too, and the tick heals them
+                _en4 = ''
+                try: _en4 = _eyename_of(p) or ''
+                except Exception: _en4 = ''
+                _c4 = ''
+                try: _c4 = _canonical_person_name(_en4) if _en4 else ''
+                except Exception: _c4 = ''
+                _d4 = _display_name(_c4) if _c4 else ''
+                _q4 = os.path.join(dpath, _d4 + ext)
+                if _d4 and not (os.path.exists(_q4) and os.path.basename(_q4).lower() != x.lower()):
+                 try:
+                  os.rename(p, _q4); log('✏️ sweep renamed (gated eyes): %s → %s' % (x, _d4 + ext))  # SWEEP-GARBAGE-DEED v85.108: a stem no human wears is a scar, and the paper's own fixture-tested head names it again on the file-change trigger - behind canon, gate, collision check and the undo ledger; a stem that is another human's name still only proposes
+                  try:
+                   _safe_rename_ledger(p, _d4, 'sweep-garbage', once=True); _safe_repath_ledgers(p, _q4)
+                  except Exception: pass
+                  continue
+                 except Exception: pass
                 if trace: log('🧭 sweep: %s | not-human-shape' % x)
                 continue
             disp = _display_name(stem)
@@ -1653,10 +1674,12 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
   v = ''
   try: v = heuristic_name(p) or _name_from_first_line(p) or _eyename_of(p)  # NAME-SCAN-SERVICE v85.95: the right-click borrows the scanning eye and its cache, so a photo-headed CV is named from its own head
   except Exception: v = ''
+  log('🔎 service diag: %s | eye-head: %s' % (x, (v or 'SILENT')[:60]))  # DIAG-EVERY-CLICK v85.110: no right-click is ever dark - the eye's raw head speaks into the log before any judgement
   if not v: log('🧭 service: %s | every eye silent (text, word, ocr) - vision or teaching needed' % x); return
   c = ''
   try: c = _canonical_person_name(v) if v else ''
   except Exception: c = ''
+  log('🔎 service diag: %s | canon: %s | display: %s | stem: %s' % (x, c or 'none', _display_name(c) if c else 'none', stem))  # DIAG-EVERY-CLICK v85.110: the judgement chain speaks - canon, display and the stem it weighs
   if not c: log('🧭 service: %s | eyes read text but no human name in it (first line: %s)' % (x, (v or '')[:40])); return
   d2 = _display_name(c)
   if d2 == stem: log('🧭 service: %s | already named correctly by the eyes' % x); return
@@ -1664,7 +1687,8 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
   if os.path.exists(q2) and os.path.basename(q2).lower() != x.lower():  # CASE-INSENSITIVE v85.77: a held name is a proposal, never a deed
    log('🧭 service: %s | eyes say %s but another paper holds that name - proposal only' % (x, d2)); return
   _sn = _stem_norm(stem); _w0 = _sn.split()
-  if _name_key(_sn) != _name_key(d2) and 2 <= len(_w0) <= 4: log('🧭 service: %s | eyes say %s, a different human - proposal only, never a guess' % (x, d2)); return  # EYES-PROPOSE-ONLY v85.98: doubtful eyes and background eyes propose; only the gated right-click deeds
+  _garbage = not (2 <= len(_w0) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _w0)) or bool(set(_sn.lower().split()) & _NAME_STOP)  # GARBAGE-TEST v85.110: a stem no person wears - scar or watermark - is corrected, not debated
+  if not _garbage and _name_key(_sn) != _name_key(d2) and 2 <= len(_w0) <= 4: log('🧭 service: %s | eyes say %s, a different human - proposal only, never a guess' % (x, d2)); return
   try:
    if os.path.exists(q2) and os.path.basename(q2).lower() != x.lower(): log('🧭 service: %s | another paper holds %s - left as is' % (x, os.path.basename(q2))); return
    os.rename(p, q2); log('✏️ service renamed (gated eyes): %s → %s' % (x, d2 + ext))  # SERVICE-EYES v85.85 (gated-deed v85.104): the right-click is the master's own hand, so behind the identity gate and the twin check the deed is lawful again; the background sweep keeps its silence forever
@@ -4708,6 +4732,9 @@ def _selftest(root):
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
     ck('S455 the head scope stops at three breaths', _src.count('while i < len(ls) and i < ' + '3:') >= 1 and (chr(35)+' HEAD-SCOPE v85.109') in _src)
     ck('S456 an address is never a word of a name', _src.count('any(' + chr(39) + '@' + chr(39) + ' in w for w in ws)') >= 1 and (chr(35)+' MAIL-REFUSE v85.109') in _src)
+    ck('S457 the garbage test stands before the identity gate', 0 <= _src.find('GARBAGE-' + 'TEST v85.110') < _src.find('a different human - proposal only'))
+    ck('S458 every click writes its diagnosis', _src.count('service diag: ' + '%s') >= 2 and (chr(35)+' DIAG-EVERY-CLICK v85.110') in _src)
+    ck('S459 a caps name wears its role beneath', (chr(35)+' ROLE-BENEATH v85.110') in _src and _src.count('manager' + chr(39) + ',' + chr(39) + 'engineer') >= 1)
     ck('S445 the confession stands before the first guard it must explain', ('FAIL WHY' in _src) and ((chr(35)+' FAIL-LOUD v85.99') in _src))
     ck('S446 the gate tests behaviour on synthetic heads, so green means works', ('def _acceptance_ok(' in _src) and _acceptance_ok())
     ck('S447 one naming law lives in one pure function, and the eye delegates to it', _src.count('def _name_from_head_' + 'lines(') == 1 and _src.count('_name_from_head_' + 'lines(t.split') >= 1)  # MIRROR-SAFE v85.103: a guard that counts a string must not contain it whole
