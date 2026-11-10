@@ -1,4 +1,4 @@
-🔒 live lock: butler_8ae4a2bf.lock -> 72716|/Users/apple/Downloads/Sunsoft Technology/02 HIPP/Customer Service -Bhopal
+🔒 live lock: butler_8ae4a2bf.lock -> 74193|/Users/apple/Downloads/Sunsoft Technology/02 HIPP/Customer Service -Bhopal
 ==== _service_act ====
 def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawful and local  # DRAIN-ARMOR v85.92: no path returns silent and a crash logs itself
  x = os.path.basename(p)
@@ -11,6 +11,7 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
    if _jd_like_name(x) or _portal_name(x): log('🧭 service: %s | masked (jd/portal) - name kept by law' % x); return
   except Exception: log('🧭 service: %s | mask check failed - left as is' % x); return
   disp = _display_name(stem)
+  if not (2 <= len(_stem_norm(stem).split()) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _stem_norm(stem).split())): disp = stem  # CASE-GATE v85.117: seated inside _service_act by function, not by string - a garbage stem never wears a display name here, so the FIRST click goes straight to the eyes and one click is enough
   q = os.path.join(os.path.dirname(p), disp + ext)
   if disp != stem and not (os.path.exists(q) and os.path.basename(q).lower() != x.lower()):  # CASE-SELF v85.82: a case-variant of yourself is you
    try:
@@ -650,5 +651,5 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OCRBIN = os.path.join(BASE_DIR, "cvocr")
 117 
 OCR_SEM = threading.Semaphore(2)
-5042 
+5045 
 extract_text = extract_text_ocr  # ALIAS v85.89: one name for the whole chain, bound after every def has landed - the diag pdf column, emails_in_text and every bare caller wake from swallowing NameError

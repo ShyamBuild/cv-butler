@@ -1512,6 +1512,8 @@ def rename_diag(paths, say=print, deep=False):  # RENDIAG-DEEP v85.86: opt-in de
 
 _EYEC = {}
 _EYE_VSN = 'v85.114'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire  # EYE-REBIRTH v85.105: cached silences expire the day the ink eye opens, so no paper stays blind by memory  # EYE-REBIRTH v85.107: silences cached while the ink eye ate pictures expire the day it eats paper  # EYE-REBIRTH v85.110: silences and watermark names cached before the refusals expire tonight  # EYE-REBIRTH v85.112: the EMAIL-ANCHOR brain needs a fresh cache so the deep Saurabh-class names are not served from the v85.110 SILENT memory  # EYE-REBIRTH v85.113: the initial-anchor brain wakes every cached silence from the caps-only era  # EYE-REBIRTH v85.114: silences cached by the impatient timeout expire the day the eye gains patience
+WAKE_Q = []  # WAKE-Q v85.118: rename destinations waiting for the next tick's judgement
+WAKE_L = threading.Lock()
 def _eyename_cache():
  import json as _je
  cf = os.path.join(BASE_DIR, '.eyename.json')
@@ -4390,6 +4392,9 @@ def main():
                 with dlock:
                     _ip = list(dirty); dirty.clear()
                 for p in _ip: ex.submit(work, p)
+                with WAKE_L:
+                    _wq = list(WAKE_Q); WAKE_Q.clear()
+                for _wp in _wq: ex.submit(_service_act, _wp, root, print)  # WAKE-DRAIN v85.118: the rename wake rides the same service door, same gates, same diagnosis, one tick after your hand moves
                 try: B._drain_pending(print)
                 except Exception: pass
                 if getattr(B, '_jdirty', False):
@@ -4411,6 +4416,9 @@ def main():
             with dlock:
                 paths = list(dirty); dirty.clear()
             for p in paths: ex.submit(work, p)
+            with WAKE_L:
+                _wq = list(WAKE_Q); WAKE_Q.clear()
+            for _wp in _wq: ex.submit(_service_act, _wp, root, print)  # WAKE-DRAIN v85.118: the rename wake rides the same service door, same gates, same diagnosis, one tick after your hand moves
             try: B._drain_pending(print)  # DRAIN-PENDING v62
             except Exception: pass
             if time.time() - getattr(B, '_last_poll', 0) > 4:  # TAG-POLL v64
@@ -4753,6 +4761,9 @@ def _selftest(root):
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
     ck('S466 the service gate sits inside the service door', 0 <= _src.find('def _service_act') < _src.find('CASE-GATE v85.117') < _src.find('CASE-SELF v85.82', _src.find('def _service_act')))
     ck('S467 the sweep gate stands above the service door', 0 <= _src.find('CASE-GATE v85.115') < _src.find('def _service_act') < _src.find('CASE-GATE v85.117'))
+    ck('S468 the wake queues only scars and watermarks', (chr(35)+' WAKE-Q v85.118') in _src and ('def on_moved(self, ev):' in _src) and ('WAKE_Q.append(d)' in _src))
+    ck('S469 the wake drains through the service door twice - idle and busy', _src.count(chr(35)+' WAKE-DRAIN v85.118') >= 2)
+    ck('S470 the wake globals stand at module level, never inside a nested room', _src.count(chr(10) + 'WAKE_Q = []') >= 1 and _src.count(chr(10) + 'WAKE_L = threading.Lock()') >= 1)
     ck('S455 the head scope stops at three breaths', _src.count('while i < len(ls) and i < ' + '3:') >= 1 and (chr(35)+' HEAD-SCOPE v85.109') in _src)
     ck('S456 an address is never a word of a name', _src.count('any(' + chr(39) + '@' + chr(39) + ' in w for w in ws)') >= 1 and (chr(35)+' MAIL-REFUSE v85.109') in _src)
     ck('S457 the garbage test stands before the identity gate', 0 <= _src.find('GARBAGE-' + 'TEST v85.110') < _src.find('a different human - proposal only'))
