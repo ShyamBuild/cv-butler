@@ -1,4 +1,4 @@
-🔒 live lock: butler_05428046.lock -> 63563|/Users/apple/Downloads/Sunsoft Technology/09 MBL/JD-MBL-Coca-cola}_-_Asst.Mgr__Dy__Mgr_Manager_Production_and_maintenance-Krones_{Beverage_industry}_for_DHAULANA,_Location_
+🔒 live lock: butler_05428046.lock -> 65171|/Users/apple/Downloads/Sunsoft Technology/09 MBL/JD-MBL-Coca-cola}_-_Asst.Mgr__Dy__Mgr_Manager_Production_and_maintenance-Krones_{Beverage_industry}_for_DHAULANA,_Location_
 ==== _service_act ====
 def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawful and local  # DRAIN-ARMOR v85.92: no path returns silent and a crash logs itself
  x = os.path.basename(p)
@@ -23,10 +23,12 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
   v = ''
   try: v = heuristic_name(p) or _name_from_first_line(p) or _eyename_of(p)  # NAME-SCAN-SERVICE v85.95: the right-click borrows the scanning eye and its cache, so a photo-headed CV is named from its own head
   except Exception: v = ''
+  log('🔎 service diag: %s | eye-head: %s' % (x, (v or 'SILENT')[:60]))  # DIAG-EVERY-CLICK v85.110: no right-click is ever dark - the eye's raw head speaks into the log before any judgement
   if not v: log('🧭 service: %s | every eye silent (text, word, ocr) - vision or teaching needed' % x); return
   c = ''
   try: c = _canonical_person_name(v) if v else ''
   except Exception: c = ''
+  log('🔎 service diag: %s | canon: %s | display: %s | stem: %s' % (x, c or 'none', _display_name(c) if c else 'none', stem))  # DIAG-EVERY-CLICK v85.110: the judgement chain speaks - canon, display and the stem it weighs
   if not c: log('🧭 service: %s | eyes read text but no human name in it (first line: %s)' % (x, (v or '')[:40])); return
   d2 = _display_name(c)
   if d2 == stem: log('🧭 service: %s | already named correctly by the eyes' % x); return
@@ -34,7 +36,8 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
   if os.path.exists(q2) and os.path.basename(q2).lower() != x.lower():  # CASE-INSENSITIVE v85.77: a held name is a proposal, never a deed
    log('🧭 service: %s | eyes say %s but another paper holds that name - proposal only' % (x, d2)); return
   _sn = _stem_norm(stem); _w0 = _sn.split()
-  if _name_key(_sn) != _name_key(d2) and 2 <= len(_w0) <= 4: log('🧭 service: %s | eyes say %s, a different human - proposal only, never a guess' % (x, d2)); return  # EYES-PROPOSE-ONLY v85.98: doubtful eyes and background eyes propose; only the gated right-click deeds
+  _garbage = not (2 <= len(_w0) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _w0)) or bool(set(_sn.lower().split()) & _NAME_STOP)  # GARBAGE-TEST v85.110: a stem no person wears - scar or watermark - is corrected, not debated
+  if not _garbage and _name_key(_sn) != _name_key(d2) and 2 <= len(_w0) <= 4: log('🧭 service: %s | eyes say %s, a different human - proposal only, never a guess' % (x, d2)); return
   try:
    if os.path.exists(q2) and os.path.basename(q2).lower() != x.lower(): log('🧭 service: %s | another paper holds %s - left as is' % (x, os.path.basename(q2))); return
    os.rename(p, q2); log('✏️ service renamed (gated eyes): %s → %s' % (x, d2 + ext))  # SERVICE-EYES v85.85 (gated-deed v85.104): the right-click is the master's own hand, so behind the identity gate and the twin check the deed is lawful again; the background sweep keeps its silence forever
@@ -71,7 +74,23 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
             except Exception:
                 continue
             ws = stem.split()
-            if not (2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws)):
+            if not (2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws)) or bool(set(stem.lower().split()) & _NAME_STOP):  # GARBAGE-WIDE v85.110: watermark stems are scars too, and the tick heals them
+                _en4 = ''
+                try: _en4 = _eyename_of(p) or ''
+                except Exception: _en4 = ''
+                _c4 = ''
+                try: _c4 = _canonical_person_name(_en4) if _en4 else ''
+                except Exception: _c4 = ''
+                _d4 = _display_name(_c4) if _c4 else ''
+                _q4 = os.path.join(dpath, _d4 + ext)
+                if _d4 and not (os.path.exists(_q4) and os.path.basename(_q4).lower() != x.lower()):
+                 try:
+                  os.rename(p, _q4); log('✏️ sweep renamed (gated eyes): %s → %s' % (x, _d4 + ext))  # SWEEP-GARBAGE-DEED v85.108: a stem no human wears is a scar, and the paper's own fixture-tested head names it again on the file-change trigger - behind canon, gate, collision check and the undo ledger; a stem that is another human's name still only proposes
+                  try:
+                   _safe_rename_ledger(p, _d4, 'sweep-garbage', once=True); _safe_repath_ledgers(p, _q4)
+                  except Exception: pass
+                  continue
+                 except Exception: pass
                 if trace: log('🧭 sweep: %s | not-human-shape' % x)
                 continue
             disp = _display_name(stem)
@@ -630,5 +649,5 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OCRBIN = os.path.join(BASE_DIR, "cvocr")
 117 
 OCR_SEM = threading.Semaphore(2)
-4990 
+5017 
 extract_text = extract_text_ocr  # ALIAS v85.89: one name for the whole chain, bound after every def has landed - the diag pdf column, emails_in_text and every bare caller wake from swallowing NameError

@@ -1525,7 +1525,7 @@ _NAME_STOP |= set('objective education educational contact linkedin personal com
 _NAME_STOP |= set('best ability of my the a an to in for with and or at on is are was were be been being i we you he she it they me him her us them where can will shall should would could may might must environment utilize utilizing maximum extent progress organization motivate motivating challenge challenges competition work'.split())  # STOP-EXT2 v85.101: articles, conjunctions and slogan-verbs join the gate, so no sentence fragment can pose as a human
 _NAME_STOP |= set('urdu english hindi arabic french german spanish marathi tamil telugu kannada bengali punjabi sanskrit mandarin chinese'.split())  # STOP-EXT3 v85.109: language names never pose as people
 _NAME_STOP |= set('by powered resumegemini gemini indeed monster naukri shine generated created prepared watermark zety visualcv'.split())  # STOP-EXT4 v85.110: watermarks and portal ghosts never pose as people
-def _name_from_head_lines(lines):  # ACCEPTANCE v85.101: the naming brain as a pure function of head lines - fixtures test it inside the gate, so ALL GREEN means WORKS, not merely lawful  # DEEP-CAPS v85.108: two adjacent one-word all-caps lines join into one human  # HEAD-SCOPE v85.109: a head wears its name in its first three breaths  # ROLE-BENEATH v85.110: a one-line caps name wears its role beneath, so a caps skill never does
+def _name_from_head_lines(lines):  # ACCEPTANCE v85.101: the naming brain as a pure function of head lines - fixtures test it inside the gate, so ALL GREEN means WORKS, not merely lawful  # DEEP-CAPS v85.108: two adjacent one-word all-caps lines join into one human  # HEAD-SCOPE v85.109: a head wears its name in its first three breaths  # ROLE-BENEATH v85.110: a one-line caps name wears its role beneath  # EMAIL-ANCHOR v85.111: the master's own anchor - a caps line whose first or last word lives inside the email local part is the human, wherever it sits on the page
     ls = [re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:-]?', l.strip(), flags=re.I)[0].strip() for l in lines if l.strip()][:8]
     i = 0
     while i < len(ls) and i < 3:
@@ -1537,6 +1537,18 @@ def _name_from_head_lines(lines):  # ACCEPTANCE v85.101: the naming brain as a p
             if 2 <= len(ws) <= 4 and len(cut) <= 40 and all(w.isalpha() or '-' in w or '.' in w for w in ws) and not any('@' in w for w in ws) and not (set(w.lower() for w in ws) & _NAME_STOP) and (_canonical_person_name(cut) or ''):  # MAIL-REFUSE v85.109: an address is never a word of a name
                 return _display_name(_canonical_person_name(cut))
         i += 1
+    mail = ''
+    for l in lines:
+        m = re.search(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}', l)
+        if m: mail = m.group(0); break
+    local = re.sub(r'[^a-z]', '', mail.split('@')[0].lower()) if mail else ''
+    if local:
+        j = 0
+        while j < len(lines):
+            a = lines[j].strip(); wa = a.split()
+            if 2 <= len(wa) <= 4 and a.isupper() and all(w.isalpha() for w in wa) and len(a) <= 40 and not (set(w.lower() for w in wa) & _NAME_STOP) and (wa[0].lower() in local or wa[-1].lower() in local) and (_canonical_person_name(a) or ''):  # EMAIL-ANCHOR v85.111: the email local part is the master's anchor, so a mid-page caps name speaks and a caps skill never does
+                return _display_name(_canonical_person_name(a))
+            j += 1
     j = 0
     while j + 1 < len(lines):
         a = lines[j].strip(); b = lines[j+1].strip()
@@ -4735,6 +4747,7 @@ def _selftest(root):
     ck('S457 the garbage test stands before the identity gate', 0 <= _src.find('GARBAGE-' + 'TEST v85.110') < _src.find('a different human - proposal only'))
     ck('S458 every click writes its diagnosis', _src.count('service diag: ' + '%s') >= 2 and (chr(35)+' DIAG-EVERY-CLICK v85.110') in _src)
     ck('S459 a caps name wears its role beneath', (chr(35)+' ROLE-BENEATH v85.110') in _src and _src.count('manager' + chr(39) + ',' + chr(39) + 'engineer') >= 1)
+    ck('S460 the email anchor speaks for mid-page caps names', (chr(35)+' EMAIL-ANCHOR v85.111') in _src and _src.count('wa[0].lower() in local or wa[-1].lower() in ' + 'local') >= 1)
     ck('S445 the confession stands before the first guard it must explain', ('FAIL WHY' in _src) and ((chr(35)+' FAIL-LOUD v85.99') in _src))
     ck('S446 the gate tests behaviour on synthetic heads, so green means works', ('def _acceptance_ok(' in _src) and _acceptance_ok())
     ck('S447 one naming law lives in one pure function, and the eye delegates to it', _src.count('def _name_from_head_' + 'lines(') == 1 and _src.count('_name_from_head_' + 'lines(t.split') >= 1)  # MIRROR-SAFE v85.103: a guard that counts a string must not contain it whole
