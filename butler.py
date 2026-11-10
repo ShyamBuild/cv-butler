@@ -388,7 +388,7 @@ def extract_text_ocr(p):  # PARAM-FIX v85.89: one parameter, one name - for week
     # OCR-RASTER v85.89 (retired v85.107): the png detour fed the Swift eye a picture it could not open - PDFKit reads pdfs natively, so the paper goes to the ink eye whole
     try:
         with OCR_SEM:
-            r = subprocess.run([OCRBIN, _tgt, 'stdout'], capture_output=True, text=True, timeout=25)  # OCR-CAP v85.16: twenty-five seconds of patience per paper, never more  # OCR-STDOUT v85.95: tesseract needs an outputbase and stdout is the word - for months the eye handed an image and no destination, and read usage text
+            r = subprocess.run([OCRBIN, _tgt, 'stdout'], capture_output=True, text=True, timeout=90)  # OCR-CAP v85.16: twenty-five seconds of patience per paper, never more  # OCR-STDOUT v85.95: tesseract needs an outputbase and stdout is the word - for months the eye handed an image and no destination, and read usage text  # OCR-PATIENT v85.114: the ink eye gets ninety seconds, because Vision cold start can outlive a busy tick and a dead attempt must never read as silence
         return r.stdout or ''
     except Exception:
         return ''
@@ -1510,7 +1510,7 @@ def rename_diag(paths, say=print, deep=False):  # RENDIAG-DEEP v85.86: opt-in de
         say('🔎 %s | word=%d pdf=%d | first-line: %s | heuristic: %s | firstline-eye: %s | canon: %s | display: %s | %s' % (x, len(wt), len(tt), fl, h, f1, c, disp, dec))
 
 _EYEC = {}
-_EYE_VSN = 'v85.113'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire  # EYE-REBIRTH v85.105: cached silences expire the day the ink eye opens, so no paper stays blind by memory  # EYE-REBIRTH v85.107: silences cached while the ink eye ate pictures expire the day it eats paper  # EYE-REBIRTH v85.110: silences and watermark names cached before the refusals expire tonight  # EYE-REBIRTH v85.112: the EMAIL-ANCHOR brain needs a fresh cache so the deep Saurabh-class names are not served from the v85.110 SILENT memory  # EYE-REBIRTH v85.113: the initial-anchor brain wakes every cached silence from the caps-only era
+_EYE_VSN = 'v85.114'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire  # EYE-REBIRTH v85.105: cached silences expire the day the ink eye opens, so no paper stays blind by memory  # EYE-REBIRTH v85.107: silences cached while the ink eye ate pictures expire the day it eats paper  # EYE-REBIRTH v85.110: silences and watermark names cached before the refusals expire tonight  # EYE-REBIRTH v85.112: the EMAIL-ANCHOR brain needs a fresh cache so the deep Saurabh-class names are not served from the v85.110 SILENT memory  # EYE-REBIRTH v85.113: the initial-anchor brain wakes every cached silence from the caps-only era  # EYE-REBIRTH v85.114: silences cached by the impatient timeout expire the day the eye gains patience
 def _eyename_cache():
  import json as _je
  cf = os.path.join(BASE_DIR, '.eyename.json')
@@ -4757,6 +4757,7 @@ def _selftest(root):
     ck('S460 the email anchor speaks for mid-page caps names', (chr(35)+' EMAIL-ANCHOR v85.111') in _src and _src.count('wa[0].lower() in local or wa[-1].lower() in ' + 'local') >= 1)
     ck('S461 the eye cache bumps when the brain learns a new anchor rule', _src.count('_EYE_VSN = ' + chr(39) + 'v85.1') >= 1 and (chr(35)+' EYE-REBIRTH v85.1') in _src)  # VERSION-FREE v85.113: a rebirth guard pins the lineage prefix, never one number, so the next bump never breaks it
     ck('S462 the initial anchor speaks for deep title-case names', (chr(35)+' EMAIL-ANCHOR-INITIAL v85.113') in _src and _src.count('local.startswith(wa[0][0].lower' + '())') >= 1)
+    ck('S463 the ink eye is given ninety seconds', (chr(35)+' OCR-PATIENT v85.114') in _src and _src.count('text=True, timeout=' + '90') >= 1)
     ck('S445 the confession stands before the first guard it must explain', ('FAIL WHY' in _src) and ((chr(35)+' FAIL-LOUD v85.99') in _src))
     ck('S446 the gate tests behaviour on synthetic heads, so green means works', ('def _acceptance_ok(' in _src) and _acceptance_ok())
     ck('S447 one naming law lives in one pure function, and the eye delegates to it', _src.count('def _name_from_head_' + 'lines(') == 1 and _src.count('_name_from_head_' + 'lines(t.split') >= 1)  # MIRROR-SAFE v85.103: a guard that counts a string must not contain it whole
