@@ -1347,6 +1347,7 @@ def do_stop(say=_say):
 HELP_CARD = """
 🤵 BUTLER CHAT - COMMAND CARD
  brief / all ................ full company board
+ recruit [desk] ............. today's read-only recruiting priority desk
  <any question> ............. "interviews tomorrow?", "feedback pending?", "call Isha"
  focus <positions> .......... set working positions (comma-separated)
  focus / focus clear ........ show / forget (+ stop watchers)
@@ -1614,6 +1615,7 @@ def _cli(argv):
     elif cmd == 'next': import fitrank; fitrank.show(root, arg, 'next', print)
     elif cmd == 'case': import ledger; ledger.show_case(arg, print)
     elif cmd == 'positions': import ledger; ledger.show_positions(arg, print)
+    elif cmd in ('recruit', 'ta'): import recruit; recruit.run(root, print)  # TA-DESK v85.122: terminal and chat use the same read-only role desk
     elif cmd == 'note': import ledger; ledger.note(arg, print)
     elif cmd == 'interview': import ledger; ledger.interview(arg, print)
     elif cmd == 'offer': import ledger; ledger.offer(arg, print)
@@ -1644,7 +1646,7 @@ def _cli(argv):
     else: print('cli: missed | wa | jd | nudge | touch | brief  <args>')
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1].lower() in ('missed','wa','jd','nudge','touch','brief','board','history','stale','fixphone','call','next','case','positions','note','interview','offer','due','outbox','ack','money','value','push','recap','similar','ghost','client','digest','summarize','clientname','follow','tpltest','refer','renwhy','name','adlog'):
+    if len(sys.argv) > 1 and sys.argv[1].lower() in ('recruit','ta','missed','wa','jd','nudge','touch','brief','board','history','stale','fixphone','call','next','case','positions','note','interview','offer','due','outbox','ack','money','value','push','recap','similar','ghost','client','digest','summarize','clientname','follow','tpltest','refer','renwhy','name','adlog'):
         _cli(sys.argv[1:]); raise SystemExit(0)
     LAST = os.path.expanduser("~/.cvtool_last_root")
     args = sys.argv[1:]
@@ -1720,6 +1722,7 @@ if __name__ == "__main__":
                     if alive: say(f"   🤖 {alive} watcher(s) keep running in background - 'focus clear' stops them")
                 except Exception: pass
                 break
+            if q.strip().lower() in ('recruit', 'recruit desk', 'ta', 'ta desk'): import recruit; recruit.run(root, _say); continue  # TA-DESK v85.122: live role priorities are read-only and leave every candidate file and ledger untouched
             if q.startswith('desk'): do_desk(q[4:].strip(), root); continue  # DESK v84.0
             if q.startswith('briefing'): do_briefing(q[8:].strip(), root); continue
             if q.startswith('chase'): do_chase(q[5:].strip(), root); continue

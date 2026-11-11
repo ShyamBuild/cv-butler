@@ -31,14 +31,14 @@ health() {
   LH="$(git rev-parse --short HEAD)"
   LB="$(grep -o 'git [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]' butler_live.log 2>/dev/null | tail -1 | awk '{print $2}')"
   if [ "$LH" = "$LB" ]; then echo "🔁 version: live = committed ($LH)"; else echo "⚠️ version drift: live=${LB:-?} vs committed=$LH"; fi
-  if [ -n "$(git status --porcelain -- butler.py briefing.py wa.py cleaner.py ship.sh PROTOCOL.md butler_check.py requirements.txt)" ]; then echo '⚠️ uncommitted CODE edits - gate them with ./ship.sh'; else echo '📚 code clean & in sync (runtime/data ignored)'; fi
+  if [ -n "$(git status --porcelain -- butler.py briefing.py wa.py cleaner.py recruit.py ship.sh PROTOCOL.md butler_check.py requirements.txt)" ]; then echo '⚠️ uncommitted CODE edits - gate them with ./ship.sh'; else echo '📚 code clean & in sync (runtime/data ignored)'; fi
   echo "☁️ mirror head: $(git -C "$HOME/CV_Tool_pub" rev-parse --short HEAD 2>/dev/null) · local head: $LH"
   echo '-- last log lines'; tail -2 butler_live.log 2>/dev/null
 }
 [ "$CHECK" = "1" ] && { health; exit 0; }
 sync_mirror() {
   [ -d "$HOME/CV_Tool_pub/.git" ] || return 0
-  cp "$HOME/CV_Tool/butler.py" "$HOME/CV_Tool/briefing.py" "$HOME/CV_Tool/wa.py" "$HOME/CV_Tool/cleaner.py" "$HOME/CV_Tool/ship.sh" "$HOME/CV_Tool/PROTOCOL.md" "$HOME/CV_Tool/butler_check.py" "$HOME/CV_Tool/requirements.txt" "$HOME/CV_Tool/fitrank.py" "$HOME/CV_Tool/ledger.py" "$HOME/CV_Tool/cadence.py" "$HOME/CV_Tool/sem.py" "$HOME/CV_Tool/waread.py" "$HOME/CV_Tool_pub/" || return 0
+  cp "$HOME/CV_Tool/butler.py" "$HOME/CV_Tool/briefing.py" "$HOME/CV_Tool/wa.py" "$HOME/CV_Tool/cleaner.py" "$HOME/CV_Tool/ship.sh" "$HOME/CV_Tool/PROTOCOL.md" "$HOME/CV_Tool/butler_check.py" "$HOME/CV_Tool/requirements.txt" "$HOME/CV_Tool/fitrank.py" "$HOME/CV_Tool/recruit.py" "$HOME/CV_Tool/ledger.py" "$HOME/CV_Tool/cadence.py" "$HOME/CV_Tool/sem.py" "$HOME/CV_Tool/waread.py" "$HOME/CV_Tool_pub/" || return 0
   cp "$HOME/CV_Tool/wa_template.txt" "$HOME/CV_Tool_pub/" 2>/dev/null
   mkdir -p "$HOME/CV_Tool_pub/archive"
   for _af in dump.txt patchlib.py rendiag.py verify.sh mkdump.sh; do cp "$HOME/CV_Tool/archive/$_af" "$HOME/CV_Tool_pub/archive/$_af" 2>/dev/null; done  # MIRROR-TOOLS v85.93: publish the dump and the primitives with every commit, so every future lap is written against read code fetched from the mirror

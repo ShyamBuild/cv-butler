@@ -4768,6 +4768,7 @@ def _selftest(root):
     ck('S469 the wake drains through the service door twice - idle and busy', _src.count(chr(35)+' WAKE-DRAIN v85.118') >= 2)
     ck('S470 the wake globals stand at module level, never inside a nested room', _src.count(chr(10) + 'WAKE_Q = []') >= 1 and _src.count(chr(10) + 'WAKE_L = threading.Lock()') >= 1)
     ck('S473 the Santosh email anchor defeats degree labels', (chr(35)+' STOP-EXT5 v85.121') in _src and (chr(35)+' EYE-REBIRTH v85.121') in _src and (chr(35)+' PHONE-TAIL v85.121') in _src and _acceptance_ok())
+    ck('S474 the recruiting desk is reachable and read-only', os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'recruit.py')) and 'def build_desk(' in open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'recruit.py')).read() and "cmd in ('recruit', 'ta')" in open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'briefing.py')).read() and 'TA-DESK v85.122' in open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'briefing.py')).read())
     ck('S455 the head scope stops at three breaths', _src.count('while i < len(ls) and i < ' + '3:') >= 1 and (chr(35)+' HEAD-SCOPE v85.109') in _src)
     ck('S456 an address is never a word of a name', _src.count('any(' + chr(39) + '@' + chr(39) + ' in w for w in ws)') >= 1 and (chr(35)+' MAIL-REFUSE v85.109') in _src)
     ck('S457 the garbage test stands before the identity gate', 0 <= _src.find('GARBAGE-' + 'TEST v85.110') < _src.find('a different human - proposal only'))
