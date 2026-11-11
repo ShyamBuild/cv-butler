@@ -1,9 +1,13 @@
 """Read-only recruiting desk built from the existing Sunsoft folder stages."""
 import argparse
 import datetime as dt
+import json
 import os
+import re
+import tempfile
 from pathlib import Path
 
+INTAKE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "role_intake.json")
 STAGES = {
     "ready for manager review": "Ready for Manager Review",
     "feedback pending": "Feedback Pending",
@@ -58,6 +62,108 @@ def _workspace_root(root):
             break
         current = parent
     return os.path.abspath(os.path.expanduser(str(root)))
+
+
+def _load_intakes(path=INTAKE_FILE):
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, list) else []
+    except (OSError, ValueError, TypeError):
+        return []
+
+
+def _save_intakes(rows, path=INTAKE_FILE):
+    parent = os.path.dirname(os.path.abspath(path))
+    fd, tmp = tempfile.mkstemp(prefix=".role-intake-", suffix=".tmp", dir=parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(rows, f, ensure_ascii=False, indent=2)
+            f.write("\n")
+        os.replace(tmp, path)
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def _parse_due_date(text, today=None):
+    value = (text or "").strip().lower()
+    if not value:
+        return None
+    base = today or dt.date.today()
+    if value in ("today", "eod", "today eod", "4pm", "5pm", "4-5pm"):
+        return base.isoformat()
+    if value == "tomorrow":
+        return (base + dt.timedelta(days=1)).isoformat()
+    for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%d-%m-%y", "%d/%m/%y"):
+        try:
+            return dt.datetime.strptime(value, fmt).date().isoformat()
+        except ValueError:
+            pass
+    raise ValueError("Use today, tomorrow, or a date like 2026-11-12.")
+
+
+def create_intake(client, role, location, must_haves, deal_breakers, due, notes="", source="manager call", path=INTAKE_FILE, today=None, now=None):
+    client = (client or "").strip()
+    role = (role or "").strip()
+    if not client or not role:
+        raise ValueError("Client and role are required.")
+    due_date = _parse_due_date(due, today=today)
+    now = now or dt.datetime.now()
+    record = {
+        "id": now.strftime("%Y%m%d-%H%M%S"),
+        "client": client,
+        "role": role,
+        "location": (location or "").strip(),
+        "must_haves": [x.strip() for x in re.split(r"[,;\n]", must_haves or "") if x.strip()],
+        "deal_breakers": [x.strip() for x in re.split(r"[,;\n]", deal_breakers or "") if x.strip()],
+        "first_lot_due": due_date,
+        "status": "intake",
+        "source": (source or "manager call").strip(),
+        "notes": (notes or "").strip(),
+        "opened_at": now.isoformat(timespec="seconds"),
+    }
+    rows = _load_intakes(path)
+    duplicate = next((row for row in rows if row.get("status") == "intake" and row.get("client", "").casefold() == client.casefold() and row.get("role", "").casefold() == role.casefold()), None)
+    if duplicate:
+        raise ValueError("An intake for this client and role is already open (" + duplicate.get("id", "existing") + ").")
+    rows.append(record)
+    _save_intakes(rows, path)
+    return record
+
+
+def guided_intake(input_fn=input, say=print, path=INTAKE_FILE, today=None, now=None):
+    say("🆕 NEW ROLE INTAKE · no folders or candidate files will be changed")
+    prompts = (
+        ("Client", True), ("Role title", True), ("Job location", False),
+        ("Must-have skills / experience (comma-separated)", False),
+        ("Deal-breakers (comma-separated)", False),
+        ("First candidate lot due (today / tomorrow / date)", True),
+        ("Manager notes / ResDex search reference", False),
+    )
+    answers = []
+    for label, required in prompts:
+        while True:
+            value = input_fn(label + ": ").strip()
+            if required and not value:
+                say("Please enter " + label.lower() + ".")
+                continue
+            answers.append(value)
+            break
+    record = create_intake(answers[0], answers[1], answers[2], answers[3], answers[4], answers[5], answers[6], path=path, today=today, now=now)
+    say("✅ intake saved · " + record["client"] + " / " + record["role"] + " · first lot due " + record["first_lot_due"])
+    return record
+
+
+def intake_summary(rows=None, today=None):
+    day = today or dt.date.today()
+    rows = _load_intakes() if rows is None else rows
+    active = [r for r in rows if r.get("status") == "intake"]
+    active.sort(key=lambda r: (r.get("first_lot_due") or "9999-99-99", r.get("opened_at", "")))
+    return {"active": len(active), "due_today": sum(r.get("first_lot_due") == day.isoformat() for r in active), "rows": active}
 
 
 def _is_candidate_pdf(name):
@@ -165,11 +271,20 @@ def render_desk(desk, say=print):
         say("⚠️ " + desk["error"])
         return
     roles = desk["roles"]
+    intake = intake_summary(today=dt.date.fromisoformat(desk["today"]))
     if not roles:
         say("No roles with a JD or candidate CVs found in this workspace yet.")
+        if intake["active"]:
+            say("Active role intakes: " + str(intake["active"]) + " · due today: " + str(intake["due_today"]))
+            for row in intake["rows"][:5]:
+                say("   • " + row["client"] + " / " + row["role"] + " · first lot " + (row.get("first_lot_due") or "date unset"))
         return
     say("Priority order: scheduled interviews, manager-ready CVs, feedback, then candidate follow-ups.")
     say("Same-day target: move quality candidates toward manager submission by 4–5 PM.")
+    if intake["active"]:
+        say("\n🆕 Active role intakes: " + str(intake["active"]) + " · due today: " + str(intake["due_today"]))
+        for row in intake["rows"][:5]:
+            say("   • " + row["client"] + " / " + row["role"] + " · first lot " + (row.get("first_lot_due") or "date unset"))
     for role in roles[:12]:
         counts = role["counts"]
         total = sum(counts.values())
@@ -240,6 +355,27 @@ def _selftest():
         assert _priority(role) == 0
         after = {str(p.relative_to(root)): p.read_bytes() for p in Path(root).rglob("*") if p.is_file()}
         assert before == after
+        intake_path = str(Path(root) / "role_intake.json")
+        created = create_intake("02 HIPP", "Quality Engineer", "Greater Noida", "CNC, quality", "night shift", "today", "called by manager", path=intake_path, today=dt.date(2026, 11, 11), now=dt.datetime(2026, 11, 11, 9, 30))
+        assert created["first_lot_due"] == "2026-11-11" and created["must_haves"] == ["CNC", "quality"]
+        summary = intake_summary(_load_intakes(intake_path), dt.date(2026, 11, 11))
+        assert summary["active"] == 1 and summary["due_today"] == 1
+        try:
+            create_intake("02 HIPP", "Quality Engineer", "", "", "", "today", path=intake_path)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("duplicate open intake accepted")
+        try:
+            create_intake("02 HIPP", "Other Role", "", "", "", "not-a-date", path=intake_path)
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("invalid deadline accepted")
+        assert all((Path(root) / name).exists() for name in ["01 Client", "02 Client", "03 Client", "stage_log.json"])
+        assert (Path(root) / "role_intake.json").is_file()
+        after_with_intake = {str(p.relative_to(root)): p.read_bytes() for p in Path(root).rglob("*") if p.is_file() and p.name != "role_intake.json"}
+        assert before == after_with_intake
         lines = []
         render_desk(desk, lines.append)
         text = "\n".join(lines)
@@ -252,8 +388,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Read-only Sunsoft recruiting priority desk")
     parser.add_argument("--root", default="~/Downloads/Sunsoft Technology")
     parser.add_argument("--selftest", action="store_true")
+    parser.add_argument("--new-role", action="store_true", help="start the guided new-role intake")
     args = parser.parse_args()
     if args.selftest:
         _selftest()
+    elif args.new_role:
+        guided_intake()
     else:
         run(args.root)

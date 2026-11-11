@@ -1348,6 +1348,7 @@ HELP_CARD = """
 🤵 BUTLER CHAT - COMMAND CARD
  brief / all ................ full company board
  recruit [desk] ............. today's read-only recruiting priority desk
+ recruit new ................. capture a manager's new role and first-lot deadline
  <any question> ............. "interviews tomorrow?", "feedback pending?", "call Isha"
  focus <positions> .......... set working positions (comma-separated)
  focus / focus clear ........ show / forget (+ stop watchers)
@@ -1615,7 +1616,7 @@ def _cli(argv):
     elif cmd == 'next': import fitrank; fitrank.show(root, arg, 'next', print)
     elif cmd == 'case': import ledger; ledger.show_case(arg, print)
     elif cmd == 'positions': import ledger; ledger.show_positions(arg, print)
-    elif cmd in ('recruit', 'ta'): import recruit; recruit.run(root, print)  # TA-DESK v85.122: terminal and chat use the same read-only role desk
+    elif cmd in ('recruit', 'ta'): import recruit; recruit.guided_intake() if arg.lower() in ('new', 'intake') else recruit.run(root, print)  # ROLE-INTAKE v85.123: new captures a manager call; bare recruit stays the desk
     elif cmd == 'note': import ledger; ledger.note(arg, print)
     elif cmd == 'interview': import ledger; ledger.interview(arg, print)
     elif cmd == 'offer': import ledger; ledger.offer(arg, print)
@@ -1722,6 +1723,7 @@ if __name__ == "__main__":
                     if alive: say(f"   🤖 {alive} watcher(s) keep running in background - 'focus clear' stops them")
                 except Exception: pass
                 break
+            if q.strip().lower() in ('recruit new', 'recruit intake', 'ta new'): import recruit; recruit.guided_intake(say=_say); continue  # ROLE-INTAKE v85.123: manager call capture is explicit and writes only the local role-intake ledger
             if q.strip().lower() in ('recruit', 'recruit desk', 'ta', 'ta desk'): import recruit; recruit.run(root, _say); continue  # TA-DESK v85.122: live role priorities are read-only and leave every candidate file and ledger untouched
             if q.startswith('desk'): do_desk(q[4:].strip(), root); continue  # DESK v84.0
             if q.startswith('briefing'): do_briefing(q[8:].strip(), root); continue
