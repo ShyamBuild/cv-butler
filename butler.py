@@ -4244,13 +4244,6 @@ def main():
                     if _sr.get('status') in ('added', 'updated'): print('📊 [summary] %s · row %s · %s' % (_sr['candidate'], _sr['row'], os.path.relpath(_sr['summary'], root)), flush=True)
                 except Exception as _sbe:
                     print('⚠️ [summary] update skipped: %s' % _sbe, flush=True)
-            if p.lower().endswith('.pdf'):  # SUMMARY-AUTO v85.124: changed/new PDFs consult exact Ready tag+folder; journal skip prevents startup backfill
-                try:
-                    import summary_builder as _sb
-                    _sr = _sb.update_tagged_cv(p)
-                    if _sr.get('status') in ('added', 'updated'): print('📊 [summary] %s · row %s · %s' % (_sr['candidate'], _sr['row'], os.path.relpath(_sr['summary'], root)), flush=True)
-                except Exception as _sbe:
-                    print('⚠️ [summary] update skipped: %s' % _sbe, flush=True)
             B.route(p, print)
         except Exception as e:
             log.error(f"route error {p}: {e}")
