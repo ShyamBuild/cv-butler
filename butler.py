@@ -1511,7 +1511,7 @@ def rename_diag(paths, say=print, deep=False):  # RENDIAG-DEEP v85.86: opt-in de
         say('🔎 %s | word=%d pdf=%d | first-line: %s | heuristic: %s | firstline-eye: %s | canon: %s | display: %s | %s' % (x, len(wt), len(tt), fl, h, f1, c, disp, dec))
 
 _EYEC = {}
-_EYE_VSN = 'v85.114'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire  # EYE-REBIRTH v85.105: cached silences expire the day the ink eye opens, so no paper stays blind by memory  # EYE-REBIRTH v85.107: silences cached while the ink eye ate pictures expire the day it eats paper  # EYE-REBIRTH v85.110: silences and watermark names cached before the refusals expire tonight  # EYE-REBIRTH v85.112: the EMAIL-ANCHOR brain needs a fresh cache so the deep Saurabh-class names are not served from the v85.110 SILENT memory  # EYE-REBIRTH v85.113: the initial-anchor brain wakes every cached silence from the caps-only era  # EYE-REBIRTH v85.114: silences cached by the impatient timeout expire the day the eye gains patience
+_EYE_VSN = 'v85.121'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire  # EYE-REBIRTH v85.105: cached silences expire the day the ink eye opens, so no paper stays blind by memory  # EYE-REBIRTH v85.107: silences cached while the ink eye ate pictures expire the day it eats paper  # EYE-REBIRTH v85.110: silences and watermark names cached before the refusals expire tonight  # EYE-REBIRTH v85.112: the EMAIL-ANCHOR brain needs a fresh cache so the deep Saurabh-class names are not served from the v85.110 SILENT memory  # EYE-REBIRTH v85.113: the initial-anchor brain wakes every cached silence from the caps-only era  # EYE-REBIRTH v85.114: silences cached by the impatient timeout expire the day the eye gains patience  # EYE-REBIRTH v85.121: stale degree-label verdicts expire so the candidate-email anchor is consulted again
 WAKE_Q = []  # WAKE-Q v85.118: rename destinations waiting for the next tick's judgement
 WAKE_L = threading.Lock()
 def _eyename_cache():
@@ -1528,8 +1528,10 @@ _NAME_STOP |= set('objective education educational contact linkedin personal com
 _NAME_STOP |= set('best ability of my the a an to in for with and or at on is are was were be been being i we you he she it they me him her us them where can will shall should would could may might must environment utilize utilizing maximum extent progress organization motivate motivating challenge challenges competition work'.split())  # STOP-EXT2 v85.101: articles, conjunctions and slogan-verbs join the gate, so no sentence fragment can pose as a human
 _NAME_STOP |= set('urdu english hindi arabic french german spanish marathi tamil telugu kannada bengali punjabi sanskrit mandarin chinese'.split())  # STOP-EXT3 v85.109: language names never pose as people
 _NAME_STOP |= set('by powered resumegemini gemini indeed monster naukri shine generated created prepared watermark zety visualcv'.split())  # STOP-EXT4 v85.110: watermarks and portal ghosts never pose as people
+_NAME_STOP |= set('automobile engineering mechanical electrical electronics civil computer science diploma undergraduate graduate degree'.split())  # STOP-EXT5 v85.121: degree and discipline labels never outrank a human name anchored by the candidate email
 def _name_from_head_lines(lines):  # ACCEPTANCE v85.101: the naming brain as a pure function of head lines - fixtures test it inside the gate, so ALL GREEN means WORKS, not merely lawful  # DEEP-CAPS v85.108: two adjacent one-word all-caps lines join into one human  # HEAD-SCOPE v85.109: a head wears its name in its first three breaths  # ROLE-BENEATH v85.110: a one-line caps name wears its role beneath  # EMAIL-ANCHOR v85.111: the master's own anchor - a caps line whose first or last word lives inside the email local part is the human, wherever it sits on the page
     ls = [re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:-]?', l.strip(), flags=re.I)[0].strip() for l in lines if l.strip()][:8]
+    ls = [re.sub(r'\s+\+?\(?\d[\d\s().-]{7,}\s*$', '', l) for l in ls]  # PHONE-TAIL v85.121: a phone printed beside a caps name is removed before the email anchor checks identity
     i = 0
     while i < len(ls) and i < 3:
         cands = [ls[i]]
@@ -1695,7 +1697,7 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
     return
    except Exception as _se: log('⚠️ service rename failed: %s | %r' % (x, _se)); return
   v = ''
-  try: v = heuristic_name(p) or _name_from_first_line(p) or _eyename_of(p)  # NAME-SCAN-SERVICE v85.95: the right-click borrows the scanning eye and its cache, so a photo-headed CV is named from its own head
+  try: v = heuristic_name(p) or _name_from_first_line(p) or _eyename_of(p) or get_visual_name(p)  # NAME-SCAN-SERVICE v85.95: the right-click borrows the scanning eye and its cache, so a photo-headed CV is named from its own head  # SERVICE-LAYOUT-EYE v85.121: layout-aware fallback reads separated visual CV headers after text/OCR eyes
   except Exception: v = ''
   log('🔎 service diag: %s | eye-head: %s' % (x, (v or 'SILENT')[:60]))  # DIAG-EVERY-CLICK v85.110: no right-click is ever dark - the eye's raw head speaks into the log before any judgement
   if not v: log('🧭 service: %s | every eye silent (text, word, ocr) - vision or teaching needed' % x); return
@@ -4482,6 +4484,7 @@ def main():
 
 def _acceptance_ok():  # ACCEPTANCE v85.101: synthetic heads prove the brain inside the gate - a wrong-name regression can no longer reach a commit
     fx = [((['CHANDN', 'KUMAR', 'OBJECTIVE', 'To work in a motivating,']), 'Chandn Kumar'),
+          ((['SANTOSH UPADHYAY +919165617356', 'Roll No.: 0902AU02 santoshsharma23315@gmail.com', 'Automobile Engineering', 'RJIT Tekanpur BSF Academy']), 'Santosh Upadhyay'),
           ((['To work in a motivating,', 'challenging and competitive', 'environment where I can']), ''),
           ((['CURRICULUM VITAE', 'Pvv Satyanarayana Rao']), 'Pvv Satyanarayana Rao'),
           ((['PANKAJ KUMAR', 'Head of Sales']), 'Pankaj Kumar'),
@@ -4764,6 +4767,7 @@ def _selftest(root):
     ck('S468 the wake queues only scars and watermarks', (chr(35)+' WAKE-Q v85.118') in _src and ('def on_moved(self, ev):' in _src) and ('WAKE_Q.append(d)' in _src))
     ck('S469 the wake drains through the service door twice - idle and busy', _src.count(chr(35)+' WAKE-DRAIN v85.118') >= 2)
     ck('S470 the wake globals stand at module level, never inside a nested room', _src.count(chr(10) + 'WAKE_Q = []') >= 1 and _src.count(chr(10) + 'WAKE_L = threading.Lock()') >= 1)
+    ck('S473 the Santosh email anchor defeats degree labels', (chr(35)+' STOP-EXT5 v85.121') in _src and (chr(35)+' EYE-REBIRTH v85.121') in _src and (chr(35)+' PHONE-TAIL v85.121') in _src and _acceptance_ok())
     ck('S455 the head scope stops at three breaths', _src.count('while i < len(ls) and i < ' + '3:') >= 1 and (chr(35)+' HEAD-SCOPE v85.109') in _src)
     ck('S456 an address is never a word of a name', _src.count('any(' + chr(39) + '@' + chr(39) + ' in w for w in ws)') >= 1 and (chr(35)+' MAIL-REFUSE v85.109') in _src)
     ck('S457 the garbage test stands before the identity gate', 0 <= _src.find('GARBAGE-' + 'TEST v85.110') < _src.find('a different human - proposal only'))
