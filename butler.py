@@ -4237,6 +4237,13 @@ def main():
             if _jk and B.journal.get(p) == _jk: return  # WORK-DOOR SKIP v63
         except Exception: pass
         try:
+            if p.lower().endswith('.pdf'):  # SUMMARY-AUTO v85.124: changed/new PDFs consult exact Ready tag+folder; journal skip prevents startup backfill
+                try:
+                    import summary_builder as _sb
+                    _sr = _sb.update_tagged_cv(p)
+                    if _sr.get('status') in ('added', 'updated'): print('📊 [summary] %s · row %s · %s' % (_sr['candidate'], _sr['row'], os.path.relpath(_sr['summary'], root)), flush=True)
+                except Exception as _sbe:
+                    print('⚠️ [summary] update skipped: %s' % _sbe, flush=True)
             B.route(p, print)
         except Exception as e:
             log.error(f"route error {p}: {e}")
@@ -4769,6 +4776,7 @@ def _selftest(root):
     ck('S470 the wake globals stand at module level, never inside a nested room', _src.count(chr(10) + 'WAKE_Q = []') >= 1 and _src.count(chr(10) + 'WAKE_L = threading.Lock()') >= 1)
     ck('S473 the Santosh email anchor defeats degree labels', (chr(35)+' STOP-EXT5 v85.121') in _src and (chr(35)+' EYE-REBIRTH v85.121') in _src and (chr(35)+' PHONE-TAIL v85.121') in _src and _acceptance_ok())
     ck('S474 the recruiting desk is reachable and read-only', os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'recruit.py')) and 'def build_desk(' in open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'recruit.py')).read() and "cmd in ('recruit', 'ta')" in open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'briefing.py')).read() and 'TA-DESK v85.122' in open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'briefing.py')).read())
+    ck('S475 tagged summary hook stays in the changed-file worker', 0 <= _src.find('def work(p, total=0):') < _src.find('SUMMARY-AUTO v85.124') < _src.find('B.route(p, print)', _src.find('def work(p, total=0):')) + 400 and os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'summary_builder.py')) and 'def update_tagged_cv(' in open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'summary_builder.py')).read() and 'backup_path = summary_path + ' in open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'summary_builder.py')).read())
     ck('S455 the head scope stops at three breaths', _src.count('while i < len(ls) and i < ' + '3:') >= 1 and (chr(35)+' HEAD-SCOPE v85.109') in _src)
     ck('S456 an address is never a word of a name', _src.count('any(' + chr(39) + '@' + chr(39) + ' in w for w in ws)') >= 1 and (chr(35)+' MAIL-REFUSE v85.109') in _src)
     ck('S457 the garbage test stands before the identity gate', 0 <= _src.find('GARBAGE-' + 'TEST v85.110') < _src.find('a different human - proposal only'))
