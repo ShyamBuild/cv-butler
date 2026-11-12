@@ -1202,6 +1202,7 @@ def _ident_of(p):  # DUP-SEED v85.26: a paper's identity is its email-and-phone 
     return ids
 
 def calls_cmd(arg, root, say=print, hint=True):  # CHAIR v84.10b (v84.30): FOLDER-TRUTH - the sheet maps the folders, not the tags
+    res_id = {}  # DUP-SEED v85.26 (re-seated v85.122): the residents' identities are born before the first loop reads them, gathered once per seed, so a second download may never re-enter the chair wearing a portal mask
     scopes = [desk_resolve(arg, root)] if arg else (desk_paths() or [root])
     s0 = sheet_load(); sk = skips_load(); mem = set(covered_load())
     if s0.get('desk') != root:  # DESK-SCOPE v85.35: a new position's sheet forgets the old position's waiting rows in one breath - they belong to another chair
@@ -1247,7 +1248,6 @@ def calls_cmd(arg, root, say=print, hint=True):  # CHAIR v84.10b (v84.30): FOLDE
             items.append({'p': qq, 'name': os.path.splitext(os.path.basename(qq))[0], 'status': 'waiting', 'fp': _fp(qq), 're': True})
             del skd[kp]; refed += 1; break
         if refed: json.dump(skd, open(SKIPS_PATH, 'w'), indent=1)
-    res_id = {}  # DUP-SEED v85.26: the residents' identities, gathered once per seed, so a second download may never re-enter the chair wearing a portal mask
     for _st in _tag_vocab():
         _sd = os.path.join(root, _st)
         if not os.path.isdir(_sd): continue
@@ -4831,6 +4831,7 @@ def _selftest(root):
     ck('S458 every click writes its diagnosis', _src.count('service diag: ' + '%s') >= 2 and (chr(35)+' DIAG-EVERY-CLICK v85.110') in _src)
     ck('S459 a caps name wears its role beneath', (chr(35)+' ROLE-BENEATH v85.110') in _src and _src.count('manager' + chr(39) + ',' + chr(39) + 'engineer') >= 1)
     ck('S460 the email anchor speaks for mid-page caps names', (chr(35)+' EMAIL-ANCHOR v85.111') in _src and _src.count('wa[0].lower() in local or wa[-1].lower() in ' + 'local') >= 1)
+    ck('S462 the seed identities are born before their first reading', _src.count('res_id = ' + '{}') == 1 and 0 <= _src.find('res_id = ' + '{}') < _src.find('res_id.items()'))
     ck('S461 the eye cache bumps when the brain learns a new anchor rule', _src.count('_EYE_VSN = ' + chr(39) + 'v85.1') >= 1 and (chr(35)+' EYE-REBIRTH v85.1') in _src)  # VERSION-FREE v85.113: a rebirth guard pins the lineage prefix, never one number, so the next bump never breaks it
     ck('S462 the initial anchor speaks for deep title-case names', (chr(35)+' EMAIL-ANCHOR-INITIAL v85.113') in _src and _src.count('local.startswith(wa[0][0].lower' + '())') >= 1)
     ck('S463 the ink eye is given ninety seconds', (chr(35)+' OCR-PATIENT v85.114') in _src and _src.count('text=True, timeout=' + '90') >= 1)
