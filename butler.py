@@ -1560,6 +1560,15 @@ _NAME_STOP |= set('best ability of my the a an to in for with and or at on is ar
 _NAME_STOP |= set('urdu english hindi arabic french german spanish marathi tamil telugu kannada bengali punjabi sanskrit mandarin chinese'.split())  # STOP-EXT3 v85.109: language names never pose as people
 _NAME_STOP |= set('by powered resumegemini gemini indeed monster naukri shine generated created prepared watermark zety visualcv'.split())  # STOP-EXT4 v85.110: watermarks and portal ghosts never pose as people
 _NAME_STOP |= set('automobile engineering mechanical electrical electronics civil computer science diploma undergraduate graduate degree'.split())  # STOP-EXT5 v85.121: degree and discipline labels never outrank a human name anchored by the candidate email
+def _stem_inside_name(stem, name):  # NAME-COMPLETE v85.126: a shortened coat is the same human - when every token of the stem appears inside the eye's name in order, the deed completes the name instead of proposing; a stranger's tokens still only propose
+    a = [t for t in re.sub(r'[^a-z ]', ' ', (stem or '').lower()).split() if t]
+    b = [t for t in re.sub(r'[^a-z ]', ' ', (name or '').lower()).split() if t]
+    if not a or not b or len(a) >= len(b): return False
+    i = 0
+    for t in b:
+        if i < len(a) and a[i] == t: i += 1
+    return i == len(a)
+
 def _name_from_head_lines(lines):  # ACCEPTANCE v85.101: the naming brain as a pure function of head lines - fixtures test it inside the gate, so ALL GREEN means WORKS, not merely lawful  # DEEP-CAPS v85.108: two adjacent one-word all-caps lines join into one human  # HEAD-SCOPE v85.109: a head wears its name in its first three breaths  # ROLE-BENEATH v85.110: a one-line caps name wears its role beneath  # EMAIL-ANCHOR v85.111: the master's own anchor - a caps line whose first or last word lives inside the email local part is the human, wherever it sits on the page
     ls = [re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:-]?', l.strip(), flags=re.I)[0].strip(' |·\t') for l in lines if l.strip()][:8]  # PIPE-SCAN v85.125: pipe and bullet scars are stripped before the brain reads the head, so | Sandeep S. Naik | is a name and not punctuation
     ls = [re.sub(r'\s+\+?\(?\d[\d\s().-]{7,}\s*$', '', l) for l in ls]  # PHONE-TAIL v85.121: a phone printed beside a caps name is removed before the email anchor checks identity
@@ -1744,7 +1753,7 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
    log('🧭 service: %s | eyes say %s but another paper holds that name - proposal only' % (x, d2)); return
   _sn = _stem_norm(stem); _w0 = _sn.split()
   _garbage = not (2 <= len(_w0) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _w0)) or bool(set(_sn.lower().split()) & _NAME_STOP)  # GARBAGE-TEST v85.110: a stem no person wears - scar or watermark - is corrected, not debated
-  if not _garbage and _name_key(_sn) != _name_key(d2) and 2 <= len(_w0) <= 4: log('🧭 service: %s | eyes say %s, a different human - proposal only, never a guess' % (x, d2)); return
+  if not _garbage and not _stem_inside_name(_sn, d2) and _name_key(_sn) != _name_key(d2) and 2 <= len(_w0) <= 4: log('🧭 service: %s | eyes say %s, a different human - proposal only, never a guess' % (x, d2)); return
   try:
    if os.path.exists(q2) and os.path.basename(q2).lower() != x.lower(): log('🧭 service: %s | another paper holds %s - left as is' % (x, os.path.basename(q2))); return
    os.rename(p, q2); log('✏️ service renamed (gated eyes): %s → %s' % (x, d2 + ext))  # SERVICE-EYES v85.85 (gated-deed v85.104): the right-click is the master's own hand, so behind the identity gate and the twin check the deed is lawful again; the background sweep keeps its silence forever
@@ -4835,6 +4844,8 @@ def _selftest(root):
     ck('S461 the eye cache bumps when the brain learns a new anchor rule', _src.count('_EYE_VSN = ' + chr(39) + 'v85.1') >= 1 and (chr(35)+' EYE-REBIRTH v85.1') in _src)  # VERSION-FREE v85.113: a rebirth guard pins the lineage prefix, never one number, so the next bump never breaks it
     ck('S462 the initial anchor speaks for deep title-case names', (chr(35)+' EMAIL-ANCHOR-INITIAL v85.113') in _src and _src.count('local.startswith(wa[0][0].lower' + '())') >= 1)
     ck('S463 the ink eye is given ninety seconds', (chr(35)+' OCR-PATIENT v85.114') in _src and _src.count('text=True, timeout=' + '90') >= 1)
+    ck('S464 a shortened coat is completed, a stranger still only proposes', _stem_inside_name('Einstein G', 'Albert Einstein G') and _stem_inside_name('Manoj', 'Manoj Rana') and not _stem_inside_name('Rakesh Kumar', 'Chandan Kumar'))
+    ck('S465 the completion test stands before the proposal in the service gate', 0 <= _src.find('_stem_inside_name(_sn, d2)') < _src.find('a different human - proposal only') and (chr(35)+' NAME-COMPLETE v85.126') in _src)
     ck('S464 the case-gate stands above the case-fix', 0 <= _src.find('CASE-GATE v85.115') < _src.find('CASE-SELF v85.82') < _src.find('NAME-SCAN-SERVICE v85.95'))
     ck('S445 the confession stands before the first guard it must explain', ('FAIL WHY' in _src) and ((chr(35)+' FAIL-LOUD v85.99') in _src))
     ck('S446 the gate tests behaviour on synthetic heads, so green means works', ('def _acceptance_ok(' in _src) and _acceptance_ok())
