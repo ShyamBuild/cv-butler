@@ -198,6 +198,12 @@ def _full_text(p):  # FULL-TEXT v81.76: text layer first, vision second - design
             t = "\n".join((pg.extract_text() or '') for pg in pdf.pages)
     except Exception:
         t = ''
+    if t.strip() and '@' not in t and not re.search(r'[6-9]\d{9}', t):  # WITNESS-FALLBACK v85.125: a text layer without a single witness is a half-read page - the ink eye is asked once, cached, and the richer witness stands
+        try:
+            _vt = extract_text_ocr(p) or ''
+            if _vt and ('@' in _vt or re.search(r'[6-9]\d{9}', _vt)) and len(_vt) > len(t): t = _vt
+        except Exception:
+            pass
     if not t.strip():
         t = ''  # TEXT-FIRST v85.16: the text layer is read before any pixel is summoned
         try: t = _word_text(p) or extract_text(p) or ''
@@ -383,12 +389,19 @@ def extract_text_ocr(p):  # PARAM-FIX v85.89: one parameter, one name - for week
             if _s4.strip() and _s4.strip() != '(null)': return _s4
         except Exception:
             pass
+    _ck2 = None
+    try:
+        _st2 = os.stat(p); _ck2 = ('ocr', _st2.st_ino, _st2.st_mtime, _st2.st_size, _EYE_VSN)
+    except OSError:
+        _ck2 = None
+    if _ck2 is not None and _ck2 in OCR_CACHE: return OCR_CACHE[_ck2]  # OCR-CACHE v85.125: the second and every later ask is free
     if not os.path.exists(OCRBIN): return ""
     _tgt = p
     # OCR-RASTER v85.89 (retired v85.107): the png detour fed the Swift eye a picture it could not open - PDFKit reads pdfs natively, so the paper goes to the ink eye whole
     try:
         with OCR_SEM:
             r = subprocess.run([OCRBIN, _tgt, 'stdout'], capture_output=True, text=True, timeout=90)  # OCR-CAP v85.16: twenty-five seconds of patience per paper, never more  # OCR-STDOUT v85.95: tesseract needs an outputbase and stdout is the word - for months the eye handed an image and no destination, and read usage text  # OCR-PATIENT v85.114: the ink eye gets ninety seconds, because Vision cold start can outlive a busy tick and a dead attempt must never read as silence
+        if _ck2 is not None: OCR_CACHE[_ck2] = r.stdout or ''
         return r.stdout or ''
     except Exception:
         return ''
@@ -484,6 +497,7 @@ def standard_name(name):
     return ' '.join(toks)
 
 TEXT_CACHE = {}
+OCR_CACHE = {}  # OCR-CACHE v85.125: a dead ink attempt is remembered as silence for the cache version, so no paper pays the ninety seconds twice and the up-chain never stalls on a ghost
 
 def _cached_head(p):
     try:
@@ -1530,7 +1544,7 @@ _NAME_STOP |= set('urdu english hindi arabic french german spanish marathi tamil
 _NAME_STOP |= set('by powered resumegemini gemini indeed monster naukri shine generated created prepared watermark zety visualcv'.split())  # STOP-EXT4 v85.110: watermarks and portal ghosts never pose as people
 _NAME_STOP |= set('automobile engineering mechanical electrical electronics civil computer science diploma undergraduate graduate degree'.split())  # STOP-EXT5 v85.121: degree and discipline labels never outrank a human name anchored by the candidate email
 def _name_from_head_lines(lines):  # ACCEPTANCE v85.101: the naming brain as a pure function of head lines - fixtures test it inside the gate, so ALL GREEN means WORKS, not merely lawful  # DEEP-CAPS v85.108: two adjacent one-word all-caps lines join into one human  # HEAD-SCOPE v85.109: a head wears its name in its first three breaths  # ROLE-BENEATH v85.110: a one-line caps name wears its role beneath  # EMAIL-ANCHOR v85.111: the master's own anchor - a caps line whose first or last word lives inside the email local part is the human, wherever it sits on the page
-    ls = [re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:-]?', l.strip(), flags=re.I)[0].strip() for l in lines if l.strip()][:8]
+    ls = [re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:-]?', l.strip(), flags=re.I)[0].strip(' |·\t') for l in lines if l.strip()][:8]  # PIPE-SCAN v85.125: pipe and bullet scars are stripped before the brain reads the head, so | Sandeep S. Naik | is a name and not punctuation
     ls = [re.sub(r'\s+\+?\(?\d[\d\s().-]{7,}\s*$', '', l) for l in ls]  # PHONE-TAIL v85.121: a phone printed beside a caps name is removed before the email anchor checks identity
     i = 0
     while i < len(ls) and i < 3:
@@ -4496,7 +4510,8 @@ def _acceptance_ok():  # ACCEPTANCE v85.101: synthetic heads prove the brain ins
           ((['CURRICULUM VITAE', 'Pvv Satyanarayana Rao']), 'Pvv Satyanarayana Rao'),
           ((['PANKAJ KUMAR', 'Head of Sales']), 'Pankaj Kumar'),
           ((['Best Of My Ability', 'chandanankur32@gmail.com']), ''),
-          ((['RAKESH KUMAR', 'Maintenance Head | Beverage Industry']), 'Rakesh Kumar')]
+          ((['RAKESH KUMAR', 'Maintenance Head | Beverage Industry']), 'Rakesh Kumar'),
+          ((['| ALBERT EINSTEIN |', 'SALES EXECUTIVE']), 'Albert Einstein')]
     ok = True
     for lines, want in fx:
         got = _name_from_head_lines(lines)
@@ -4778,6 +4793,9 @@ def _selftest(root):
     ck('S474 the recruiting desk is reachable and read-only', os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'recruit.py')) and 'def build_desk(' in open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'recruit.py')).read() and "cmd in ('recruit', 'ta')" in open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'briefing.py')).read() and 'TA-DESK v85.122' in open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'briefing.py')).read())
     ck('S475 tagged summary hook stays in the changed-file worker', 0 <= _src.find('def work(p, total=0):') < _src.find('SUMMARY-AUTO v85.124') < _src.find('B.route(p, print)', _src.find('def work(p, total=0):')) + 400 and os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'summary_builder.py')) and 'def update_tagged_cv(' in open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'summary_builder.py')).read() and 'backup_path = summary_path + ' in open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'summary_builder.py')).read())
     ck('S476 summary refresh is serialized and preserves sharing date', 'with SUMMARY_LOCK:' in open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'summary_builder.py')).read() and 'updated and key == "date"' in open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'summary_builder.py')).read())
+    ck('S477 a dead ink attempt is remembered, never paid twice', _src.count('OCR_CACHE' + '[_ck2]') >= 2 and (chr(35)+' OCR-CACHE v85.125') in _src)
+    ck('S478 the witness fallback stands inside the full-text door', 0 <= _src.find('def _full_text') < _src.find('WITNESS-' + 'FALLBACK v85.125') < _src.find('def _provenance_lines'))
+    ck('S479 pipe scars are stripped before the brain reads', (chr(35)+' PIPE-SCAN v85.125') in _src and _src.count('strip(' + chr(39) + ' |·') >= 1)
     ck('S455 the head scope stops at three breaths', _src.count('while i < len(ls) and i < ' + '3:') >= 1 and (chr(35)+' HEAD-SCOPE v85.109') in _src)
     ck('S456 an address is never a word of a name', _src.count('any(' + chr(39) + '@' + chr(39) + ' in w for w in ws)') >= 1 and (chr(35)+' MAIL-REFUSE v85.109') in _src)
     ck('S457 the garbage test stands before the identity gate', 0 <= _src.find('GARBAGE-' + 'TEST v85.110') < _src.find('a different human - proposal only'))
