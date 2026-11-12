@@ -1542,7 +1542,7 @@ def rename_diag(paths, say=print, deep=False):  # RENDIAG-DEEP v85.86: opt-in de
         say('🔎 %s | word=%d pdf=%d | first-line: %s | heuristic: %s | firstline-eye: %s | canon: %s | display: %s | %s' % (x, len(wt), len(tt), fl, h, f1, c, disp, dec))
 
 _EYEC = {}
-_EYE_VSN = 'v85.121'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire  # EYE-REBIRTH v85.105: cached silences expire the day the ink eye opens, so no paper stays blind by memory  # EYE-REBIRTH v85.107: silences cached while the ink eye ate pictures expire the day it eats paper  # EYE-REBIRTH v85.110: silences and watermark names cached before the refusals expire tonight  # EYE-REBIRTH v85.112: the EMAIL-ANCHOR brain needs a fresh cache so the deep Saurabh-class names are not served from the v85.110 SILENT memory  # EYE-REBIRTH v85.113: the initial-anchor brain wakes every cached silence from the caps-only era  # EYE-REBIRTH v85.114: silences cached by the impatient timeout expire the day the eye gains patience  # EYE-REBIRTH v85.121: stale degree-label verdicts expire so the candidate-email anchor is consulted again
+_EYE_VSN = 'v85.122'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire  # EYE-REBIRTH v85.105: cached silences expire the day the ink eye opens, so no paper stays blind by memory  # EYE-REBIRTH v85.107: silences cached while the ink eye ate pictures expire the day it eats paper  # EYE-REBIRTH v85.110: silences and watermark names cached before the refusals expire tonight  # EYE-REBIRTH v85.112: the EMAIL-ANCHOR brain needs a fresh cache so the deep Saurabh-class names are not served from the v85.110 SILENT memory  # EYE-REBIRTH v85.113: the initial-anchor brain wakes every cached silence from the caps-only era  # EYE-REBIRTH v85.114: silences cached by the impatient timeout expire the day the eye gains patience  # EYE-REBIRTH v85.121: stale degree-label verdicts expire so the candidate-email anchor is consulted again  # EYE-REBIRTH v85.122: mononym caps names wake the cache so the AJAY class is read fresh
 WAKE_Q = []  # WAKE-Q v85.118: rename destinations waiting for the next tick's judgement
 WAKE_L = threading.Lock()
 def _eyename_cache():
@@ -1591,7 +1591,7 @@ def _name_from_head_lines(lines):  # ACCEPTANCE v85.101: the naming brain as a p
         j = 0
         while j < len(lines):
             a = lines[j].strip(); wa = a.split()
-            if 2 <= len(wa) <= 4 and a.isupper() and all(w.isalpha() for w in wa) and len(a) <= 40 and not (set(w.lower() for w in wa) & _NAME_STOP) and (wa[0].lower() in local or wa[-1].lower() in local) and (_canonical_person_name(a) or ''):  # EMAIL-ANCHOR v85.111: the email local part is the master's anchor, so a mid-page caps name speaks and a caps skill never does
+            if 1 <= len(wa) <= 4 and a.isupper() and all(w.isalpha() and len(w) >= 3 for w in wa) and len(a) <= 40 and not (set(w.lower() for w in wa) & _NAME_STOP) and (wa[0].lower() in local or wa[-1].lower() in local) and (_canonical_person_name(a) or ''):  # EMAIL-ANCHOR v85.111: the email local part is the master's anchor  # MONO-CAPS v85.122: a one-word caps name is a human too when the email witness carries it, so AJAY is never silent again
                 return _display_name(_canonical_person_name(a))
             j += 1
     if local:
@@ -4844,6 +4844,7 @@ def _selftest(root):
     ck('S460 the email anchor speaks for mid-page caps names', (chr(35)+' EMAIL-ANCHOR v85.111') in _src and _src.count('wa[0].lower() in local or wa[-1].lower() in ' + 'local') >= 1)
     ck('S462 the seed identities are born before their first reading', _src.count('res_id = ' + '{}') == 1 and 0 <= _src.find('res_id = ' + '{}') < _src.find('res_id.items()'))
     ck('S461 the eye cache bumps when the brain learns a new anchor rule', _src.count('_EYE_VSN = ' + chr(39) + 'v85.1') >= 1 and (chr(35)+' EYE-REBIRTH v85.1') in _src)  # VERSION-FREE v85.113: a rebirth guard pins the lineage prefix, never one number, so the next bump never breaks it
+    ck('S462 a mononym caps head speaks through the email witness', (chr(35)+' MONO-CAPS v85.122') in _src and _src.count('all(w.isalpha() and len(w) >= ' + '3 for w in wa)') >= 1)
     ck('S462 the initial anchor speaks for deep title-case names', (chr(35)+' EMAIL-ANCHOR-INITIAL v85.113') in _src and _src.count('local.startswith(wa[0][0].lower' + '())') >= 1)
     ck('S463 the ink eye is given ninety seconds', (chr(35)+' OCR-PATIENT v85.114') in _src and _src.count('text=True, timeout=' + '90') >= 1)
     ck('S464 a shortened coat is completed, a stranger still only proposes', _stem_inside_name('Einstein G', 'Albert Einstein G') and _stem_inside_name('Manoj', 'Manoj Rana') and not _stem_inside_name('Rakesh Kumar', 'Chandan Kumar'))
