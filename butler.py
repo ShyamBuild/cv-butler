@@ -200,7 +200,7 @@ def _full_text(p):  # FULL-TEXT v81.76: text layer first, vision second - design
         t = ''
     if t.strip() and '@' not in t and not re.search(r'[6-9]\d{9}', t):  # WITNESS-FALLBACK v85.125: a text layer without a single witness is a half-read page - the ink eye is asked once, cached, and the richer witness stands
         try:
-            _vt = extract_text_ocr(p) or ''
+            _vt = _vision_text(p) or ''  # VISION-ONLY-CALL v85.126: the witness fallback asks the ink itself, because extract_text_ocr would hand back the half-read text layer again
             if _vt and ('@' in _vt or re.search(r'[6-9]\d{9}', _vt)) and len(_vt) > len(t): t = _vt
         except Exception:
             pass
@@ -357,6 +357,23 @@ def ocr_probe(p):  # OCR-PROBE v85.88: one command times the capped OCR eye on a
     print('ocr_probe: %.1fs · %d chars · %s' % (dt, len(t), p))
     print('ocr_probe head:', t[:300].replace(chr(10), ' | '))
     return t
+
+def _vision_text(p):  # VISION-ONLY v85.126: the ink eye asked directly, bypassing the text-layer short-circuit, cached by inode and version so a silence is paid once and never twice
+    _ck3 = None
+    try:
+        _st3 = os.stat(p); _ck3 = ('vision', _st3.st_ino, _st3.st_mtime, _st3.st_size, _EYE_VSN)
+    except OSError:
+        _ck3 = None
+    if _ck3 is not None and _ck3 in OCR_CACHE: return OCR_CACHE[_ck3]
+    if not os.path.exists(OCRBIN): return ''
+    try:
+        with OCR_SEM:
+            r = subprocess.run([OCRBIN, p, 'stdout'], capture_output=True, text=True, timeout=90)
+        if _ck3 is not None: OCR_CACHE[_ck3] = r.stdout or ''
+        return r.stdout or ''
+    except Exception:
+        if _ck3 is not None: OCR_CACHE[_ck3] = ''
+        return ''
 
 def extract_text_ocr(p):  # PARAM-FIX v85.89: one parameter, one name - for weeks every eye inside this function spoke p while the signature said fp, and the NameError swallowed the whole chain
     try:  # PY-PYPDF v85.72: the venv's own reader, once installed, speaks every pdf dialect including CID glyph maps - the true cure for a silent text layer
@@ -4223,6 +4240,16 @@ def main():
         def on_modified(self, e):
             if not e.is_directory: self._add(e.src_path)
         def on_moved(self, e):
+            try:  # WAKE-ENQUEUE v85.126: the existing move handler also wakes the rename judge - a scar or watermark destination is queued for the next tick, a human-shaped name never is, so the wake costs one string test and cannot feed itself
+                _wd = getattr(e, 'dest_path', '') or ''
+                _wb = os.path.basename(_wd)
+                if _wb.lower().endswith(('.pdf', '.docx')):
+                    _ws = _stem_norm(os.path.splitext(_wb)[0]).split()
+                    if not ((2 <= len(_ws) <= 4 and all(x.isalpha() or '-' in x or '.' in x for x in _ws)) and not (set(x.lower() for x in _ws) & _NAME_STOP)):
+                        with WAKE_L:
+                            if _wd not in WAKE_Q and len(WAKE_Q) < 50: WAKE_Q.append(_wd)
+            except Exception:
+                pass
             if not e.is_directory:
                 self._add(e.dest_path)
                 if not e.dest_path.startswith(B.root):
@@ -4796,6 +4823,8 @@ def _selftest(root):
     ck('S477 a dead ink attempt is remembered, never paid twice', _src.count('OCR_CACHE' + '[_ck2]') >= 2 and (chr(35)+' OCR-CACHE v85.125') in _src)
     ck('S478 the witness fallback stands inside the full-text door', 0 <= _src.find('def _full_text') < _src.find('WITNESS-' + 'FALLBACK v85.125') < _src.find('def _provenance_lines'))
     ck('S479 pipe scars are stripped before the brain reads', (chr(35)+' PIPE-SCAN v85.125') in _src and _src.count('strip(' + chr(39) + ' |·') >= 1)
+    ck('S480 the witness asks the ink itself, cached', _src.count('def _vision_text(p):') >= 1 and _src.count('_vt = _vision_text(p) or ' + chr(39) + chr(39)) >= 1)
+    ck('S481 the wake feeder sits inside the existing move handler', 0 <= _src.find('def on_moved') < _src.find('WAKE-ENQUEUE v85.126') and _src.count('WAKE_Q.append(' + '_wd)') >= 1)
     ck('S455 the head scope stops at three breaths', _src.count('while i < len(ls) and i < ' + '3:') >= 1 and (chr(35)+' HEAD-SCOPE v85.109') in _src)
     ck('S456 an address is never a word of a name', _src.count('any(' + chr(39) + '@' + chr(39) + ' in w for w in ws)') >= 1 and (chr(35)+' MAIL-REFUSE v85.109') in _src)
     ck('S457 the garbage test stands before the identity gate', 0 <= _src.find('GARBAGE-' + 'TEST v85.110') < _src.find('a different human - proposal only'))
