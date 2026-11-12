@@ -1,4 +1,4 @@
-🔒 live lock: butler_8ae4a2bf.lock -> 78462|/Users/apple/Downloads/Sunsoft Technology/02 HIPP/Customer Service -Bhopal
+🔒 live lock: butler_8ae4a2bf.lock -> 37100|/Users/apple/Downloads/Sunsoft Technology/02 HIPP/Customer Service -Bhopal
 ==== _service_act ====
 def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawful and local  # DRAIN-ARMOR v85.92: no path returns silent and a crash logs itself
  x = os.path.basename(p)
@@ -22,7 +22,7 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
     return
    except Exception as _se: log('⚠️ service rename failed: %s | %r' % (x, _se)); return
   v = ''
-  try: v = heuristic_name(p) or _name_from_first_line(p) or _eyename_of(p)  # NAME-SCAN-SERVICE v85.95: the right-click borrows the scanning eye and its cache, so a photo-headed CV is named from its own head
+  try: v = heuristic_name(p) or _name_from_first_line(p) or _eyename_of(p) or get_visual_name(p)  # NAME-SCAN-SERVICE v85.95: the right-click borrows the scanning eye and its cache, so a photo-headed CV is named from its own head  # SERVICE-LAYOUT-EYE v85.121: layout-aware fallback reads separated visual CV headers after text/OCR eyes
   except Exception: v = ''
   log('🔎 service diag: %s | eye-head: %s' % (x, (v or 'SILENT')[:60]))  # DIAG-EVERY-CLICK v85.110: no right-click is ever dark - the eye's raw head speaks into the log before any judgement
   if not v: log('🧭 service: %s | every eye silent (text, word, ocr) - vision or teaching needed' % x); return
@@ -240,12 +240,19 @@ def extract_text_ocr(p):  # PARAM-FIX v85.89: one parameter, one name - for week
             if _s4.strip() and _s4.strip() != '(null)': return _s4
         except Exception:
             pass
+    _ck2 = None
+    try:
+        _st2 = os.stat(p); _ck2 = ('ocr', _st2.st_ino, _st2.st_mtime, _st2.st_size, _EYE_VSN)
+    except OSError:
+        _ck2 = None
+    if _ck2 is not None and _ck2 in OCR_CACHE: return OCR_CACHE[_ck2]  # OCR-CACHE v85.125: the second and every later ask is free
     if not os.path.exists(OCRBIN): return ""
     _tgt = p
     # OCR-RASTER v85.89 (retired v85.107): the png detour fed the Swift eye a picture it could not open - PDFKit reads pdfs natively, so the paper goes to the ink eye whole
     try:
         with OCR_SEM:
             r = subprocess.run([OCRBIN, _tgt, 'stdout'], capture_output=True, text=True, timeout=90)  # OCR-CAP v85.16: twenty-five seconds of patience per paper, never more  # OCR-STDOUT v85.95: tesseract needs an outputbase and stdout is the word - for months the eye handed an image and no destination, and read usage text  # OCR-PATIENT v85.114: the ink eye gets ninety seconds, because Vision cold start can outlive a busy tick and a dead attempt must never read as silence
+        if _ck2 is not None: OCR_CACHE[_ck2] = r.stdout or ''
         return r.stdout or ''
     except Exception:
         return ''
@@ -651,5 +658,5 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OCRBIN = os.path.join(BASE_DIR, "cvocr")
 117 
 OCR_SEM = threading.Semaphore(2)
-5056 
+5088 
 extract_text = extract_text_ocr  # ALIAS v85.89: one name for the whole chain, bound after every def has landed - the diag pdf column, emails_in_text and every bare caller wake from swallowing NameError
