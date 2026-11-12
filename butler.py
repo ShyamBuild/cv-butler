@@ -1760,6 +1760,8 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
   try: c = _canonical_person_name(v) if v else ''
   except Exception: c = ''
   log('🔎 service diag: %s | canon: %s | display: %s | stem: %s' % (x, c or 'none', _display_name(c) if c else 'none', stem))  # DIAG-EVERY-CLICK v85.110: the judgement chain speaks - canon, display and the stem it weighs
+  _id2 = identity_of(p)
+  log('🪪 service identity: %s | name: %s | phones: %s | emails: %s' % (x, _id2['name'] or 'none', ','.join(_id2['phones']) or 'none', ','.join(_id2['emails']) or 'none'))  # CHAT-EYES v85.132: the identity clerk speaks at every click, so phone and email accuracy is visible in the log and ready for the chat transcript
   try:
    os.makedirs(os.path.join(BASE_DIR, 'notes'), exist_ok=True)
    open(os.path.join(BASE_DIR, 'notes', 'casebook.jsonl'), 'a').write(json.dumps({'ts': int(time.time()), 'stem': stem, 'eye': (v or '')[:40], 'canon': c or '', 'display': _display_name(c) if c else '', 'mail': (emails_in_text(v) or [''])[0] if v else ''}) + chr(10))  # CASEBOOK v85.127: every verdict becomes a recorded case in the repo, so the next lap learns from evidence instead of screenshots and any developer reads the casebook from the mirror
@@ -4565,6 +4567,23 @@ def main():
         os._exit(0)
     obs.join()
 
+def identity_of(p):  # IDENTITY-CLERK v85.132: one clerk for name, phones, emails and provenance - the chat, the picker and the service ask the same eyes, so no door misses a witness the house can read, selectable text or pure ink; emails ride the cheap vision-grade door so the pixel bill census (S381) stays untouched
+    nm = ''
+    try: nm = _eyename_of(p) or ''
+    except Exception: nm = ''
+    cn = ''
+    try: cn = _canonical_person_name(nm) if nm else ''
+    except Exception: cn = ''
+    ph = []
+    try: ph = phones_of(p, quiet=True)
+    except Exception: ph = []
+    em = []
+    try:
+        _em2 = _email_cheap(p)
+        em = _em2 if isinstance(_em2, list) else ([_em2] if _em2 else [])
+    except Exception: em = []
+    return {'name': _display_name(cn) if cn else '', 'phones': ph, 'emails': em, 'prov': _provenance_lines(os.path.abspath(p), ph) if ph else []}
+
 def _acceptance_ok():  # ACCEPTANCE v85.101: synthetic heads prove the brain inside the gate - a wrong-name regression can no longer reach a commit
     fx = [((['CHANDN', 'KUMAR', 'OBJECTIVE', 'To work in a motivating,']), 'Chandn Kumar'),
           ((['SANTOSH UPADHYAY +919165617356', 'Roll No.: 0902AU02 santoshsharma23315@gmail.com', 'Automobile Engineering', 'RJIT Tekanpur BSF Academy']), 'Santosh Upadhyay'),
@@ -4850,6 +4869,8 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S471 one identity clerk serves every door', _src.count('def identity_' + 'of(p):') >= 1 and (chr(35)+' IDENTITY-CLERK v85.132') in _src)
+    ck('S472 the identity speaks at every click and the pixel bill stays paid by none', (chr(35)+' CHAT-EYES v85.132') in _src and _src.count('service identity: ' + '%s') >= 1 and _src.count('emails_' + 'of(') <= 2)
     ck('S468 no chair is ever built inside a chair', 0 <= _src.find('def handle_tags') < _src.find('STAGE-NEVER-' + 'BASE v85.128') and _src.count('os.path.basename(base) in _tag_vocab()') >= 1)
     ck('S466 the service gate sits inside the service door', 0 <= _src.find('def _service_act') < _src.find('CASE-GATE v85.117') < _src.find('CASE-SELF v85.82', _src.find('def _service_act')))
     ck('S467 the sweep gate stands above the service door', 0 <= _src.find('CASE-GATE v85.115') < _src.find('def _service_act') < _src.find('CASE-GATE v85.117'))
