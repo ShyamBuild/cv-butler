@@ -1,4 +1,4 @@
-🔒 live lock: butler_0e31c966.lock -> 42708|/Users/apple/Downloads/Sunsoft Technology/02 Honda Power/ASO Chennai
+🔒 live lock: butler_0e31c966.lock -> 50190|/Users/apple/Downloads/Sunsoft Technology/02 Honda Power/ASO Chennai
 ==== _service_act ====
 def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawful and local  # DRAIN-ARMOR v85.92: no path returns silent and a crash logs itself
  x = os.path.basename(p)
@@ -30,6 +30,16 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
   try: c = _canonical_person_name(v) if v else ''
   except Exception: c = ''
   log('🔎 service diag: %s | canon: %s | display: %s | stem: %s' % (x, c or 'none', _display_name(c) if c else 'none', stem))  # DIAG-EVERY-CLICK v85.110: the judgement chain speaks - canon, display and the stem it weighs
+  try:
+   os.makedirs(os.path.join(BASE_DIR, 'notes'), exist_ok=True)
+   open(os.path.join(BASE_DIR, 'notes', 'casebook.jsonl'), 'a').write(json.dumps({'ts': int(time.time()), 'stem': stem, 'eye': (v or '')[:40], 'canon': c or '', 'display': _display_name(c) if c else '', 'mail': (emails_in_text(v) or [''])[0] if v else ''}) + chr(10))  # CASEBOOK v85.127: every verdict becomes a recorded case in the repo, so the next lap learns from evidence instead of screenshots and any developer reads the casebook from the mirror
+  except Exception:
+   pass
+  try:
+   os.makedirs(os.path.join(BASE_DIR, 'notes'), exist_ok=True)
+   open(os.path.join(BASE_DIR, 'notes', 'casebook.jsonl'), 'a').write(json.dumps({'ts': int(time.time()), 'stem': stem, 'eye': (v or '')[:40], 'canon': c or '', 'display': _display_name(c) if c else '', 'mail': (emails_in_text(v) or [''])[0] if v else ''}) + chr(10))  # CASEBOOK v85.125: every verdict becomes a recorded case in the repo, so the next lap learns from evidence instead of screenshots and the architect reads the casebook from the mirror
+  except Exception:
+   pass
   if not c: log('🧭 service: %s | eyes read text but no human name in it (first line: %s)' % (x, (v or '')[:40])); return
   d2 = _display_name(c)
   if d2 == stem: log('🧭 service: %s | already named correctly by the eyes' % x); return
@@ -658,5 +668,5 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OCRBIN = os.path.join(BASE_DIR, "cvocr")
 117 
 OCR_SEM = threading.Semaphore(2)
-5154 
+5166 
 extract_text = extract_text_ocr  # ALIAS v85.89: one name for the whole chain, bound after every def has landed - the diag pdf column, emails_in_text and every bare caller wake from swallowing NameError
