@@ -3957,7 +3957,8 @@ class Butler:
             if not nm or nm in ('Red', 'Orange', 'Yellow', 'Green', 'Blue', 'Purple', 'Gray', 'Grey'): continue
             d0 = os.path.dirname(p)
             if os.path.basename(d0) == nm: return  # HOME v78
-            base = d0 if len(os.path.relpath(d0, self.root).split(os.sep)) <= 2 else os.path.dirname(d0)
+            base = d0
+            while base != self.root and os.path.basename(base) in _tag_vocab(): base = os.path.dirname(base)  # STAGE-NEVER-BASE v85.128: a stage folder is a seat, never a root - the tag's home is sought from the chair that holds the stages, so no chair is ever built inside a chair
             tgt = os.path.join(base, nm)
             os.makedirs(tgt, exist_ok=True)
             dst = os.path.join(tgt, os.path.basename(p)); c = 1
@@ -4820,6 +4821,7 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S468 no chair is ever built inside a chair', 0 <= _src.find('def handle_tags') < _src.find('STAGE-NEVER-' + 'BASE v85.128') and _src.count('os.path.basename(base) in _tag_vocab()') >= 1)
     ck('S466 the service gate sits inside the service door', 0 <= _src.find('def _service_act') < _src.find('CASE-GATE v85.117') < _src.find('CASE-SELF v85.82', _src.find('def _service_act')))
     ck('S467 the sweep gate stands above the service door', 0 <= _src.find('CASE-GATE v85.115') < _src.find('def _service_act') < _src.find('CASE-GATE v85.117'))
     ck('S468 the wake queues only scars and watermarks', (chr(35)+' WAKE-Q v85.118') in _src and ('def on_moved(self, ev):' in _src) and ('WAKE_Q.append(d)' in _src))

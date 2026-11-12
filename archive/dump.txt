@@ -1,4 +1,4 @@
-🔒 live lock: butler_0e31c966.lock -> 45660|/Users/apple/Downloads/Sunsoft Technology/02 Honda Power/ASO Chennai
+🔒 live lock: butler_0e31c966.lock -> 49413|/Users/apple/Downloads/Sunsoft Technology/02 Honda Power/ASO Chennai
 ==== _service_act ====
 def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawful and local  # DRAIN-ARMOR v85.92: no path returns silent and a crash logs itself
  x = os.path.basename(p)
@@ -38,7 +38,7 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
    log('🧭 service: %s | eyes say %s but another paper holds that name - proposal only' % (x, d2)); return
   _sn = _stem_norm(stem); _w0 = _sn.split()
   _garbage = not (2 <= len(_w0) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _w0)) or bool(set(_sn.lower().split()) & _NAME_STOP)  # GARBAGE-TEST v85.110: a stem no person wears - scar or watermark - is corrected, not debated
-  if not _garbage and _name_key(_sn) != _name_key(d2) and 2 <= len(_w0) <= 4: log('🧭 service: %s | eyes say %s, a different human - proposal only, never a guess' % (x, d2)); return
+  if not _garbage and not _stem_inside_name(_sn, d2) and _name_key(_sn) != _name_key(d2) and 2 <= len(_w0) <= 4: log('🧭 service: %s | eyes say %s, a different human - proposal only, never a guess' % (x, d2)); return
   try:
    if os.path.exists(q2) and os.path.basename(q2).lower() != x.lower(): log('🧭 service: %s | another paper holds %s - left as is' % (x, os.path.basename(q2))); return
    os.rename(p, q2); log('✏️ service renamed (gated eyes): %s → %s' % (x, d2 + ext))  # SERVICE-EYES v85.85 (gated-deed v85.104): the right-click is the master's own hand, so behind the identity gate and the twin check the deed is lawful again; the background sweep keeps its silence forever
@@ -658,5 +658,5 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OCRBIN = os.path.join(BASE_DIR, "cvocr")
 117 
 OCR_SEM = threading.Semaphore(2)
-5118 
+5129 
 extract_text = extract_text_ocr  # ALIAS v85.89: one name for the whole chain, bound after every def has landed - the diag pdf column, emails_in_text and every bare caller wake from swallowing NameError
