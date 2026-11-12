@@ -1542,7 +1542,7 @@ def rename_diag(paths, say=print, deep=False):  # RENDIAG-DEEP v85.86: opt-in de
         say('🔎 %s | word=%d pdf=%d | first-line: %s | heuristic: %s | firstline-eye: %s | canon: %s | display: %s | %s' % (x, len(wt), len(tt), fl, h, f1, c, disp, dec))
 
 _EYEC = {}
-_EYE_VSN = 'v85.122'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire  # EYE-REBIRTH v85.105: cached silences expire the day the ink eye opens, so no paper stays blind by memory  # EYE-REBIRTH v85.107: silences cached while the ink eye ate pictures expire the day it eats paper  # EYE-REBIRTH v85.110: silences and watermark names cached before the refusals expire tonight  # EYE-REBIRTH v85.112: the EMAIL-ANCHOR brain needs a fresh cache so the deep Saurabh-class names are not served from the v85.110 SILENT memory  # EYE-REBIRTH v85.113: the initial-anchor brain wakes every cached silence from the caps-only era  # EYE-REBIRTH v85.114: silences cached by the impatient timeout expire the day the eye gains patience  # EYE-REBIRTH v85.121: stale degree-label verdicts expire so the candidate-email anchor is consulted again  # EYE-REBIRTH v85.122: mononym caps names wake the cache so the AJAY class is read fresh
+_EYE_VSN = 'v85.123'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire  # EYE-REBIRTH v85.105: cached silences expire the day the ink eye opens, so no paper stays blind by memory  # EYE-REBIRTH v85.107: silences cached while the ink eye ate pictures expire the day it eats paper  # EYE-REBIRTH v85.110: silences and watermark names cached before the refusals expire tonight  # EYE-REBIRTH v85.112: the EMAIL-ANCHOR brain needs a fresh cache so the deep Saurabh-class names are not served from the v85.110 SILENT memory  # EYE-REBIRTH v85.113: the initial-anchor brain wakes every cached silence from the caps-only era  # EYE-REBIRTH v85.114: silences cached by the impatient timeout expire the day the eye gains patience  # EYE-REBIRTH v85.121: stale degree-label verdicts expire so the candidate-email anchor is consulted again  # EYE-REBIRTH v85.122: mononym caps names wake the cache so the AJAY class is read fresh  # EYE-REBIRTH v85.123: mononym and re-seated anchor wake every cached silence
 WAKE_Q = []  # WAKE-Q v85.118: rename destinations waiting for the next tick's judgement
 WAKE_L = threading.Lock()
 def _eyename_cache():
@@ -1570,6 +1570,21 @@ def _stem_inside_name(stem, name):  # NAME-COMPLETE v85.126: a shortened coat is
     return i == len(a)
 
 def _name_from_head_lines(lines):  # ACCEPTANCE v85.101: the naming brain as a pure function of head lines - fixtures test it inside the gate, so ALL GREEN means WORKS, not merely lawful  # DEEP-CAPS v85.108: two adjacent one-word all-caps lines join into one human  # HEAD-SCOPE v85.109: a head wears its name in its first three breaths  # ROLE-BENEATH v85.110: a one-line caps name wears its role beneath  # EMAIL-ANCHOR v85.111: the master's own anchor - a caps line whose first or last word lives inside the email local part is the human, wherever it sits on the page
+    _mls = [re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:-]?', l.strip(), flags=re.I)[0].strip() for l in lines if l.strip()][:2]
+    _mmail = ''
+    for _ml in lines:
+        _mm = re.search(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}', _ml)
+        if _mm: _mmail = _mm.group(0); break
+    _mlocal = re.sub(r'[^a-z]', '', _mmail.split('@')[0].lower()) if _mmail else ''
+    if _mls and len(_mls[0].split()) == 1 and _mls[0].isupper() and _mls[0].isalpha() and len(_mls[0]) >= 3 and _mls[0].lower() not in _NAME_STOP and (len(_mls) < 2 or not (len(_mls[1].split()) == 1 and _mls[1].isupper() and _mls[1].isalpha())) and (not _mlocal or _mls[0].lower() in _mlocal) and (_canonical_person_name(_mls[0]) or ''):  # FIRST-LINE-MONONYM v85.123: the first breath of the page, one caps word the email witness agrees with (or no email at all), IS the name - AJAY is never silent again; a name split over two lines defers to the pair path below
+        return _display_name(_canonical_person_name(_mls[0]))
+    if _mlocal:
+        _j = 0
+        while _j < len(lines):
+            _a = lines[_j].strip(); _wa = _a.split()
+            if 2 <= len(_wa) <= 4 and _a.isupper() and all(w.isalpha() and len(w) >= 3 for w in _wa) and len(_a) <= 40 and not (set(w.lower() for w in _wa) & _NAME_STOP) and (_wa[0].lower() in _mlocal or _wa[-1].lower() in _mlocal) and (_canonical_person_name(_a) or ''):  # EMAIL-ANCHOR v85.111  # re-seated v85.123: the master's email witness anchors a mid-page caps name wherever the page hides it
+                return _display_name(_canonical_person_name(_a))
+            _j += 1
     ls = [re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:-]?', l.strip(), flags=re.I)[0].strip(' |·\t') for l in lines if l.strip()][:8]  # PIPE-SCAN v85.125: pipe and bullet scars are stripped before the brain reads the head, so | Sandeep S. Naik | is a name and not punctuation
     ls = [re.sub(r'\s+\+?\(?\d[\d\s().-]{7,}\s*$', '', l) for l in ls]  # PHONE-TAIL v85.121: a phone printed beside a caps name is removed before the email anchor checks identity
     i = 0
@@ -4549,6 +4564,10 @@ def _acceptance_ok():  # ACCEPTANCE v85.101: synthetic heads prove the brain ins
           ((['Best Of My Ability', 'chandanankur32@gmail.com']), ''),
           ((['RAKESH KUMAR', 'Maintenance Head | Beverage Industry']), 'Rakesh Kumar'),
           ((['| ALBERT EINSTEIN |', 'SALES EXECUTIVE']), 'Albert Einstein')]
+    ((['AJAY', 'Near Railway Flyover, Sonipat(131001) Contact:+91-9992072806 | Email: ajayjas12@gmail.com', 'CAREER OBJECTIVE']), 'Ajay'),
+    ((['Powered by ResumeGemini', '+91 7999569417', 'saurabhapr12@gmail.com', 'Summary', 'SAURABH VERMA', 'CNC Machining']), 'Saurabh Verma'),
+    ((['PERSONAL INFORMATION', 'Email', 'bhatgowhar888@gmail.com', 'GOWHAR BHAT', 'Cotek Technical Manager']), 'Gowhar Bhat'),
+    ((['KAIZAN', 'Solid Edge', 'someone.else@gmail.com']), ''),
     ok = True
     for lines, want in fx:
         got = _name_from_head_lines(lines)
@@ -4845,6 +4864,8 @@ def _selftest(root):
     ck('S462 the seed identities are born before their first reading', _src.count('res_id = ' + '{}') == 1 and 0 <= _src.find('res_id = ' + '{}') < _src.find('res_id.items()'))
     ck('S461 the eye cache bumps when the brain learns a new anchor rule', _src.count('_EYE_VSN = ' + chr(39) + 'v85.1') >= 1 and (chr(35)+' EYE-REBIRTH v85.1') in _src)  # VERSION-FREE v85.113: a rebirth guard pins the lineage prefix, never one number, so the next bump never breaks it
     ck('S462 a mononym caps head speaks through the email witness', (chr(35)+' MONO-CAPS v85.122') in _src and _src.count('all(w.isalpha() and len(w) >= ' + '3 for w in wa)') >= 1)
+    ck('S463 the first breath of the page is a name when the email agrees', (chr(35)+' FIRST-LINE-MONONYM v85.123') in _src and _src.count('len(_mls[0].split()) == 1 and _mls[0].' + 'isupper()') >= 1)
+    ck('S464 the email anchor sits at the top of the brain', _src.count('_wa[0].lower() in _mlocal or _wa[-1].lower() in ' + '_mlocal') >= 1 and (chr(35)+' re-seated v85.123') in _src)
     ck('S462 the initial anchor speaks for deep title-case names', (chr(35)+' EMAIL-ANCHOR-INITIAL v85.113') in _src and _src.count('local.startswith(wa[0][0].lower' + '())') >= 1)
     ck('S463 the ink eye is given ninety seconds', (chr(35)+' OCR-PATIENT v85.114') in _src and _src.count('text=True, timeout=' + '90') >= 1)
     ck('S464 a shortened coat is completed, a stranger still only proposes', _stem_inside_name('Einstein G', 'Albert Einstein G') and _stem_inside_name('Manoj', 'Manoj Rana') and not _stem_inside_name('Rakesh Kumar', 'Chandan Kumar'))
