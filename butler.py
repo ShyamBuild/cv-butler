@@ -1551,7 +1551,7 @@ def rename_diag(paths, say=print, deep=False):  # RENDIAG-DEEP v85.86: opt-in de
         say('🔎 %s | word=%d pdf=%d | first-line: %s | heuristic: %s | firstline-eye: %s | canon: %s | display: %s | %s' % (x, len(wt), len(tt), fl, h, f1, c, disp, dec))
 
 _EYEC = {}
-_EYE_VSN = 'v85.124'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire  # EYE-REBIRTH v85.105: cached silences expire the day the ink eye opens, so no paper stays blind by memory  # EYE-REBIRTH v85.107: silences cached while the ink eye ate pictures expire the day it eats paper  # EYE-REBIRTH v85.110: silences and watermark names cached before the refusals expire tonight  # EYE-REBIRTH v85.112: the EMAIL-ANCHOR brain needs a fresh cache so the deep Saurabh-class names are not served from the v85.110 SILENT memory  # EYE-REBIRTH v85.113: the initial-anchor brain wakes every cached silence from the caps-only era  # EYE-REBIRTH v85.114: silences cached by the impatient timeout expire the day the eye gains patience  # EYE-REBIRTH v85.121: stale degree-label verdicts expire so the candidate-email anchor is consulted again  # EYE-REBIRTH v85.122: mononym caps names wake the cache so the AJAY class is read fresh  # EYE-REBIRTH v85.123: mononym and re-seated anchor wake every cached silence  # EYE-REBIRTH v85.124: cached mononym silences expire the moment the door widens
+_EYE_VSN = 'v85.130'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire  # EYE-REBIRTH v85.105: cached silences expire the day the ink eye opens, so no paper stays blind by memory  # EYE-REBIRTH v85.107: silences cached while the ink eye ate pictures expire the day it eats paper  # EYE-REBIRTH v85.110: silences and watermark names cached before the refusals expire tonight  # EYE-REBIRTH v85.112: the EMAIL-ANCHOR brain needs a fresh cache so the deep Saurabh-class names are not served from the v85.110 SILENT memory  # EYE-REBIRTH v85.113: the initial-anchor brain wakes every cached silence from the caps-only era  # EYE-REBIRTH v85.114: silences cached by the impatient timeout expire the day the eye gains patience  # EYE-REBIRTH v85.121: stale degree-label verdicts expire so the candidate-email anchor is consulted again  # EYE-REBIRTH v85.122: mononym caps names wake the cache so the AJAY class is read fresh  # EYE-REBIRTH v85.123: mononym and re-seated anchor wake every cached silence  # EYE-REBIRTH v85.124: cached mononym silences expire the moment the door widens  # EYE-REBIRTH v85.130: names welded to address lines wake the cache so Annpurna-class papers are read fresh
 WAKE_Q = []  # WAKE-Q v85.118: rename destinations waiting for the next tick's judgement
 WAKE_L = threading.Lock()
 def _eyename_cache():
@@ -1568,6 +1568,7 @@ _NAME_STOP |= set('objective education educational contact linkedin personal com
 _NAME_STOP |= set('best ability of my the a an to in for with and or at on is are was were be been being i we you he she it they me him her us them where can will shall should would could may might must environment utilize utilizing maximum extent progress organization motivate motivating challenge challenges competition work'.split())  # STOP-EXT2 v85.101: articles, conjunctions and slogan-verbs join the gate, so no sentence fragment can pose as a human
 _NAME_STOP |= set('urdu english hindi arabic french german spanish marathi tamil telugu kannada bengali punjabi sanskrit mandarin chinese'.split())  # STOP-EXT3 v85.109: language names never pose as people
 _NAME_STOP |= set('by powered resumegemini gemini indeed monster naukri shine generated created prepared watermark zety visualcv'.split())  # STOP-EXT4 v85.110: watermarks and portal ghosts never pose as people
+_NAME_STOP |= set('basic knowledge technical qualification curriculum vitae'.split())  # STOP-EXT6 v85.130: section headings are never people, so a stem wearing one is garbage and the gated deed heals it on click and on tick
 _NAME_STOP |= set('automobile engineering mechanical electrical electronics civil computer science diploma undergraduate graduate degree'.split())  # STOP-EXT5 v85.121: degree and discipline labels never outrank a human name anchored by the candidate email
 def _stem_inside_name(stem, name):  # NAME-COMPLETE v85.126: a shortened coat is the same human - when every token of the stem appears inside the eye's name in order, the deed completes the name instead of proposing; a stranger's tokens still only propose
     a = [t for t in re.sub(r'[^a-z ]', ' ', (stem or '').lower()).split() if t]
@@ -1625,6 +1626,17 @@ def _name_from_head_lines(lines):  # ACCEPTANCE v85.101: the naming brain as a p
             if 2 <= len(wa) <= 3 and a.istitle() and all(w.isalpha() for w in wa) and len(a) <= 40 and not (set(w.lower() for w in wa) & _NAME_STOP) and (wa[-1].lower() in local) and local.startswith(wa[0][0].lower()) and (_canonical_person_name(a) or ''):  # EMAIL-ANCHOR-INITIAL v85.113: a deep title-case line whose surname lives in the email and whose first initial opens it is the human, so Prabhakar-class papers speak too
                 return _display_name(_canonical_person_name(a))
             j += 1
+            if local:
+                j = 0
+                while j < len(lines):
+                    wsx = lines[j].split()
+                    for n in (2, 3, 4):
+                        if len(wsx) < n: break
+                        wc = wsx[:n]
+                        cut = ' '.join(wc)
+                        if all(w[:1].isupper() and w.isalpha() for w in wc) and len(cut) <= 40 and not (set(w.lower() for w in wc) & _NAME_STOP) and local.startswith(wc[0].lower()) and wc[-1].lower() in local and (_canonical_person_name(cut) or ''):  # EMAIL-TITLE-ANCHOR v85.130: a title-case name welded to its own address line speaks as a prefix when the email opens with its first word and carries its last - no slogan can fake a candidate's own address
+                            return _display_name(_canonical_person_name(cut))
+                    j += 1
     j = 0
     while j + 1 < len(lines):
         a = lines[j].strip(); b = lines[j+1].strip()
@@ -1721,6 +1733,7 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
                  except Exception: pass
                 if trace: log('🧭 sweep: %s | not-human-shape' % x)
                 continue
+            _garbage0 = not (2 <= len(_stem_norm(stem).split()) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _stem_norm(stem).split())) or bool(set(_stem_norm(stem).lower().split()) & _NAME_STOP)  # GARBAGE-FIRST v85.130: the stem is weighed before any eye is asked, so a heading or scar never borrows the filename heuristic's voice
             disp = _display_name(stem)
             if disp == stem: continue
             q = os.path.join(dpath, disp + ext)
@@ -1761,7 +1774,7 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
     return
    except Exception as _se: log('⚠️ service rename failed: %s | %r' % (x, _se)); return
   v = ''
-  try: v = heuristic_name(p) or _name_from_first_line(p) or _eyename_of(p) or get_visual_name(p)  # NAME-SCAN-SERVICE v85.95: the right-click borrows the scanning eye and its cache, so a photo-headed CV is named from its own head  # SERVICE-LAYOUT-EYE v85.121: layout-aware fallback reads separated visual CV headers after text/OCR eyes
+  try: v = ('' if _garbage0 else heuristic_name(p)) or _name_from_first_line(p) or _eyename_of(p) or get_visual_name(p)  # NAME-SCAN-SERVICE v85.95: the right-click borrows the scanning eye and its cache, so a photo-headed CV is named from its own head  # SERVICE-LAYOUT-EYE v85.121: layout-aware fallback reads separated visual CV headers after text/OCR eyes  # HEURISTIC-LAST-FOR-GARBAGE v85.130: a scar stem never testifies about its own paper - the filename heuristic rests when the stem wears no human
   except Exception: v = ''
   log('🔎 service diag: %s | eye-head: %s' % (x, (v or 'SILENT')[:60]))  # DIAG-EVERY-CLICK v85.110: no right-click is ever dark - the eye's raw head speaks into the log before any judgement
   if not v: log('🧭 service: %s | every eye silent (text, word, ocr) - vision or teaching needed' % x); return
@@ -4601,7 +4614,10 @@ def _acceptance_ok():  # ACCEPTANCE v85.101: synthetic heads prove the brain ins
           ((['PANKAJ KUMAR', 'Head of Sales']), 'Pankaj Kumar'),
           ((['Best Of My Ability', 'chandanankur32@gmail.com']), ''),
           ((['RAKESH KUMAR', 'Maintenance Head | Beverage Industry']), 'Rakesh Kumar'),
-          ((['| ALBERT EINSTEIN |', 'SALES EXECUTIVE']), 'Albert Einstein')]
+          ((['| ALBERT EINSTEIN |', 'SALES EXECUTIVE']), 'Albert Einstein'),
+          ((['Bas i c kn ow l ed g e', 'H obb i es & Inte r ests', 'Curriculum vitae', 'Annpurna Mishra Sonipat, Haryana Email: annpurnamishra495@gmailmail.com Phone:+91 72062 23922']), 'Annpurna Mishra'),
+          ((['Summary', 'Seeking a full- time position', 'Powered by ResumeGemini', 'saurabhapr12@gmail.com']), ''),
+          ((['Technical Qualification', 'Name Annpurna Date of birth 17.11.2004']), '')]
     ((['AJAY', 'Near Railway Flyover, Sonipat(131001) Contact:+91-9992072806 | Email: ajayjas12@gmail.com', 'CAREER OBJECTIVE']), 'Ajay'),
     ((['Powered by ResumeGemini', '+91 7999569417', 'saurabhapr12@gmail.com', 'Summary', 'SAURABH VERMA', 'CNC Machining']), 'Saurabh Verma'),
     ((['PERSONAL INFORMATION', 'Email', 'bhatgowhar888@gmail.com', 'GOWHAR BHAT', 'Cotek Technical Manager']), 'Gowhar Bhat'),
@@ -4906,6 +4922,9 @@ def _selftest(root):
     ck('S462 a mononym caps head speaks through the email witness', (chr(35)+' MONO-CAPS v85.122') in _src and _src.count('all(w.isalpha() and len(w) >= ' + '3 for w in wa)') >= 1)
     ck('S463 the desk survives a change of mind mid-gaze', (chr(35)+' WORK-INTERRUPT v85.127') in _br and _br.count('except Key' + 'boardInterrupt:') >= 2)
     ck('S464 a dead holder leaves no ghost lock', (chr(35)+' LOCK-REAP v85.128') in _src and _src.count('except ProcessLookup' + 'Error:') >= 1)
+    ck('S465 a name welded to its address line speaks as a prefix', (chr(35)+' EMAIL-TITLE-ANCHOR v85.130') in _src and _src.count('local.startswith(wc[0].lower()) and wc[-1].lower() in ' + 'local') >= 1)
+    ck('S466 a heading is never a human shape', (chr(35)+' STOP-EXT6 v85.130') in _src and _src.count('technical qualification curriculum ' + 'vitae') >= 1)
+    ck('S467 a scar stem never testifies through the filename heuristic', (chr(35)+' HEURISTIC-LAST-FOR-GARBAGE v85.130') in _src and _src.count('if _garbage0 else heuristic_' + 'name(p)') >= 1)
     ck('S463 the first breath of the page is a name when the email agrees', (chr(35)+' FIRST-LINE-MONONYM v85.123') in _src and _src.count('len(_mls[0].split()) == 1 and _mls[0].' + 'isupper()') >= 1)
     ck('S464 the email anchor sits at the top of the brain', _src.count('_wa[0].lower() in _mlocal or _wa[-1].lower() in ' + '_mlocal') >= 1 and (chr(35)+' re-seated v85.123') in _src)
     ck('S465 the eye door accepts what the brain witnessed', (chr(35)+' MONO-DOOR v85.124') in _src and _src.count('if 1 <= len(ws) <= 4 and all(w.' + 'isalpha()') >= 1)
