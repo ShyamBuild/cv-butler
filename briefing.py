@@ -1840,7 +1840,10 @@ if __name__ == "__main__":
                 do_start(q[5:].strip()); continue
             if q.lower() == 'stop':
                 do_stop(); continue
-            answer(root, q)
+            try:
+                answer(root, q)
+            except KeyboardInterrupt:
+                print('👋 work interrupted by ^C - the paper rests unexamined for the next up and the watchers keep running; the desk stays open  # WORK-INTERRUPT v85.127: the long eyes may be stopped mid-gaze without killing the chat')
     else:
         print_briefing(root)
 

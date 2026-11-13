@@ -21,6 +21,15 @@ for _n in ("pdfminer", "fontTools"):
     _l.setLevel(logging.CRITICAL)
 
 VERSION = '85.0'  # THE FREEZE v85.0: the standing price of every future change
+for _lf2 in sorted(__import__("glob").glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), "butler_*.lock"))):
+    try:
+        _pid2 = int(open(_lf2).read().split("|")[0].strip())
+        os.kill(_pid2, 0)
+    except ProcessLookupError:  # LOCK-REAP v85.128: a dead holder leaves a ghost lock; the house buries its own ghosts at every startup so the live lock never lies about who stands where
+        try: os.remove(_lf2)
+        except Exception: pass
+    except Exception:
+        pass
 for _lf in sorted(__import__("glob").glob(os.path.join(os.path.dirname(os.path.abspath(__file__)), "butler_*.lock"))):
     try: print("   🔒 live lock: " + os.path.basename(_lf) + " -> " + open(_lf).read().strip())
     except Exception: pass
@@ -4895,6 +4904,8 @@ def _selftest(root):
     ck('S462 the seed identities are born before their first reading', _src.count('res_id = ' + '{}') == 1 and 0 <= _src.find('res_id = ' + '{}') < _src.find('res_id.items()'))
     ck('S461 the eye cache bumps when the brain learns a new anchor rule', _src.count('_EYE_VSN = ' + chr(39) + 'v85.1') >= 1 and (chr(35)+' EYE-REBIRTH v85.1') in _src)  # VERSION-FREE v85.113: a rebirth guard pins the lineage prefix, never one number, so the next bump never breaks it
     ck('S462 a mononym caps head speaks through the email witness', (chr(35)+' MONO-CAPS v85.122') in _src and _src.count('all(w.isalpha() and len(w) >= ' + '3 for w in wa)') >= 1)
+    ck('S463 the desk survives a change of mind mid-gaze', (chr(35)+' WORK-INTERRUPT v85.127') in _br and _br.count('except Key' + 'boardInterrupt:') >= 2)
+    ck('S464 a dead holder leaves no ghost lock', (chr(35)+' LOCK-REAP v85.128') in _src and _src.count('except ProcessLookup' + 'Error:') >= 1)
     ck('S463 the first breath of the page is a name when the email agrees', (chr(35)+' FIRST-LINE-MONONYM v85.123') in _src and _src.count('len(_mls[0].split()) == 1 and _mls[0].' + 'isupper()') >= 1)
     ck('S464 the email anchor sits at the top of the brain', _src.count('_wa[0].lower() in _mlocal or _wa[-1].lower() in ' + '_mlocal') >= 1 and (chr(35)+' re-seated v85.123') in _src)
     ck('S465 the eye door accepts what the brain witnessed', (chr(35)+' MONO-DOOR v85.124') in _src and _src.count('if 1 <= len(ws) <= 4 and all(w.' + 'isalpha()') >= 1)
