@@ -486,13 +486,18 @@ def _learn_load():
     try: return json.load(open(LEARN_FILE))
     except Exception: return {}
 
+def _learn_worthy(nm):  # LEARN-GATE v85.131: a scar the master typed in jest is never a taught truth - the learned book records and serves only human-shaped names
+    w = (nm or '').split()
+    return bool(2 <= len(w) <= 4 and all(x.isalpha() or '-' in x or '.' in x for w in w) and not (set(x.lower() for x in w) & _NAME_STOP) and (_canonical_person_name(nm) or ''))
 def learn_name(key, display):
+    if not _learn_worthy(display): return  # LEARN-GATE v85.131: the write door refuses scars
     d = _learn_load(); d[re.sub(r'[^a-z]', '', key.lower())] = display
     json.dump(d, open(LEARN_FILE, 'w'), indent=2)
-
 def learned_for(name):
     if not name: return None
-    return _learn_load().get(re.sub(r'[^a-z]', '', name.lower()))
+    _lw = _learn_load().get(re.sub(r'[^a-z]', '', name.lower()))
+    if _lw and not _learn_worthy(_lw): return None  # LEARN-GATE v85.131: the read door refuses scars already in the book
+    return _lw
 
 MONTHS = {'jan','feb','mar','apr','may','jun','jul','aug','sep','sept','oct','nov','dec','january','february','march','april','june','july','august','september','october','november','december'}
 
@@ -1551,7 +1556,7 @@ def rename_diag(paths, say=print, deep=False):  # RENDIAG-DEEP v85.86: opt-in de
         say('🔎 %s | word=%d pdf=%d | first-line: %s | heuristic: %s | firstline-eye: %s | canon: %s | display: %s | %s' % (x, len(wt), len(tt), fl, h, f1, c, disp, dec))
 
 _EYEC = {}
-_EYE_VSN = 'v85.130'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire  # EYE-REBIRTH v85.105: cached silences expire the day the ink eye opens, so no paper stays blind by memory  # EYE-REBIRTH v85.107: silences cached while the ink eye ate pictures expire the day it eats paper  # EYE-REBIRTH v85.110: silences and watermark names cached before the refusals expire tonight  # EYE-REBIRTH v85.112: the EMAIL-ANCHOR brain needs a fresh cache so the deep Saurabh-class names are not served from the v85.110 SILENT memory  # EYE-REBIRTH v85.113: the initial-anchor brain wakes every cached silence from the caps-only era  # EYE-REBIRTH v85.114: silences cached by the impatient timeout expire the day the eye gains patience  # EYE-REBIRTH v85.121: stale degree-label verdicts expire so the candidate-email anchor is consulted again  # EYE-REBIRTH v85.122: mononym caps names wake the cache so the AJAY class is read fresh  # EYE-REBIRTH v85.123: mononym and re-seated anchor wake every cached silence  # EYE-REBIRTH v85.124: cached mononym silences expire the moment the door widens  # EYE-REBIRTH v85.130: names welded to address lines wake the cache so Annpurna-class papers are read fresh
+_EYE_VSN = 'v85.131'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire  # EYE-REBIRTH v85.105: cached silences expire the day the ink eye opens, so no paper stays blind by memory  # EYE-REBIRTH v85.107: silences cached while the ink eye ate pictures expire the day it eats paper  # EYE-REBIRTH v85.110: silences and watermark names cached before the refusals expire tonight  # EYE-REBIRTH v85.112: the EMAIL-ANCHOR brain needs a fresh cache so the deep Saurabh-class names are not served from the v85.110 SILENT memory  # EYE-REBIRTH v85.113: the initial-anchor brain wakes every cached silence from the caps-only era  # EYE-REBIRTH v85.114: silences cached by the impatient timeout expire the day the eye gains patience  # EYE-REBIRTH v85.121: stale degree-label verdicts expire so the candidate-email anchor is consulted again  # EYE-REBIRTH v85.122: mononym caps names wake the cache so the AJAY class is read fresh  # EYE-REBIRTH v85.123: mononym and re-seated anchor wake every cached silence  # EYE-REBIRTH v85.124: cached mononym silences expire the moment the door widens  # EYE-REBIRTH v85.130: names welded to address lines wake the cache so Annpurna-class papers are read fresh  # EYE-REBIRTH v85.131: doorplate heads and purged scars wake the cache so twins are read fresh
 WAKE_Q = []  # WAKE-Q v85.118: rename destinations waiting for the next tick's judgement
 WAKE_L = threading.Lock()
 def _eyename_cache():
@@ -1595,7 +1600,7 @@ def _name_from_head_lines(lines):  # ACCEPTANCE v85.101: the naming brain as a p
             if 2 <= len(_wa) <= 4 and _a.isupper() and all(w.isalpha() and len(w) >= 3 for w in _wa) and len(_a) <= 40 and not (set(w.lower() for w in _wa) & _NAME_STOP) and (_wa[0].lower() in _mlocal or _wa[-1].lower() in _mlocal) and (_canonical_person_name(_a) or ''):  # EMAIL-ANCHOR v85.111  # re-seated v85.123: the master's email witness anchors a mid-page caps name wherever the page hides it
                 return _display_name(_canonical_person_name(_a))
             _j += 1
-    ls = [re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:-]?', l.strip(), flags=re.I)[0].strip(' |·\t') for l in lines if l.strip()][:8]  # PIPE-SCAN v85.125: pipe and bullet scars are stripped before the brain reads the head, so | Sandeep S. Naik | is a name and not punctuation
+    ls = [re.sub(r'^(?:Name|Candidate|Applicant)\s*:\s*', '', re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:-]?', l.strip(), flags=re.I)[0].strip(' |·\t')) for l in lines if l.strip()][:8]  # PIPE-SCAN v85.125: pipe and bullet scars are stripped before the brain reads the head  # LABEL-STRIP v85.131: a leading Name: or Candidate: label is a doorplate, not a word of the human
     ls = [re.sub(r'\s+\+?\(?\d[\d\s().-]{7,}\s*$', '', l) for l in ls]  # PHONE-TAIL v85.121: a phone printed beside a caps name is removed before the email anchor checks identity
     i = 0
     while i < len(ls) and i < 3:
@@ -1731,6 +1736,31 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
                   except Exception: pass
                   continue
                  except Exception: pass
+                if _d4 and os.path.exists(_q4) and os.path.basename(_q4).lower() != x.lower():
+                    _w1s = ''
+                    try: _w1s = re.sub(r'[^a-z]', '', (emails_in_text(_full_text(p)) or [''])[0].split('@')[0].lower())
+                    except Exception: _w1s = ''
+                    _p1s = ''
+                    try: _p1s = (phones_in_text(_full_text(p)) or [''])[0]
+                    except Exception: _p1s = ''
+                    _w2s = ''
+                    try: _w2s = re.sub(r'[^a-z]', '', (emails_in_text(_full_text(_q4)) or [''])[0].split('@')[0].lower())
+                    except Exception: _w2s = ''
+                    _p2s = ''
+                    try: _p2s = (phones_in_text(_full_text(_q4)) or [''])[0]
+                    except Exception: _p2s = ''
+                    if (_w1s and _w1s == _w2s) or (_p1s and _p1s == _p2s):
+                        _c3 = 2; _q6 = os.path.join(dpath, _d4 + '_%d' % _c3 + ext)
+                        while os.path.exists(_q6): _c3 += 1; _q6 = os.path.join(dpath, _d4 + '_%d' % _c3 + ext)
+                        try:
+                            os.rename(p, _q6); log('✏️ sweep renamed (twin seat): %s → %s  # TWIN-SEAT v85.131: same witness (email local part or phone), second chair in the house suffix, never invented text' % (x, os.path.basename(_q6)))
+                            try:
+                                _safe_rename_ledger(p, _d4, 'sweep-twin', once=True); _safe_repath_ledgers(p, _q6)
+                            except Exception: pass
+                            continue
+                        except Exception: pass
+                    else:
+                        log('🧭 sweep: %s | another paper already holds %s and no shared witness - the tick keeps both apart, aloud  # TWIN-VOICE v85.131: a collision is a confession, not a silence' % (x, os.path.basename(_q4)))
                 if trace: log('🧭 sweep: %s | not-human-shape' % x)
                 continue
             _garbage0 = not (2 <= len(_stem_norm(stem).split()) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _stem_norm(stem).split())) or bool(set(_stem_norm(stem).lower().split()) & _NAME_STOP)  # GARBAGE-FIRST v85.130: the stem is weighed before any eye is asked, so a heading or scar never borrows the filename heuristic's voice
@@ -1799,7 +1829,28 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
   if d2 == stem: log('🧭 service: %s | already named correctly by the eyes' % x); return
   q2 = os.path.join(os.path.dirname(p), d2 + ext)
   if os.path.exists(q2) and os.path.basename(q2).lower() != x.lower():  # CASE-INSENSITIVE v85.77: a held name is a proposal, never a deed
-   log('🧭 service: %s | eyes say %s but another paper holds that name - proposal only' % (x, d2)); return
+   if os.path.exists(q2) and os.path.basename(q2).lower() != x.lower():
+       _w1 = ''
+       try: _w1 = re.sub(r'[^a-z]', '', (emails_in_text(_full_text(p)) or [''])[0].split('@')[0].lower())
+       except Exception: _w1 = ''
+       _p1 = ''
+       try: _p1 = (phones_in_text(_full_text(p)) or [''])[0]
+       except Exception: _p1 = ''
+       _w2 = ''
+       try: _w2 = re.sub(r'[^a-z]', '', (emails_in_text(_full_text(q2)) or [''])[0].split('@')[0].lower())
+       except Exception: _w2 = ''
+       _p2 = ''
+       try: _p2 = (phones_in_text(_full_text(q2)) or [''])[0]
+       except Exception: _p2 = ''
+       if (_w1 and _w1 == _w2) or (_p1 and _p1 == _p2):
+           _c2 = 2; _q5 = os.path.join(os.path.dirname(p), d2 + '_%d' % _c2 + ext)
+           while os.path.exists(_q5): _c2 += 1; _q5 = os.path.join(os.path.dirname(p), d2 + '_%d' % _c2 + ext)
+           os.rename(p, _q5); log('✏️ service renamed (twin seat): %s → %s  # TWIN-SEAT v85.131: same witness (email local part or phone), second chair in the house suffix, never invented text' % (x, os.path.basename(_q5)))
+           try:
+               _safe_rename_ledger(p, d2, 'service-twin', once=True); _safe_repath_ledgers(p, _q5)
+           except Exception: pass
+           return
+       log('🧭 service: %s | another paper holds %s and no shared witness - twin law keeps both apart' % (x, os.path.basename(q2))); return
   _sn = _stem_norm(stem); _w0 = _sn.split()
   _garbage = not (2 <= len(_w0) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _w0)) or bool(set(_sn.lower().split()) & _NAME_STOP)  # GARBAGE-TEST v85.110: a stem no person wears - scar or watermark - is corrected, not debated
   if not _garbage and not _stem_inside_name(_sn, d2) and _name_key(_sn) != _name_key(d2) and 2 <= len(_w0) <= 4: log('🧭 service: %s | eyes say %s, a different human - proposal only, never a guess' % (x, d2)); return
@@ -4617,7 +4668,8 @@ def _acceptance_ok():  # ACCEPTANCE v85.101: synthetic heads prove the brain ins
           ((['| ALBERT EINSTEIN |', 'SALES EXECUTIVE']), 'Albert Einstein'),
           ((['Bas i c kn ow l ed g e', 'H obb i es & Inte r ests', 'Curriculum vitae', 'Annpurna Mishra Sonipat, Haryana Email: annpurnamishra495@gmailmail.com Phone:+91 72062 23922']), 'Annpurna Mishra'),
           ((['Summary', 'Seeking a full- time position', 'Powered by ResumeGemini', 'saurabhapr12@gmail.com']), ''),
-          ((['Technical Qualification', 'Name Annpurna Date of birth 17.11.2004']), '')]
+          ((['Technical Qualification', 'Name Annpurna Date of birth 17.11.2004']), ''),
+          ((['Name: Dhanesh Gautam', 'Email: sharmadhanesh345@gmaiI.com Phone: 8791372712 Address: Isha Puram Colony']), 'Dhanesh Gautam')]
     ((['AJAY', 'Near Railway Flyover, Sonipat(131001) Contact:+91-9992072806 | Email: ajayjas12@gmail.com', 'CAREER OBJECTIVE']), 'Ajay'),
     ((['Powered by ResumeGemini', '+91 7999569417', 'saurabhapr12@gmail.com', 'Summary', 'SAURABH VERMA', 'CNC Machining']), 'Saurabh Verma'),
     ((['PERSONAL INFORMATION', 'Email', 'bhatgowhar888@gmail.com', 'GOWHAR BHAT', 'Cotek Technical Manager']), 'Gowhar Bhat'),
@@ -4925,6 +4977,9 @@ def _selftest(root):
     ck('S465 a name welded to its address line speaks as a prefix', (chr(35)+' EMAIL-TITLE-ANCHOR v85.130') in _src and _src.count('local.startswith(wc[0].lower()) and wc[-1].lower() in ' + 'local') >= 1)
     ck('S466 a heading is never a human shape', (chr(35)+' STOP-EXT6 v85.130') in _src and _src.count('technical qualification curriculum ' + 'vitae') >= 1)
     ck('S467 a scar stem never testifies through the filename heuristic', (chr(35)+' HEURISTIC-LAST-FOR-GARBAGE v85.130') in _src and _src.count('if _garbage0 else heuristic_' + 'name(p)') >= 1)
+    ck('S468 the learned book serves only human-shaped names', (chr(35)+' LEARN-GATE v85.131') in _src and _src.count('def _learn_worthy(') >= 1)
+    ck('S469 twins of one witness wear the house suffix, never invented text', (chr(35)+' TWIN-SEAT v85.131') in _src and _src.count('house suffix, never inven' + 'ted text') >= 2)
+    ck('S470 a doorplate is stripped before the head is read', (chr(35)+' LABEL-STRIP v85.131') in _src and _src.count('Candidate|Applicant') >= 1)
     ck('S463 the first breath of the page is a name when the email agrees', (chr(35)+' FIRST-LINE-MONONYM v85.123') in _src and _src.count('len(_mls[0].split()) == 1 and _mls[0].' + 'isupper()') >= 1)
     ck('S464 the email anchor sits at the top of the brain', _src.count('_wa[0].lower() in _mlocal or _wa[-1].lower() in ' + '_mlocal') >= 1 and (chr(35)+' re-seated v85.123') in _src)
     ck('S465 the eye door accepts what the brain witnessed', (chr(35)+' MONO-DOOR v85.124') in _src and _src.count('if 1 <= len(ws) <= 4 and all(w.' + 'isalpha()') >= 1)
