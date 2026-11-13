@@ -1577,7 +1577,7 @@ def rename_diag(paths, say=print, deep=False):  # RENDIAG-DEEP v85.86: opt-in de
         say('🔎 %s | word=%d pdf=%d | first-line: %s | heuristic: %s | firstline-eye: %s | canon: %s | display: %s | %s' % (x, len(wt), len(tt), fl, h, f1, c, disp, dec))
 
 _EYEC = {}
-_EYE_VSN = 'v85.131'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire  # EYE-REBIRTH v85.105: cached silences expire the day the ink eye opens, so no paper stays blind by memory  # EYE-REBIRTH v85.107: silences cached while the ink eye ate pictures expire the day it eats paper  # EYE-REBIRTH v85.110: silences and watermark names cached before the refusals expire tonight  # EYE-REBIRTH v85.112: the EMAIL-ANCHOR brain needs a fresh cache so the deep Saurabh-class names are not served from the v85.110 SILENT memory  # EYE-REBIRTH v85.113: the initial-anchor brain wakes every cached silence from the caps-only era  # EYE-REBIRTH v85.114: silences cached by the impatient timeout expire the day the eye gains patience  # EYE-REBIRTH v85.121: stale degree-label verdicts expire so the candidate-email anchor is consulted again  # EYE-REBIRTH v85.122: mononym caps names wake the cache so the AJAY class is read fresh  # EYE-REBIRTH v85.123: mononym and re-seated anchor wake every cached silence  # EYE-REBIRTH v85.124: cached mononym silences expire the moment the door widens  # EYE-REBIRTH v85.130: names welded to address lines wake the cache so Annpurna-class papers are read fresh  # EYE-REBIRTH v85.131: doorplate heads and purged scars wake the cache so twins are read fresh
+_EYE_VSN = 'v85.135'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire  # EYE-REBIRTH v85.105: cached silences expire the day the ink eye opens, so no paper stays blind by memory  # EYE-REBIRTH v85.107: silences cached while the ink eye ate pictures expire the day it eats paper  # EYE-REBIRTH v85.110: silences and watermark names cached before the refusals expire tonight  # EYE-REBIRTH v85.112: the EMAIL-ANCHOR brain needs a fresh cache so the deep Saurabh-class names are not served from the v85.110 SILENT memory  # EYE-REBIRTH v85.113: the initial-anchor brain wakes every cached silence from the caps-only era  # EYE-REBIRTH v85.114: silences cached by the impatient timeout expire the day the eye gains patience  # EYE-REBIRTH v85.121: stale degree-label verdicts expire so the candidate-email anchor is consulted again  # EYE-REBIRTH v85.122: mononym caps names wake the cache so the AJAY class is read fresh  # EYE-REBIRTH v85.123: mononym and re-seated anchor wake every cached silence  # EYE-REBIRTH v85.124: cached mononym silences expire the moment the door widens  # EYE-REBIRTH v85.130: names welded to address lines wake the cache so Annpurna-class papers are read fresh  # EYE-REBIRTH v85.131: doorplate heads and purged scars wake the cache so twins are read fresh  # EYE-REBIRTH v85.135: bullet doorplates wake the cache so Kirti-class papers are read fresh
 WAKE_Q = []  # WAKE-Q v85.118: rename destinations waiting for the next tick's judgement
 WAKE_L = threading.Lock()
 def _eyename_cache():
@@ -1663,6 +1663,14 @@ def _name_from_head_lines(lines):  # ACCEPTANCE v85.101: the naming brain as a p
                         if all(w[:1].isupper() and w.isalpha() for w in wc) and len(cut) <= 40 and not (set(w.lower() for w in wc) & _NAME_STOP) and local.startswith(wc[0].lower()) and wc[-1].lower() in local and (_canonical_person_name(cut) or ''):  # EMAIL-TITLE-ANCHOR v85.130: a title-case name welded to its own address line speaks as a prefix when the email opens with its first word and carries its last - no slogan can fake a candidate's own address
                             return _display_name(_canonical_person_name(cut))
                     j += 1
+    j = 0
+    while j < len(lines):
+        _bm = re.match(r'^[•·\-\*]\s*Name\s*[-–—:]\s*(.+)$', lines[j].strip(), flags=re.I)
+        if _bm:
+            _bc = _bm.group(1).strip(); _bw = _bc.split()
+            if 2 <= len(_bw) <= 4 and len(_bc) <= 40 and all(w.isalpha() or '-' in w or '.' in w for w in _bw) and not (set(w.lower() for w in _bw) & _NAME_STOP) and (_canonical_person_name(_bc) or ''):  # BULLET-NAME v85.135: a bulleted Name- line is a doorplate with a bullet; the human behind it speaks at last
+                return _display_name(_canonical_person_name(_bc))
+        j += 1
     j = 0
     while j + 1 < len(lines):
         a = lines[j].strip(); b = lines[j+1].strip()
@@ -4692,7 +4700,9 @@ def _acceptance_ok():  # ACCEPTANCE v85.101: synthetic heads prove the brain ins
           ((['Bas i c kn ow l ed g e', 'H obb i es & Inte r ests', 'Curriculum vitae', 'Annpurna Mishra Sonipat, Haryana Email: annpurnamishra495@gmailmail.com Phone:+91 72062 23922']), 'Annpurna Mishra'),
           ((['Summary', 'Seeking a full- time position', 'Powered by ResumeGemini', 'saurabhapr12@gmail.com']), ''),
           ((['Technical Qualification', 'Name Annpurna Date of birth 17.11.2004']), ''),
-          ((['Name: Dhanesh Gautam', 'Email: sharmadhanesh345@gmaiI.com Phone: 8791372712 Address: Isha Puram Colony']), 'Dhanesh Gautam')]
+          ((['Name: Dhanesh Gautam', 'Email: sharmadhanesh345@gmaiI.com Phone: 8791372712 Address: Isha Puram Colony']), 'Dhanesh Gautam'),
+          ((['Professional Experience', 'Noida kv993651@gmail.com| 9936515724', '• Name-Kirti Verma', '• Father Name- Mr Indra Kumar']), 'Kirti Verma'),
+          ((['• Name- Knowledge Update', '• Father Name- Mr Someone']), '')]
     ((['AJAY', 'Near Railway Flyover, Sonipat(131001) Contact:+91-9992072806 | Email: ajayjas12@gmail.com', 'CAREER OBJECTIVE']), 'Ajay'),
     ((['Powered by ResumeGemini', '+91 7999569417', 'saurabhapr12@gmail.com', 'Summary', 'SAURABH VERMA', 'CNC Machining']), 'Saurabh Verma'),
     ((['PERSONAL INFORMATION', 'Email', 'bhatgowhar888@gmail.com', 'GOWHAR BHAT', 'Cotek Technical Manager']), 'Gowhar Bhat'),
@@ -4972,6 +4982,8 @@ def _selftest(root):
     ck('S482 the suffix search never targets the file own path', (chr(35)+' TWIN-SETTLE v85.133') in _src and _src.count('os.path.abspath(_q5) != os.path.abspath(' + 'p)') >= 1)
     ck('S483 a seated twin rests in both doors', _src.count('a seated twin ' + 'rests') >= 1 and _src.count('twin settled: ' + '%s') >= 1)
     ck('S484 every door writes its cost to the act ledger', (chr(35)+' ACT-LEDGER v85.134') in _src and _src.count('def _act_wrap(') >= 1 and _src.count('actions.jsonl' + chr(39)) >= 1)
+    ck('S485 no rename happens unwatched', (chr(35)+' RENAME-WITNESS v85.135') in _src and _src.count('os.rename = _logged_' + 'rename') >= 1)
+    ck('S486 a bulleted name doorplate speaks', (chr(35)+' BULLET-NAME v85.135') in _src and _src.count('Name' + chr(92) + 's*[') >= 1)
     ck('S471 one identity clerk serves every door', _src.count('def identity_' + 'of(p):') >= 1 and (chr(35)+' IDENTITY-CLERK v85.132') in _src)
     ck('S472 the identity speaks at every click and the pixel bill stays paid by none', (chr(35)+' CHAT-EYES v85.132') in _src and _src.count('service identity: ' + '%s') >= 1 and _src.count('emails_' + 'of(') <= 2)
     ck('S468 no chair is ever built inside a chair', 0 <= _src.find('def handle_tags') < _src.find('STAGE-NEVER-' + 'BASE v85.128') and _src.count('os.path.basename(base) in _tag_vocab()') >= 1)
@@ -5296,6 +5308,21 @@ except NameError:
     pass
 
 extract_text = extract_text_ocr  # ALIAS v85.89: one name for the whole chain, bound after every def has landed - the diag pdf column, emails_in_text and every bare caller wake from swallowing NameError
+_orig_os_rename = os.rename  # RENAME-WITNESS v85.135: every rename in the house, by whichever door, writes its old name, its new name and its caller's function to the act ledger - no copy is ever born unwatched again
+def _logged_rename(a, b, *r, **k):
+    try:
+        _who = sys._getframe(1).f_code.co_name
+    except Exception:
+        _who = '?'
+    _rr = _orig_os_rename(a, b, *r, **k)
+    try: _act('rename', os.path.basename(str(a)), 0.0, 0.0, 'now ' + os.path.basename(str(b)) + ' by ' + _who)
+    except Exception: pass
+    return _rr
+os.rename = _logged_rename
+for _fn2 in ('_convert_to_pdf', '_event_tick', 'get_visual_name', '_name_from_first_line', 'heuristic_name'):  # ACT-WRAP-ELEVEN v85.135: the convert bell, the tick, the visual pupil and the two cheap eyes join the timed ledger
+    try:
+        if _fn2 in globals(): globals()[_fn2] = _act_wrap(_fn2, globals()[_fn2])
+    except Exception: pass
 for _fn in ('_service_act', '_fast_rename', '_eyename_of', '_vision_text', 'extract_text_ocr', '_case_sweep'):  # ACT-WRAP-SIX v85.134: the click, the tick's fast half, the brain, the pupil, the eye-chain and the sweep - each call costs and confesses
     try:
         if _fn in globals(): globals()[_fn] = _act_wrap(_fn, globals()[_fn])
