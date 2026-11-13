@@ -1,4 +1,4 @@
-🔒 live lock: butler_5ae2ce92.lock -> 29393|/Users/apple/Downloads/Sunsoft Technology/09 Moon Beverages/Executive Purchase - Dhaulana
+🔒 live lock: butler_5ae2ce92.lock -> 40871|/Users/apple/Downloads/Sunsoft Technology/09 Moon Beverages/Executive Purchase - Dhaulana
 ==== _service_act ====
 def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawful and local  # DRAIN-ARMOR v85.92: no path returns silent and a crash logs itself
  x = os.path.basename(p)
@@ -47,7 +47,28 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
   if d2 == stem: log('🧭 service: %s | already named correctly by the eyes' % x); return
   q2 = os.path.join(os.path.dirname(p), d2 + ext)
   if os.path.exists(q2) and os.path.basename(q2).lower() != x.lower():  # CASE-INSENSITIVE v85.77: a held name is a proposal, never a deed
-   log('🧭 service: %s | eyes say %s but another paper holds that name - proposal only' % (x, d2)); return
+   if os.path.exists(q2) and os.path.basename(q2).lower() != x.lower():
+       _w1 = ''
+       try: _w1 = re.sub(r'[^a-z]', '', (emails_in_text(_full_text(p)) or [''])[0].split('@')[0].lower())
+       except Exception: _w1 = ''
+       _p1 = ''
+       try: _p1 = (phones_in_text(_full_text(p)) or [''])[0]
+       except Exception: _p1 = ''
+       _w2 = ''
+       try: _w2 = re.sub(r'[^a-z]', '', (emails_in_text(_full_text(q2)) or [''])[0].split('@')[0].lower())
+       except Exception: _w2 = ''
+       _p2 = ''
+       try: _p2 = (phones_in_text(_full_text(q2)) or [''])[0]
+       except Exception: _p2 = ''
+       if (_w1 and _w1 == _w2) or (_p1 and _p1 == _p2):
+           _c2 = 2; _q5 = os.path.join(os.path.dirname(p), d2 + '_%d' % _c2 + ext)
+           while os.path.exists(_q5): _c2 += 1; _q5 = os.path.join(os.path.dirname(p), d2 + '_%d' % _c2 + ext)
+           os.rename(p, _q5); log('✏️ service renamed (twin seat): %s → %s  # TWIN-SEAT v85.131: same witness (email local part or phone), second chair in the house suffix, never invented text' % (x, os.path.basename(_q5)))
+           try:
+               _safe_rename_ledger(p, d2, 'service-twin', once=True); _safe_repath_ledgers(p, _q5)
+           except Exception: pass
+           return
+       log('🧭 service: %s | another paper holds %s and no shared witness - twin law keeps both apart' % (x, os.path.basename(q2))); return
   _sn = _stem_norm(stem); _w0 = _sn.split()
   _garbage = not (2 <= len(_w0) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _w0)) or bool(set(_sn.lower().split()) & _NAME_STOP)  # GARBAGE-TEST v85.110: a stem no person wears - scar or watermark - is corrected, not debated
   if not _garbage and not _stem_inside_name(_sn, d2) and _name_key(_sn) != _name_key(d2) and 2 <= len(_w0) <= 4: log('🧭 service: %s | eyes say %s, a different human - proposal only, never a guess' % (x, d2)); return
@@ -104,6 +125,31 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
                   except Exception: pass
                   continue
                  except Exception: pass
+                if _d4 and os.path.exists(_q4) and os.path.basename(_q4).lower() != x.lower():
+                    _w1s = ''
+                    try: _w1s = re.sub(r'[^a-z]', '', (emails_in_text(_full_text(p)) or [''])[0].split('@')[0].lower())
+                    except Exception: _w1s = ''
+                    _p1s = ''
+                    try: _p1s = (phones_in_text(_full_text(p)) or [''])[0]
+                    except Exception: _p1s = ''
+                    _w2s = ''
+                    try: _w2s = re.sub(r'[^a-z]', '', (emails_in_text(_full_text(_q4)) or [''])[0].split('@')[0].lower())
+                    except Exception: _w2s = ''
+                    _p2s = ''
+                    try: _p2s = (phones_in_text(_full_text(_q4)) or [''])[0]
+                    except Exception: _p2s = ''
+                    if (_w1s and _w1s == _w2s) or (_p1s and _p1s == _p2s):
+                        _c3 = 2; _q6 = os.path.join(dpath, _d4 + '_%d' % _c3 + ext)
+                        while os.path.exists(_q6): _c3 += 1; _q6 = os.path.join(dpath, _d4 + '_%d' % _c3 + ext)
+                        try:
+                            os.rename(p, _q6); log('✏️ sweep renamed (twin seat): %s → %s  # TWIN-SEAT v85.131: same witness (email local part or phone), second chair in the house suffix, never invented text' % (x, os.path.basename(_q6)))
+                            try:
+                                _safe_rename_ledger(p, _d4, 'sweep-twin', once=True); _safe_repath_ledgers(p, _q6)
+                            except Exception: pass
+                            continue
+                        except Exception: pass
+                    else:
+                        log('🧭 sweep: %s | another paper already holds %s and no shared witness - the tick keeps both apart, aloud  # TWIN-VOICE v85.131: a collision is a confession, not a silence' % (x, os.path.basename(_q4)))
                 if trace: log('🧭 sweep: %s | not-human-shape' % x)
                 continue
             _garbage0 = not (2 <= len(_stem_norm(stem).split()) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _stem_norm(stem).split())) or bool(set(_stem_norm(stem).lower().split()) & _NAME_STOP)  # GARBAGE-FIRST v85.130: the stem is weighed before any eye is asked, so a heading or scar never borrows the filename heuristic's voice
@@ -671,5 +717,5 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OCRBIN = os.path.join(BASE_DIR, "cvocr")
 126 
 OCR_SEM = threading.Semaphore(2)
-5217 
+5272 
 extract_text = extract_text_ocr  # ALIAS v85.89: one name for the whole chain, bound after every def has landed - the diag pdf column, emails_in_text and every bare caller wake from swallowing NameError

@@ -1736,6 +1736,7 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
                   except Exception: pass
                   continue
                  except Exception: pass
+                if _d4 and _name_key(re.sub(r'_\d+$', '', os.path.splitext(x)[0])) == _name_key(_d4): _say_once('🛌 twin settled: %s rests in its suffix seat - a seated twin is a finished deed, never a pendulum  # TWIN-SETTLE v85.133' % x); continue
                 if _d4 and os.path.exists(_q4) and os.path.basename(_q4).lower() != x.lower():
                     _w1s = ''
                     try: _w1s = re.sub(r'[^a-z]', '', (emails_in_text(_full_text(p)) or [''])[0].split('@')[0].lower())
@@ -1751,7 +1752,7 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
                     except Exception: _p2s = ''
                     if (_w1s and _w1s == _w2s) or (_p1s and _p1s == _p2s):
                         _c3 = 2; _q6 = os.path.join(dpath, _d4 + '_%d' % _c3 + ext)
-                        while os.path.exists(_q6): _c3 += 1; _q6 = os.path.join(dpath, _d4 + '_%d' % _c3 + ext)
+                        while os.path.exists(_q6) and os.path.abspath(_q6) != os.path.abspath(p): _c3 += 1; _q6 = os.path.join(dpath, _d4 + '_%d' % _c3 + ext)
                         try:
                             os.rename(p, _q6); log('✏️ sweep renamed (twin seat): %s → %s  # TWIN-SEAT v85.131: same witness (email local part or phone), second chair in the house suffix, never invented text' % (x, os.path.basename(_q6)))
                             try:
@@ -1828,6 +1829,7 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
   d2 = _display_name(c)
   if d2 == stem: log('🧭 service: %s | already named correctly by the eyes' % x); return
   q2 = os.path.join(os.path.dirname(p), d2 + ext)
+  if _name_key(re.sub(r'_\d+$', '', os.path.splitext(x)[0])) == _name_key(d2): log('🧭 service: %s | already seated as a twin of %s - a seated twin rests  # TWIN-SETTLE v85.133: the pendulum stops where the suffix begins' % (x, d2)); return
   if os.path.exists(q2) and os.path.basename(q2).lower() != x.lower():  # CASE-INSENSITIVE v85.77: a held name is a proposal, never a deed
    if os.path.exists(q2) and os.path.basename(q2).lower() != x.lower():
        _w1 = ''
@@ -1844,7 +1846,7 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
        except Exception: _p2 = ''
        if (_w1 and _w1 == _w2) or (_p1 and _p1 == _p2):
            _c2 = 2; _q5 = os.path.join(os.path.dirname(p), d2 + '_%d' % _c2 + ext)
-           while os.path.exists(_q5): _c2 += 1; _q5 = os.path.join(os.path.dirname(p), d2 + '_%d' % _c2 + ext)
+           while os.path.exists(_q5) and os.path.abspath(_q5) != os.path.abspath(p): _c2 += 1; _q5 = os.path.join(os.path.dirname(p), d2 + '_%d' % _c2 + ext)
            os.rename(p, _q5); log('✏️ service renamed (twin seat): %s → %s  # TWIN-SEAT v85.131: same witness (email local part or phone), second chair in the house suffix, never invented text' % (x, os.path.basename(_q5)))
            try:
                _safe_rename_ledger(p, d2, 'service-twin', once=True); _safe_repath_ledgers(p, _q5)
@@ -4946,6 +4948,8 @@ def _selftest(root):
     ck('S213 terminal tags never clock', ('PIPELINE_TERMINAL' in _src) and ('Rejected by Client' not in _src[_src.find('PIPELINE_CLOCKED'):_src.find('PIPELINE_MOMENT')]))
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
+    ck('S482 the suffix search never targets the file own path', (chr(35)+' TWIN-SETTLE v85.133') in _src and _src.count('os.path.abspath(_q5) != os.path.abspath(' + 'p)') >= 1)
+    ck('S483 a seated twin rests in both doors', _src.count('a seated twin ' + 'rests') >= 1 and _src.count('twin settled: ' + '%s') >= 1)
     ck('S471 one identity clerk serves every door', _src.count('def identity_' + 'of(p):') >= 1 and (chr(35)+' IDENTITY-CLERK v85.132') in _src)
     ck('S472 the identity speaks at every click and the pixel bill stays paid by none', (chr(35)+' CHAT-EYES v85.132') in _src and _src.count('service identity: ' + '%s') >= 1 and _src.count('emails_' + 'of(') <= 2)
     ck('S468 no chair is ever built inside a chair', 0 <= _src.find('def handle_tags') < _src.find('STAGE-NEVER-' + 'BASE v85.128') and _src.count('os.path.basename(base) in _tag_vocab()') >= 1)
