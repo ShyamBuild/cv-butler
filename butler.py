@@ -1577,7 +1577,7 @@ def rename_diag(paths, say=print, deep=False):  # RENDIAG-DEEP v85.86: opt-in de
         say('🔎 %s | word=%d pdf=%d | first-line: %s | heuristic: %s | firstline-eye: %s | canon: %s | display: %s | %s' % (x, len(wt), len(tt), fl, h, f1, c, disp, dec))
 
 _EYEC = {}
-_EYE_VSN = 'v85.135'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire  # EYE-REBIRTH v85.105: cached silences expire the day the ink eye opens, so no paper stays blind by memory  # EYE-REBIRTH v85.107: silences cached while the ink eye ate pictures expire the day it eats paper  # EYE-REBIRTH v85.110: silences and watermark names cached before the refusals expire tonight  # EYE-REBIRTH v85.112: the EMAIL-ANCHOR brain needs a fresh cache so the deep Saurabh-class names are not served from the v85.110 SILENT memory  # EYE-REBIRTH v85.113: the initial-anchor brain wakes every cached silence from the caps-only era  # EYE-REBIRTH v85.114: silences cached by the impatient timeout expire the day the eye gains patience  # EYE-REBIRTH v85.121: stale degree-label verdicts expire so the candidate-email anchor is consulted again  # EYE-REBIRTH v85.122: mononym caps names wake the cache so the AJAY class is read fresh  # EYE-REBIRTH v85.123: mononym and re-seated anchor wake every cached silence  # EYE-REBIRTH v85.124: cached mononym silences expire the moment the door widens  # EYE-REBIRTH v85.130: names welded to address lines wake the cache so Annpurna-class papers are read fresh  # EYE-REBIRTH v85.131: doorplate heads and purged scars wake the cache so twins are read fresh  # EYE-REBIRTH v85.135: bullet doorplates wake the cache so Kirti-class papers are read fresh
+_EYE_VSN = 'v85.136'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire  # EYE-REBIRTH v85.105: cached silences expire the day the ink eye opens, so no paper stays blind by memory  # EYE-REBIRTH v85.107: silences cached while the ink eye ate pictures expire the day it eats paper  # EYE-REBIRTH v85.110: silences and watermark names cached before the refusals expire tonight  # EYE-REBIRTH v85.112: the EMAIL-ANCHOR brain needs a fresh cache so the deep Saurabh-class names are not served from the v85.110 SILENT memory  # EYE-REBIRTH v85.113: the initial-anchor brain wakes every cached silence from the caps-only era  # EYE-REBIRTH v85.114: silences cached by the impatient timeout expire the day the eye gains patience  # EYE-REBIRTH v85.121: stale degree-label verdicts expire so the candidate-email anchor is consulted again  # EYE-REBIRTH v85.122: mononym caps names wake the cache so the AJAY class is read fresh  # EYE-REBIRTH v85.123: mononym and re-seated anchor wake every cached silence  # EYE-REBIRTH v85.124: cached mononym silences expire the moment the door widens  # EYE-REBIRTH v85.130: names welded to address lines wake the cache so Annpurna-class papers are read fresh  # EYE-REBIRTH v85.131: doorplate heads and purged scars wake the cache so twins are read fresh  # EYE-REBIRTH v85.135: bullet doorplates wake the cache so Kirti-class papers are read fresh  # EYE-REBIRTH v85.136: double-extension scars wake the cache so the click and the tick see them fresh
 WAKE_Q = []  # WAKE-Q v85.118: rename destinations waiting for the next tick's judgement
 WAKE_L = threading.Lock()
 def _eyename_cache():
@@ -1748,9 +1748,9 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
             except Exception:
                 continue
             ws = stem.split()
-            if not (2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws)) or bool(set(stem.lower().split()) & _NAME_STOP):  # GARBAGE-WIDE v85.110: watermark stems are scars too, and the tick heals them
+            if not (2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws)) or bool(set(stem.lower().split()) & _NAME_STOP) or os.path.splitext(stem)[1].lower() in ('.pdf', '.doc', '.docx', '.rtf'):  # GARBAGE-WIDE v85.110  # DOUBLE-EXT v85.136: a stem that wears its own extension is a download scar, never a human  # GARBAGE-WIDE v85.110: watermark stems are scars too, and the tick heals them
                 _en4 = ''
-                try: _en4 = _eyename_of(p) or ''
+                try: _en4 = _eyename_of(p) or _name_from_head_lines((extract_text(p) or '').split(chr(10))) or ''  # DIRECT-BRAIN v85.136: the sweep too reads the text layer straight when the cached eye misfires
                 except Exception: _en4 = ''
                 _c4 = ''
                 try: _c4 = _canonical_person_name(_en4) if _en4 else ''
@@ -1765,7 +1765,7 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
                   except Exception: pass
                   continue
                  except Exception: pass
-                if _d4 and _name_key(re.sub(r'_\d+$', '', os.path.splitext(x)[0])) == _name_key(_d4): _say_once('🛌 twin settled: %s rests in its suffix seat - a seated twin is a finished deed, never a pendulum  # TWIN-SETTLE v85.133' % x); continue
+                if _d4 and _name_key(re.sub(r'_\d+$', '', os.path.splitext(x)[0])) == _name_key(_d4) and not os.path.splitext(os.path.splitext(x)[0])[1]: _say_once('🛌 twin settled: %s rests in its suffix seat - a seated twin is a finished deed, never a pendulum  # TWIN-SETTLE v85.133' % x); continue
                 if _d4 and os.path.exists(_q4) and os.path.basename(_q4).lower() != x.lower():
                     _w1s = ''
                     try: _w1s = re.sub(r'[^a-z]', '', (emails_in_text(_full_text(p)) or [''])[0].split('@')[0].lower())
@@ -1780,7 +1780,7 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
                     try: _p2s = (phones_in_text(_full_text(_q4)) or [''])[0]
                     except Exception: _p2s = ''
                     if (_w1s and _w1s == _w2s) or (_p1s and _p1s == _p2s):
-                        _c3 = 2; _q6 = os.path.join(dpath, _d4 + '_%d' % _c3 + ext)
+                        _c3 = 1; _q6 = os.path.join(dpath, _d4 + '_%d' % _c3 + ext)
                         while os.path.exists(_q6) and os.path.abspath(_q6) != os.path.abspath(p): _c3 += 1; _q6 = os.path.join(dpath, _d4 + '_%d' % _c3 + ext)
                         try:
                             os.rename(p, _q6); log('✏️ sweep renamed (twin seat): %s → %s  # TWIN-SEAT v85.131: same witness (email local part or phone), second chair in the house suffix, never invented text' % (x, os.path.basename(_q6)))
@@ -1793,7 +1793,7 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
                         log('🧭 sweep: %s | another paper already holds %s and no shared witness - the tick keeps both apart, aloud  # TWIN-VOICE v85.131: a collision is a confession, not a silence' % (x, os.path.basename(_q4)))
                 if trace: log('🧭 sweep: %s | not-human-shape' % x)
                 continue
-            _garbage0 = not (2 <= len(_stem_norm(stem).split()) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _stem_norm(stem).split())) or bool(set(_stem_norm(stem).lower().split()) & _NAME_STOP)  # GARBAGE-FIRST v85.130: the stem is weighed before any eye is asked, so a heading or scar never borrows the filename heuristic's voice
+            _garbage0 = not (2 <= len(_stem_norm(stem).split()) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _stem_norm(stem).split())) or bool(set(_stem_norm(stem).lower().split()) & _NAME_STOP) or os.path.splitext(stem)[1].lower() in ('.pdf', '.doc', '.docx', '.rtf')  # GARBAGE-FIRST v85.130  # DOUBLE-EXT v85.136: a stem that wears its own extension is a download scar, never a human  # GARBAGE-FIRST v85.130: the stem is weighed before any eye is asked, so a heading or scar never borrows the filename heuristic's voice
             disp = _display_name(stem)
             if disp == stem: continue
             q = os.path.join(dpath, disp + ext)
@@ -1834,7 +1834,7 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
     return
    except Exception as _se: log('⚠️ service rename failed: %s | %r' % (x, _se)); return
   v = ''
-  try: v = ('' if _garbage0 else heuristic_name(p)) or _name_from_first_line(p) or _eyename_of(p) or get_visual_name(p)  # NAME-SCAN-SERVICE v85.95: the right-click borrows the scanning eye and its cache, so a photo-headed CV is named from its own head  # SERVICE-LAYOUT-EYE v85.121: layout-aware fallback reads separated visual CV headers after text/OCR eyes  # HEURISTIC-LAST-FOR-GARBAGE v85.130: a scar stem never testifies about its own paper - the filename heuristic rests when the stem wears no human
+  try: v = ('' if _garbage0 else heuristic_name(p)) or _name_from_first_line(p) or _eyename_of(p) or _name_from_head_lines((extract_text(p) or '').split(chr(10))) or get_visual_name(p)  # DIRECT-BRAIN v85.136: if the cached eye misfires, the brain reads the text layer straight, cache-free, before the pupil is summoned  # NAME-SCAN-SERVICE v85.95: the right-click borrows the scanning eye and its cache, so a photo-headed CV is named from its own head  # SERVICE-LAYOUT-EYE v85.121: layout-aware fallback reads separated visual CV headers after text/OCR eyes  # HEURISTIC-LAST-FOR-GARBAGE v85.130: a scar stem never testifies about its own paper - the filename heuristic rests when the stem wears no human
   except Exception: v = ''
   log('🔎 service diag: %s | eye-head: %s' % (x, (v or 'SILENT')[:60]))  # DIAG-EVERY-CLICK v85.110: no right-click is ever dark - the eye's raw head speaks into the log before any judgement
   if not v: log('🧭 service: %s | every eye silent (text, word, ocr) - vision or teaching needed' % x); return
@@ -1858,7 +1858,7 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
   d2 = _display_name(c)
   if d2 == stem: log('🧭 service: %s | already named correctly by the eyes' % x); return
   q2 = os.path.join(os.path.dirname(p), d2 + ext)
-  if _name_key(re.sub(r'_\d+$', '', os.path.splitext(x)[0])) == _name_key(d2): log('🧭 service: %s | already seated as a twin of %s - a seated twin rests  # TWIN-SETTLE v85.133: the pendulum stops where the suffix begins' % (x, d2)); return
+  if _name_key(re.sub(r'_\d+$', '', os.path.splitext(x)[0])) == _name_key(d2) and not os.path.splitext(os.path.splitext(x)[0])[1]: log('🧭 service: %s | already seated as a twin of %s - a seated twin rests  # TWIN-SETTLE v85.133: the pendulum stops where the suffix begins' % (x, d2)); return
   if os.path.exists(q2) and os.path.basename(q2).lower() != x.lower():  # CASE-INSENSITIVE v85.77: a held name is a proposal, never a deed
    if os.path.exists(q2) and os.path.basename(q2).lower() != x.lower():
        _w1 = ''
@@ -1874,7 +1874,7 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
        try: _p2 = (phones_in_text(_full_text(q2)) or [''])[0]
        except Exception: _p2 = ''
        if (_w1 and _w1 == _w2) or (_p1 and _p1 == _p2):
-           _c2 = 2; _q5 = os.path.join(os.path.dirname(p), d2 + '_%d' % _c2 + ext)
+           _c2 = 1; _q5 = os.path.join(os.path.dirname(p), d2 + '_%d' % _c2 + ext)  # SUFFIX-FROM-ONE v85.136: the first duplicate seat is _1, the smallest free number, never an invented coat
            while os.path.exists(_q5) and os.path.abspath(_q5) != os.path.abspath(p): _c2 += 1; _q5 = os.path.join(os.path.dirname(p), d2 + '_%d' % _c2 + ext)
            os.rename(p, _q5); log('✏️ service renamed (twin seat): %s → %s  # TWIN-SEAT v85.131: same witness (email local part or phone), second chair in the house suffix, never invented text' % (x, os.path.basename(_q5)))
            try:
@@ -4984,6 +4984,9 @@ def _selftest(root):
     ck('S484 every door writes its cost to the act ledger', (chr(35)+' ACT-LEDGER v85.134') in _src and _src.count('def _act_wrap(') >= 1 and _src.count('actions.jsonl' + chr(39)) >= 1)
     ck('S485 no rename happens unwatched', (chr(35)+' RENAME-WITNESS v85.135') in _src and _src.count('os.rename = _logged_' + 'rename') >= 1)
     ck('S486 a bulleted name doorplate speaks', (chr(35)+' BULLET-NAME v85.135') in _src and _src.count('Name' + chr(92) + 's*[') >= 1)
+    ck('S487 a stem wearing its own extension is a scar in both doors', _src.count('DOUBLE-EXT v85.' + '136') >= 2)
+    ck('S488 duplicate seats begin at one', (chr(35)+' SUFFIX-FROM-ONE v85.136') in _src and _src.count('_c2 = 1; _q' + '5 =') >= 1)
+    ck('S489 a misfiring cache never silences a readable paper', (chr(35)+' DIRECT-BRAIN v85.136') in _src and _src.count('_name_from_head_lines((extract_' + 'text(p) or ' + chr(39)+chr(39) + ').split(chr(10))') >= 2)
     ck('S471 one identity clerk serves every door', _src.count('def identity_' + 'of(p):') >= 1 and (chr(35)+' IDENTITY-CLERK v85.132') in _src)
     ck('S472 the identity speaks at every click and the pixel bill stays paid by none', (chr(35)+' CHAT-EYES v85.132') in _src and _src.count('service identity: ' + '%s') >= 1 and _src.count('emails_' + 'of(') <= 2)
     ck('S468 no chair is ever built inside a chair', 0 <= _src.find('def handle_tags') < _src.find('STAGE-NEVER-' + 'BASE v85.128') and _src.count('os.path.basename(base) in _tag_vocab()') >= 1)

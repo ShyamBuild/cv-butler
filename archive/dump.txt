@@ -1,4 +1,4 @@
-🔒 live lock: butler_5ae2ce92.lock -> 54277|/Users/apple/Downloads/Sunsoft Technology/09 Moon Beverages/Executive Purchase - Dhaulana
+🔒 live lock: butler_5ae2ce92.lock -> 57164|/Users/apple/Downloads/Sunsoft Technology/09 Moon Beverages/Executive Purchase - Dhaulana
 ==== _service_act ====
 def _w(*a, **k):
         _t0 = _at2.time(); _dec = ''; _err = ''
@@ -24,45 +24,16 @@ def _w(*a, **k):
             _act(name, os.path.basename(_f), (_err or _dec), (_at2.time() - _t0) * 1000.0)
 
 ==== _event_tick ====
-def _event_tick(root, log=print):  # RENAME-WATCH v85.52 + CONVERT-WATCH v85.52: directory mtimes are the doorbells - one stat per folder per heartbeat, no hashing, no OCR, no pings; the house rests between rings
-    try:
-        _qf = os.path.join(BASE_DIR, '.rename_queue')  # SERVICE-QUEUE v85.58: the master's Finder selection arrives as lines in a queue; the bell drains it each beat and runs the whole arrival pipeline in the background, no terminal opened
-        if os.path.exists(_qf):
-            try:
-                _qs = [l.strip() for l in open(_qf) if l.strip()]
-                os.remove(_qf)
-                for _qp in _qs:
-                    if not os.path.isfile(_qp): continue
-                    log('🖱 service queued: %s' % os.path.basename(_qp))
-                    _ext = os.path.splitext(_qp)[1].lower()
-                    if _ext in ('.docx', '.doc', '.rtf', '.png', '.jpg', '.jpeg', '.heic'): _convert_to_pdf(_qp, log)
-                    _service_act(_qp, root, log)  # QUEUE-ACT v85.76: the drain acts lawfully in place - renames and conversions stay inside their own folder, every outcome spoken
-                if _qs: log('✅ service batch done: %d paper(s) - deeds above' % len(_qs))  # SERVICE-RECEIPT v85.64  # RECEIPT-INDENT v85.65: the total stands inside the try body among the deeds it counts - each name wears its own hash, because the census reads addresses, not intentions
-            except Exception:
-                pass
-        _case_sweep(root, log)  # CASE-SWEEP v85.57: the doorbell sweeps casing every beat, so a shout never outlives its arrival
-        dirs = [root] + [os.path.join(root, s) for s in os.listdir(root) if os.path.isdir(os.path.join(root, s)) and not s.startswith('.') and not s.startswith('__')]  # DIRS-ALL v85.69: every immediate folder of the chair is swept - the stage folders hold every seated paper, and a bell that walks only the root walks an empty hall
-    except Exception:
-        dirs = [root]
-    for dpath in dirs:
+def _w(*a, **k):
+        _t0 = _at2.time(); _dec = ''; _err = ''
         try:
-            mt = os.stat(dpath).st_mtime
-        except Exception:
-            continue
-        if _EVT.get(dpath) == mt: continue
-        _EVT[dpath] = mt
-        try:
-            names = os.listdir(dpath)
-        except Exception:
-            continue
-        for x in names:
-            p = os.path.join(dpath, x)
-            if not os.path.isfile(p): continue
-            ext = os.path.splitext(x)[1].lower()
-            if ext in ('.docx', '.doc', '.rtf', '.png', '.jpg', '.jpeg', '.heic'):
-                _convert_to_pdf(p, log)
-            elif ext == '.pdf':
-                _fast_rename(p, root, log)
+            _r = fn(*a, **k); _dec = _r if isinstance(_r, str) else ('ok' if _r is not None else 'none')
+            return _r
+        except Exception as _e:
+            _err = repr(_e)[:60]; raise
+        finally:
+            _f = next((x for x in a if isinstance(x, str) and ('/' in x or x.lower().endswith('.pdf'))), '')
+            _act(name, os.path.basename(_f), (_err or _dec), (_at2.time() - _t0) * 1000.0)
 
 ==== _tick_loop ====
 def _tick_loop():  # WATCH-HOOK v85.53 (version v85.64): the bell is owned by the newest living code - the stamp carries a git hash, and a stale owner is inherited around, never fought
@@ -132,33 +103,28 @@ def _w(*a, **k):
             _act(name, os.path.basename(_f), (_err or _dec), (_at2.time() - _t0) * 1000.0)
 
 ==== _name_from_first_line ====
-def _name_from_first_line(p):  # FIRST-LINE v85.20: when both developed eyes stay silent, the paper's own first line speaks in title case - the humblest eye, and the fastest
-    try:
-        t = _word_text(p) or extract_text(p) or ''
-        if not t.strip():
-            try: t = extract_text_ocr(p) or ''  # FIRST-LINE v85.20 (ocr-fallback v85.22): a text layer that refuses to open yields to the capped pixels
-            except Exception: t = ''
-    except Exception:
-        return ''
-    for ln in t.split('\n'):
-        ln = ln.strip()
-        if not ln: continue
-        if any(ch.isdigit() for ch in ln): continue
-        if '@' in ln: continue
-        ws = ln.split()
-        if 2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws) and not (set(w.lower() for w in ws) & _NAME_STOP):  # NAME-GATE v85.97: the fallback single-line path wears the same gate as the scan
-            return ' '.join(w.capitalize() for w in ws)
-        return ''
-    return ''
+def _w(*a, **k):
+        _t0 = _at2.time(); _dec = ''; _err = ''
+        try:
+            _r = fn(*a, **k); _dec = _r if isinstance(_r, str) else ('ok' if _r is not None else 'none')
+            return _r
+        except Exception as _e:
+            _err = repr(_e)[:60]; raise
+        finally:
+            _f = next((x for x in a if isinstance(x, str) and ('/' in x or x.lower().endswith('.pdf'))), '')
+            _act(name, os.path.basename(_f), (_err or _dec), (_at2.time() - _t0) * 1000.0)
 
 ==== heuristic_name ====
-def heuristic_name(text):
-    for line in [l.strip() for l in text.split('\n') if l.strip()][:8]:
-        run = leading_name_run(compact_text(line))
-        if 2 <= len(run) <= 4 and sum(len(t) for t in run) >= 6:
-            j = ' '.join(run)
-            if j.isupper() or j.istitle(): return j
-    return None
+def _w(*a, **k):
+        _t0 = _at2.time(); _dec = ''; _err = ''
+        try:
+            _r = fn(*a, **k); _dec = _r if isinstance(_r, str) else ('ok' if _r is not None else 'none')
+            return _r
+        except Exception as _e:
+            _err = repr(_e)[:60]; raise
+        finally:
+            _f = next((x for x in a if isinstance(x, str) and ('/' in x or x.lower().endswith('.pdf'))), '')
+            _act(name, os.path.basename(_f), (_err or _dec), (_at2.time() - _t0) * 1000.0)
 
 ==== _canonical_person_name ====
 def _canonical_person_name(s):  # CANON-FORM v82.0: a pipeline name carries the human, not the paper's shout
@@ -273,37 +239,16 @@ def _stem_norm(s):  # STEM-NORM v85.90: download artifacts (_1, (2), trailing di
  return re.sub(r'[_\s]*(?:\(\d+\)|\d+)$', '', s).strip()
 
 ==== _convert_to_pdf ====
-def _convert_to_pdf(p, log):  # CONVERT-WATCH v85.52: a Word paper is not a scan, it is a locked eye - conversion is the key; the source stays untouched and the book remembers
-    import json as _jc, subprocess as _sp
-    cf = os.path.join(BASE_DIR, '.converted.json')
-    try:
-        done_map = _jc.load(open(cf))
-    except Exception:
-        done_map = {}
-    if done_map.get(p): return
-    out = os.path.splitext(p)[0] + '.pdf'
-    ext = os.path.splitext(p)[1].lower()
-    try:
-        if ext in ('.png', '.jpg', '.jpeg', '.heic'):
-            _sp.run(['sips', '-s', 'format', 'pdf', p, '--out', out], capture_output=True, timeout=120)
-        else:
-            _okp = _pages_pdf(p, out, log)  # PAGES-FIRST v85.56: Pages renders, and only if Pages refuses does the second hand move
-            if not _okp:
-                _sp.run(['soffice', '--headless', '--convert-to', 'pdf', '--outdir', os.path.dirname(p), p], capture_output=True, timeout=300)
-    except FileNotFoundError:
-        if not done_map.get('_nosoffice'):
-            done_map['_nosoffice'] = 1
-            log('⚠️ no soffice - install LibreOffice for doc→pdf; images still convert via sips')
-        return
-    except Exception:
-        return
-    if os.path.exists(out):
-        done_map[p] = 1
+def _w(*a, **k):
+        _t0 = _at2.time(); _dec = ''; _err = ''
         try:
-            _jc.dump(done_map, open(cf, 'w'))
-        except Exception:
-            pass
-        log('🔁 converted: %s → %s' % (os.path.basename(p), os.path.basename(out)))
+            _r = fn(*a, **k); _dec = _r if isinstance(_r, str) else ('ok' if _r is not None else 'none')
+            return _r
+        except Exception as _e:
+            _err = repr(_e)[:60]; raise
+        finally:
+            _f = next((x for x in a if isinstance(x, str) and ('/' in x or x.lower().endswith('.pdf'))), '')
+            _act(name, os.path.basename(_f), (_err or _dec), (_at2.time() - _t0) * 1000.0)
 
 ==== _pages_pdf ====
 def _pages_pdf(p, out, log):  # PAGES-FIRST v85.56: the master's first choice for doc to pdf is Pages, whose rendering keeps the paper's face; LibreOffice stands second, sips speaks for images
@@ -485,5 +430,5 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OCRBIN = os.path.join(BASE_DIR, "cvocr")
 126 
 OCR_SEM = threading.Semaphore(2)
-5298 
+5310 
 extract_text = extract_text_ocr  # ALIAS v85.89: one name for the whole chain, bound after every def has landed - the diag pdf column, emails_in_text and every bare caller wake from swallowing NameError
