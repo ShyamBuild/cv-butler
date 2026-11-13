@@ -318,6 +318,27 @@ def phones_of(p, quiet=False):  # QUIET-CLERK v81.87: the picker may ask without
 _h = logging.handlers.RotatingFileHandler(os.path.join(BASE_DIR, "butler.log"), maxBytes=1_000_000, backupCount=3)
 _h.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 log = logging.getLogger('butler'); log.setLevel(logging.INFO); log.addHandler(_h)
+_ACTF = os.path.join(BASE_DIR, 'actions.jsonl')  # ACT-LEDGER v85.134: every door writes one json line - who acted, on what, with which verdict, at what cost in milliseconds
+def _act(door, file, dec, ms, detail=''):
+    try:
+        if os.path.exists(_ACTF) and os.path.getsize(_ACTF) > 4000000: os.replace(_ACTF, _ACTF + '.1')
+        with open(_ACTF, 'a') as _af:
+            _af.write(json.dumps({'ts': time.strftime('%H:%M:%S'), 'pid': os.getpid(), 'door': door, 'file': (file or '')[-60:], 'dec': (dec or '')[:40], 'ms': round(ms, 1), 'detail': (detail or '')[:120]}) + chr(10))
+    except Exception:
+        pass
+def _act_wrap(name, fn):  # ACT-LEDGER v85.134: the six doors are timed and written, so the universe report sees every hesitation and every silence
+    import time as _at2
+    def _w(*a, **k):
+        _t0 = _at2.time(); _dec = ''; _err = ''
+        try:
+            _r = fn(*a, **k); _dec = _r if isinstance(_r, str) else ('ok' if _r is not None else 'none')
+            return _r
+        except Exception as _e:
+            _err = repr(_e)[:60]; raise
+        finally:
+            _f = next((x for x in a if isinstance(x, str) and ('/' in x or x.lower().endswith('.pdf'))), '')
+            _act(name, os.path.basename(_f), (_err or _dec), (_at2.time() - _t0) * 1000.0)
+    return _w
 
 SWIFT_CODE = '''
 import Foundation
@@ -4950,6 +4971,7 @@ def _selftest(root):
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
     ck('S482 the suffix search never targets the file own path', (chr(35)+' TWIN-SETTLE v85.133') in _src and _src.count('os.path.abspath(_q5) != os.path.abspath(' + 'p)') >= 1)
     ck('S483 a seated twin rests in both doors', _src.count('a seated twin ' + 'rests') >= 1 and _src.count('twin settled: ' + '%s') >= 1)
+    ck('S484 every door writes its cost to the act ledger', (chr(35)+' ACT-LEDGER v85.134') in _src and _src.count('def _act_wrap(') >= 1 and _src.count('actions.jsonl' + chr(39)) >= 1)
     ck('S471 one identity clerk serves every door', _src.count('def identity_' + 'of(p):') >= 1 and (chr(35)+' IDENTITY-CLERK v85.132') in _src)
     ck('S472 the identity speaks at every click and the pixel bill stays paid by none', (chr(35)+' CHAT-EYES v85.132') in _src and _src.count('service identity: ' + '%s') >= 1 and _src.count('emails_' + 'of(') <= 2)
     ck('S468 no chair is ever built inside a chair', 0 <= _src.find('def handle_tags') < _src.find('STAGE-NEVER-' + 'BASE v85.128') and _src.count('os.path.basename(base) in _tag_vocab()') >= 1)
@@ -5274,5 +5296,9 @@ except NameError:
     pass
 
 extract_text = extract_text_ocr  # ALIAS v85.89: one name for the whole chain, bound after every def has landed - the diag pdf column, emails_in_text and every bare caller wake from swallowing NameError
+for _fn in ('_service_act', '_fast_rename', '_eyename_of', '_vision_text', 'extract_text_ocr', '_case_sweep'):  # ACT-WRAP-SIX v85.134: the click, the tick's fast half, the brain, the pupil, the eye-chain and the sweep - each call costs and confesses
+    try:
+        if _fn in globals(): globals()[_fn] = _act_wrap(_fn, globals()[_fn])
+    except Exception: pass
 
 # FAIL-LOUD v85.99: tail seat empty by design - the wrapper now stands before the first guard (relocated v85.101)
