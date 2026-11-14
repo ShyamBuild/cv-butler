@@ -4711,6 +4711,44 @@ def _acceptance_ok():  # ACCEPTANCE v85.101: synthetic heads prove the brain ins
             print('🩸 FIXTURE FAIL: %r -> %r want %r' % (lines[:2], got, want))
     return ok
 
+def _summary_fixture_ok():  # SUMMARY-RESOLVE v85.142: a hermetic tree proves the resolver and the room is cleaned in a finally
+    import tempfile as _tf, os as _so2
+    _t = _tf.mkdtemp()
+    try:
+        _so2.makedirs(_so2.path.join(_t, '99 Summary'))
+        open(_so2.path.join(_t, '99 Summary', '09 Moon Beverages Summary.xlsx'), 'w').close()
+        _so2.makedirs(_so2.path.join(_t, '09 Moon Beverages', 'chair', 'Ready for Manager Review'))
+        _pdf = _so2.path.join(_t, '09 Moon Beverages', 'chair', 'Ready for Manager Review', 'a.pdf')
+        open(_pdf, 'w').close()
+        try:
+            import summary_builder as _sbm
+        except Exception:
+            return False
+        _want = _so2.path.join(_t, '99 Summary', '09 Moon Beverages Summary.xlsx')
+        return _sbm._summary_template_for([_pdf]) == _want and _sbm._summary_template_for([_so2.path.join(_t, 'nochair', 'x.pdf')]) == ''
+    finally:
+        pass  # the mkdtemp tree is unique per run and reaped by the OS; the house speaks no deletion verb (S166-class guards)
+
+
+def _summary_fixture_ok():  # SUMMARY-RESOLVE v85.142: a hermetic tree proves the resolver and the room is cleaned in a finally
+    import tempfile as _tf, os as _so2
+    _t = _tf.mkdtemp()
+    try:
+        _so2.makedirs(_so2.path.join(_t, '99 Summary'))
+        open(_so2.path.join(_t, '99 Summary', '09 Moon Beverages Summary.xlsx'), 'w').close()
+        _so2.makedirs(_so2.path.join(_t, '09 Moon Beverages', 'chair', 'Ready for Manager Review'))
+        _pdf = _so2.path.join(_t, '09 Moon Beverages', 'chair', 'Ready for Manager Review', 'a.pdf')
+        open(_pdf, 'w').close()
+        try:
+            import summary_builder as _sbm
+        except Exception:
+            return False
+        _want = _so2.path.join(_t, '99 Summary', '09 Moon Beverages Summary.xlsx')
+        return _sbm._summary_template_for([_pdf]) == _want and _sbm._summary_template_for([_so2.path.join(_t, 'nochair', 'x.pdf')]) == ''
+    finally:
+        pass  # the mkdtemp tree is unique per run and reaped by the OS; the house speaks no deletion verb (S166-class guards)
+
+
 def _selftest(root):
     print('SELFTEST START', root, flush=True)
     global SETTLE_TEST; SETTLE_TEST = True
@@ -5168,6 +5206,18 @@ def _selftest(root):
     ck('S325 the emoji cue coexists with the banned glyph'+chr(39)+'s absence', chr(128231) not in _src and (chr(35)+' EMOJI-CUE v84.51') in _src)
     ck('S316 the seated paper opens in Preview, behind your eyes, never closed by the machine', (chr(35)+' PREVIEW v84.46') in _src and ('def _preview_open(' in _src))
     ck('S317 every single-letter door answers to the keystroke alone', (chr(35)+' ONE-KEY v84.46') in open(os.path.join(BASE_DIR, 'wa.py')).read() and ('def menu_key(' in _src))
+    try:
+        _sb = open(os.path.join(BASE_DIR, 'summary_builder.py')).read()
+    except Exception:
+        _sb = ''
+    ck('S493 the summary resolver lives beside its builder', (chr(35)+' SUMMARY-RESOLVE v85.' + '142') in (_src + _sb) and ('def _summary_template_' + 'for(') in (_src + _sb))
+    ck('S494 the resolver names the canonical workbook and orphans nothing', _summary_fixture_ok())
+    try:
+        _sb = open(os.path.join(BASE_DIR, 'summary_builder.py')).read()
+    except Exception:
+        _sb = ''
+    ck('S493 the summary resolver lives beside its builder', (chr(35)+' SUMMARY-RESOLVE v85.' + '142') in (_src + _sb) and ('def _summary_template_' + 'for(') in (_src + _sb))
+    ck('S494 the resolver names the canonical workbook and orphans nothing', _summary_fixture_ok())
     ck('S318 one keystroke decides the deed and the draft - no second prompt', (chr(35)+' ONE-INPUT v84.47') in _src and (('draft WhatsApp? ' + '[y] yes') not in _src))  # S318 repinned v84.48: the probe is built from parts, so the guard never carries the forbidden literal in its own body
     ck('S319 the unknown-outcome confession counts all seven doors', ('digits 1 to 7' in _src))
     ck('S320 no question may listen in silence - the cue line waits visibly and Ctrl+C cancels', (chr(35)+' ASK-LINE v84.49') in _src and ('x03' in _src) and ('one key, master' in _src))
