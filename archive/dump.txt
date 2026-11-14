@@ -1,9 +1,9 @@
-🔒 live lock: butler_5ae2ce92.lock -> 10803|/Users/apple/Downloads/Sunsoft Technology/09 Moon Beverages/Executive Purchase - Dhaulana
 ==== _service_act ====
 def _w(*a, **k):
         _t0 = _at2.time(); _dec = ''; _err = ''
         try:
             _r = fn(*a, **k); _dec = _r if isinstance(_r, str) else ('ok' if _r is not None else 'none')
+            _w.__wrapped__ = fn  # DUMP-UNWRAP v85.138
             return _r
         except Exception as _e:
             _err = repr(_e)[:60]; raise
@@ -16,6 +16,7 @@ def _w(*a, **k):
         _t0 = _at2.time(); _dec = ''; _err = ''
         try:
             _r = fn(*a, **k); _dec = _r if isinstance(_r, str) else ('ok' if _r is not None else 'none')
+            _w.__wrapped__ = fn  # DUMP-UNWRAP v85.138
             return _r
         except Exception as _e:
             _err = repr(_e)[:60]; raise
@@ -28,6 +29,7 @@ def _w(*a, **k):
         _t0 = _at2.time(); _dec = ''; _err = ''
         try:
             _r = fn(*a, **k); _dec = _r if isinstance(_r, str) else ('ok' if _r is not None else 'none')
+            _w.__wrapped__ = fn  # DUMP-UNWRAP v85.138
             return _r
         except Exception as _e:
             _err = repr(_e)[:60]; raise
@@ -95,6 +97,7 @@ def _w(*a, **k):
         _t0 = _at2.time(); _dec = ''; _err = ''
         try:
             _r = fn(*a, **k); _dec = _r if isinstance(_r, str) else ('ok' if _r is not None else 'none')
+            _w.__wrapped__ = fn  # DUMP-UNWRAP v85.138
             return _r
         except Exception as _e:
             _err = repr(_e)[:60]; raise
@@ -107,6 +110,7 @@ def _w(*a, **k):
         _t0 = _at2.time(); _dec = ''; _err = ''
         try:
             _r = fn(*a, **k); _dec = _r if isinstance(_r, str) else ('ok' if _r is not None else 'none')
+            _w.__wrapped__ = fn  # DUMP-UNWRAP v85.138
             return _r
         except Exception as _e:
             _err = repr(_e)[:60]; raise
@@ -119,6 +123,7 @@ def _w(*a, **k):
         _t0 = _at2.time(); _dec = ''; _err = ''
         try:
             _r = fn(*a, **k); _dec = _r if isinstance(_r, str) else ('ok' if _r is not None else 'none')
+            _w.__wrapped__ = fn  # DUMP-UNWRAP v85.138
             return _r
         except Exception as _e:
             _err = repr(_e)[:60]; raise
@@ -151,6 +156,7 @@ def _w(*a, **k):
         _t0 = _at2.time(); _dec = ''; _err = ''
         try:
             _r = fn(*a, **k); _dec = _r if isinstance(_r, str) else ('ok' if _r is not None else 'none')
+            _w.__wrapped__ = fn  # DUMP-UNWRAP v85.138
             return _r
         except Exception as _e:
             _err = repr(_e)[:60]; raise
@@ -227,6 +233,7 @@ def _w(*a, **k):
         _t0 = _at2.time(); _dec = ''; _err = ''
         try:
             _r = fn(*a, **k); _dec = _r if isinstance(_r, str) else ('ok' if _r is not None else 'none')
+            _w.__wrapped__ = fn  # DUMP-UNWRAP v85.138
             return _r
         except Exception as _e:
             _err = repr(_e)[:60]; raise
@@ -243,6 +250,7 @@ def _w(*a, **k):
         _t0 = _at2.time(); _dec = ''; _err = ''
         try:
             _r = fn(*a, **k); _dec = _r if isinstance(_r, str) else ('ok' if _r is not None else 'none')
+            _w.__wrapped__ = fn  # DUMP-UNWRAP v85.138
             return _r
         except Exception as _e:
             _err = repr(_e)[:60]; raise
@@ -430,5 +438,5 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OCRBIN = os.path.join(BASE_DIR, "cvocr")
 126 
 OCR_SEM = threading.Semaphore(2)
-5313 
+5305 
 extract_text = extract_text_ocr  # ALIAS v85.89: one name for the whole chain, bound after every def has landed - the diag pdf column, emails_in_text and every bare caller wake from swallowing NameError

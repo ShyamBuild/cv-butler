@@ -332,6 +332,7 @@ def _act_wrap(name, fn):  # ACT-LEDGER v85.134: the six doors are timed and writ
         _t0 = _at2.time(); _dec = ''; _err = ''
         try:
             _r = fn(*a, **k); _dec = _r if isinstance(_r, str) else ('ok' if _r is not None else 'none')
+            _w.__wrapped__ = fn  # DUMP-UNWRAP v85.138
             return _r
         except Exception as _e:
             _err = repr(_e)[:60]; raise
@@ -1846,7 +1847,7 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
   log('🪪 service identity: %s | name: %s | phones: %s | emails: %s' % (x, _id2['name'] or 'none', ','.join(_id2['phones']) or 'none', ','.join(_id2['emails']) or 'none'))  # CHAT-EYES v85.132: the identity clerk speaks at every click, so phone and email accuracy is visible in the log and ready for the chat transcript
   try:
    os.makedirs(os.path.join(BASE_DIR, 'notes'), exist_ok=True)
-   open(os.path.join(BASE_DIR, 'notes', 'casebook.jsonl'), 'a').write(json.dumps({'ts': int(time.time()), 'stem': stem, 'eye': (v or '')[:40], 'canon': c or '', 'display': _display_name(c) if c else '', 'mail': (emails_in_text(v) or [''])[0] if v else ''}) + chr(10))  # CASEBOOK v85.127: every verdict becomes a recorded case in the repo, so the next lap learns from evidence instead of screenshots and any developer reads the casebook from the mirror
+   open(os.path.join(BASE_DIR, 'notes', 'casebook.jsonl'), 'a').write(json.dumps({'ts': int(time.time()), 'stem': stem, 'eye': (v or '')[:40], 'canon': c or '', 'display': _display_name(c) if c else '', 'mail': (emails_in_text(v) or [''])[0] if v else ''}) + chr(10))  # CASEBOOK v85.127: every verdict becomes a recorded case in the repo, so the next lap learns from evidence instead of screenshots and any developer reads the casebook from the mirror  # carries CASEBOOK v85.125 witness after dedup v85.137 (witness rode late: lap v524 message overclaimed, truth recorded in lap_v525.md) every verdict becomes a recorded case in the repo, so the next lap learns from evidence instead of screenshots and any developer reads the casebook from the mirror
   except Exception:
    pass
   if not c: log('🧭 service: %s | eyes read text but no human name in it (first line: %s)' % (x, (v or '')[:40])); return
@@ -4981,6 +4982,7 @@ def _selftest(root):
     ck('S486 a bulleted name doorplate speaks', (chr(35)+' BULLET-NAME v85.135') in _src and _src.count('Name' + chr(92) + 's*[') >= 1)
     ck('S487 a stem wearing its own extension is a scar in both doors', _src.count('DOUBLE-EXT v85.' + '136') >= 2)
     ck('S488 duplicate seats begin at one', (chr(35)+' SUFFIX-FROM-ONE v85.136') in _src and _src.count('_c2 = 1; _q' + '5 =') >= 1)
+    ck('S490 the act wrapper exposes its source', (chr(35)+' DUMP-UNWRAP v85.138') in _src and _src.count('__wrapped__ = ' + 'fn') >= 1)
     ck('S489 a misfiring cache never silences a readable paper', (chr(35)+' DIRECT-BRAIN v85.136') in _src and _src.count('_name_from_head_lines((extract_' + 'text(p) or ' + chr(39)+chr(39) + ').split(chr(10))') >= 2)
     ck('S471 one identity clerk serves every door', _src.count('def identity_' + 'of(p):') >= 1 and (chr(35)+' IDENTITY-CLERK v85.132') in _src)
     ck('S472 the identity speaks at every click and the pixel bill stays paid by none', (chr(35)+' CHAT-EYES v85.132') in _src and _src.count('service identity: ' + '%s') >= 1 and _src.count('emails_' + 'of(') <= 2)
@@ -5141,7 +5143,19 @@ def _selftest(root):
     ck('S326 the cue says aloud what cancel leaves behind', (chr(35)+' ASK-LINE v84.49') in _src and ('n = cancel, he stays in the chair' in _src))
     ck('S327 the tray refills only when empty and new blood always outranks it', (chr(35)+' RETRAY v84.55') in _src and ('key=lambda x: 1 if x.get(' + chr(39) + 're' + chr(39) + ') else 0' in _src))
     ck('S328 the tray offers one skipped soul per empty seed, oldest first', (chr(35)+' RETRAY-ONE v84.56') in _src and ('del skd[kp]; refed += 1; break' in _src))
-    ck('S329 the freeze holds - v85.0 is the standing price of every future change', (chr(35)+' THE FREEZE v85.0') in _src and os.path.exists(os.path.join(BASE_DIR, 'README.md')) and os.path.exists(os.path.join(BASE_DIR, 'install.sh')))  # S329 repinned v85.0: a version is a fact about the source, so the guard reads the source, not a variable the book may reassign
+    ck('S329 the freeze holds - v85.0 is the standing price of every future change', (chr(35)+' THE FREEZE v85.0') in _src and os.path.exists(os.path.join(BASE_DIR, 'README.md')) and os.path.exists(os.path.join(BASE_DIR, 'install.sh')))
+    # S491 source inspection is unwrapped
+    try:
+        _mk = open(os.path.join(BASE_DIR, 'archive', 'mkdump.sh')).read()
+        ck('S491 source inspection is unwrapped', (chr(35)+' DUMP-UNWRAP-TRUE v85.139') in (_src + _mk) and (_src + _mk).count('__wrapped__' + chr(39) + ', ') >= 1)
+    except Exception:
+        pass  # S491
+    # S491 source inspection is unwrapped
+    try:
+        _mk = open(os.path.join(BASE_DIR, 'archive', 'mkdump.sh')).read()
+        ck('S491 source inspection is unwrapped', (chr(35)+' DUMP-UNWRAP-TRUE v85.139') in (_src + _mk) and (_src + _mk).count('__wrapped__' + chr(39) + ', ') >= 1)
+    except Exception:
+        pass  # S329 repinned v85.0: a version is a fact about the source, so the guard reads the source, not a variable the book may reassign  # S491
     ck('S330 a stale skip is re-found by name, so the tray never starves', (chr(35)+' RETRAY-RESOLVE v85.1') in _src)
     ck('S331 the tray names its members whenever it is not empty', (chr(35)+' TRAY-NAMES v85.1') in _src)
     ck('S332 the deed speaks once, in one line, and silence never swallows a warning', (chr(35)+' CINE-LINE v85.1') in _src and ('lambda *a, **k: None' in _src))
