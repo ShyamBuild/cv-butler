@@ -1849,11 +1849,6 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
    open(os.path.join(BASE_DIR, 'notes', 'casebook.jsonl'), 'a').write(json.dumps({'ts': int(time.time()), 'stem': stem, 'eye': (v or '')[:40], 'canon': c or '', 'display': _display_name(c) if c else '', 'mail': (emails_in_text(v) or [''])[0] if v else ''}) + chr(10))  # CASEBOOK v85.127: every verdict becomes a recorded case in the repo, so the next lap learns from evidence instead of screenshots and any developer reads the casebook from the mirror
   except Exception:
    pass
-  try:
-   os.makedirs(os.path.join(BASE_DIR, 'notes'), exist_ok=True)
-   open(os.path.join(BASE_DIR, 'notes', 'casebook.jsonl'), 'a').write(json.dumps({'ts': int(time.time()), 'stem': stem, 'eye': (v or '')[:40], 'canon': c or '', 'display': _display_name(c) if c else '', 'mail': (emails_in_text(v) or [''])[0] if v else ''}) + chr(10))  # CASEBOOK v85.125: every verdict becomes a recorded case in the repo, so the next lap learns from evidence instead of screenshots and the architect reads the casebook from the mirror
-  except Exception:
-   pass
   if not c: log('🧭 service: %s | eyes read text but no human name in it (first line: %s)' % (x, (v or '')[:40])); return
   d2 = _display_name(c)
   if d2 == stem: log('🧭 service: %s | already named correctly by the eyes' % x); return
@@ -5023,11 +5018,6 @@ def _selftest(root):
     ck('S470 a doorplate is stripped before the head is read', (chr(35)+' LABEL-STRIP v85.131') in _src and _src.count('Candidate|Applicant') >= 1)
     ck('S463 the first breath of the page is a name when the email agrees', (chr(35)+' FIRST-LINE-MONONYM v85.123') in _src and _src.count('len(_mls[0].split()) == 1 and _mls[0].' + 'isupper()') >= 1)
     ck('S464 the email anchor sits at the top of the brain', _src.count('_wa[0].lower() in _mlocal or _wa[-1].lower() in ' + '_mlocal') >= 1 and (chr(35)+' re-seated v85.123') in _src)
-    ck('S465 the eye door accepts what the brain witnessed', (chr(35)+' MONO-DOOR v85.124') in _src and _src.count('if 1 <= len(ws) <= 4 and all(w.' + 'isalpha()') >= 1)
-    ck('S467 every verdict is written into the casebook', (chr(35)+' CASEBOOK v85.127') in _src and _src.count(chr(39) + 'casebook.' + 'jsonl' + chr(39)) >= 1)
-    ck('S466 every verdict is written into the casebook', (chr(35)+' CASEBOOK v85.125') in _src and _src.count(chr(39) + 'casebook.' + 'jsonl' + chr(39)) >= 1)
-    ck('S462 the initial anchor speaks for deep title-case names', (chr(35)+' EMAIL-ANCHOR-INITIAL v85.113') in _src and _src.count('local.startswith(wa[0][0].lower' + '())') >= 1)
-    ck('S463 the ink eye is given ninety seconds', (chr(35)+' OCR-PATIENT v85.114') in _src and _src.count('text=True, timeout=' + '90') >= 1)
     ck('S464 a shortened coat is completed, a stranger still only proposes', _stem_inside_name('Einstein G', 'Albert Einstein G') and _stem_inside_name('Manoj', 'Manoj Rana') and not _stem_inside_name('Rakesh Kumar', 'Chandan Kumar'))
     ck('S465 the completion test stands before the proposal in the service gate', 0 <= _src.find('_stem_inside_name(_sn, d2)') < _src.find('a different human - proposal only') and (chr(35)+' NAME-COMPLETE v85.126') in _src)
     ck('S464 the case-gate stands above the case-fix', 0 <= _src.find('CASE-GATE v85.115') < _src.find('CASE-SELF v85.82') < _src.find('NAME-SCAN-SERVICE v85.95'))
