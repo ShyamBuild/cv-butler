@@ -332,13 +332,13 @@ def _act_wrap(name, fn):  # ACT-LEDGER v85.134: the six doors are timed and writ
         _t0 = _at2.time(); _dec = ''; _err = ''
         try:
             _r = fn(*a, **k); _dec = _r if isinstance(_r, str) else ('ok' if _r is not None else 'none')
-            _w.__wrapped__ = fn  # DUMP-UNWRAP v85.138
             return _r
         except Exception as _e:
             _err = repr(_e)[:60]; raise
         finally:
             _f = next((x for x in a if isinstance(x, str) and ('/' in x or x.lower().endswith('.pdf'))), '')
             _act(name, os.path.basename(_f), (_err or _dec), (_at2.time() - _t0) * 1000.0)
+    _w.__wrapped__ = fn  # DUMP-UNWRAP v85.138
     return _w
 
 SWIFT_CODE = '''
