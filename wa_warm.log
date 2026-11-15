@@ -1,0 +1,409 @@
+🔥 warm WhatsApp browser ready on :9222
+node:events:487
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: write EPIPE
+    at WriteWrap.onWriteComplete [as oncomplete] (node:internal/stream_base_commons:87:19)
+Emitted 'error' event on Socket instance at:
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  errno: -32,
+  code: 'EPIPE',
+  syscall: 'write'
+}
+
+Node.js v24.15.0
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+⚠️ warm browser failed: BrowserContext.new_page: Target page, context or browser has been closed
+Browser logs:
+
+<launching> /Users/apple/Library/Caches/ms-playwright/chromium-1223/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --no-sandbox --remote-debugging-port=9222 --user-data-dir=/Users/apple/CV_Tool/wa_profile --remote-debugging-pipe about:blank
+<launched> pid=61486
+[pid=61486][err] 
+[pid=61486][err] DevTools listening on ws://127.0.0.1:9222/devtools/browser/a8280688-04e9-4ef9-afbb-4cd666f1fd92
+[pid=61486][err] [61486:750075:1023/092150.627514:ERROR:content/browser/gpu/gpu_process_host.cc:999] GPU process exited unexpectedly: exit_code=15
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+⚠️ warm browser failed: 'BrowserContext' object has no attribute 'is_connected'
+🔥 warm WhatsApp browser ready on :9222
+node:events:487
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: write EPIPE
+    at WriteWrap.onWriteComplete [as oncomplete] (node:internal/stream_base_commons:87:19)
+Emitted 'error' event on Socket instance at:
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  errno: -32,
+  code: 'EPIPE',
+  syscall: 'write'
+}
+
+Node.js v24.15.0
+🔥 warm WhatsApp browser ready on :9222
+node:events:487
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: write EPIPE
+    at WriteWrap.onWriteComplete [as oncomplete] (node:internal/stream_base_commons:87:19)
+Emitted 'error' event on Socket instance at:
+    at emitErrorNT (node:internal/streams/destroy:170:8)
+    at emitErrorCloseNT (node:internal/streams/destroy:129:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  errno: -32,
+  code: 'EPIPE',
+  syscall: 'write'
+}
+
+Node.js v24.15.0
+🔥 warm WhatsApp browser ready on :9222
+🔥 warm WhatsApp browser ready on :9222
+node:internal/process/promises:394
+    triggerUncaughtException(err, true /* fromPromise */);
+    ^
+
+ProtocolError: Protocol error (Page.handleJavaScriptDialog): No dialog is showing
+    at /Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:33762:61
+    at new Promise (<anonymous>)
+    at _CRSession.send (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:33761:16)
+    at Dialog._onHandle (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:36472:32)
+    at Dialog._accept (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:13348:20)
+    at Dialog._close (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:13358:22)
+    at DialogManager.dialogDidOpen (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:13380:18)
+    at _FrameSession._onDialog (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:36465:49)
+    at _CRSession.<anonymous> (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:36141:103)
+    at _CRSession.emit (node:events:509:28) {
+  type: 'error',
+  method: 'Page.handleJavaScriptDialog',
+  logs: undefined
+}
+
+Node.js v24.15.0
+🔥 warm WhatsApp browser ready on :9222
+node:internal/process/promises:394
+    triggerUncaughtException(err, true /* fromPromise */);
+    ^
+
+ProtocolError: Protocol error (Page.handleJavaScriptDialog): No dialog is showing
+    at /Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:33762:61
+    at new Promise (<anonymous>)
+    at _CRSession.send (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:33761:16)
+    at Dialog._onHandle (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:36472:32)
+    at Dialog._accept (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:13348:20)
+    at Dialog._close (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:13358:22)
+    at DialogManager.dialogDidOpen (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:13380:18)
+    at _FrameSession._onDialog (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:36465:49)
+    at _CRSession.<anonymous> (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:36141:103)
+    at _CRSession.emit (node:events:509:28) {
+  type: 'error',
+  method: 'Page.handleJavaScriptDialog',
+  logs: undefined
+}
+
+Node.js v24.15.0
+⚠️ warm browser failed (1 in a row): BrowserType.launch_persistent_context: Opening in existing browser session. This usually means that the profile is already in use by another instance of Chromium.
+Call log:
+  - <launching> /Users/apple/Library/Caches/ms-playwright/chromium-1223/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --no-sandbox --remote-debugging-port=9222 --user-data-dir=/Users/apple/CV_Tool/wa_profile --remote-debugging-pipe about:blank
+  - <launched> pid=2150
+  - [pid=2150][out] Opening in existing browser session.
+  - [pid=2150] <gracefully close start>
+  - [pid=2150] <kill>
+  - [pid=2150] <will force kill>
+  - [pid=2150] exception while trying to kill process: Error: kill EPERM
+  - [pid=2150] <process did exit: exitCode=0, signal=null>
+  - [pid=2150] starting temporary directories cleanup
+  - [pid=2150] finished temporary directories cleanup
+  - [pid=2150] <gracefully close end>
+
+🔥 warm WhatsApp browser ready on :9222
+🔥 warm WhatsApp browser ready on :9222
+node:internal/process/promises:394
+    triggerUncaughtException(err, true /* fromPromise */);
+    ^
+
+ProtocolError: Protocol error (Page.handleJavaScriptDialog): No dialog is showing
+    at /Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:33762:61
+    at new Promise (<anonymous>)
+    at _CRSession.send (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:33761:16)
+    at Dialog._onHandle (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:36472:32)
+    at Dialog._accept (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:13348:20)
+    at Dialog._close (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:13358:22)
+    at DialogManager.dialogDidOpen (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:13380:18)
+    at _FrameSession._onDialog (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:36465:49)
+    at _CRSession.<anonymous> (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:36141:103)
+    at _CRSession.emit (node:events:509:28) {
+  type: 'error',
+  method: 'Page.handleJavaScriptDialog',
+  logs: undefined
+}
+
+Node.js v24.15.0
+🔥 warm WhatsApp browser ready on :9222
+🔥 warm WhatsApp browser ready on :9222
+🔥 warm WhatsApp browser ready on :9222
+node:internal/process/promises:394
+    triggerUncaughtException(err, true /* fromPromise */);
+    ^
+
+ProtocolError: Protocol error (Page.handleJavaScriptDialog): No dialog is showing
+    at /Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:33762:61
+    at new Promise (<anonymous>)
+    at _CRSession.send (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:33761:16)
+    at Dialog._onHandle (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:36472:32)
+    at Dialog._accept (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:13348:20)
+    at Dialog._close (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:13358:22)
+    at DialogManager.dialogDidOpen (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:13380:18)
+    at _FrameSession._onDialog (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:36465:49)
+    at _CRSession.<anonymous> (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:36141:103)
+    at _CRSession.emit (node:events:509:28) {
+  type: 'error',
+  method: 'Page.handleJavaScriptDialog',
+  logs: undefined
+}
+
+Node.js v24.15.0
+🔥 warm WhatsApp browser ready on :9222
+node:internal/process/promises:394
+    triggerUncaughtException(err, true /* fromPromise */);
+    ^
+
+ProtocolError: Protocol error (Page.handleJavaScriptDialog): Not attached to an active page
+    at /Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:33762:61
+    at new Promise (<anonymous>)
+    at _CRSession.send (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:33761:16)
+    at Dialog._onHandle (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:36472:32)
+    at Dialog._accept (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:13348:20)
+    at Dialog._close (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:13358:22)
+    at DialogManager.dialogDidOpen (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:13380:18)
+    at _FrameSession._onDialog (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:36465:49)
+    at _CRSession.<anonymous> (/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/driver/package/lib/coreBundle.js:36141:103)
+    at _CRSession.emit (node:events:509:28) {
+  type: 'error',
+  method: 'Page.handleJavaScriptDialog',
+  logs: undefined
+}
+
+Node.js v24.15.0
+🔥 warm WhatsApp browser ready on :9222
+🔥 warm WhatsApp browser ready on :9222
+🔥 warm WhatsApp browser ready on :9222
+🔥 warm WhatsApp browser ready on :9222

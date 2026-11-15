@@ -1,0 +1,98 @@
+import os
+L = open('ship.sh').read().split('\n')
+bad = [(i+1, l) for i, l in enumerate(L) if l.count('"') % 2 == 1]
+print('odd-quote lines in current ship.sh:', bad or 'none')
+SHIP = r'''#!/bin/zsh
+cd ~/CV_Tool || exit 1
+export GIT_TERMINAL_PROMPT=0
+HOLD=0; [ "$1" = "--hold" ] && { HOLD=1; shift; }
+CHECK=0; [ "$1" = "--check" ] && { CHECK=1; shift; }
+MSG="$1"; PATCH="$2"
+ROOT="$(cat ~/.cvtool_last_butler_root 2>/dev/null)"
+[ -z "$ROOT" ] && ROOT="/Users/apple/Downloads/Sunsoft Technology/04 Avis/Regional Head - Sales || Vikhroli East- Mumbai  Location"
+WAS_UP=0; pgrep -f butler.py > /dev/null && WAS_UP=1
+health() {
+  echo "-- health"
+  if pgrep -f butler.py > /dev/null; then echo "process: running"; else echo "WARN process: NOT running"; fi
+  LH="$(git rev-parse --short HEAD)"
+  LB="$(grep -o 'git [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]' butler_live.log 2>/dev/null | tail -1 | awk '{print $2}')"
+  if [ "$LH" = "$LB" ]; then echo "version: live = committed ($LH)"; else echo "WARN version drift: live=${LB:-?} vs committed=$LH"; fi
+  if [ -n "$(git status --porcelain -- butler.py briefing.py wa.py cleaner.py ship.sh PROTOCOL.md butler_check.py requirements.txt)" ]; then echo "WARN uncommitted CODE edits - gate them via ship.sh"; else echo "code clean & in sync (runtime/data ignored)"; fi
+  echo "mirror head: $(git -C "$HOME/CV_Tool_pub" rev-parse --short HEAD 2>/dev/null) - local head: $LH"
+  echo "-- last log lines"; tail -2 butler_live.log
+}
+[ "$CHECK" = "1" ] && { health; exit 0; }
+sync_mirror() {
+  [ -d "$HOME/CV_Tool_pub/.git" ] || return 0
+  cp "$HOME/CV_Tool/butler.py" "$HOME/CV_Tool/briefing.py" "$HOME/CV_Tool/wa.py" "$HOME/CV_Tool/cleaner.py" "$HOME/CV_Tool/ship.sh" "$HOME/CV_Tool/PROTOCOL.md" "$HOME/CV_Tool/butler_check.py" "$HOME/CV_Tool/requirements.txt" "$HOME/CV_Tool_pub/" || return 0
+  git -C "$HOME/CV_Tool_pub" add -A || return 0
+  git -C "$HOME/CV_Tool_pub" diff --cached --quiet && return 0
+  git -C "$HOME/CV_Tool_pub" commit -qm "sync $H: $MSG" || return 0
+  if git -C "$HOME/CV_Tool_pub" push --quiet; then
+    echo "mirror pushed: github.com/ShyamBuild/cv-butler"
+  else
+    echo "mirror committed locally (offline - pushes with next green commit)"
+  fi
+}
+if [ -n "$PATCH" ]; then
+  echo "-- patch: $PATCH"
+  /usr/bin/python3 "$PATCH" || { echo "FAIL patch crashed - rolling back to last proven commit"; git checkout -- butler.py briefing.py wa.py cleaner.py; exit 1; }
+fi
+pkill -f butler.py || true
+sleep 1
+echo "-- selftest gate (butler paused - no races)"
+OUT="$(cv_env/bin/python3 butler.py --selftest "$ROOT" 2>&1)"
+echo "$OUT" | tail -12
+TWINS="$(cv_env/bin/python3 - "$ROOT" << 'PY'
+import os, sys
+def _n(s): return (s or '').lower().replace('\u2013','-').replace(' ','_')
+bad = []
+for dp, dn, fn in os.walk(sys.argv[1]):
+    dn[:] = [d for d in dn if not d.startswith('.')]
+    g = {}
+    for d in dn: g.setdefault(_n(d), []).append(d)
+    bad += [f"{os.path.basename(dp)}: {v}" for v in g.values() if len(v) > 1]
+print('; '.join(bad))
+PY
+)"
+if echo "$OUT" | grep -q "ALL GREEN" && [ -z "$TWINS" ]; then
+  git add -A
+  git -c user.email=butler@local -c user.name=butler commit -qm "$MSG (selftest ALL GREEN)" || echo "(nothing new to commit)"
+  H="$(git rev-parse --short HEAD)"
+  echo "committed $H: $MSG"
+  sync_mirror
+  if [ "$HOLD" = "1" ]; then
+    echo "--hold given: restart is yours"
+  else
+    nohup cv_env/bin/python3 butler.py "$ROOT" >> butler_live.log 2>&1 &
+    disown
+    sleep 3
+    if pgrep -f butler.py > /dev/null; then echo "butler live on $H (background)"; else echo "WARN butler did not stay up - paste: tail -20 butler_live.log"; fi
+  fi
+  health
+else
+  echo "NOT GREEN (twins: $TWINS) - rollback if dirty, then relaunch proven butler"
+  if [ -n "$(git status --porcelain -- butler.py briefing.py wa.py cleaner.py)" ]; then
+    git checkout -- butler.py briefing.py wa.py cleaner.py
+    echo "   proven state restored."
+  else
+    echo "   working tree already clean - nothing to roll back."
+  fi
+  nohup cv_env/bin/python3 butler.py "$ROOT" >> butler_live.log 2>&1 &
+  disown
+  sleep 2
+  echo "proven butler relaunched on $(git rev-parse --short HEAD)"
+  echo "   paste the FAIL lines above; next patch starts clean."
+  exit 1
+fi
+'''
+lines = SHIP.split('\n')
+odd = [i+1 for i, l in enumerate(lines) if l.count('"') % 2 == 1]
+assert not odd, f'quote parity fail: {odd}'
+open('ship.sh.new', 'w').write(SHIP)
+os.chmod('ship.sh.new', 0o755)
+P = open('PROTOCOL.md').read()
+if 'quote-parity' not in P:
+    P = P.rstrip() + '\n10. Shell scripts must pass quote-parity: every line an even count of double quotes. fix-scripts assert this before staging any ship.sh rewrite; never rewrite ship.sh from inside a running ship.sh.\n'
+    open('PROTOCOL.md', 'w').write(P)
+print('✅ ship.sh.new staged, quote-parity clean; protocol rule 10 added')

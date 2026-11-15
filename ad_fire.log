@@ -1,0 +1,301 @@
+🌐 opening WhatsApp Web in the BUTLER window for +919536137308…
+📝 message is in the WhatsApp text field - review it in the opened window, then:
+📝 message is in the WhatsApp text field - the window STAYS open until you choose:
+   [s] I clicked send myself · [x] discard & clear · [q] leave in field & close · [Enter] keep waiting: ⚠️ whatsapp failed: EOF when reading a line
+🌐 opening WhatsApp Web in the BUTLER window for +919536137308…
+📝 message is in the WhatsApp text field - review it in the opened window, then:
+📝 message is in the WhatsApp text field - the window STAYS open until you choose:
+   [s] I clicked send myself · [x] discard & clear · [q] leave in field & close · [Enter] keep waiting: ⚠️ whatsapp failed: EOF when reading a line
+🌐 opening WhatsApp Web in the BUTLER window for +919536137308…
+📝 message is in the WhatsApp text field - review it in the opened window, then:
+📝 message is in the WhatsApp text field - the window STAYS open until you choose:
+   [s] I clicked send myself · [x] discard & clear · [q] leave in field & close · [Enter] keep waiting: ⚠️ whatsapp failed: EOF when reading a line
+🌐 opening WhatsApp Web in the BUTLER window for +917428662523…
+📝 draft in field - window STAYS open until you send (or 30 min idle)
+👋 window closed by you; retiring
+👋 wa-wait retired
+🌐 opening WhatsApp Web in the BUTLER window for +919536137308…
+📝 draft in field - window STAYS open until you send (or 30 min idle)
+👋 window closed by you; retiring
+👋 wa-wait retired
+🌐 opening WhatsApp Web in the BUTLER window for +919536137308…
+📝 draft in field - window STAYS open until you send (or 30 min idle)
+👋 window closed by you; retiring
+👋 wa-wait retired
+🌐 opening WhatsApp Web in the BUTLER window for +919536137308 ()…
+📝 draft in field - window STAYS open; your send slides it to the next queued chat
+👋 window closed by you; retiring (queued jobs will open a fresh window)
+👋 wa-wait retired
+🌐 opening WhatsApp Web in the BUTLER window for +919536137308 ()…
+📝 draft in field - window STAYS open; your send slides it to the next queued chat
+👋 window closed by you; retiring (queued jobs will open a fresh window)
+👋 wa-wait retired
+🌐 opening WhatsApp Web in the BUTLER window for +918409847741 ()…
+🌐 opening WhatsApp Web in the BUTLER window for +917428662523 ()…
+⚠️ wa-wait failed: BrowserType.launch_persistent_context: Opening in existing browser session. This usually means that the profile is already in use by another instance of Chromium.
+Call log:
+  - <launching> /Users/apple/Library/Caches/ms-playwright/chromium-1223/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --no-sandbox --user-data-dir=/Users/apple/CV_Tool/wa_profile --remote-debugging-pipe about:blank
+  - <launched> pid=45802
+  - [pid=45802][err] [45802:660203:1021/150845.667314:ERROR:chrome/browser/process_singleton_posix.cc:345] Failed to create /Users/apple/CV_Tool/wa_profile/SingletonLock: File exists (17)
+  - [pid=45802][out] Opening in existing browser session.
+  - [pid=45802] <gracefully close start>
+  - [pid=45802] <kill>
+  - [pid=45802] <will force kill>
+  - [pid=45802] exception while trying to kill process: Error: kill ESRCH
+  - [pid=45802] <process did exit: exitCode=0, signal=null>
+  - [pid=45802] starting temporary directories cleanup
+  - [pid=45802] finished temporary directories cleanup
+  - [pid=45802] <gracefully close end>
+
+👋 wa-wait retired
+📝 draft in field - window STAYS open; your send slides it to the next queued chat
+🌐 opening WhatsApp Web in the BUTLER window for +918448774317 ()…
+🌐 opening WhatsApp Web in the BUTLER window for +919536137308 ()…
+⚠️ wa-wait failed: BrowserType.launch_persistent_context: Opening in existing browser session. This usually means that the profile is already in use by another instance of Chromium.
+Call log:
+  - <launching> /Users/apple/Library/Caches/ms-playwright/chromium-1223/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --no-sandbox --user-data-dir=/Users/apple/CV_Tool/wa_profile --remote-debugging-pipe about:blank
+  - <launched> pid=49801
+  - [pid=49801][err] [49801:717566:1021/153020.667668:ERROR:chrome/browser/process_singleton_posix.cc:345] Failed to create /Users/apple/CV_Tool/wa_profile/SingletonLock: File exists (17)
+  - [pid=49801][out] Opening in existing browser session.
+  - [pid=49801] <gracefully close start>
+  - [pid=49801] <kill>
+  - [pid=49801] <will force kill>
+  - [pid=49801] exception while trying to kill process: Error: kill ESRCH
+  - [pid=49801] <process did exit: exitCode=0, signal=null>
+  - [pid=49801] starting temporary directories cleanup
+  - [pid=49801] finished temporary directories cleanup
+  - [pid=49801] <gracefully close end>
+
+👋 wa-wait retired
+📝 draft in field - window slides to new tags on arrival, or on your send
+👋 wa-wait retired
+🌐 opening WhatsApp Web in the BUTLER window for +918448774317 ()…
+📝 draft in field - window slides to new tags on arrival, or on your send
+👋 window closed by you; retiring (queued jobs open a fresh window)
+👋 wa-wait retired
+🌐 opening WhatsApp Web in the BUTLER window for +919625807315 ()…
+📝 draft in field - window slides to new tags on arrival, or on your send
+✅ field empty - sent by your hand; arming follow-up clock
+👋 no queued jobs; retiring gently
+👋 wa-wait retired
+🌐 opening WhatsApp Web in the BUTLER window for +919650546772 ()…
+📝 draft in field - window slides to new tags on arrival, or on your send
+👋 window closed by you; retiring (queued jobs open a fresh window)
+👋 wa-wait retired
+🌐 opening WhatsApp Web in the BUTLER window for +919650546772 ()…
+📝 draft in field - window slides to new tags on arrival, or on your send
+📝 previous draft parked as WhatsApp Draft for +919650546772; sliding to next
+➡️ same window, next chat: +919650546772 (Salil Agarwal)
+📝 next draft in field - send or close as you wish
+👋 window closed by you; retiring (queued jobs open a fresh window)
+👋 wa-wait retired
+🌐 opening WhatsApp Web in the BUTLER window for +919650546772 ()…
+⚡ warm browser connected - opening chat in seconds
+👋 wa-wait retired
+🌐 opening WhatsApp Web in the BUTLER window for +919650546772 ()…
+🐢 no warm browser yet - cold launch this once
+🧹 cleared stale field text before placing new draft
+📝 draft in field - window slides to new tags on arrival, or on your send
+👋 wa-wait retired
+🌐 opening WhatsApp Web in the BUTLER window for +918882194029 ()…
+⚡ warm browser connected - opening chat in seconds
+👋 wa-wait retired
+🌐 opening WhatsApp Web in the BUTLER window for +916281584249 ()…
+⚡ warm browser connected - opening chat in seconds
+👋 wa-wait retired
+🌐 opening WhatsApp Web in the BUTLER window for +917682824554 ()…
+⚡ warm browser connected - opening chat in seconds
+👋 wa-wait retired
+🌐 opening WhatsApp Web in the BUTLER window for +918882194029 ()…
+⚡ warm browser connected - opening chat in seconds
+👋 wa-wait retired
+🌐 opening WhatsApp Web in the BUTLER window for +919978918729 ()…
+Traceback (most recent call last):
+  File "/Users/apple/CV_Tool/ad_wait.py", line 89, in <module>
+    browser = pw.chromium.launch_persistent_context(os.path.join(BASE, 'wa_profile'), headless=False, no_viewport=True)
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/sync_api/_generated.py", line 16570, in launch_persistent_context
+    self._sync(
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/_impl/_sync_base.py", line 115, in _sync
+    return task.result()
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/_impl/_browser_type.py", line 166, in launch_persistent_context
+    result = await self._channel.send_return_as_dict(
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/_impl/_connection.py", line 83, in send_return_as_dict
+    return await self._connection.wrap_api_call(
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/_impl/_connection.py", line 559, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.Error: BrowserType.launch_persistent_context: Opening in existing browser session. This usually means that the profile is already in use by another instance of Chromium.
+Call log:
+  - <launching> /Users/apple/Library/Caches/ms-playwright/chromium-1223/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --no-sandbox --user-data-dir=/Users/apple/CV_Tool/wa_profile --remote-debugging-pipe about:blank
+  - <launched> pid=6018
+  - [pid=6018][out] Opening in existing browser session.
+  - [pid=6018] <gracefully close start>
+  - [pid=6018] <kill>
+  - [pid=6018] <will force kill>
+  - [pid=6018] exception while trying to kill process: Error: kill ESRCH
+  - [pid=6018] <process did exit: exitCode=0, signal=null>
+  - [pid=6018] starting temporary directories cleanup
+  - [pid=6018] finished temporary directories cleanup
+  - [pid=6018] <gracefully close end>
+
+🌐 opening WhatsApp Web in the BUTLER window for +917016104953 ()…
+⚡ warm browser connected - opening chat in seconds
+👋 wa-wait retired
+🌐 opening WhatsApp Web in the BUTLER window for +918198900945 ()…
+⚡ warm browser connected - opening chat in seconds
+👋 wa-wait retired
+🌐 opening WhatsApp Web in the BUTLER window for +917631800042 ()…
+⚡ warm browser connected - opening chat in seconds
+👋 wa-wait retired
+🌐 opening WhatsApp Web in the BUTLER window for +918675939598 ()…
+Traceback (most recent call last):
+  File "/Users/apple/CV_Tool/ad_wait.py", line 89, in <module>
+    browser = pw.chromium.launch_persistent_context(os.path.join(BASE, 'wa_profile'), headless=False, no_viewport=True)
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/sync_api/_generated.py", line 16570, in launch_persistent_context
+    self._sync(
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/_impl/_sync_base.py", line 115, in _sync
+    return task.result()
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/_impl/_browser_type.py", line 166, in launch_persistent_context
+    result = await self._channel.send_return_as_dict(
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/_impl/_connection.py", line 83, in send_return_as_dict
+    return await self._connection.wrap_api_call(
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/_impl/_connection.py", line 559, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.Error: BrowserType.launch_persistent_context: Opening in existing browser session. This usually means that the profile is already in use by another instance of Chromium.
+Call log:
+  - <launching> /Users/apple/Library/Caches/ms-playwright/chromium-1223/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --no-sandbox --user-data-dir=/Users/apple/CV_Tool/wa_profile --remote-debugging-pipe about:blank
+  - <launched> pid=87544
+  - [pid=87544][out] Opening in existing browser session.
+  - [pid=87544] <gracefully close start>
+  - [pid=87544] <kill>
+  - [pid=87544] <will force kill>
+  - [pid=87544] exception while trying to kill process: Error: kill ESRCH
+  - [pid=87544] <process did exit: exitCode=0, signal=null>
+  - [pid=87544] starting temporary directories cleanup
+  - [pid=87544] finished temporary directories cleanup
+  - [pid=87544] <gracefully close end>
+
+🌐 opening WhatsApp Web in the BUTLER window for +916374576040 ()…
+Traceback (most recent call last):
+  File "/Users/apple/CV_Tool/ad_wait.py", line 89, in <module>
+    browser = pw.chromium.launch_persistent_context(os.path.join(BASE, 'wa_profile'), headless=False, no_viewport=True)
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/sync_api/_generated.py", line 16570, in launch_persistent_context
+    self._sync(
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/_impl/_sync_base.py", line 115, in _sync
+    return task.result()
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/_impl/_browser_type.py", line 166, in launch_persistent_context
+    result = await self._channel.send_return_as_dict(
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/_impl/_connection.py", line 83, in send_return_as_dict
+    return await self._connection.wrap_api_call(
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/_impl/_connection.py", line 559, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.Error: BrowserType.launch_persistent_context: Opening in existing browser session. This usually means that the profile is already in use by another instance of Chromium.
+Call log:
+  - <launching> /Users/apple/Library/Caches/ms-playwright/chromium-1223/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --no-sandbox --user-data-dir=/Users/apple/CV_Tool/wa_profile --remote-debugging-pipe about:blank
+  - <launched> pid=91612
+  - [pid=91612][out] Opening in existing browser session.
+  - [pid=91612] <gracefully close start>
+  - [pid=91612] <kill>
+  - [pid=91612] <will force kill>
+  - [pid=91612] exception while trying to kill process: Error: kill ESRCH
+  - [pid=91612] <process did exit: exitCode=0, signal=null>
+  - [pid=91612] starting temporary directories cleanup
+  - [pid=91612] finished temporary directories cleanup
+  - [pid=91612] <gracefully close end>
+
+🌐 opening WhatsApp Web in the BUTLER window for +917397565420 ()…
+Traceback (most recent call last):
+  File "/Users/apple/CV_Tool/ad_wait.py", line 89, in <module>
+    browser = pw.chromium.launch_persistent_context(os.path.join(BASE, 'wa_profile'), headless=False, no_viewport=True)
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/sync_api/_generated.py", line 16570, in launch_persistent_context
+    self._sync(
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/_impl/_sync_base.py", line 115, in _sync
+    return task.result()
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/_impl/_browser_type.py", line 166, in launch_persistent_context
+    result = await self._channel.send_return_as_dict(
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/_impl/_connection.py", line 83, in send_return_as_dict
+    return await self._connection.wrap_api_call(
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/_impl/_connection.py", line 559, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.Error: BrowserType.launch_persistent_context: Opening in existing browser session. This usually means that the profile is already in use by another instance of Chromium.
+Call log:
+  - <launching> /Users/apple/Library/Caches/ms-playwright/chromium-1223/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --no-sandbox --user-data-dir=/Users/apple/CV_Tool/wa_profile --remote-debugging-pipe about:blank
+  - <launched> pid=91946
+  - [pid=91946][out] Opening in existing browser session.
+  - [pid=91946] <gracefully close start>
+  - [pid=91946] <kill>
+  - [pid=91946] <will force kill>
+  - [pid=91946] exception while trying to kill process: Error: kill EPERM
+  - [pid=91946] <process did exit: exitCode=0, signal=null>
+  - [pid=91946] starting temporary directories cleanup
+  - [pid=91946] finished temporary directories cleanup
+  - [pid=91946] <gracefully close end>
+
+🌐 opening WhatsApp Web in the BUTLER window for +918973788147 ()…
+Traceback (most recent call last):
+  File "/Users/apple/CV_Tool/ad_wait.py", line 89, in <module>
+    browser = pw.chromium.launch_persistent_context(os.path.join(BASE, 'wa_profile'), headless=False, no_viewport=True)
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/sync_api/_generated.py", line 16570, in launch_persistent_context
+    self._sync(
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/_impl/_sync_base.py", line 115, in _sync
+    return task.result()
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/_impl/_browser_type.py", line 166, in launch_persistent_context
+    result = await self._channel.send_return_as_dict(
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/_impl/_connection.py", line 83, in send_return_as_dict
+    return await self._connection.wrap_api_call(
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/_impl/_connection.py", line 559, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.Error: BrowserType.launch_persistent_context: Opening in existing browser session. This usually means that the profile is already in use by another instance of Chromium.
+Call log:
+  - <launching> /Users/apple/Library/Caches/ms-playwright/chromium-1223/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --no-sandbox --user-data-dir=/Users/apple/CV_Tool/wa_profile --remote-debugging-pipe about:blank
+  - <launched> pid=93394
+  - [pid=93394][out] Opening in existing browser session.
+  - [pid=93394] <gracefully close start>
+  - [pid=93394] <kill>
+  - [pid=93394] <will force kill>
+  - [pid=93394] exception while trying to kill process: Error: kill ESRCH
+  - [pid=93394] <process did exit: exitCode=0, signal=null>
+  - [pid=93394] starting temporary directories cleanup
+  - [pid=93394] finished temporary directories cleanup
+  - [pid=93394] <gracefully close end>
+
+🌐 opening WhatsApp Web in the BUTLER window for +919360566513 ()…
+🐢 no warm browser yet - cold launch this once
+🧹 cleared stale field text before placing new draft
+📝 draft in field - window slides to new tags on arrival, or on your send
+📝 previous draft parked as WhatsApp Draft for +919360566513; sliding to next
+➡️ same window, next chat: +916379912307 (Yogeshwaran K)
+🧹 cleared stale field text before placing slid draft
+📝 next draft in field - send or close as you wish
+👋 window closed by you; retiring (queued jobs open a fresh window)
+👋 wa-wait retired
+🌐 opening WhatsApp Web in the BUTLER window for +918428264599 ()…
+Traceback (most recent call last):
+  File "/Users/apple/CV_Tool/ad_wait.py", line 89, in <module>
+    browser = pw.chromium.launch_persistent_context(os.path.join(BASE, 'wa_profile'), headless=False, no_viewport=True)
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/sync_api/_generated.py", line 16570, in launch_persistent_context
+    self._sync(
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/_impl/_sync_base.py", line 115, in _sync
+    return task.result()
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/_impl/_browser_type.py", line 166, in launch_persistent_context
+    result = await self._channel.send_return_as_dict(
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/_impl/_connection.py", line 83, in send_return_as_dict
+    return await self._connection.wrap_api_call(
+  File "/Users/apple/CV_Tool/cv_env/lib/python3.9/site-packages/playwright/_impl/_connection.py", line 559, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.Error: BrowserType.launch_persistent_context: Opening in existing browser session. This usually means that the profile is already in use by another instance of Chromium.
+Call log:
+  - <launching> /Users/apple/Library/Caches/ms-playwright/chromium-1223/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,BoundaryEventDispatchTracksNodeRemoval,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,Translate,AutoDeElevate,RenderDocument,OptimizationHints,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --no-sandbox --user-data-dir=/Users/apple/CV_Tool/wa_profile --remote-debugging-pipe about:blank
+  - <launched> pid=69098
+  - [pid=69098][out] Opening in existing browser session.
+  - [pid=69098] <gracefully close start>
+  - [pid=69098] <kill>
+  - [pid=69098] <will force kill>
+  - [pid=69098] exception while trying to kill process: Error: kill ESRCH
+  - [pid=69098] <process did exit: exitCode=0, signal=null>
+  - [pid=69098] starting temporary directories cleanup
+  - [pid=69098] finished temporary directories cleanup
+  - [pid=69098] <gracefully close end>
+
+🌐 opening WhatsApp Web in the BUTLER window for +916303466989 ()…
+⚡ warm browser connected - opening chat in seconds
+👋 wa-wait retired

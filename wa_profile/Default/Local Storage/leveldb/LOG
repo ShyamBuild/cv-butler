@@ -1,0 +1,15 @@
+2026/11/13-21:06:06.190 48e7 Reusing MANIFEST /Users/apple/CV_Tool/wa_profile/Default/Local Storage/leveldb/MANIFEST-000001
+2026/11/13-21:06:06.258 48e7 Recovering log #246
+2026/11/13-21:06:06.264 48e7 Reusing old log /Users/apple/CV_Tool/wa_profile/Default/Local Storage/leveldb/000246.log 
+2026/11/13-21:46:32.804 48f6 Level-0 table #250: started
+2026/11/13-21:46:32.851 48f6 Level-0 table #250: 15044 bytes OK
+2026/11/13-21:46:32.864 48f6 Delete type=0 #246
+2026/11/13-21:46:32.875 48e7 Compacting 4@0 + 1@1 files
+2026/11/13-21:46:32.906 48e7 Generated table #251@0: 2881 keys, 145034 bytes
+2026/11/13-21:46:32.906 48e7 Compacted 4@0 + 1@1 files => 145034 bytes
+2026/11/13-21:46:32.907 48e7 compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/11/13-21:46:32.909 48e7 Delete type=2 #240
+2026/11/13-21:46:32.909 48e7 Delete type=2 #243
+2026/11/13-21:46:32.909 48e7 Delete type=2 #247
+2026/11/13-21:46:32.909 48e7 Delete type=2 #250
+2026/11/13-21:46:32.909 48e7 Delete type=2 #245

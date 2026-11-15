@@ -1,0 +1,6 @@
+2026/11/13-11:19:07.771 5b33 Creating DB /Users/apple/CV_Tool/wa_profile/Default/WebStorage/6/IndexedDB/indexeddb.leveldb since it was missing.
+2026/11/13-11:19:07.774 5b33 Reusing MANIFEST /Users/apple/CV_Tool/wa_profile/Default/WebStorage/6/IndexedDB/indexeddb.leveldb/MANIFEST-000001
+2026/11/13-11:19:09.869 5b33 Level-0 table #5: started
+2026/11/13-11:19:09.870 5b33 Level-0 table #5: 397 bytes OK
+2026/11/13-11:19:09.875 5b33 Delete type=0 #3
+2026/11/13-11:19:09.875 5b33 Manual compaction at level-0 from (begin) .. (end); will stop at (end)

@@ -1,0 +1,4 @@
+cv_env/
+__pycache__/
+*.pdf
+archive/dump.txt

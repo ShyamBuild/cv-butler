@@ -1,0 +1,161 @@
+
+# 2026-11-09 12:16:07.812550
++Yes
+
+# 2026-11-09 12:20:32.867648
++N
+
+# 2026-11-09 12:20:42.281371
++Yes
+
+# 2026-11-09 12:21:12.003878
++N
+
+# 2026-11-09 12:34:54.704567
++/add butler.py ship.sh PROTOCOL.md archive/patches/fix_v488_feature.py
++Read CONVENTIONS.md and PROTOCOL.md. Execute: ./ship.sh "v85.101: pure naming brain, fixtures in gate, FAIL-LOUD relocated" archive/patches/fix_v488_feature.py — on crash or gate FAIL, repair ONLY that patch file against the traceback / FAIL WHY line and re-run; never hand-edit butler.py, never change intent. After a green commit: create .github/workflows/gate.yml (on push: ubuntu-latest, setup-python 3.11, pip install pypdf watchdog, run python -m py_compile butler.py briefing.py wa.py, then python -c "import butler; assert butler._acceptance_ok()"), append the standing laws from CONVENTIONS.md to PROTOCOL.md, then run ./ship.sh "ci gate + protocol laws" with no patch argument. Push and print the final commit SHA.
+
+# 2026-11-09 12:39:13.150972
++N
+
+# 2026-11-09 12:49:46.500787
++/add butler.py ship.sh PROTOCOL.md archive/patches/fix_v488_feature.py
+
+# 2026-11-09 12:50:22.055173
++/read CONVENTIONS.md
+
+# 2026-11-09 12:50:40.937328
++Please execute ./ship.sh "v85.101: pure naming brain, fixtures in gate, FAIL-LOUD relocated" archive/patches/fix_v488_feature.py ; on crash or gate FAIL repair ONLY that patch file against the traceback or FAIL WHY line and re-run ; never hand-edit butler.py ; never change intent ; after a green commit create .github/workflows/gate.yml (on push: ubuntu-latest, setup-python 3.11, pip install pypdf watchdog, python -m py_compile butler.py briefing.py wa.py, then python -c "import butler; assert butler._acceptance_ok()") , append the standing laws from CONVENTIONS.md to PROTOCOL.md , run ./ship.sh "ci gate + protocol laws" with no patch argument , push , and print the final commit SHA.
+
+# 2026-11-09 12:55:04.577798
++Y
+
+# 2026-11-09 12:59:29.130627
++N
+
+# 2026-11-09 12:59:34.721923
++/drop butler.py
+
+# 2026-11-09 12:59:43.435516
++/drop briefing.py
+
+# 2026-11-09 12:59:51.153442
++/drop wa.py
+
+# 2026-11-09 13:00:03.936311
++/add archive/fix_v488_feature.py
+
+# 2026-11-09 13:06:09.754503
++/add notes/fix_v488_feature.py
+
+# 2026-11-09 13:06:31.545115
++Please execute ./ship.sh "v85.101: pure naming brain, fixtures in gate, FAIL-LOUD relocated" notes/fix_v488_feature.py ; on crash or gate FAIL repair ONLY notes/fix_v488_feature.py against the traceback or FAIL WHY line and re-run ; never hand-edit butler.py ; never change intent ; repeat until ship.sh commits ALL GREEN ; then stop and print the commit SHA.
+
+# 2026-11-09 13:10:15.966961
++D
+
+# 2026-11-09 13:26:51.461791
++/add ship.sh PROTOCOL.md notes/fix_v488_feature.py
+
+# 2026-11-09 13:27:07.794201
++/read CONVENTIONS.md
+
+# 2026-11-09 13:30:49.475335
++Please execute ./ship.sh "v85.101: pure naming brain, fixtures in gate, FAIL-LOUD relocated" notes/fix_v488_feature.py ; on crash or gate FAIL repair ONLY notes/fix_v488_feature.py against the traceback or FAIL WHY line and re-run ; never hand-edit butler.py ; never change intent ; repeat until ship.sh commits ALL GREEN ; then stop and print the commit SHA.
+
+# 2026-11-09 13:31:11.540255
++D
+
+# 2026-11-09 14:07:32.149005
++/add ship.sh PROTOCOL.md notes/fix_v488_feature.py
+
+# 2026-11-09 14:07:41.454695
++/read CONVENTIONS.md
+
+# 2026-11-09 14:07:50.543572
++Please execute ./ship.sh "v85.101: pure naming brain, fixtures in gate, FAIL-LOUD relocated" notes/fix_v488_feature.py ; on crash or gate FAIL repair ONLY notes/fix_v488_feature.py against the traceback or FAIL WHY line and re-run ; never hand-edit butler.py ; never change intent ; repeat until ship.sh commits ALL GREEN ; then stop and print the commit SHA.
+
+# 2026-11-09 14:07:56.430045
++D
+
+# 2026-11-09 14:20:43.151706
++/add ship.sh PROTOCOL.md notes/fix_v488_feature.py
+
+# 2026-11-09 14:20:52.371746
++/read CONVENTIONS.md
+
+# 2026-11-09 14:21:03.783060
++Please execute ./ship.sh "v85.101: pure naming brain, fixtures in gate, FAIL-LOUD relocated" notes/fix_v488_feature.py ; on crash or gate FAIL repair ONLY notes/fix_v488_feature.py with small search/replace edits against the traceback or FAIL WHY line and re-run ; never rewrite the whole file ; never hand-edit butler.py ; never change intent ; repeat until ship.sh commits ALL GREEN ; then stop and print the commit SHA.
+
+# 2026-11-09 14:21:11.490795
++D
+
+# 2026-11-09 14:29:42.166274
++Please run ./ship.sh "v85.101: pure naming brain, fixtures in gate, FAIL-LOUD relocated" notes/fix_v488_feature.py now, show the complete output, and if it crashes or the gate FAILs repair ONLY notes/fix_v488_feature.py with small search/replace edits against the traceback or FAIL WHY line and re-run, repeating until ship.sh commits ALL GREEN; then print the commit SHA.
+
+# 2026-11-09 14:35:55.262205
++/run ./ship.sh "v85.101: pure naming brain, fixtures in gate, FAIL-LOUD relocated" notes/fix_v488_feature.py
+
+# 2026-11-09 14:39:26.981926
++Y
+
+# 2026-11-09 14:40:40.641180
++/run ./ship.sh "v85.101: pure naming brain, fixtures in gate, FAIL-LOUD relocated" notes/fix_v488_feature.py
+
+# 2026-11-09 14:53:37.769889
++N
+
+# 2026-11-09 15:13:24.593706
++/run ./ship.sh "v85.101: pure naming brain, fixtures in gate, FAIL-LOUD relocated" notes/fix_v488_feature.py
+
+# 2026-11-10 11:24:47.885310
++Y
+
+# 2026-11-10 11:25:05.984333
++cd ~/CV_Tool && cat > notes/fix_v489_feature.py << 'PYEOF'
++import sys, os
++sys.path.insert(0, os.path.join(os.getcwd(), 'archive'))
++import patchlib as P
++done = []
++M0 = P.perfile()
++B = P.read()
++s40 = next((k for k, l in enumerate(B) if l.strip().startswith("ck('S440 ")), None)
++if s40 is not None and not any(l.strip().startswith("ck('S441 ") for l in B):
++    d = P.ind(B[s40])
++    B.insert(s40+1, d*' ' + "ck('S441 the eye may name but never rename - authority rests with the trained gates and the master'+chr(39)+'s hand', (chr(35)+' EYES-PROPOSE-ONLY v85.98') in _src)")
++    B.insert(s40+2, d*' ' + "ck('S441B no background sweep renames from eye text', _src.count('os.rename(p, ' + '_q3)') == 0)")
++    B.insert(s40+3, d*' ' + "ck('S441C no service renames from eye text, only proposes', _src.count('os.rename(p, ' + 'q2)') == 0 and ('service proposes:' in _src))")
++    done.append('s441-trio')
++ls = next((k for k, l in enumerate(B) if l.strip().startswith('_lines = [re.split') and 'NAME-JOIN' in l), None)
++le = next((k for k, l in enumerate(B) if l.strip().startswith('if not fl and _lines: fl = _lines[0]')), None)
++if ls is not None and le is not None and le > ls:
++    d = P.ind(B[ls])
++    B[ls:le+1] = [d*' ' + "fl = _name_from_head_lines(t.split('\\n'))  # NAME-SCAN v85.95  # NAME-JOIN v85.98 (delegated v85.102): one naming law in one place - the eye asks the fixture-tested brain and keeps only its answer"]
++    done.append('eyename-delegates')
++k = next((i for i, l in enumerate(B) if l.strip().startswith("ck('S447 ")), None)
++if k is not None:
++    d = P.ind(B[k]); B[k] = d*' ' + "ck('S447 one naming law lives in one pure function, and the eye delegates to it', _src.count('def _name_from_head_lines(') == 1 and _src.count('_name_from_head_lines(' + 't.split') >= 1)"; done.append('s447-devacuated')
++lost = P.preflight(B, M0)
++if lost:
++    print('⛔ preflight markers would be lost:', sorted(lost)); raise SystemExit('fix before write')
++P.write(B); P.witness(M0)
++AR = os.path.join(os.getcwd(), 'ARCHITECTURE.md')
++t = open(AR).read()
++if 'v85.102' not in t:
++    open(AR, 'a').write('v85.102: the eye delegates to the fixture-tested brain so one naming law lives in one place; S441 trio pins propose-only structurally; S447 and S448 spell probes by concatenation so no guard can ever certify its own text (S448)\n')
++    done.append('arch-line')
++src = '\n'.join(B)
++def anch(*nd):
++    for x in nd:
++        hit = [k for k, l in enumerate(B) if x in l]
++        if hit: return hit[-1]
++    return None
++GU = [("'S448 a guard never certifies its own text", "'S447 one naming law lives in one pure function, and the eye delegates to it", "ck('S448 a guard never certifies its own text', _src.count('_name_from_head_lines(' + 't.split') >= 1 and (chr(35)+' delegated v85.102') in _src)")]
++for needle, fb, line in GU:
++    if needle not in src:
++        i = anch(needle, fb, "'S215 a lock must prove its holder lives before it names the world")
++        if i is None: raise SystemExit('anchor missing for ' + needle)
++        d = P.ind(B[i]); B.insert(i+1, d*' ' + line); done.append(needle.split()[0].strip("'") + '-guard')
++P.write(B)
++print('✅', done)
++PYEOF
