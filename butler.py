@@ -1502,19 +1502,6 @@ def _say_once(m):  # GONE-ONCE v85.82: a ghost is announced once, then rests - t
     _SAID_ONCE.add(m)
     print(m)
 
-    if len(sys.argv) > 1 and sys.argv[1] in ('why', 'diag', 'state', 'summary_template', 'unlock'):  # VERB-LOCKFREE v85.144: hands answer before the watch's lock is consulted
-        _v, _a = sys.argv[1], sys.argv[2:]
-        if _v in ('why', 'diag'):
-            for _p in _a: print(_p, '->', repr(_eyename_of(_p, trace=True))[:110])
-        elif _v == 'state':
-            import json as _sj; print(_sj.dumps({'locks': [f for f in os.listdir(BASE_DIR) if f.startswith('butler_') and f.endswith('.lock')], 'lock_book': _sj.load(open('name_locks.json')) if os.path.exists('name_locks.json') else [], 'cache_entries': len(_sj.load(open('.eyename.json'))) if os.path.exists('.eyename.json') else 0}))
-        elif _v == 'summary_template':
-            import summary_builder as _sbm; print(_sbm._summary_template_for(_a))
-        elif _v == 'unlock':
-            import json as _sj2; _lk = 'name_locks.json'
-            _d = _sj2.load(open(_lk)) if os.path.exists(_lk) else []
-            _sj2.dump([x for x in _d if x not in _a], open(_lk, 'w')); print('unlocked:', [x for x in _d if x in _a])
-        sys.exit(0)
 def _lock_root():  # LOCK-ROOT v85.54: when a verb is called from a folder that is not a desk, the live lock names the desk the house is actually serving
     try:
         for fn in os.listdir(BASE_DIR):
@@ -4284,6 +4271,19 @@ def main():
             if _fn: _fn(_kw, _pl_root(), print)
             else: print('🤷 voice missing: ' + _v)
         sys.exit(0)
+    if len(sys.argv) > 1 and sys.argv[1] in ('why', 'diag', 'state', 'summary_template', 'unlock'):  # VERB-LOCKFREE v85.144: hands answer before the watch's lock is consulted
+        _v, _a = sys.argv[1], sys.argv[2:]
+        if _v in ('why', 'diag'):
+            for _p in _a: print(_p, '->', repr(_eyename_of(_p, trace=True))[:110])
+        elif _v == 'state':
+            import json as _sj; print(_sj.dumps({'locks': [f for f in os.listdir(BASE_DIR) if f.startswith('butler_') and f.endswith('.lock')], 'lock_book': _sj.load(open('name_locks.json')) if os.path.exists('name_locks.json') else [], 'cache_entries': len(_sj.load(open('.eyename.json'))) if os.path.exists('.eyename.json') else 0}))
+        elif _v == 'summary_template':
+            import summary_builder as _sbm; print(_sbm._summary_template_for(_a))
+        elif _v == 'unlock':
+            import json as _sj2; _lk = 'name_locks.json'
+            _d = _sj2.load(open(_lk)) if os.path.exists(_lk) else []
+            _sj2.dump([x for x in _d if x not in _a], open(_lk, 'w')); print('unlocked:', [x for x in _d if x in _a])
+        sys.exit(0)
     root = _lock_root() or (desk_load() or {}).get('primary') or root  # LOCK-ROOT v85.54 + desk-book fallback v85.63: a dead watcher takes its lock to the grave, but the desk remembers its own primary
     if not os.path.isdir(root):
         print("Error: folder does not exist."); sys.exit(1)
@@ -5206,7 +5206,7 @@ def _selftest(root):
         pass  # S491
         _dw2 = _act_wrap('dummy2', _dummy_door)
         ck('S492 the wrapper wears its wrapped before any call', hasattr(_dw2, '__wrapped__') and _dw2.__wrapped__ is _dummy_door)  # PROOF-CURE v85.141
-        ck('S502 hands answer before the watch lock', (chr(35)+' VERB-LOCKFREE v85.' + '145') in _src and _src.find('def main():') < _src.find('VERB-LOCKFREE v85.144: hands answer') < _src.find(chr(35)+' LOCK-ROOT v85.54'))
+        ck('S502 hands answer before the watch lock', (chr(35)+' VERB-LOCKFREE v85.' + '147') in _src and 0 < (next(j for j, x in enumerate(_src.split(chr(10))) if 'LOCK-ROOT v85.54 + desk-book fallback' in x) - next(j for j, x in enumerate(_src.split(chr(10))) if x.startswith('    if len(sys.argv) > 1 and sys.argv[1] in (' + chr(39) + 'why' + chr(39)))) < 20)  # adjacency-pinned v85.147: the door stands within twenty lines above the desk-book wall, inside main()
     ck('S330 a stale skip is re-found by name, so the tray never starves', (chr(35)+' RETRAY-RESOLVE v85.1') in _src)
     ck('S331 the tray names its members whenever it is not empty', (chr(35)+' TRAY-NAMES v85.1') in _src)
     ck('S332 the deed speaks once, in one line, and silence never swallows a warning', (chr(35)+' CINE-LINE v85.1') in _src and ('lambda *a, **k: None' in _src))
