@@ -1502,6 +1502,19 @@ def _say_once(m):  # GONE-ONCE v85.82: a ghost is announced once, then rests - t
     _SAID_ONCE.add(m)
     print(m)
 
+    if len(sys.argv) > 1 and sys.argv[1] in ('why', 'diag', 'state', 'summary_template', 'unlock'):  # VERB-LOCKFREE v85.144: hands answer before the watch's lock is consulted
+        _v, _a = sys.argv[1], sys.argv[2:]
+        if _v in ('why', 'diag'):
+            for _p in _a: print(_p, '->', repr(_eyename_of(_p, trace=True))[:110])
+        elif _v == 'state':
+            import json as _sj; print(_sj.dumps({'locks': [f for f in os.listdir(BASE_DIR) if f.startswith('butler_') and f.endswith('.lock')], 'lock_book': _sj.load(open('name_locks.json')) if os.path.exists('name_locks.json') else [], 'cache_entries': len(_sj.load(open('.eyename.json'))) if os.path.exists('.eyename.json') else 0}))
+        elif _v == 'summary_template':
+            import summary_builder as _sbm; print(_sbm._summary_template_for(_a))
+        elif _v == 'unlock':
+            import json as _sj2; _lk = 'name_locks.json'
+            _d = _sj2.load(open(_lk)) if os.path.exists(_lk) else []
+            _sj2.dump([x for x in _d if x not in _a], open(_lk, 'w')); print('unlocked:', [x for x in _d if x in _a])
+        sys.exit(0)
 def _lock_root():  # LOCK-ROOT v85.54: when a verb is called from a folder that is not a desk, the live lock names the desk the house is actually serving
     try:
         for fn in os.listdir(BASE_DIR):
@@ -1891,19 +1904,6 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
  except Exception as _ce:
   log('⚠️ service crashed on %s: %r' % (os.path.basename(p), _ce))  # DRAIN-ARMOR v85.92
 def restore_dups():  # RESTORE-DUPS v85.79: carry every parked paper home through remembered addresses - space-safe, parking-lot-skipping, every decision spoken, only true orphans left for the master's hand
-    if len(sys.argv) > 1 and sys.argv[1] in ('why', 'diag', 'state', 'summary_template', 'unlock'):  # VERB-LOCKFREE v85.144: hands answer before the watch's lock is consulted
-        _v, _a = sys.argv[1], sys.argv[2:]
-        if _v in ('why', 'diag'):
-            for _p in _a: print(_p, '->', repr(_eyename_of(_p, trace=True))[:110])
-        elif _v == 'state':
-            import json as _sj; print(_sj.dumps({'locks': [f for f in os.listdir(BASE_DIR) if f.startswith('butler_') and f.endswith('.lock')], 'lock_book': _sj.load(open('name_locks.json')) if os.path.exists('name_locks.json') else [], 'cache_entries': len(_sj.load(open('.eyename.json'))) if os.path.exists('.eyename.json') else 0}))
-        elif _v == 'summary_template':
-            import summary_builder as _sbm; print(_sbm._summary_template_for(_a))
-        elif _v == 'unlock':
-            import json as _sj2; _lk = 'name_locks.json'
-            _d = _sj2.load(open(_lk)) if os.path.exists(_lk) else []
-            _sj2.dump([x for x in _d if x not in _a], open(_lk, 'w')); print('unlocked:', [x for x in _d if x in _a])
-        sys.exit(0)
     root = _lock_root() or (desk_load() or {}).get('primary') or os.getcwd()
     dd = os.path.join(root, '__duplicates')
     if not os.path.isdir(dd):
@@ -5206,7 +5206,7 @@ def _selftest(root):
         pass  # S491
         _dw2 = _act_wrap('dummy2', _dummy_door)
         ck('S492 the wrapper wears its wrapped before any call', hasattr(_dw2, '__wrapped__') and _dw2.__wrapped__ is _dummy_door)  # PROOF-CURE v85.141
-        ck('S502 hands answer before the watch lock', (chr(35)+' VERB-LOCKFREE v85.' + '144') in _src and 0 <= _src.find('VERB-LOCKFREE v85.144: hands answer') < _src.find('root = _lock_root() or'))
+        ck('S502 hands answer before the watch lock', (chr(35)+' VERB-LOCKFREE v85.' + '145') in _src and _src.find('def main():') < _src.find('VERB-LOCKFREE v85.144: hands answer') < _src.find(chr(35)+' LOCK-ROOT v85.54'))
     ck('S330 a stale skip is re-found by name, so the tray never starves', (chr(35)+' RETRAY-RESOLVE v85.1') in _src)
     ck('S331 the tray names its members whenever it is not empty', (chr(35)+' TRAY-NAMES v85.1') in _src)
     ck('S332 the deed speaks once, in one line, and silence never swallows a warning', (chr(35)+' CINE-LINE v85.1') in _src and ('lambda *a, **k: None' in _src))
