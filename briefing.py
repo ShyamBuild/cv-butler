@@ -971,7 +971,7 @@ def do_missed(arg, root, say=print, ask=None, words=None):
         try:
             import wa
             _sent = wa.send_review(ph0, text, say, ask=ask)
-            if not _sent:
+            if not _sent and (getattr(wa, 'LAST_FAIL', ['']) or [''])[0] != 'lock':  # WHATSAPP-FALLBACK v85.149  # LOCK-QUIET v85.150: a held profile is not a dead number - the next witness is never dialled on a lock
                 _phones = butler.phones_of(f['path'], quiet=True) or []  # WHATSAPP-FALLBACK v85.149: a dead number hands the draft to the next witness in silence
                 if ph0 in _phones:
                     _idx = _phones.index(ph0)

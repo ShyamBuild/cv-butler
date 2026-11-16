@@ -16,13 +16,29 @@ def _pw():  # ONE-START v85.30: playwright is started once per process and share
         _PW[0] = sync_playwright().start()
     return _PW[0]
 
+LAST_FAIL = ['']  # EPIPE-INPROC v85.150: the door's last refusal in one word - 'lock' when Chrome held the profile, 'dead' when WhatsApp said the number is not there
+
+
+class WaBusy(RuntimeError):  # PROFILE-LOCK v85.150: a held profile is a sentence the master can act on, never a traceback
+    pass
+
+
+def _lock_words(e):  # PROFILE-LOCK v85.150: the shapes playwright wears when another Chrome already owns wa_profile
+    t = ('%r' % (e,)).lower()
+    return any(w in t for w in ('processsingleton', 'singletonlock', 'already in use', 'is already running', 'profile directory', 'user data directory'))
+
+
 def _ctx():
     if 'ctx' not in _state:
-        from playwright.sync_api import sync_playwright
         pw = _pw()
-        ctx = pw.chromium.launch_persistent_context(
-            PROFILE, headless=False, viewport={"width": 1280, "height": 900},
-            args=["--disable-blink-features=AutomationControlled"])
+        try:
+            ctx = pw.chromium.launch_persistent_context(
+                PROFILE, headless=False, viewport={"width": 1280, "height": 900},
+                args=["--disable-blink-features=AutomationControlled"])
+        except Exception as e:  # PROFILE-LOCK v85.150: Chrome is already open on wa_profile - catch it, name the cure, never crash the chat
+            if _lock_words(e):
+                raise WaBusy('🔒 Chrome is already holding the WhatsApp window (profile lock on wa_profile). Close that Chrome window, then repeat the same command - nothing was sent, nothing was lost.') from None
+            raise
         _state['pw'] = pw; _state['ctx'] = ctx
     return _state['ctx']
 
@@ -57,6 +73,19 @@ def _click_send(page):
             continue
     return False
 
+def wa_goto(phone, say=print):  # WA-GOTO v85.150: the prep door the seat already calls - digits only, and honest when the window refuses
+    try:
+        ctx = _ctx()
+        page = ctx.pages[0] if ctx.pages else ctx.new_page()
+        url = 'https://web.whatsapp.com/send?phone=' + re.sub(r'\D', '', str(phone))
+        return _goto(page, url, say)
+    except WaBusy as e:  # PROFILE-LOCK v85.150: the master's cure, not a traceback
+        say(str(e))
+        return False
+    except Exception as e:
+        say(f'⚠️ wa_goto failed for phone {phone}: {e}')
+        return False
+
 def _goto(page, url, say=print):
     for a in (0, 1):
         try:
@@ -69,6 +98,32 @@ def _goto(page, url, say=print):
 AUTOSEND = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates', '.autosend')
 
 COMPOSE_SELS = ('footer div[contenteditable="true"][data-tab="10"]', 'footer div[contenteditable="true"][data-lexical-editor="true"]', 'footer div[contenteditable="true"]', 'footer div[contenteditable="true"]')
+
+def _composer_ready(page, timeout=30000):  # COMPOSER-WAIT v85.150: the field is waited for as a visible truth, so a slow load never wears the coat of a dead number
+    for sel in COMPOSE_SELS:
+        try:
+            page.wait_for_selector(sel, state='visible', timeout=timeout)
+            return sel
+        except Exception:
+            continue
+    return ''
+
+
+def _no_wa_modal(page):  # NOT-ON-WHATSAPP v81.90  # MODAL-CONFIRM v85.150: only a VISIBLE dialog may pronounce a number absent - a hidden template that merely carries the words is not a verdict
+    try:
+        loc = page.get_by_text("isn't on WhatsApp", exact=False)
+        total = loc.count()
+    except Exception:
+        return False
+    for _i in range(min(total, 6)):
+        try:
+            if loc.nth(_i).is_visible():
+                return True
+        except Exception:
+            continue
+    return False
+
+
 def _place_text(page, text, say=print):
     for attempt in (0, 1, 2):
         try:
@@ -158,17 +213,13 @@ def watest(say=print):  # WA-STEP v85.29: each door of the ritual opened in orde
     say('watest complete - the window stays open for the next send')
     return bool(ok)
 
-def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  # POLICY-RESET v85.25  # QUIET-ASYNCIO v85.28  # WA-DIAG v85.28 (retired v85.29: the DIAG traceback proved the shadow silenced playwright's own heartbeat inside its fiber; the laws rest here as witnesses, their guards repinned)
-    try:
-        import asyncio as _a
-    except Exception:
-        pass
+def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  # POLICY-RESET v85.25  # QUIET-ASYNCIO v85.28  # WA-DIAG v85.28 (retired v85.29: the DIAG traceback proved the shadow silenced playwright's own heartbeat inside its fiber; the laws rest here as witnesses, their guards repinned)  # DRAFT-ONLY v85.150: the text is placed in the field and the ritual ends there - the send column belongs to the master alone
     digits = re.sub(r'\D', '', str(phone))
     if len(digits) == 10: digits = '91' + digits
     say(f"🌐 opening WhatsApp Web in the BUTLER window for +{digits}…")
     pw = _pw()
-    browser = None
     page = None
+    browser = None  # the shared door is never queried as an owned browser
     via_cdp = False
     try:
         try:
@@ -176,7 +227,6 @@ def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  #
             _ctx2 = _door.contexts[0] if _door.contexts else _door.new_context()
             page = _ctx2.new_page()
             via_cdp = True
-            browser = None
         except Exception:
             ctx = _ctx()  # PERSISTENT-WA v84.38: reuse the living window instead of launching and closing one per draft
             page = ctx.pages[0] if ctx.pages else ctx.new_page()
@@ -197,71 +247,43 @@ def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  #
             except Exception:
                 pass
         say('⏳ waiting for the composer - the window is loading, not hung')  # WAIT-SAY v85.45: a slow load reads as work in progress, never as a corpse
-        try:
-            try:  # EARLY-DOOR v81.92: ask WhatsApp within the first beats, not after the placement wait - poll four seconds for the modal or the field, whichever speaks first (inserted before the modal-check if, at its own indent; the late path stays as fallback)
-                for _i in range(48):  # MODAL-WATCH v81.98: the door is asked until it answers - twenty-four beats, not four; the modal confesses, the composer releases, and only true ambiguity pays the full count
-                    _html = page.content() or ''
-                    if "isn't on WhatsApp" in _html:
-                        say('⚠️ WhatsApp says this number isn\'t on WhatsApp - nothing drafted; teach or re-pick a number that is registered, or close the window whenever you like')
-                        return False
-                    try:
-                        if page.locator('footer div[contenteditable="true"]').count() > 0: break
-                    except Exception: break
-                    page.wait_for_timeout(500)
-            except Exception:
-                pass
-            if "isn't on WhatsApp" in (page.content() or ''):
-                say('⚠️ WhatsApp says this number is not registered - nothing drafted. Correct it with: fixphone <name> <10-digit>')
-                return False
+        try:  # EARLY-DOOR v81.92: ask WhatsApp within the first beats, not after the placement wait - poll for the modal or the field, whichever speaks first
+            for _i in range(48):  # MODAL-WATCH v81.98: the door is asked until it answers - twenty-four beats, not four; the modal confesses, the composer releases, and only true ambiguity pays the full count
+                if _no_wa_modal(page):
+                    say('⚠️ WhatsApp says this number isn\'t on WhatsApp - nothing drafted; teach or re-pick a number that is registered')
+                    LAST_FAIL[0] = 'dead'  # NOT-ON-WHATSAPP v81.90: WhatsApp's own visible words beat any guess
+                    return False
+                try:
+                    if page.locator('footer div[contenteditable="true"]').count() > 0: break
+                except Exception:
+                    pass
+                page.wait_for_timeout(500)
         except Exception:
             pass
+        box = _composer_ready(page, timeout=30000)  # COMPOSER-WAIT v85.150: the field is waited for as a visible truth before any verdict is spoken
+        if not box:
+            say('⚠️ the message field never appeared - the window is not ready; nothing was typed, nothing was sent')
+            return False
         ok_fill = _place_text(page, text, say)
         if not ok_fill:
-            _notwa = False  # CONCISE v81.91: the paste advice is wrong when WhatsApp has already said there is no field
-            try:  # NOT-ON-WHATSAPP v81.90: WhatsApp's own words beat any guess - say them plainly before advising a paste into a field that does not exist
-                if "isn't on WhatsApp" in (page.content() or ''):
-                    say('⚠️ WhatsApp says this number isn\'t on WhatsApp - there is no message field to paste into; [x] discards this round, [q] closes it, or teach/re-pick a number that is registered')
-                    _r = input('   [x] discard this round · [q] close the window · [Enter] keep it open, then teach or re-pick: ').strip().lower()  # NO-FIELD-EXIT v81.94: a dead number ends the round with ONE menu; the paste-advice never speaks after a no-field confession
-                    if _r == 'q':
-                        try: page.close()
-                        except Exception: pass
-                    return False
-                    _notwa = True
-            except Exception: pass
-            if not _notwa: say('⚠️ field did not take the text automatically - paste the draft from above into the WhatsApp field yourself, then:')
-        if os.path.exists(AUTOSEND):
-            sent = _click_send(page)
-            say('✅ sent via WhatsApp Web (autosend)' if sent else '⚠️ send-button not found - click send yourself in the WA window')
-            if sent: _arm(digits, text)
-            return bool(sent)
-        say("📝 message is in the WhatsApp text field - the window STAYS open until you choose:")
-        while True:
-            _pm = '[s] I clicked send myself · [x] discard & clear · [q] leave in field & close · [Enter] keep waiting: '  # FLUSH-CUE v85.14
-            c = (ask(_pm).strip().lower() if ask else _key(_pm))  # ONE-KEY v84.46
-            if c == '':
-                say("   …still open - take your time (s / x / q)")
-                continue
-            break
-        if c == 'x':
-            try:
-                page.keyboard.press('Meta+A'); page.keyboard.press('Backspace')
-            except Exception:
-                pass
-            say('🗑 discarded - nothing sent')
+            _notwa = _no_wa_modal(page)  # CONCISE v81.91: the paste advice is wrong when WhatsApp has already said there is no field
+            if _notwa:
+                say('⚠️ WhatsApp says this number isn\'t on WhatsApp - there is no message field to paste into; pick or teach a number that is registered')
+                LAST_FAIL[0] = 'dead'
+            if not _notwa: say('⚠️ field did not take the text automatically - paste the draft from above into the WhatsApp field yourself')
             return False
-        if c == 'q':
-            say('📝 left in field & window closed - NOT counted as sent')
-            return False
-        say('✅ sent (you clicked in WhatsApp)')
-        _arm(digits, text)
-        return True
+        LAST_FAIL[0] = ''
+        say('📝 draft is in the WhatsApp field - NOT sent: review it and press Send yourself in the browser')  # DRAFT-ONLY v85.150: no Enter, no send button, no menu - the step simply ends and the chat returns
+        return True  # ONE-KEY v84.46 (retired v85.150: no menu waits any more)  # FLUSH-CUE v85.14 (retired v85.150)  # NO-FIELD-EXIT v81.94 (retired v85.150: a dead number ends in one line, never a menu)
+    except WaBusy:  # PROFILE-LOCK v85.150: a held profile climbs to the door that can name it
+        LAST_FAIL[0] = 'lock'
+        raise
     except Exception as e:
         say(f'⚠️ whatsapp failed: {e}')
         return False
     finally:
         try:
-            if via_cdp and page is not None: page.close()
-            pass  # PERSISTENT-WA v84.38: the persistent browser is never closed; only a CDP guest page goes home
+            if via_cdp and page is not None: page.close()  # PERSISTENT-WA v84.38: the persistent browser is never closed; only a CDP guest page goes home
         except Exception:
             pass
         try:
@@ -270,41 +292,26 @@ def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  #
             pass
 
 
-def send_review(phone, text, say=print, *a, **k):  # PLAYWRIGHT-THREAD v85.23  # PLAYWRIGHT-PROCESS v85.24: the ritual runs in a brand-new process - born without loops or policies - inheriting the tty so bare keys still answer; the exit code carries the truth home
-    import subprocess, sys
-    st = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.wa_status')  # WA-STATUS v85.31: the child reports ok / discard / fail in one word, so a deliberate discard never wears a failure's coat
+def send_review(phone, text, say=print, *a, **k):  # PLAYWRIGHT-THREAD v85.23 (retired v85.150)  # PLAYWRIGHT-PROCESS v85.24 (retired v85.150)  # WA-STATUS v85.31 (retired v85.150)  # DRIVER-GOODBYE v85.42 (retired v85.150: no node driver of ours outlives a call)  # HANG-CEILING v85.42 (retired v85.150: no child may hang, because no child is born)  # EPIPE-INPROC v85.150: the draft is placed in this very process - the child-process fallback is gone, so no pipe can close beneath it
+    LAST_FAIL[0] = ''
     try:
-        os.remove(st)
+        return bool(_send_review_body(phone, text, say))
+    except WaBusy as e:  # PROFILE-LOCK v85.150: the master's cure in one line, and the chat stays open
+        LAST_FAIL[0] = 'lock'
+        say(str(e))
+        return False
+    except Exception as e:
+        _m = ('%r' % (e,)).lower()
+        if 'epipe' in _m or 'has been closed' in _m:  # EPIPE-INPROC v85.150: a window that went away mid-draft is named, never raised
+            say('🔌 the WhatsApp window closed mid-draft - open WhatsApp again and repeat; nothing was sent')
+        else:
+            say('⚠️ whatsapp failed: %s' % (e,))
+    try:  # PARK-DRAFT v85.27: a broken window must never cost a courtesy - the exact draft parks by phone and names its own path
+        pd = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'drafts', 'parked')
+        os.makedirs(pd, exist_ok=True)
+        fn = os.path.join(pd, re.sub(r'\D', '', str(phone)) + '.txt')
+        open(fn, 'w').write(text)
+        say('📥 draft parked at ' + fn + ' - send it by hand or retry once the window is cured')
     except Exception:
         pass
-    nl = chr(10)
-    code = 'import sys, wa' + nl
-    code += '_seen = []' + nl
-    code += "def _s(t='', *a, **k):" + nl
-    code += '    _seen.append(str(t)); print(t)' + nl
-    code += ('r = wa._send_review_body(%r, %r, _s)' % (phone, text)) + nl
-    code += "st = 'ok'" + nl
-    code += "if any('whatsapp failed' in x for x in _seen): st = 'fail'" + nl
-    code += "elif any('discarded' in x for x in _seen): st = 'discard'" + nl
-    code += ("open(%r, 'w').write(st)" % st) + nl
-    code += 'try:' + nl
-    code += '    wa._pw().stop()  # DRIVER-GOODBYE v85.42: an orderly goodbye so the node driver exits before any pipe closes beneath it' + nl
-    code += 'except Exception:' + nl
-    code += '    pass' + nl
-    rr = subprocess.call([sys.executable, '-c', code], cwd=os.path.dirname(os.path.abspath(__file__)), timeout=1500)  # HANG-CEILING v85.42: a child that ignores even four minutes is killed, its status read, its draft parked - a hung ritual never owns an evening  # HANG-CEILING human-thought v85.46 (1500 v85.47): twenty-five minutes for a thinking master, death only for a wedged child - and a number no probe mistakes for the OCR cap
-    try:
-        outcome = open(st).read().strip()
-    except Exception:
-        outcome = 'fail' if rr != 0 else 'ok'
-    if outcome == 'fail' or rr != 0:  # WA-STATUS v85.31: only a true failure parks; discard and ok return in silence - the index is recomputed after the slice, because an index computed before a mutation is a rumor
-        say('⚠️ whatsapp failed in its own process - retry with: python3 -c "import wa; wa._send_review_body(' + repr(phone) + ', ' + repr(text) + ', print)"')
-        try:  # PARK-DRAFT v85.27: a broken window must never cost a courtesy - the exact draft parks by phone and names its own path
-            pd = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'drafts', 'parked')
-            os.makedirs(pd, exist_ok=True)
-            fn = os.path.join(pd, re.sub(r'\D', '', str(phone)) + '.txt')
-            open(fn, 'w').write(text)
-            say('📥 draft parked at ' + fn + ' - send it by hand or retry once the window is cured')
-        except Exception:
-            pass
-        return False
-    return True
+    return False
