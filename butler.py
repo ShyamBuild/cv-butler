@@ -797,6 +797,39 @@ def _preview_close(p, say=print):  # PREVIEW-CLOSE v85.148: release the hold on 
         subprocess.run(['osascript', '-e', f'tell application "Preview" to close (every window whose name contains "{name}")'], capture_output=True, timeout=5)
     except Exception as e:
         say(f'⚠️ preview close failed: {e}')
+
+def _prep_calls(candidate, root, say=print):  # UP-PREP v85.149: Preview opens behind your eyes, WhatsApp waits with the right number before the call connects
+    import json as _pj
+    p = candidate['p']
+    try: _preview_open(p, say)
+    except Exception: pass
+    try:
+        phones = phones_of(p, quiet=True) or []
+    except Exception:
+        phones = []
+    if not phones:
+        return
+    chosen = phones[0] if len(phones) == 1 else None
+    if len(phones) > 1:
+        say('📱 several numbers for this candidate:')
+        for _n, _ph in enumerate(phones, 1):
+            say(f'   {_n}) {_ph}')
+        try:
+            pick = input('   pick #: ').strip()
+            if pick.isdigit() and 1 <= int(pick) <= len(phones):
+                chosen = phones[int(pick) - 1]
+        except Exception:
+            chosen = phones[0]
+    if chosen:
+        try:
+            import wa
+            wa.wa_goto(chosen)  # opens the Playwright page, never bring_to_front()
+        except Exception as e:
+            say(f'⚠️ whatsapp prep failed: {e}')
+    try:
+        _pj.dump({'path': p, 'phone': chosen, 'phones': phones}, open(os.path.join(BASE_DIR, '.prep_state.json'), 'w'))
+    except Exception:
+        pass
 def confirm_wait(say=print):  # KEY-CONFIRM v84.6: the answer is a keystroke, not a line - like the WhatsApp menu (INLINE-ECHO v84.45: the key you press appears on the proposal's own line)
     import sys, termios, tty
     try:
@@ -2196,6 +2229,8 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
     seat_rename_check(root, say, only=p)  # SEAT-RENAME v85.15: the seated paper is named even on days the whole-chair pass rests
     say(f"🛰️ {i['name']} · {os.path.basename(os.path.dirname(p))} · ✉️ {_em} · 📱 {ph or 'none (teach me)'}")  # HORIZONTAL v85.9 (re-seated v85.10): the dossier stands AFTER the block that births _em and ph - no variable answers before its birth  # HORIZONTAL v85.9  # WITNESS-CARRY v84.52: deleted lines hand their laws to the line that survives
     say_identity_for(p, say)  # IDENTITY-AT-SEAT v84.39: the master asked for the triple at the seat as well; S277 keeps the proposal's
+    try: _prep_calls(i, root, say)  # UP-PREP v85.149
+    except Exception as _prep_e: say(f'⚠️ prep failed: {_prep_e}')
     say('   1 📤 jd→JD-Conf · 2 🙅 refer→Closed · 3 📝 cv→CV-Update · 4 🔔 nudge→reminder(no tag) · 5 📵 missed→Call-Sched · 6 🏆 internal→Ready · 7 ⏭️ skip→tray (one returns per empty seed)')  # EMOJI-CUE v84.51: each door wears its face, and no face wears a banned glyph  # EMOJI-CUE v84.51 # MAP-COMPACT v84.37 # WITNESS-CARRY v84.52  # WITNESS-CARRY v84.52: deleted lines hand their laws to the line that survives
 
 def covered_load():
@@ -5236,6 +5271,9 @@ def _selftest(root):
         _dw2 = _act_wrap('dummy2', _dummy_door)
         ck('S492 the wrapper wears its wrapped before any call', hasattr(_dw2, '__wrapped__') and _dw2.__wrapped__ is _dummy_door)  # PROOF-CURE v85.141
         ck('S502 hands answer before the watch lock', (chr(35)+' VERB-LOCKFREE v85.' + '147') in _src and 0 < (next(j for j, x in enumerate(_src.split(chr(10))) if 'LOCK-ROOT v85.54 + desk-book fallback' in x) - next(j for j, x in enumerate(_src.split(chr(10))) if x.startswith('    if len(sys.argv) > 1 and sys.argv[1] in (' + chr(39) + 'why' + chr(39)))) < 20)  # adjacency-pinned v85.147: the door stands within twenty lines above the desk-book wall, inside main()
+        ck('S506 the seat preps Preview and the glass before the menu', ('def _prep_calls(' in _src) and (chr(35)+' UP-PREP v85.149') in _src)
+        ck('S507 a dead number hands the draft to the next witness', (chr(35)+' WHATSAPP-FALLBACK v85.149') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
+        ck('S508 a missed call closes its own face', ('def _preview_close(' in _src) and (chr(35)+' PREVIEW-CLOSE v85.149') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S330 a stale skip is re-found by name, so the tray never starves', (chr(35)+' RETRAY-RESOLVE v85.1') in _src)
     ck('S331 the tray names its members whenever it is not empty', (chr(35)+' TRAY-NAMES v85.1') in _src)
     ck('S332 the deed speaks once, in one line, and silence never swallows a warning', (chr(35)+' CINE-LINE v85.1') in _src and ('lambda *a, **k: None' in _src))

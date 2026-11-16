@@ -970,9 +970,18 @@ def do_missed(arg, root, say=print, ask=None, words=None):
         text = _fmt_tpl(_tpl_for(words or ['missed']), None, f, nm)
         try:
             import wa
-            wa.send_review(ph0, text, say, ask=ask)
+            _sent = wa.send_review(ph0, text, say, ask=ask)
+            if not _sent:
+                _phones = butler.phones_of(f['path'], quiet=True) or []  # WHATSAPP-FALLBACK v85.149: a dead number hands the draft to the next witness in silence
+                if ph0 in _phones:
+                    _idx = _phones.index(ph0)
+                    if _idx + 1 < len(_phones):
+                        say(f'📵 {ph0} not on WhatsApp, trying {_phones[_idx+1]}…')
+                        wa.send_review(_phones[_idx+1], text, say, ask=ask)
         except Exception as e:
-            say(f"⚠️ whatsapp failed: {e}")
+            say(f'⚠️ whatsapp failed: {e}')
+        try: import butler; butler._preview_close(f['path'], say)  # PREVIEW-CLOSE v85.149: a missed call closes its own face
+        except Exception: pass
         return
     q = arg.lower().strip()
     hit = _scan_path(arg.strip(), root) if arg.strip().isdigit() else None
