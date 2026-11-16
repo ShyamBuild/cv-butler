@@ -1638,7 +1638,7 @@ def rename_diag(paths, say=print, deep=False):  # RENDIAG-DEEP v85.86: opt-in de
         say('🔎 %s | word=%d pdf=%d | first-line: %s | heuristic: %s | firstline-eye: %s | canon: %s | display: %s | %s' % (x, len(wt), len(tt), fl, h, f1, c, disp, dec))
 
 _EYEC = {}
-_EYE_VSN = 'v85.136'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire  # EYE-REBIRTH v85.105: cached silences expire the day the ink eye opens, so no paper stays blind by memory  # EYE-REBIRTH v85.107: silences cached while the ink eye ate pictures expire the day it eats paper  # EYE-REBIRTH v85.110: silences and watermark names cached before the refusals expire tonight  # EYE-REBIRTH v85.112: the EMAIL-ANCHOR brain needs a fresh cache so the deep Saurabh-class names are not served from the v85.110 SILENT memory  # EYE-REBIRTH v85.113: the initial-anchor brain wakes every cached silence from the caps-only era  # EYE-REBIRTH v85.114: silences cached by the impatient timeout expire the day the eye gains patience  # EYE-REBIRTH v85.121: stale degree-label verdicts expire so the candidate-email anchor is consulted again  # EYE-REBIRTH v85.122: mononym caps names wake the cache so the AJAY class is read fresh  # EYE-REBIRTH v85.123: mononym and re-seated anchor wake every cached silence  # EYE-REBIRTH v85.124: cached mononym silences expire the moment the door widens  # EYE-REBIRTH v85.130: names welded to address lines wake the cache so Annpurna-class papers are read fresh  # EYE-REBIRTH v85.131: doorplate heads and purged scars wake the cache so twins are read fresh  # EYE-REBIRTH v85.135: bullet doorplates wake the cache so Kirti-class papers are read fresh  # EYE-REBIRTH v85.136: double-extension scars wake the cache so the click and the tick see them fresh
+_EYE_VSN = 'v85.154'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire  # EYE-REBIRTH v85.105: cached silences expire the day the ink eye opens, so no paper stays blind by memory  # EYE-REBIRTH v85.107: silences cached while the ink eye ate pictures expire the day it eats paper  # EYE-REBIRTH v85.110: silences and watermark names cached before the refusals expire tonight  # EYE-REBIRTH v85.112: the EMAIL-ANCHOR brain needs a fresh cache so the deep Saurabh-class names are not served from the v85.110 SILENT memory  # EYE-REBIRTH v85.113: the initial-anchor brain wakes every cached silence from the caps-only era  # EYE-REBIRTH v85.114: silences cached by the impatient timeout expire the day the eye gains patience  # EYE-REBIRTH v85.121: stale degree-label verdicts expire so the candidate-email anchor is consulted again  # EYE-REBIRTH v85.122: mononym caps names wake the cache so the AJAY class is read fresh  # EYE-REBIRTH v85.123: mononym and re-seated anchor wake every cached silence  # EYE-REBIRTH v85.124: cached mononym silences expire the moment the door widens  # EYE-REBIRTH v85.130: names welded to address lines wake the cache so Annpurna-class papers are read fresh  # EYE-REBIRTH v85.131: doorplate heads and purged scars wake the cache so twins are read fresh  # EYE-REBIRTH v85.135: bullet doorplates wake the cache so Kirti-class papers are read fresh  # EYE-REBIRTH v85.136: double-extension scars wake the cache so the click and the tick see them fresh  # EYE-REBIRTH v85.154: every silence cached before the eye wakes expires in one breath
 WAKE_Q = []  # WAKE-Q v85.118: rename destinations waiting for the next tick's judgement
 WAKE_L = threading.Lock()
 def _eyename_cache():
@@ -1755,7 +1755,7 @@ def _eyename_of(p, trace=False, log=None):  # EYES-IN-SWEEP v85.90: the OCR-back
  key = os.path.basename(p)
  c, cf = _eyename_cache()
  e = c.get(key)
- if e and len(e) > 3 and e[3] == _EYE_VSN and e[0] == st.st_size and abs(e[1] - st.st_mtime) < 1:  # EYECACHE-VSN v85.96: a naming-logic change invalidates every cached verdict, so stale blindness cannot outlive its cure
+ if e and len(e) > 3 and e[3] == _EYE_VSN and e[0] == st.st_size and abs(e[1] - st.st_mtime) < 1 and (e[2] or '').strip():  # EYECACHE-VSN v85.96: a naming-logic change invalidates every cached verdict, so stale blindness cannot outlive its cure  # SILENT-EXPIRY v85.154: a cached silence is a miss, not a verdict - the eye reads the paper instead of serving yesterday's blindness
   return e[2]
  name = ''
  t = ''
@@ -1898,8 +1898,24 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
     return
    except Exception as _se: log('⚠️ service rename failed: %s | %r' % (x, _se)); return
   v = ''
-  try: v = ('' if _garbage0 else heuristic_name(p)) or _name_from_first_line(p) or _eyename_of(p) or _name_from_head_lines((extract_text(p) or '').split(chr(10))) or get_visual_name(p)  # DIRECT-BRAIN v85.136: if the cached eye misfires, the brain reads the text layer straight, cache-free, before the pupil is summoned  # NAME-SCAN-SERVICE v85.95: the right-click borrows the scanning eye and its cache, so a photo-headed CV is named from its own head  # SERVICE-LAYOUT-EYE v85.121: layout-aware fallback reads separated visual CV headers after text/OCR eyes  # HEURISTIC-LAST-FOR-GARBAGE v85.130: a scar stem never testifies about its own paper - the filename heuristic rests when the stem wears no human
-  except Exception: v = ''
+  _v1 = ''
+  try: _v1 = '' if _garbage0 else heuristic_name(p) or ''  # SILENT-EXPIRY v85.154: each eye answers alone, so one eye's exception can never silence the eyes beneath it
+  except Exception: _v1 = ''
+  _v2 = ''
+  try: _v2 = _name_from_first_line(p) or ''
+  except Exception: _v2 = ''
+  _v3 = ''
+  try: _v3 = _eyename_of(p) or ''
+  except Exception: _v3 = ''
+  _v4 = ''
+  try: _v4 = _name_from_head_lines((extract_text(p) or '').split(chr(10))) or ''
+  except Exception: _v4 = ''
+  _v5 = ''
+  if not (_v1 or _v2 or _v3 or _v4):
+      try: _v5 = get_visual_name(p) or ''  # SILENT-EXPIRY v85.154: a silent head falls through to the pupil before any refusal - the click never gives up above the shields
+      except Exception: _v5 = ''
+  v = _v1 or _v2 or _v3 or _v4 or _v5
+  # DIRECT-BRAIN v85.136: if the cached eye misfires, the brain reads the text layer straight, cache-free, before the pupil is summoned  # NAME-SCAN-SERVICE v85.95: the right-click borrows the scanning eye and its cache, so a photo-headed CV is named from its own head  # SERVICE-LAYOUT-EYE v85.121: layout-aware fallback reads separated visual CV headers after text/OCR eyes  # HEURISTIC-LAST-FOR-GARBAGE v85.130: a scar stem never testifies about its own paper - the filename heuristic rests when the stem wears no human
   log('🔎 service diag: %s | eye-head: %s' % (x, (v or 'SILENT')[:60]))  # DIAG-EVERY-CLICK v85.110: no right-click is ever dark - the eye's raw head speaks into the log before any judgement
   if not v: log('🧭 service: %s | every eye silent (text, word, ocr) - vision or teaching needed' % x); return
   c = ''
@@ -5252,6 +5268,8 @@ def _selftest(root):
     ck('S514 identity is never a deed at either rename site', _sh4.count(chr(35) + ' NOOP-RENAME v85.' + '153') >= 2)
     ck('S515 a town never wears a coat', _sh4.count(chr(35) + ' PLACE-REFUSE v85.' + '153') >= 3 and '_PLACE_STOP' + ' = {' in _sh4)
     ck('S516 the dam watches the desk and spares the rehearsal', _sh4.count(chr(35) + ' OSCILLATION-DAM v85.' + '153') >= 4 and '_DAM' + ' = {' in _sh4 and _sh4.count(chr(39) + 'on' + chr(39) + '] = False') >= 1)
+    ck('S517 a cached silence is a miss, never a verdict', _sh4.count(chr(35) + ' SILENT-EXPIRY v85.' + '154') >= 2 and '_EYE_VSN = ' + chr(39) + 'v85.' + '154' + chr(39) in _sh4)
+    ck('S518 a silent head falls through every eye before it rests', '_v4 = _name_from_head_lines' in _sh4 and '_v5' in _sh4 and 'get_visual_name(p)' in _sh4)
     ck('S362 the ritual installs its own policy and a loop nobody runs', (chr(35)+' POLICY-RESET v85.25') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S363 a second download never re-enters the chair wearing a portal mask', (chr(35)+' DUP-SEED v85.26') in _src and ('second download of' in _src))
     ck('S364 a logged-out window asks for one scan, named aloud', (chr(35)+' QR-RESCAN v85.26') in open(os.path.join(BASE_DIR, 'wa.py')).read())
