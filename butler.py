@@ -1820,6 +1820,9 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
                 _q4 = os.path.join(dpath, _d4 + ext)
                 if _d4 and not (os.path.exists(_q4) and os.path.basename(_q4).lower() != x.lower()):
                  try:
+                  if (_d4 + ext).lower() == x.lower(): continue  # NOOP-RENAME v85.153: identity is not a deed
+                  if set(_d4.lower().split()) & _PLACE_STOP: continue  # PLACE-REFUSE v85.153: a town never wears a coat
+                  if _DAM['on'] and sum(1 for _t in _tail_renames() if x in _t or (_d4 + ext) in _t) > 2: continue  # OSCILLATION-DAM v85.153: a paper that trembles rests until a hand or a fixture steadies it
                   os.rename(p, _q4); log('✏️ sweep renamed (gated eyes): %s → %s' % (x, _d4 + ext))  # SWEEP-GARBAGE-DEED v85.108: a stem no human wears is a scar, and the paper's own fixture-tested head names it again on the file-change trigger - behind canon, gate, collision check and the undo ledger; a stem that is another human's name still only proposes
                   try:
                    _safe_rename_ledger(p, _d4, 'sweep-garbage', once=True); _safe_repath_ledgers(p, _q4)
@@ -1943,6 +1946,9 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
   if not _garbage and not _stem_inside_name(_sn, d2) and _name_key(_sn) != _name_key(d2) and 2 <= len(_w0) <= 4: log('🧭 service: %s | eyes say %s, a different human - proposal only, never a guess' % (x, d2)); return
   try:
    if os.path.exists(q2) and os.path.basename(q2).lower() != x.lower(): log('🧭 service: %s | another paper holds %s - left as is' % (x, os.path.basename(q2))); return
+   if (d2 + ext).lower() == x.lower(): log('🪤 identity rest: %s' % x); return  # NOOP-RENAME v85.153: a deed that changes nothing is not a deed
+   if set(d2.lower().split()) & _PLACE_STOP: log('🪤 town coat refused: %s' % (d2 + ext)); return  # PLACE-REFUSE v85.153: a town never wears a coat
+   if _DAM['on'] and sum(1 for _t in _tail_renames() if x in _t or (d2 + ext) in _t) > 2: log('🪤 oscillation rest: %s' % x); return  # OSCILLATION-DAM v85.153: a paper that trembles rests until a hand or a fixture steadies it
    os.rename(p, q2); log('✏️ service renamed (gated eyes): %s → %s' % (x, d2 + ext))  # SERVICE-EYES v85.85 (gated-deed v85.104): the right-click is the master's own hand, so behind the identity gate and the twin check the deed is lawful again; the background sweep keeps its silence forever
    try:
     _safe_rename_ledger(p, d2, 'service-eyes', once=True); _safe_repath_ledgers(p, q2)
@@ -2240,6 +2246,15 @@ def covered_add(nk, fp, tag, file):
     d = covered_load(); d[nk] = {'ts': int(time.time()), 'fp': fp, 'tag': tag, 'file': file}
     try: json.dump(d, open(COVERED_PATH, 'w'), indent=1)
     except Exception: pass
+_PLACE_STOP = {'railway', 'flyover', 'road', 'colony', 'near', 'village', 'street', 'nagar', 'mandi', 'chowk', 'phase', 'sector', 'district', 'tehsil'}  # PLACE-REFUSE v85.153: a town is not a person, and a coat that names a town is a coat the house refuses to sew
+_DAM = {'on': True}  # OSCILLATION-DAM v85.153: the dam counts tremors on the living desk alone
+def _tail_renames():  # OSCILLATION-DAM v85.153: the last five hundred tick lines of rename deeds, for counting how often a paper trembles
+    try:
+        _lns = open(os.path.join(BASE_DIR, 'tick.log'), 'rb').read().decode('utf-8', 'ignore').split(chr(10))[-500:]
+        return [l for l in _lns if ' renamed ' in l]
+    except Exception:
+        return []
+
 def _name_key(x):
     import re as _re
     return ' '.join(_re.sub(r'[^a-z ]', ' ', os.path.splitext(x)[0].lower()).split())
@@ -4830,6 +4845,7 @@ def _dummy_door(x): return x
 
 
 def _selftest(root):
+    _DAM['on'] = False  # OSCILLATION-DAM v85.153: fixtures rehearse on an empty river, so the dam never drowns the gate
     print('SELFTEST START', root, flush=True)
     global SETTLE_TEST; SETTLE_TEST = True
     import shutil as _sh
@@ -5232,6 +5248,10 @@ def _selftest(root):
     ck('S511 a held profile is a sentence the master can act on', (chr(35)+' PROFILE-LOCK v85.150') in open(os.path.join(BASE_DIR, 'wa.py')).read() and 'WaBusy' in open(os.path.join(BASE_DIR, 'wa.py')).read() and (chr(35)+' LOCK-QUIET v85.150') in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S512 no child process is born to carry a draft', 'subprocess' not in open(os.path.join(BASE_DIR, 'wa.py')).read() and 'python3 -c' not in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S513 the prep door the seat calls exists before it is called', 'def wa_goto(' in open(os.path.join(BASE_DIR, 'wa.py')).read())
+    _sh4 = open(os.path.join(BASE_DIR, 'butler.py')).read()
+    ck('S514 identity is never a deed at either rename site', _sh4.count(chr(35) + ' NOOP-RENAME v85.' + '153') >= 2)
+    ck('S515 a town never wears a coat', _sh4.count(chr(35) + ' PLACE-REFUSE v85.' + '153') >= 3 and '_PLACE_STOP' + ' = {' in _sh4)
+    ck('S516 the dam watches the desk and spares the rehearsal', _sh4.count(chr(35) + ' OSCILLATION-DAM v85.' + '153') >= 4 and '_DAM' + ' = {' in _sh4 and _sh4.count(chr(39) + 'on' + chr(39) + '] = False') >= 1)
     ck('S362 the ritual installs its own policy and a loop nobody runs', (chr(35)+' POLICY-RESET v85.25') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S363 a second download never re-enters the chair wearing a portal mask', (chr(35)+' DUP-SEED v85.26') in _src and ('second download of' in _src))
     ck('S364 a logged-out window asks for one scan, named aloud', (chr(35)+' QR-RESCAN v85.26') in open(os.path.join(BASE_DIR, 'wa.py')).read())
