@@ -1446,24 +1446,31 @@ def _word_text(p):  # TEXT-DOCX v85.55: a Word paper reads natively through macO
     except Exception:
         return ''
 
-def _name_from_first_line(p):  # FIRST-LINE v85.20: when both developed eyes stay silent, the paper's own first line speaks in title case - the humblest eye, and the fastest
-    try:
-        t = _word_text(p) or extract_text(p) or ''
-        if not t.strip():
-            try: t = extract_text_ocr(p) or ''  # FIRST-LINE v85.20 (ocr-fallback v85.22): a text layer that refuses to open yields to the capped pixels
-            except Exception: t = ''
-    except Exception:
-        return ''
-    for ln in t.split('\n'):
+def _name_from_lines(t):  # GATE-REFUSE v85.156: the first-line eye as a pure function of text, so the gate can rehearse it - and the brain reads the head band BEFORE the raw first line, because a heading is not a refusal
+    _hb = ''
+    try: _hb = _name_from_head_lines((t or '').split(chr(10))) or ''
+    except Exception: _hb = ''
+    if _hb: return _hb
+    for ln in (t or '').split(chr(10))[:8]:  # GATE-REFUSE v85.156: eight breaths, and no single heading ends the search
         ln = ln.strip()
         if not ln: continue
         if any(ch.isdigit() for ch in ln): continue
         if '@' in ln: continue
         ws = ln.split()
-        if 2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws) and not (set(w.lower() for w in ws) & _NAME_STOP):  # NAME-GATE v85.97: the fallback single-line path wears the same gate as the scan
+        if 2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws) and not (set(w.lower() for w in ws) & _NAME_STOP):
             return ' '.join(w.capitalize() for w in ws)
-        return ''
     return ''
+
+def _name_from_first_line(p):  # FIRST-LINE v85.20: when both developed eyes stay silent, the paper's own first line speaks in title case - the humblest eye, and the fastest
+    try:
+        t = _word_text(p) or extract_text(p) or ''
+        if not t.strip():
+            try: t = extract_text_ocr(p) or ''  # FIRST-LINE v85.20 (ocr-fallback v85.22): a text layer that refuses to open yields to the capped eye
+            except Exception: t = ''
+    except Exception:
+        return ''
+    return _name_from_lines(t)  # GATE-REFUSE v85.156: one naming law in one place - the head band first, then eight breaths
+    # # FIRST-LINE v85.20  # # NAME-GATE v85.97
 
 _IN_CEREMONY = [False]
 def _vision_safe(p):  # VISION-THREAD v85.22: the vision eye reads in its own thread, so whatever loop it borrows lives and dies in its own room and never lies across the thumb's path
@@ -2138,13 +2145,13 @@ def seat_rename_check(root, say=print, only=None):  # SEAT-RENAME v85.11 (examin
         if not _is_desk_candidate(x): continue
         if _jd_like_name(x) or _portal_name(x): continue
         v = heuristic_name(p) or _name_from_first_line(p)  # TEXT-EYES v85.16  # FIRST-LINE v85.20: every rewritten line carries the witnesses it already wore
-        if not v and x not in rec.get('vtried', []):  # VISION-ONCE v85.35: the expensive pupil is asked once per paper per day; a silent answer rests, so misses cost milliseconds thereafter
+        if not v and x not in rec.get('vtried', []):  # VISION-ONCE v85.35: the expensive pupil is asked once per paper per day; a silent answer is remembered, never re-bought
             v = _vision_safe(p)
             rec.setdefault('vtried', []).append(x)
-            if not v:  # STEM-FALLBACK v85.61: when every eye is silent and the filename itself is a human shape, the filename becomes the candidate - masks stay excluded by law, twins stay safe by the key compare
-                _ws = os.path.splitext(x)[0].split()
-                if 2 <= len(_ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _ws):
-                    v = os.path.splitext(x)[0]
+        if not v:  # STEM-FALLBACK v85.61: when every eye is silent and the filename itself is a human shape, the filename becomes the candidate  # GATE-REFUSE v85.156: and it answers on every up, not only the first - a tried pupil is not a closed door
+            _ws = os.path.splitext(x)[0].split()
+            if 2 <= len(_ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _ws):
+                v = os.path.splitext(x)[0]
         try:
             import asyncio as _a
             _a.set_event_loop(None)  # LOOP-CLEAN v85.21: the vision eye may leave an idle loop behind; playwright sync must find none
@@ -5272,6 +5279,8 @@ def _selftest(root):
     ck('S517 a cached silence is a miss, never a verdict', _sh4.count(chr(35) + ' SILENT-EXPIRY v85.' + '154') >= 2 and '_EYE_VSN = ' + chr(39) + 'v85.' + '154' + chr(39) in _sh4)
     ck('S518 a silent head falls through every eye before it rests', '_v4 = _name_from_head_lines' in _sh4 and '_v5' in _sh4 and 'get_visual_name(p)' in _sh4)
     ck('S519 an explicit digit drafts at once and the cue stays for the undecided', _sh4.count(chr(35) + ' ONE-KEY-DRAFT v85.' + '155') >= 2 and ('n = cancel, he stays in the chai' in _sh4) and ('else menu_key(' in _sh4))
+    ck('S520 the Sachin head answers despite a lowercased surname line', _name_from_head_lines(['Sachin dwivedi', 'Noida , UP | Sachindid8@gmail.com|', 'Summary']) == 'Sachin Dwivedi' and 'def _name_from_lines(' in _src)
+    ck('S521 the seat text eye reads past a heading and a caps shout', _name_from_lines('RESUME' + chr(10) + 'Arvind Kumar Chaurasia' + chr(10) + 'Whatsapp Mobile: 8279640833') == 'Arvind Kumar Chaurasia' and _name_from_lines('RAHUL MISHRA' + chr(10) + 'Contact: +91-8090075922 / +91-8317016411') == 'Rahul Mishra' and (chr(35) + ' STEM-FALLBACK v85.61') in _src)
     ck('S362 the ritual installs its own policy and a loop nobody runs', (chr(35)+' POLICY-RESET v85.25') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S363 a second download never re-enters the chair wearing a portal mask', (chr(35)+' DUP-SEED v85.26') in _src and ('second download of' in _src))
     ck('S364 a logged-out window asks for one scan, named aloud', (chr(35)+' QR-RESCAN v85.26') in open(os.path.join(BASE_DIR, 'wa.py')).read())
