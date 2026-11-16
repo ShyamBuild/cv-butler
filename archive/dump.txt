@@ -69,6 +69,9 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
   if not _garbage and not _stem_inside_name(_sn, d2) and _name_key(_sn) != _name_key(d2) and 2 <= len(_w0) <= 4: log('🧭 service: %s | eyes say %s, a different human - proposal only, never a guess' % (x, d2)); return
   try:
    if os.path.exists(q2) and os.path.basename(q2).lower() != x.lower(): log('🧭 service: %s | another paper holds %s - left as is' % (x, os.path.basename(q2))); return
+   if (d2 + ext).lower() == x.lower(): log('🪤 identity rest: %s' % x); return  # NOOP-RENAME v85.153: a deed that changes nothing is not a deed
+   if set(d2.lower().split()) & _PLACE_STOP: log('🪤 town coat refused: %s' % (d2 + ext)); return  # PLACE-REFUSE v85.153: a town never wears a coat
+   if _DAM['on'] and sum(1 for _t in _tail_renames() if x in _t or (d2 + ext) in _t) > 2: log('🪤 oscillation rest: %s' % x); return  # OSCILLATION-DAM v85.153: a paper that trembles rests until a hand or a fixture steadies it
    os.rename(p, q2); log('✏️ service renamed (gated eyes): %s → %s' % (x, d2 + ext))  # SERVICE-EYES v85.85 (gated-deed v85.104): the right-click is the master's own hand, so behind the identity gate and the twin check the deed is lawful again; the background sweep keeps its silence forever
    try:
     _safe_rename_ledger(p, d2, 'service-eyes', once=True); _safe_repath_ledgers(p, q2)
@@ -114,6 +117,9 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
                 _q4 = os.path.join(dpath, _d4 + ext)
                 if _d4 and not (os.path.exists(_q4) and os.path.basename(_q4).lower() != x.lower()):
                  try:
+                  if (_d4 + ext).lower() == x.lower(): continue  # NOOP-RENAME v85.153: identity is not a deed
+                  if set(_d4.lower().split()) & _PLACE_STOP: continue  # PLACE-REFUSE v85.153: a town never wears a coat
+                  if _DAM['on'] and sum(1 for _t in _tail_renames() if x in _t or (_d4 + ext) in _t) > 2: continue  # OSCILLATION-DAM v85.153: a paper that trembles rests until a hand or a fixture steadies it
                   os.rename(p, _q4); log('✏️ sweep renamed (gated eyes): %s → %s' % (x, _d4 + ext))  # SWEEP-GARBAGE-DEED v85.108: a stem no human wears is a scar, and the paper's own fixture-tested head names it again on the file-change trigger - behind canon, gate, collision check and the undo ledger; a stem that is another human's name still only proposes
                   try:
                    _safe_rename_ledger(p, _d4, 'sweep-garbage', once=True); _safe_repath_ledgers(p, _q4)
@@ -713,5 +719,5 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OCRBIN = os.path.join(BASE_DIR, "cvocr")
 126 
 OCR_SEM = threading.Semaphore(2)
-5317 
+5471 
 extract_text = extract_text_ocr  # ALIAS v85.89: one name for the whole chain, bound after every def has landed - the diag pdf column, emails_in_text and every bare caller wake from swallowing NameError
