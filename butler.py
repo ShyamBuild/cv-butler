@@ -2577,7 +2577,8 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
     pass  # IDENTITY-ONCE v84.41: the triple speaks at the seat; the proposal carries only the decision, the draft carries the truth inside
     _tagpart = 'SKIPPED, untagged, unmoved' if tag is None else ('[no tag change - reminder only]' if tag == '' else f'[{tag}]')  # NUDGE-OPTION v84.44
     say(f"🤖 Proposal: {cur['name']} → " + _tagpart + f" ({outcome})" + (f' · 📱 {draft} draft unsent' if draft else ' · no 📱 - stays in the house'))  # ASK-LINE v84.49: the statement ends in its own line
-    k = menu_key('y = 🏷️ tag + 📦 move + 📱 WhatsApp draft · t = 🏷️ tag + 📦 move, no 📱 · n = cancel, he stays in the chair ›  ')  # ASK-LINE v84.49: the question waits at a visible cue and the key signs it  # PLAIN-CUE v84.50: the cue names the deeds in the master's words - tag, move, text
+    if draft and str(key).strip().isdigit(): say('⚡ the digit is the deed - tagging, moving and drafting at once')  # ONE-KEY-DRAFT v85.155: the master sees the deed named before the window opens
+    k = 'y' if (draft and str(key).strip().isdigit()) else menu_key('y = 🏷️ tag + 📦 move + 📱 WhatsApp draft · t = 🏷️ tag + 📦 move, no 📱 · n = cancel, he stays in the chair ›  ')  # ASK-LINE v84.49: the question waits at a visible cue and the key signs it  # PLAIN-CUE v84.50: the cue names the deeds in the master's words - tag, move, text  # ONE-KEY-DRAFT v85.155: an explicit digit never meets a second key - the cue is asked only where the master left the answer open
     if k == 'n':
         say('⏸️ row open - he stays in the chair'); return
     if k not in ('y', 't'):  # PROPOSE-WAIT v84.15: Enter or silence leaves a typed answer pending
@@ -5270,6 +5271,7 @@ def _selftest(root):
     ck('S516 the dam watches the desk and spares the rehearsal', _sh4.count(chr(35) + ' OSCILLATION-DAM v85.' + '153') >= 4 and '_DAM' + ' = {' in _sh4 and _sh4.count(chr(39) + 'on' + chr(39) + '] = False') >= 1)
     ck('S517 a cached silence is a miss, never a verdict', _sh4.count(chr(35) + ' SILENT-EXPIRY v85.' + '154') >= 2 and '_EYE_VSN = ' + chr(39) + 'v85.' + '154' + chr(39) in _sh4)
     ck('S518 a silent head falls through every eye before it rests', '_v4 = _name_from_head_lines' in _sh4 and '_v5' in _sh4 and 'get_visual_name(p)' in _sh4)
+    ck('S519 an explicit digit drafts at once and the cue stays for the undecided', _sh4.count(chr(35) + ' ONE-KEY-DRAFT v85.' + '155') >= 2 and ('n = cancel, he stays in the chai' in _sh4) and ('else menu_key(' in _sh4))
     ck('S362 the ritual installs its own policy and a loop nobody runs', (chr(35)+' POLICY-RESET v85.25') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S363 a second download never re-enters the chair wearing a portal mask', (chr(35)+' DUP-SEED v85.26') in _src and ('second download of' in _src))
     ck('S364 a logged-out window asks for one scan, named aloud', (chr(35)+' QR-RESCAN v85.26') in open(os.path.join(BASE_DIR, 'wa.py')).read())
