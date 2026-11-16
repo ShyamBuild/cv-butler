@@ -1669,6 +1669,8 @@ if __name__ == "__main__":
     with open(LAST, 'w') as f:
         f.write(root)
     if mode == 'chat':
+        import butler as _butler_refresh
+        _butler_refresh._desk_refresh(root, print)  # DESK-REFRESH v85.148: the desk arrives already swept
         print(f"🤖 butler chat - 📂 {root}")
         print("   ask anything ('interviews tomorrow?', 'feedback pending?', 'call Isha') - type quit")
         live = []

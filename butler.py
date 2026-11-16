@@ -760,6 +760,24 @@ def menu_key(prompt='', allowed=('y', 't', 'n')):  # ONE-INPUT v84.47 (ASK-LINE 
         return k.strip().lower()
     return ''
 
+
+def _desk_refresh(root, say=print):  # DESK-REFRESH v85.148: stat each stage folder; if any mtime newer than .desk_refresh.json, run one _case_sweep pass
+    import json as _jr, time as _jt
+    rf = os.path.join(BASE_DIR, '.desk_refresh.json')
+    try: last = _jr.load(open(rf))
+    except Exception: last = {}
+    changed = False
+    for sc in desk_paths():
+        for dp, dn, fn in os.walk(sc):
+            mt = os.stat(dp).st_mtime
+            if mt > last.get(dp, 0):
+                last[dp] = mt; changed = True
+    if changed:
+        try: _case_sweep(root, say)
+        except Exception as e: say(f'⚠️ desk refresh sweep failed: {e}')
+        try: _jr.dump(last, open(rf, 'w'))
+        except Exception: pass
+
 def _preview_open(p, say=print):  # PREVIEW v84.46: the seated paper opens in Preview behind your eyes; already-open is fine; the machine never closes what you opened
     if not (p or '').lower().endswith('.pdf'): return
     try:
@@ -770,6 +788,15 @@ def _preview_open(p, say=print):  # PREVIEW v84.46: the seated paper opens in Pr
     except Exception:
         pass
 
+
+def _preview_close(p, say=print):  # PREVIEW-CLOSE v85.148: release the hold on a specific paper's face
+    if not (p or '').lower().endswith('.pdf'): return
+    try:
+        import subprocess
+        name = os.path.basename(p)
+        subprocess.run(['osascript', '-e', f'tell application "Preview" to close (every window whose name contains "{name}")'], capture_output=True, timeout=5)
+    except Exception as e:
+        say(f'⚠️ preview close failed: {e}')
 def confirm_wait(say=print):  # KEY-CONFIRM v84.6: the answer is a keystroke, not a line - like the WhatsApp menu (INLINE-ECHO v84.45: the key you press appears on the proposal's own line)
     import sys, termios, tty
     try:
@@ -2281,7 +2308,8 @@ def pos_identity(p, root=None):  # POS-ID v84.21: company from the client map, r
     out['client'] = client
     try: cm = json.load(open(CLIENTMAP_PATH))
     except Exception: cm = {}
-    out['company'] = cm.get(client) or ov.get('company') or ''  # COMPANY-LIVE v84.27: the client map is the living truth; a frozen position copy never outranks it
+    client_norm = __import__('re').sub(r'^\d+[\s_-]*', '', client or '').strip().lower().replace(' ', '')  # COMPANY-NORM v85.148: coat-minus-digits, collapsed
+    out['company'] = cm.get(client_norm) or cm.get(client) or ov.get('company') or ''  # COMPANY-LIVE v84.27: the client map is the living truth; a frozen position copy never outranks it
     return out
 def say_identity_for(p, say=print):  # POS-ID v84.21: the triple, shown before anything sends
     i = pos_identity(p)
@@ -3812,7 +3840,8 @@ class Butler:
                         role, loc = (pos.split(' -', 1) + [''])[:2]
                         reg[pp] = {'company': cm.get(client, ''), 'role': role.strip(), 'loc': loc.strip(), 'designation': ''}
                         changed = True
-                        say(f'🧠 new position understood: {client} / {pos}' + ('' if cm.get(client) else ' - company unknown; teach once: client ' + client + ' = <company>'))
+                        client_norm = __import__('re').sub(r'^\d+[\s_-]*', '', client or '').strip().lower().replace(' ', '')  # COMPANY-NORM v85.148: coat-minus-digits, collapsed
+                        say(f'🧠 new position understood: {client} / {pos}' + ('' if cm.get(client_norm) or cm.get(client) else ' - company unknown; teach once: client ' + client + ' = <company>'))
                     elif not reg[pp].get('company') and cm.get(client):
                         reg[pp]['company'] = cm[client]; changed = True
                 if client not in cm and client not in spoken:
