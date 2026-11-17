@@ -831,16 +831,22 @@ def _prep_calls(candidate, root, say=print):  # UP-PREP v85.149: Preview opens b
                 chosen = phones[int(pick) - 1]
         except Exception:
             chosen = phones[0]
-    if chosen:
-        try:
-            import wa
-            wa.wa_goto(chosen)  # opens the Playwright page, never bring_to_front()
-        except Exception as e:
-            say(f'⚠️ whatsapp prep failed: {e}')
+    if chosen:  # SEAT-NO-OPEN v85.180: the seat opens nothing - the master picks his number in peace and the deed opens the window once
+     say('   📱 will draft to %s when you press a digit - WhatsApp opens then, once' % chosen)
     try:
         _pj.dump({'path': p, 'phone': chosen, 'phones': phones}, open(os.path.join(BASE_DIR, '.prep_state.json'), 'w'))
     except Exception:
         pass
+def _chair_phone(p):  # CHAIR-PHONE-TRUTH v85.180: the number the master picked at the seat is the number the deed dials - never phones[0] by accident
+    try:
+        import json as _cj
+        _d = _cj.load(open(os.path.join(BASE_DIR, '.prep_state.json')))
+        if _d.get('phone') and os.path.realpath(str(_d.get('path', ''))) == os.path.realpath(str(p)):
+            return _d['phone']
+    except Exception:
+        pass
+    return None
+
 def confirm_wait(say=print):  # KEY-CONFIRM v84.6: the answer is a keystroke, not a line - like the WhatsApp menu (INLINE-ECHO v84.45: the key you press appears on the proposal's own line)
     import sys, termios, tty
     try:
@@ -2685,7 +2691,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
     _k = k
     if tag == '':  # NUDGE-OPTION v84.44: a reminder changes no tag and moves nothing - the debt stays, the row closes, the thread continues
         if _k != 't':  # ONE-INPUT v84.47: the nudge's draft decision lives in the same keystroke
-            ph0 = taught_digits(cur['name']) or phones_of(p, True) or None
+            ph0 = taught_digits(cur['name']) or _chair_phone(p) or phones_of(p, True) or None
             if isinstance(ph0, list): ph0 = ph0[0] if ph0 else None
             if ph0:
                 import wa
@@ -2716,7 +2722,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
         covered_add(_name_key(os.path.basename(p)), _fp(p), 'skipped', os.path.basename(p))
         say(f"⏭️ skipped {cur['name']} - untagged, unmoved, remembered; unskip {cur['name'].split()[0].lower()} brings him back")
     else:
-        ph0 = taught_digits(cur['name']) or phones_of(p, True) or None  # PHONE-FIRST v84.31: read the number before the paper moves, never from a ghost path
+        ph0 = taught_digits(cur['name']) or _chair_phone(p) or phones_of(p, True) or None  # PHONE-FIRST v84.31: read the number before the paper moves, never from a ghost path
         cur_tags = _tags_of(p)
         drops = [t for t in cur_tags if _tag_stage(t) and t != tag]
         newtags = [t for t in cur_tags if t not in drops] + ([tag] if tag not in cur_tags else [])
@@ -5041,7 +5047,7 @@ def _preopen_probe():  # PREOPEN v85.178: the fixture S570 leans on - preopen ex
         if '_already' not in _w or 'reusing the open chat' not in _w:
             return False
         _b = open(__file__, encoding='utf-8', errors='ignore').read()
-        return 'PREOPEN v85.178' in _b
+        return 'SEAT-NO-OPEN v85.180' in _b
     except Exception:
         return False
 
@@ -5729,6 +5735,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S572 the deed dials the number the master picked at the seat', 'def _chair_phone(' in _src and ('or _chair_' + 'phone(p) or phones_of') in _src and 'SEAT-NO-OPEN v85.180' in _src and 'wa.wa_' + 'goto(' not in _src)
     ck('S571 the leave-page question never blocks a navigation', _dialog_probe())
     ck('S570 the seat opens the chat once and the digit only fills it', _preopen_probe())
     ck('S569 a held profile with a live door is joined, not refused', _warmreuse_probe())
