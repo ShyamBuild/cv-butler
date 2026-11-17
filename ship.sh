@@ -33,6 +33,7 @@ health() {
   if [ "$LH" = "$LB" ]; then echo "🔁 version: live = committed ($LH)"; else echo "⚠️ version drift: live=${LB:-?} vs committed=$LH"; fi
   if [ -n "$(git status --porcelain -- butler.py briefing.py wa.py cleaner.py recruit.py ship.sh PROTOCOL.md butler_check.py requirements.txt)" ]; then echo '⚠️ uncommitted CODE edits - gate them with ./ship.sh'; else echo '📚 code clean & in sync (runtime/data ignored)'; fi
   echo "☁️ mirror head: $(git -C "$HOME/CV_Tool_pub" rev-parse --short HEAD 2>/dev/null) · local head: $LH"
+  TA=$(( $(date +%s) - $(stat -f %m tick.log 2>/dev/null || echo 0) )); if [ "$TA" -gt 30 ]; then echo "🔔 BELL-DEAD: tick.log ${TA}s old (a live pid proves nothing)"; else echo "🔔 bell alive: last tick ${TA}s ago"; fi  # BELL-ALIVE v85.159: health judges the bell by the tick.log age, not by a pid
   echo '-- last log lines'; tail -2 butler_live.log 2>/dev/null
 }
 [ "$CHECK" = "1" ] && { health; exit 0; }

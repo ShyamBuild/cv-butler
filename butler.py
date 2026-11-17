@@ -2101,18 +2101,47 @@ def _tick_loop():  # WATCH-HOOK v85.53 (version v85.64): the bell is owned by th
                 pass
             break
         _tt.sleep(10)
+    _shouted = False  # BELL-ALIVE v85.159: one shout per stale episode, never a chatter
     while True:
+        _t0 = _tt.time()
         try:
-            if open(pf).read().strip().split('|')[0] != str(os.getpid()):  # BELL-ABDICATE v85.64: an ousted owner stops beating on its next breath - abdication, not rivalry
+            _bs = open(pf).read().strip().split('|')[0]
+        except Exception:
+            _bs = str(os.getpid())
+        if _bs != str(os.getpid()):  # BELL-ABDICATE v85.64: an ousted owner stops beating on its next breath - abdication, not rivalry  # BELL-ALIVE v85.159: but a DEAD owner is inherited, never mourned
+            _alive = True
+            try:
+                os.kill(int(_bs), 0)
+            except Exception:
+                _alive = False
+            if _alive:
                 return
+            try:  # BELL-TAKEOVER v85.159: the living watcher takes the bell from a dead pid on its next beat and says so aloud
+                open(pf, 'w').write('%s|%s' % (os.getpid(), _me))
+                _tick_log('🔔 bell taken over: dead pid %s -> %s (%s)' % (_bs, os.getpid(), _me))
+            except Exception:
+                pass
+        try:
+            try: _b_age = _tt.time() - os.stat(os.path.join(BASE_DIR, 'tick.log')).st_mtime
+            except Exception: _b_age = 0
+            if _b_age > 30 and not _shouted:  # BELL-DEAD v85.159: a live pid proves nothing - the tick.log own age is the witness, and it shouts where house already reads
+                _tick_log('🔔 BELL-DEAD: no tick line for %.0fs (pid %s alive)' % (_b_age, os.getpid()))
+                _shouted = True
+            elif _b_age <= 30:
+                _shouted = False
             os.utime(pf, None)  # BELL-HEARTBEAT v85.59: the stamp is refreshed every beat - a pulse, not a lock; the witness of the rewritten block rides the line that is the heartbeat
         except Exception:
             pass
         try:
             _event_tick((desk_load() or {}).get('primary') or os.getcwd(), _tick_log)
+        except Exception as _te:
+            _tick_log('🔔 bell stopped: %r' % (_te,))  # BELL-CONFESS v85.159: a beat that dies says why before it goes quiet
+        _tt.sleep(5)
+        try:  # BELL-CONFESS v85.159: a beat that took longer than thirty-five seconds confesses its own sleep
+            _gap = _tt.time() - _t0
+            if _gap > 35: _tick_log('🔔 bell slept %.0fs' % _gap)
         except Exception:
             pass
-        _tt.sleep(5)
 
 import threading as _thd
 _thd.Thread(target=_tick_loop, daemon=True).start()  # WATCH-HOOK v85.53: every butler process offers a ticker; the flock chooses the one that rings
@@ -5291,6 +5320,9 @@ def _selftest(root):
     ck('S524 a town-only head yields no coat at either door', _name_from_head_lines(['Near Railway Flyover, Rohtak', 'Contact: +91-9992072806']) == '' and _name_from_lines('Near Railway Flyover Rohtak') == '')
     ck('S525 the dam reads this paper only and spares a stranger'+chr(39)+'s spam', _src.count(chr(35) + ' DAM-PER-PAPER v85.' + '157') >= 2 and ('(_d4 + ' + 'ext) in _t') not in _src and ('(d2 + ' + 'ext) in _t') not in _src and _src.count(chr(35) + ' OSCILLATION-DAM v85.' + '153') >= 4)
     ck('S526 a scar label is not a human - the coat is re-eyed', (chr(35) + ' SCAR-STOP v85.' + '158') in _src and 'responsbilities' in _src and 'responsibilities' in _src)
+    ck('S527 a dead bell is inherited on the next beat', (chr(35) + ' BELL-TAKEOVER v85.' + '159') in _src and 'bell taken over: dead pid' in _src)
+    ck('S528 a stale bell shouts by age, not by pid', (chr(35) + ' BELL-DEAD v85.' + '159') in _src and 'BELL-DEAD: tick.log' in open(os.path.join(BASE_DIR, 'ship.sh')).read())
+    ck('S529 a stopped or sleeping beat confesses first', (chr(35) + ' BELL-CONFESS v85.' + '159') in _src and 'bell stopped: %r' in _src and 'bell slept' in _src)
     ck('S362 the ritual installs its own policy and a loop nobody runs', (chr(35)+' POLICY-RESET v85.25') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S363 a second download never re-enters the chair wearing a portal mask', (chr(35)+' DUP-SEED v85.26') in _src and ('second download of' in _src))
     ck('S364 a logged-out window asks for one scan, named aloud', (chr(35)+' QR-RESCAN v85.26') in open(os.path.join(BASE_DIR, 'wa.py')).read())
