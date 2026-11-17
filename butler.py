@@ -5360,6 +5360,7 @@ def _selftest(root):
     ck('S538 a miss is never cached as silence', 'if name: c[key] = [' in _src and 'silence is a question, not a verdict' in _src)
     ck('S539 an empty verdict over a readable paper is re-asked and confessed', (chr(35) + ' COLD-CLOSURE v85.' + '165') in _src and 'verdict empty:' in _src and 'asked twice' in _src)
     ck('S540 the warm door refuses inside five seconds', 'timeout=5000' in open(os.path.join(BASE_DIR, 'wa_warm.py')).read())
+    ck('S541 the nudge keyword has a voice and the chat keeps keywords for the pipeline', 'def do_nudge(' in open(os.path.join(BASE_DIR, 'briefing.py')).read() and '_kw0 in (' + chr(39) + 'jd' + chr(39) + ', ' + chr(39) + 'missed' + chr(39) + ', ' + chr(39) + 'nudge' + chr(39) + ', ' + chr(39) + 'refer' + chr(39) + ')' in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S362 the ritual installs its own policy and a loop nobody runs', (chr(35)+' POLICY-RESET v85.25') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S363 a second download never re-enters the chair wearing a portal mask', (chr(35)+' DUP-SEED v85.26') in _src and ('second download of' in _src))
     ck('S364 a logged-out window asks for one scan, named aloud', (chr(35)+' QR-RESCAN v85.26') in open(os.path.join(BASE_DIR, 'wa.py')).read())

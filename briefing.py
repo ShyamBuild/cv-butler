@@ -956,6 +956,9 @@ def do_note(arg, root, say=_say):
     butler.pipeline_note(parts[0], parts[1], say)
 
 @_armor
+def do_nudge(arg, root, say=print, ask=None, words=None):  # KEYWORD-DOOR v85.166: the nudge keyword has a voice at last - the missed door's own search, picker and draft, carrying the reminder words the house already owns (_tpl_for resolves them; no sentence is invented here)
+    return do_missed(arg, root, say, ask, words or ['nudge'])
+
 def do_missed(arg, root, say=print, ask=None, words=None):
     arg = (arg or '').strip()
     f = _read_focus()
@@ -1754,6 +1757,10 @@ if __name__ == "__main__":
                 say('  👀 dash         · see the desk\'s census')
                 continue
             if butler.sheet_current() and q.strip() in ('jd', 'missed', 'nudge', 'refer'): q = q + ' ' + os.path.splitext(os.path.basename(butler.sheet_current()['p']))[0]  # CHAIR-KEYWORD v84.30
+            _kw0 = (q.strip().split()[0].lower() if q.strip() else '')  # KEYWORD-DOOR v85.166: a keyword that carries a name is still the pipeline, never the assistant
+            if _kw0 in ('jd', 'missed', 'nudge', 'refer') and len(q.strip().split()) > 1:
+                _kfn = globals().get('do_' + _kw0)
+                if _kfn: _kfn(' '.join(q.strip().split()[1:]), root, _say); continue
             if q.startswith('draftwhy '): do_draftwhy(q[9:].strip(), root, print); continue  # DRAFT-WHY v84.33
             if q == 'twins' or q.startswith('twins '): butler.twins_cmd(q[5:].strip(), root, _say); continue  # TWINS v84.36
             if q.startswith('skipfolder '): butler.skipfolder_cmd(q[11:].strip(), root, _say); continue  # NON-QUEUE v84.39
