@@ -2318,6 +2318,12 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
     if i.get('re'): say('🔄 re-review: skipped earlier, the tray is empty now - one soul per seed, new loose papers still outrank him')  # RETRAY v84.55
     p = i['p']; ph = taught_digits(i['name']) or phones_of(p, True) or None  # QUIET-CHAIR v84.37: the dossier takes the number without the clerk's ceremony
     if isinstance(ph, list): ph = ph[0] if ph else None
+    try:  # PREOPEN v85.178: the window opens once at the seat, so the digit only fills text
+     if ph:
+      import wa as _wa_po
+      _wa_po.preopen(ph, say)
+    except Exception:
+     pass
     _preview_open(p, say)
     _em = ''  # CONTACT-ONCE v84.39: every truth exactly once - email and phone in a single line
     for _fn in ('_email_cheap', 'email_of', '_email_of', '_email_witness', 'emails_of'):
@@ -5025,6 +5031,20 @@ def _warmreuse_probe():  # WARM-REUSE v85.177: the fixture S569 leans on - the j
     except Exception:
         return False
 
+def _preopen_probe():  # PREOPEN v85.178: the fixture S570 leans on - preopen exists, and the send skips a chat that is already open
+    try:
+        _w = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa.py'), encoding='utf-8', errors='ignore').read()
+        if (chr(35) + ' PREOPEN v85.178') not in _w:
+            return False
+        if 'def preopen(' not in _w:
+            return False
+        if '_already' not in _w or 'reusing the open chat' not in _w:
+            return False
+        _b = open(__file__, encoding='utf-8', errors='ignore').read()
+        return 'PREOPEN v85.178' in _b
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -5694,6 +5714,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S570 the seat opens the chat once and the digit only fills it', _preopen_probe())
     ck('S569 a held profile with a live door is joined, not refused', _warmreuse_probe())
     ck('S568 the house speaks to no cloud, only this Mac and the master' + chr(39) + 's own WhatsApp Web', _nocloud_probe())
     ck('S567 the prompt shows a chair, not a plank', _st_probe() and 'nobody seated' in _br)

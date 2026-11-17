@@ -249,6 +249,28 @@ def watest(say=print):  # WA-STEP v85.29: each door of the ritual opened in orde
     say('watest complete - the window stays open for the next send')
     return bool(ok)
 
+def preopen(phone, say=None):  # PREOPEN v85.178: at the seat, the chat is opened once - the digit later only fills the composer
+    try:
+        _d = re.sub(r'\D', '', str(phone))
+        if len(_d) == 10:
+            _d = '91' + _d
+        if not _d:
+            return False
+        pw = _pw()
+        _door = pw.chromium.connect_over_cdp(_CDP_URL)
+        _c = _door.contexts[0] if _door.contexts else _door.new_context()
+        _pg = next((x for x in _c.pages if 'web.whatsapp.com' in (getattr(x, 'url', '') or '')), None)
+        if _pg is None:
+            return False
+        if ('/send?phone=' + _d) in (_pg.url or ''):
+            return True
+        _pg.goto('https://web.whatsapp.com/send?phone=' + _d, wait_until='domcontentloaded', timeout=20000)
+        if say:
+            say('   📱 chat pre-opened for +%s - the digit will only fill the text' % _d)
+        return True
+    except Exception:
+        return False
+
 def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  # POLICY-RESET v85.25  # QUIET-ASYNCIO v85.28  # WA-DIAG v85.28 (retired v85.29: the DIAG traceback proved the shadow silenced playwright's own heartbeat inside its fiber; the laws rest here as witnesses, their guards repinned)  # DRAFT-ONLY v85.150: the text is placed in the field and the ritual ends there - the send column belongs to the master alone
     digits = re.sub(r'\D', '', str(phone))
     if len(digits) == 10: digits = '91' + digits
@@ -276,9 +298,12 @@ def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  #
             ctx = _ctx()  # PERSISTENT-WA v84.38: reuse the living window instead of launching and closing one per draft
             page = ctx.pages[0] if ctx.pages else ctx.new_page()
             via_cdp = False
-        if not _goto(page, f"https://web.whatsapp.com/send?phone={digits}", say):
-            say('⚠️ chat page did not load - scan QR in the opened window if asked, then retry')
-            return False
+        _already = ('/send?phone=' + digits) in (page.url or '')  # PREOPEN v85.178: the seat already opened this chat - a digit must never reload it
+        if _already:
+         say('   ♻️ reusing the open chat - no reload')
+        elif not _goto(page, f'https://web.whatsapp.com/send?phone={digits}', say):
+         say('⚠️ chat page did not load - scan QR in the opened window if asked, then retry')
+         return False
         try:
             _html = page.content()
         except Exception:
