@@ -122,7 +122,15 @@ def wa_goto(phone, say=print):  # WA-GOTO v85.150: the prep door the seat alread
         say(f'⚠️ wa_goto failed for phone {phone}: {e}')
         return False
 
+def _arm_dialogs(page):  # DIALOG-ARM v85.179: WhatsApp asks "leave this page?" whenever a live draft sits in the composer; answer it so no navigation dies on a modal
+    try:
+        page.on('dialog', lambda _d: _d.accept())
+        return True
+    except Exception:
+        return False
+
 def _goto(page, url, say=print):
+    _arm_dialogs(page)  # DIALOG-ARM v85.179: every goto answers the leave-page question first
     for a in (0, 1):
         try:
             page.goto(url, timeout=90000, wait_until='domcontentloaded'); return True
@@ -264,6 +272,7 @@ def preopen(phone, say=None):  # PREOPEN v85.178: at the seat, the chat is opene
             return False
         if ('/send?phone=' + _d) in (_pg.url or ''):
             return True
+        _arm_dialogs(_pg)  # DIALOG-ARM v85.179: a live draft must not block the seat from opening the chat
         _pg.goto('https://web.whatsapp.com/send?phone=' + _d, wait_until='domcontentloaded', timeout=20000)
         if say:
             say('   📱 chat pre-opened for +%s - the digit will only fill the text' % _d)

@@ -5045,6 +5045,21 @@ def _preopen_probe():  # PREOPEN v85.178: the fixture S570 leans on - preopen ex
     except Exception:
         return False
 
+def _dialog_probe():  # DIALOG-ARM v85.179: the fixture S571 leans on - the arm exists and stands before both navigations
+    try:
+        _w = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa.py'), encoding='utf-8', errors='ignore').read()
+        if (chr(35) + ' DIALOG-ARM v85.179') not in _w:
+            return False
+        if 'def _arm_dialogs(page):' not in _w:
+            return False
+        _a = _w.find('_arm_dialogs(page)')
+        _g = _w.find('page.goto(url')
+        if _a < 0 or _g < 0 or _a > _g:
+            return False
+        return _w.count('_arm_dialogs(') >= 3
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -5714,6 +5729,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S571 the leave-page question never blocks a navigation', _dialog_probe())
     ck('S570 the seat opens the chat once and the digit only fills it', _preopen_probe())
     ck('S569 a held profile with a live door is joined, not refused', _warmreuse_probe())
     ck('S568 the house speaks to no cloud, only this Mac and the master' + chr(39) + 's own WhatsApp Web', _nocloud_probe())
