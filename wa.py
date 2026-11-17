@@ -29,16 +29,51 @@ def _lock_words(e):  # PROFILE-LOCK v85.150: the shapes playwright wears when an
     return any(w in t for w in ('processsingleton', 'singletonlock', 'already in use', 'is already running', 'profile directory', 'user data directory'))
 
 
+def _lock_owner_pid():  # WARM-REUSE v85.177: the profile lock names its owner as <host>-<pid>; read it, never guess
+    try:
+        _t = os.readlink(os.path.join(PROFILE, 'SingletonLock'))
+        return int(str(_t).rsplit('-', 1)[1])
+    except Exception:
+        return 0
+def _pid_alive(pid):  # WARM-REUSE v85.177: a pid that answers kill(0) is holding a real window
+    try:
+        os.kill(int(pid), 0)
+        return True
+    except Exception:
+        return False
+def _reap_stale_lock():  # WARM-REUSE v85.177: a lock whose owner is gone is litter - remove it so the next launch can live
+    try:
+        _pid = _lock_owner_pid()
+        if _pid and not _pid_alive(_pid):
+            for _f in ('SingletonLock', 'SingletonSocket', 'SingletonCookie'):
+                try:
+                    os.unlink(os.path.join(PROFILE, _f))
+                except Exception:
+                    pass
+            print('🧹 stale WhatsApp profile lock removed (owner is gone)', flush=True)
+            return True
+    except Exception:
+        pass
+    return False
+
 def _ctx():
     if 'ctx' not in _state:
         pw = _pw()
+        _reap_stale_lock()  # WARM-REUSE v85.177: reap before launching, so a dead owner never blocks the living one
         try:
             ctx = pw.chromium.launch_persistent_context(
                 PROFILE, headless=False, viewport={"width": 1280, "height": 900},
                 args=["--disable-blink-features=AutomationControlled"])
         except Exception as e:  # PROFILE-LOCK v85.150: Chrome is already open on wa_profile - catch it, name the cure, never crash the chat
             if _lock_words(e):
-                raise WaBusy('🔒 Chrome is already holding the WhatsApp window (profile lock on wa_profile). Close that Chrome window, then repeat the same command - nothing was sent, nothing was lost.') from None
+                try:  # WARM-REUSE v85.177: a held profile with a live door is not a wall - it is the window the house already owns
+                 _door = pw.chromium.connect_over_cdp(_CDP_URL)
+                 _ctx2 = _door.contexts[0] if _door.contexts else _door.new_context()
+                 _state['pw'] = pw
+                 _state['ctx'] = _ctx2
+                 return _ctx2
+                except Exception:
+                 raise WaBusy('🔒 the WhatsApp window is open but its door is shut (profile lock on wa_profile). Repeat the same command in a moment - nothing was sent, nothing was lost.') from None
             raise
         _state['pw'] = pw; _state['ctx'] = ctx
     return _state['ctx']
