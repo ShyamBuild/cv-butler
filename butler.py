@@ -1838,7 +1838,7 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
                   if (_d4 + ext).lower() == x.lower(): continue  # NOOP-RENAME v85.153: identity is not a deed
                   if set(_d4.lower().split()) & _PLACE_STOP: continue  # PLACE-REFUSE v85.153: a town never wears a coat
                   if _DAM['on'] and sum(1 for _t in _tail_renames() if x in _t) > 2: continue  # OSCILLATION-DAM v85.153: a paper that trembles rests until a hand or a fixture steadies it  # DAM-PER-PAPER v85.157: a paper that never trembled is never dammed by another paper's history - the counter reads this paper's own name only
-                  os.rename(p, _q4); log('✏️ sweep renamed (gated eyes): %s → %s' % (x, _d4 + ext))  # SWEEP-GARBAGE-DEED v85.108: a stem no human wears is a scar, and the paper's own fixture-tested head names it again on the file-change trigger - behind canon, gate, collision check and the undo ledger; a stem that is another human's name still only proposes
+                  os.rename(p, _q4); pass  # WITNESS-DEDUP v85.163: the single witness writes this deed with its door tag  # SWEEP-GARBAGE-DEED v85.108: a stem no human wears is a scar, and the paper's own fixture-tested head names it again on the file-change trigger - behind canon, gate, collision check and the undo ledger; a stem that is another human's name still only proposes
                   try:
                    _safe_rename_ledger(p, _d4, 'sweep-garbage', once=True); _safe_repath_ledgers(p, _q4)
                   except Exception: pass
@@ -1980,7 +1980,7 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
    if (d2 + ext).lower() == x.lower(): log('🪤 identity rest: %s' % x); return  # NOOP-RENAME v85.153: a deed that changes nothing is not a deed
    if set(d2.lower().split()) & _PLACE_STOP: log('🪤 town coat refused: %s' % (d2 + ext)); return  # PLACE-REFUSE v85.153: a town never wears a coat
    if _DAM['on'] and sum(1 for _t in _tail_renames() if x in _t) > 2: log('🪤 oscillation rest: %s' % x); return  # OSCILLATION-DAM v85.153: a paper that trembles rests until a hand or a fixture steadies it  # DAM-PER-PAPER v85.157: a paper that never trembled is never dammed by another paper's history - the counter reads this paper's own name only
-   os.rename(p, q2); log('✏️ service renamed (gated eyes): %s → %s' % (x, d2 + ext))  # SERVICE-EYES v85.85 (gated-deed v85.104): the right-click is the master's own hand, so behind the identity gate and the twin check the deed is lawful again; the background sweep keeps its silence forever
+   os.rename(p, q2); pass  # WITNESS-DEDUP v85.163: the single witness writes this deed with its door tag  # SERVICE-EYES v85.85 (gated-deed v85.104): the right-click is the master's own hand, so behind the identity gate and the twin check the deed is lawful again; the background sweep keeps its silence forever
    try:
     _safe_rename_ledger(p, d2, 'service-eyes', once=True); _safe_repath_ledgers(p, q2)
    except Exception: pass
@@ -2313,7 +2313,7 @@ _DAM = {'on': True}  # OSCILLATION-DAM v85.153: the dam counts tremors on the li
 def _tail_renames():  # OSCILLATION-DAM v85.153: the last five hundred tick lines of rename deeds, for counting how often a paper trembles
     try:
         _lns = open(os.path.join(BASE_DIR, 'tick.log'), 'rb').read().decode('utf-8', 'ignore').split(chr(10))[-500:]
-        return [l for l in _lns if ' renamed ' in l]
+        return [l for l in _lns if ' renamed ' in l or '[rename]' in l]  # WITNESS-DEDUP v85.163: the dam reads the witness too - the door lines are retiring, and a blind dam is worse than a noisy one
     except Exception:
         return []
 
@@ -5334,6 +5334,7 @@ def _selftest(root):
     ck('S533 the doorbell sweeps every beat, unasked', '        _case_sweep(root, log)' in _src)
     ck('S534 the eye cache keys by real path and carries its version', ('key = os.path.' + 'realpath(p)') in _src and '_EYE_VSN = ' + chr(39) + 'v85.' + '162' + chr(39) in _src and ('key = os.path.' + 'basename(p)') not in _src)
     ck('S535 a missing path speaks its miss', 'no such paper: %s' in _src and (chr(35) + ' WHY-LOUD-MISSING v85.' + '162') in _src)
+    ck('S536 one deed, one line, one door, and the dam still reads them', _src.count(chr(35) + ' WITNESS-DEDUP v85.' + '163') >= 3 and ('renamed (gated ' + 'eyes)') not in _src and "or '[rename]' in l" in _src and (chr(35) + ' RENAME-SPOKEN v85.' + '161') in _src)
     ck('S362 the ritual installs its own policy and a loop nobody runs', (chr(35)+' POLICY-RESET v85.25') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S363 a second download never re-enters the chair wearing a portal mask', (chr(35)+' DUP-SEED v85.26') in _src and ('second download of' in _src))
     ck('S364 a logged-out window asks for one scan, named aloud', (chr(35)+' QR-RESCAN v85.26') in open(os.path.join(BASE_DIR, 'wa.py')).read())
