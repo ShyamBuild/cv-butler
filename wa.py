@@ -225,7 +225,16 @@ def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  #
         try:
             _door = pw.chromium.connect_over_cdp('http://127.0.0.1:9222')  # WARM-CLIENT v81.47 + v81.55: the shared door is never ours to query or close
             _ctx2 = _door.contexts[0] if _door.contexts else _door.new_context()
-            page = _ctx2.new_page()
+            _wa_pgs = [pg for pg in _ctx2.pages if 'web.whatsapp.com' in (getattr(pg, 'url', '') or '')]  # WARM-TAKE-OVER v85.174: the tab the house warmed is the door - seventeen tabs and a fresh load per press was the wound
+            if _wa_pgs:
+             page = _wa_pgs[0]
+             for _xp in _wa_pgs[1:]:  # WARM-TAKE-OVER v85.174: only the tabs this house opened are swept - the master's own stay
+              try:
+               if '/send?phone=' in (getattr(_xp, 'url', '') or ''): _xp.close()
+              except Exception:
+               pass
+            else:
+             page = (_ctx2.pages[0] if _ctx2.pages else _ctx2.new_page())  # WARM-TAKE-OVER v85.174: the context's own page before any new tab
             via_cdp = True
         except Exception:
             ctx = _ctx()  # PERSISTENT-WA v84.38: reuse the living window instead of launching and closing one per draft

@@ -4977,6 +4977,19 @@ def _st_probe():  # PROMPT-STATE v85.173: the fixture S565 leans on - four truth
     except Exception:
         return False
 
+def _wa_probe():  # WARM-TAKE-OVER v85.174: the fixture S566 leans on - the send reuses a page, and no unconditional tab is opened
+    try:
+        _w = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa.py'), encoding='utf-8', errors='ignore').read()
+        if (chr(35) + ' WARM-TAKE-OVER v85.174') not in _w:
+            return False
+        if ('page = _ctx2.' + 'new_page()') in _w:
+            return False
+        if '_wa_pgs' not in _w or 'if _wa_pgs:' not in _w:
+            return False
+        return True
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -5646,6 +5659,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S566 the send takes the warm tab, never a fresh one', _wa_probe())
     ck('S565 the prompt names the chair, the door and the mind', _st_probe() and '_stat_line() + "you> "' in _br)
     ck('S564 a word beginning with a hotkey letter is never eaten', _hk_probe())
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
