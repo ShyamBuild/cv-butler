@@ -559,6 +559,44 @@ def _ear_intent(q, root, say=_say):  # EAR v84.35: a sentence about a human beco
 def _hot_key(c, buf, hot):  # HOTKEY-SCOPE v85.172: one pure test decides whether a keystroke is an answer - a word being typed is never an answer
     return bool(hot and not buf and c in '1234567ytn')
 
+_STAT_CACHE = {'t': 0.0, 'line': ''}
+def _wa_state():  # PROMPT-STATE v85.173: the WhatsApp door in one word - a quarter-second probe, never a stall
+    import socket as _pws
+    try:
+        _s = _pws.create_connection(('127.0.0.1', 9222), timeout=0.25)
+        _s.close()
+        return 'warm'
+    except Exception:
+        return 'cold'
+def _model_state():  # PROMPT-STATE v85.173: the mind in one word - the model the assistant would actually use, or none
+    try:
+        with urllib.request.urlopen('http://localhost:11434/api/tags', timeout=0.25) as _r:
+            _n = [m['name'] for m in json.loads(_r.read().decode()).get('models', []) if 'embed' not in m['name'].lower()]
+        return _pick_model(_n) if _n else 'none'
+    except Exception:
+        return 'none'
+def _stat_render(chair, waiting, wa, model):  # PROMPT-STATE v85.173: one line, four truths; pure, so the fixture can judge it
+    _c = ('\U0001fab5 ' + chair) if chair else '\U0001fab5 nobody seated'
+    return '%s · %s waiting · \U0001f4f1 %s · \U0001f916 %s' % (_c, waiting, wa, model) + chr(10)
+def _stat_line():  # PROMPT-STATE v85.173: the prompt line, cached five seconds - the keyboard is never held for a status
+    import time as _pst
+    try:
+        if _pst.time() - _STAT_CACHE['t'] < 5.0 and _STAT_CACHE['line']:
+            return _STAT_CACHE['line']
+        _cur = butler.sheet_current() or {}
+        _nm = (_cur.get('name') or '') if isinstance(_cur, dict) else ''
+        _wt = 0
+        try:
+            _wt = len([_i for _i in butler.sheet_load().get('items', []) if _i.get('status') == 'waiting'])
+        except Exception:
+            _wt = 0
+        _ln = _stat_render(_nm, _wt, _wa_state(), _model_state())
+        _STAT_CACHE['t'] = _pst.time()
+        _STAT_CACHE['line'] = _ln
+        return _ln
+    except Exception:
+        return ''
+
 def _smart_input(prompt, hot=False):  # LISTEN-REPL v85.4  # ALWAYS-RAW v85.6: the REPL always hears keys - a digit or y/t/n lands on the press; a word accumulates with live echo and backspace; Enter terminates words only  # HOTKEY-SCOPE v85.172: the reader always hears keys, but a key is an answer only when a question waits
     import sys, termios, tty
     if getattr(sys.stdout, 'last', '\n') != '\n': sys.stdout.write('\r\n')  # NEWLINE-DISCIPLINE v85.18  # CRLF-RAW v85.22: in raw mode the writer is the driver - LF alone leaves the column where it stood
@@ -1728,7 +1766,7 @@ if __name__ == "__main__":
 
         while True:
             try:
-                q = _smart_input("you> ", hot=butler.any_question()).strip()
+                q = _smart_input(_stat_line() + "you> ", hot=butler.any_question()).strip()
                 if butler.listen_teach(q): continue  # LISTEN v81.67: after a no-phone confession, the master's bare ten digits are the lesson
             except EOFError:
                 break
