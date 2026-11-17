@@ -832,7 +832,7 @@ def _prep_calls(candidate, root, say=print):  # UP-PREP v85.149: Preview opens b
         except Exception:
             chosen = phones[0]
     if chosen:  # SEAT-NO-OPEN v85.180: the seat opens nothing - the master picks his number in peace and the deed opens the window once
-     say('   📱 will draft to %s when you press a digit - WhatsApp opens then, once' % chosen)
+     pass  # CHAIR-CARD v85.181: the card already names the number
     try:
         _pj.dump({'path': p, 'phone': chosen, 'phones': phones}, open(os.path.join(BASE_DIR, '.prep_state.json'), 'w'))
     except Exception:
@@ -2275,6 +2275,36 @@ def seat_rename_check(root, say=print, only=None):  # SEAT-RENAME v85.11 (examin
         except Exception: pass
     return n
 
+_CLR = {'d': chr(27) + '[2m', 'c': chr(27) + '[36m', 'g': chr(27) + '[32m', 'y': chr(27) + '[33m', 'm': chr(27) + '[35m', 'b': chr(27) + '[1m', 'x': chr(27) + '[0m'}
+def _paint(t, k):  # CHAIR-CARD v85.181: colour is a courtesy - NO_COLOR and pipes get plain text
+    try:
+        if os.environ.get('NO_COLOR') or not sys.stdout.isatty():
+            return str(t)
+        return _CLR.get(k, '') + str(t) + _CLR['x']
+    except Exception:
+        return str(t)
+def _chair_card(name, p, ph, em, say=print):  # CHAIR-CARD v85.181: five lines - who, where, how to reach him, and the seven keys
+    try:
+        _idn = {}
+        try:
+            _idn = pos_identity(p) or {}
+        except Exception:
+            _idn = {}
+        _role = _idn.get('role') or os.path.basename(os.path.dirname(p))
+        _co = _idn.get('company') or ''
+        _loc = _idn.get('loc') or ''
+        say(_paint('┌─ 🪑 ', 'd') + _paint(str(name).upper(), 'b'))
+        _sub = _role + (_paint(' · ', 'd') + _co if _co else '') + (_paint(' · ', 'd') + _loc if _loc else '')
+        say(_paint('│  ', 'd') + _sub)
+        if em:
+            say(_paint('│  ✉️  ', 'd') + _paint(em, 'y') + _paint('   (copy)', 'd'))
+        if ph:
+            say(_paint('│  📱 ', 'd') + _paint(ph, 'g'))
+        say(_paint('└─ ', 'd') + _paint('1 jd · 2 refer · 3 cv · 4 nudge · 5 missed · 6 ready · 7 skip', 'm'))
+        return True
+    except Exception:
+        return False
+
 def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes, and the seat itself re-checks coverage
     seat_rename_check(root, say)  # SEAT-RENAME v85.11: check the focused chair before seating anyone
     s = sheet_load()
@@ -2324,12 +2354,6 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
     if i.get('re'): say('🔄 re-review: skipped earlier, the tray is empty now - one soul per seed, new loose papers still outrank him')  # RETRAY v84.55
     p = i['p']; ph = taught_digits(i['name']) or phones_of(p, True) or None  # QUIET-CHAIR v84.37: the dossier takes the number without the clerk's ceremony
     if isinstance(ph, list): ph = ph[0] if ph else None
-    try:  # PREOPEN v85.178: the window opens once at the seat, so the digit only fills text
-     if ph:
-      import wa as _wa_po
-      _wa_po.preopen(ph, say)
-    except Exception:
-     pass
     _preview_open(p, say)
     _em = ''  # CONTACT-ONCE v84.39: every truth exactly once - email and phone in a single line
     for _fn in ('_email_cheap', 'email_of', '_email_of', '_email_witness', 'emails_of'):
@@ -2340,11 +2364,8 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
                 with __import__('contextlib').redirect_stdout(_buf): _v = _f(p)  # SILENT-PROBE v84.41: discovering the email must not print the clerk's witness lines
                 if _v: _em = _v[0] if isinstance(_v, (list, tuple)) else str(_v); break
             except Exception: pass
-    tgs = _tags_of(p)
-    if tgs: say('   tags: ' + ', '.join(tgs))
-    seat_rename_check(root, say, only=p)  # SEAT-RENAME v85.15: the seated paper is named even on days the whole-chair pass rests
-    say(f"🛰️ {i['name']} · {os.path.basename(os.path.dirname(p))} · ✉️ {_em} · 📱 {ph or 'none (teach me)'}")  # HORIZONTAL v85.9 (re-seated v85.10): the dossier stands AFTER the block that births _em and ph - no variable answers before its birth  # HORIZONTAL v85.9  # WITNESS-CARRY v84.52: deleted lines hand their laws to the line that survives
-    say_identity_for(p, say)  # IDENTITY-AT-SEAT v84.39: the master asked for the triple at the seat as well; S277 keeps the proposal's
+    seat_rename_check(root, lambda *a, **k: None, only=p)  # SEAT-RENAME v85.15: the seated paper is named even on days the whole-chair pass rests
+    _chair_card(i['name'], p, ph, _em, say)  # CHAIR-CARD v85.181: one card replaces the dossier and the triple  # HORIZONTAL v85.9 (re-seated v85.10): the dossier stands AFTER the block that births _em and ph - never before  # IDENTITY-AT-SEAT v84.39: the triple lives inside the card
     try: _prep_calls(i, root, say)  # UP-PREP v85.149
     except Exception as _prep_e: say(f'⚠️ prep failed: {_prep_e}')
     say('   1 📤 jd→JD-Conf · 2 🙅 refer→Closed · 3 📝 cv→CV-Update · 4 🔔 nudge→reminder(no tag) · 5 📵 missed→Call-Sched · 6 🏆 internal→Ready · 7 ⏭️ skip→tray (one returns per empty seed)')  # EMOJI-CUE v84.51: each door wears its face, and no face wears a banned glyph  # EMOJI-CUE v84.51 # MAP-COMPACT v84.37 # WITNESS-CARRY v84.52  # WITNESS-CARRY v84.52: deleted lines hand their laws to the line that survives
@@ -5066,6 +5087,38 @@ def _dialog_probe():  # DIALOG-ARM v85.179: the fixture S571 leans on - the arm 
     except Exception:
         return False
 
+def _card_probe():  # CHAIR-CARD v85.181: the fixture S573 leans on - the card exists, paints nothing in a pipe, and the seat opens no window
+    try:
+        if 'def _chair_card(' not in _src0():
+            return False
+        if '_chair_card(i[' + chr(39) + 'name' + chr(39) + '], p, ph, _em, say)' not in _src0():
+            return False
+        _buf = __import__('io').StringIO()
+        _old = os.environ.get('NO_COLOR')
+        os.environ['NO_COLOR'] = '1'
+        try:
+            _chair_card('Test Name', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'x.pdf'), '9999999999', 'a@b.c', lambda s: _buf.write(str(s) + chr(10)))
+        finally:
+            if _old is None:
+                os.environ.pop('NO_COLOR', None)
+            else:
+                os.environ['NO_COLOR'] = _old
+        _t = _buf.getvalue()
+        if _t.count(chr(10)) != 5:
+            return False
+        if 'TEST NAME' not in _t or '9999999999' not in _t or 'a@b.c' not in _t:
+            return False
+        if '1 jd · 2 refer' not in _t:
+            return False
+        return ('_wa_' + 'po.preopen(') not in _src0()
+    except Exception:
+        return False
+def _src0():  # CHAIR-CARD v85.181: one reader, so no guard certifies its own text
+    try:
+        return open(__file__, encoding='utf-8', errors='ignore').read()
+    except Exception:
+        return ''
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -5735,6 +5788,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S573 the seat speaks five painted lines and opens nothing', _card_probe())
     ck('S572 the deed dials the number the master picked at the seat', 'def _chair_phone(' in _src and ('or _chair_' + 'phone(p) or phones_of') in _src and 'SEAT-NO-OPEN v85.180' in _src and 'wa.wa_' + 'goto(' not in _src)
     ck('S571 the leave-page question never blocks a navigation', _dialog_probe())
     ck('S570 the seat opens the chat once and the digit only fills it', _preopen_probe())
