@@ -5330,6 +5330,8 @@ def _selftest(root):
     ck('S529 a stopped or sleeping beat confesses first', (chr(35) + ' BELL-CONFESS v85.' + '159') in _src and 'bell stopped: %r' in _src and 'bell slept' in _src)
     ck('S530 a number is digits alone, an email is never a candidate', (chr(35) + ' NUMBER-IS-DIGITS v85.' + '160') in _src and '_pd = [x for x in phones' in _src and 'a witness is not a number' in _src)
     ck('S531 the beat pulses the ledger so the bell has an age', (chr(35) + ' BELL-PULSE v85.' + '159') in _src and "os.utime(os.path.join(BASE_DIR, 'tick.log')" in _src)
+    ck('S532 a rename is spoken in the bell book with its door', (chr(35) + ' RENAME-SPOKEN v85.' + '161') in _src and "tick.log'), 'a').write" in _src and '[rename]' in _src)
+    ck('S533 the doorbell sweeps every beat, unasked', '        _case_sweep(root, log)' in _src)
     ck('S362 the ritual installs its own policy and a loop nobody runs', (chr(35)+' POLICY-RESET v85.25') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S363 a second download never re-enters the chair wearing a portal mask', (chr(35)+' DUP-SEED v85.26') in _src and ('second download of' in _src))
     ck('S364 a logged-out window asks for one scan, named aloud', (chr(35)+' QR-RESCAN v85.26') in open(os.path.join(BASE_DIR, 'wa.py')).read())
@@ -5554,6 +5556,11 @@ def _logged_rename(a, b, *r, **k):
     except Exception:
         _who = '?'
     _rr = _orig_os_rename(a, b, *r, **k)
+    try:  # RENAME-SPOKEN v85.161: every door speaks its rename into the bell's own book - the tick.log is the witness of the deed, not the terminal's memory
+        import time as _t3
+        open(os.path.join(BASE_DIR, 'tick.log'), 'a').write('%s ✏️ [rename] %s -> %s  [%s]%s' % (_t3.strftime('%H:%M:%S'), os.path.basename(str(a)), os.path.basename(str(b)), _who, chr(10)))
+    except Exception:
+        pass
     try: _act('rename', os.path.basename(str(a)), 0.0, 0.0, 'now ' + os.path.basename(str(b)) + ' by ' + _who)
     except Exception: pass
     return _rr
