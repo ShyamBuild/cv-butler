@@ -1,6 +1,7 @@
 import os, re, time
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+_CDP_URL = os.environ.get('CV_WA_CDP_URL') or ('http://127.0.0.1:' + os.environ.get('CV_WA_CDP_PORT', '9222'))  # OFFLINE-CONFIG v85.176: the warm door's address, overridable, never a second browser service
 PROFILE = os.path.join(BASE_DIR, "wa_profile")
 _state = {}
 
@@ -184,7 +185,7 @@ def watest(say=print):  # WA-STEP v85.29: each door of the ritual opened in orde
     page = None
     try:
         say('2 cdp connect…')
-        d = pw.chromium.connect_over_cdp('http://127.0.0.1:9222')
+        d = pw.chromium.connect_over_cdp(_CDP_URL)
         page = (d.contexts[0] if d.contexts else d.new_context()).new_page()
         say('2 ok - the shared warm door answered')
     except Exception as e:
@@ -223,7 +224,7 @@ def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  #
     via_cdp = False
     try:
         try:
-            _door = pw.chromium.connect_over_cdp('http://127.0.0.1:9222')  # WARM-CLIENT v81.47 + v81.55: the shared door is never ours to query or close
+            _door = pw.chromium.connect_over_cdp(_CDP_URL)  # WARM-CLIENT v81.47 + v81.55: the shared door is never ours to query or close
             _ctx2 = _door.contexts[0] if _door.contexts else _door.new_context()
             _wa_pgs = [pg for pg in _ctx2.pages if 'web.whatsapp.com' in (getattr(pg, 'url', '') or '')]  # WARM-TAKE-OVER v85.174: the tab the house warmed is the door - seventeen tabs and a fresh load per press was the wound
             if _wa_pgs:

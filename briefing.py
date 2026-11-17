@@ -425,14 +425,16 @@ def _parse_json(raw):
         m = re.search(r'\{.*\}', raw, re.S)
         return json.loads(m.group(0)) if m else None
 
+_OLLAMA_BASE = os.environ.get('CV_OLLAMA_URL') or 'http://localhost:11434'  # OFFLINE-CONFIG v85.176: one mind door - local by default, overridable by the master, never a second provider
+
 def ask_ollama(q):
     try:
-        with urllib.request.urlopen("http://localhost:11434/api/tags", timeout=5) as r:
+        with urllib.request.urlopen(_OLLAMA_BASE + "/api/tags", timeout=5) as r:
             names = [m['name'] for m in json.loads(r.read().decode()).get('models', []) if 'embed' not in m['name'].lower()]
         if not names: return None
         prompt = f"Tags: {[k for k,_,_ in TAGS]}. Today is {datetime.date.today()}. For the user's question, reply with ONLY JSON like {{\"tags\":[\"interview tomorrow\"],\"name\":null,\"position\":null}}. Use \"ALL\" in tags if everything is wanted. Question: {q}"
         payload = json.dumps({"model": names[0], "messages": [{"role": "user", "content": prompt}], "stream": False}).encode()
-        req = urllib.request.Request("http://localhost:11434/api/chat", data=payload, headers={"Content-Type": "application/json"})
+        req = urllib.request.Request(_OLLAMA_BASE + "/api/chat", data=payload, headers={"Content-Type": "application/json"})
         with urllib.request.urlopen(req, timeout=60) as r:
             return _parse_json(json.loads(r.read().decode())['message']['content'])
     except Exception:
@@ -478,11 +480,11 @@ SYS_BUTLER = ("You are Butler, recruitment assistant of Sundeep Rana (Sunsoft Te
 
 def ask_ollama_stream(messages, say=_say):
     try:
-        with urllib.request.urlopen("http://localhost:11434/api/tags", timeout=5) as r:
+        with urllib.request.urlopen(_OLLAMA_BASE + "/api/tags", timeout=5) as r:
             names = [m['name'] for m in json.loads(r.read().decode()).get('models', []) if 'embed' not in m['name'].lower()]
         if not names: return False
         payload = json.dumps({"model": _pick_model(names), "messages": messages, "stream": True}).encode()
-        req = urllib.request.Request("http://localhost:11434/api/chat", data=payload, headers={"Content-Type": "application/json"})
+        req = urllib.request.Request(_OLLAMA_BASE + "/api/chat", data=payload, headers={"Content-Type": "application/json"})
         with urllib.request.urlopen(req, timeout=120) as r:
             for line in r:
                 try: d = json.loads(line)
@@ -522,11 +524,11 @@ EAR_WORDS = ('said', 'will', 'send', 'sent', 'missed', 'not interested', 'ready'
 EAR_TAGS = [('not interested', 'Closed \u2013 Not Proceeding'), ('rejected by client', 'Rejected by Client'), ('ready for manager', 'Ready for Manager Review'), ('manager review', 'Ready for Manager Review'), ('will send cv', 'Awaiting CV Update'), ('send the cv', 'Awaiting CV Update'), ('update cv', 'Awaiting CV Update'), ('updated cv', 'Awaiting CV Update'), ('missed', 'Call Scheduled'), ('no answer', 'Call Scheduled'), ('didn\u2019t pick', 'Call Scheduled'), ('did not pick', 'Call Scheduled'), ('jd mailed', 'Awaiting JD Confirmation'), ('acknowledge', 'Awaiting JD Confirmation'), ('interested', 'Awaiting JD Confirmation'), ('feedback pending', 'Feedback Pending'), ('interview tomorrow', 'Interview Tomorrow'), ('interview today', 'Interview Today'), ('interview', 'Interview Scheduled'), ('joined', 'Expected to Join'), ('call scheduled', 'Call Scheduled')]  # EAR v84.35: the deterministic table speaks first
 def _ear_json(q, vocab):  # EAR-JSON v84.35: the brain answers the ear in grammar, not prose; offline it is silent
     try:
-        with urllib.request.urlopen('http://localhost:11434/api/tags', timeout=5) as r:
+        with urllib.request.urlopen(_OLLAMA_BASE + '/api/tags', timeout=5) as r:
             names = [m['name'] for m in json.loads(r.read().decode()).get('models', []) if 'embed' not in m['name'].lower()]
         if not names: return None
         payload = json.dumps({'model': names[0], 'messages': [{'role': 'user', 'content': f'From this recruiter sentence return ONLY JSON like {{"tag": "<one of: {vocab}>"}} or {{"tag": null}}. Sentence: {q}'}], 'stream': False}).encode()
-        req = urllib.request.Request('http://localhost:11434/api/chat', data=payload, headers={'Content-Type': 'application/json'})
+        req = urllib.request.Request(_OLLAMA_BASE + '/api/chat', data=payload, headers={'Content-Type': 'application/json'})
         with urllib.request.urlopen(req, timeout=60) as r:
             d = _parse_json(json.loads(r.read().decode())['message']['content'])
         return (d or {}).get('tag')
@@ -570,7 +572,7 @@ def _wa_state():  # PROMPT-STATE v85.173: the WhatsApp door in one word - a quar
         return 'cold'
 def _model_state():  # PROMPT-STATE v85.173: the mind in one word - the model the assistant would actually use, or none
     try:
-        with urllib.request.urlopen('http://localhost:11434/api/tags', timeout=0.25) as _r:
+        with urllib.request.urlopen(_OLLAMA_BASE + '/api/tags', timeout=0.25) as _r:
             _n = [m['name'] for m in json.loads(_r.read().decode()).get('models', []) if 'embed' not in m['name'].lower()]
         return _pick_model(_n) if _n else 'none'
     except Exception:
@@ -1291,11 +1293,11 @@ def do_text(arg, root, say=print, ask=None):
 
 def _ai_name(q):
     try:
-        with urllib.request.urlopen("http://localhost:11434/api/tags", timeout=5) as r:
+        with urllib.request.urlopen(_OLLAMA_BASE + "/api/tags", timeout=5) as r:
             names = [m['name'] for m in json.loads(r.read().decode()).get('models', []) if 'embed' not in m['name'].lower()]
         if not names: return None
         payload = json.dumps({"model": names[0], "messages": [{"role": "user", "content": f'From this sentence return ONLY JSON like {{"name": "Full Name"}} or {{"name": null}}. Sentence: {q}'}], "stream": False}).encode()
-        req = urllib.request.Request("http://localhost:11434/api/chat", data=payload, headers={"Content-Type": "application/json"})
+        req = urllib.request.Request(_OLLAMA_BASE + "/api/chat", data=payload, headers={"Content-Type": "application/json"})
         with urllib.request.urlopen(req, timeout=60) as r:
             d = _parse_json(json.loads(r.read().decode())['message']['content'])
         return (d or {}).get('name')
@@ -1441,11 +1443,11 @@ def _hits_for(q, root):
 
 def _llm_prose(s):
     try:
-        with urllib.request.urlopen("http://localhost:11434/api/tags", timeout=5) as r:
+        with urllib.request.urlopen(_OLLAMA_BASE + "/api/tags", timeout=5) as r:
             names = [m['name'] for m in json.loads(r.read().decode()).get('models', []) if 'embed' not in m['name'].lower()]
         if not names: return None
         payload = json.dumps({"model": names[0], "messages": [{"role": "user", "content": f"Rewrite these recruiter facts as exactly two client-facing sentences, plain text, no preamble: {s}"}], "stream": False}).encode()
-        req = urllib.request.Request("http://localhost:11434/api/chat", data=payload, headers={"Content-Type": "application/json"})
+        req = urllib.request.Request(_OLLAMA_BASE + "/api/chat", data=payload, headers={"Content-Type": "application/json"})
         with urllib.request.urlopen(req, timeout=60) as r:
             t = (json.loads(r.read().decode())['message']['content'] or '').strip()
         return t if 20 < len(t) < 400 else None
