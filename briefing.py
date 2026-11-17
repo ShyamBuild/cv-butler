@@ -576,7 +576,7 @@ def _model_state():  # PROMPT-STATE v85.173: the mind in one word - the model th
     except Exception:
         return 'none'
 def _stat_render(chair, waiting, wa, model):  # PROMPT-STATE v85.173: one line, four truths; pure, so the fixture can judge it
-    _c = ('\U0001fab5 ' + chair) if chair else '\U0001fab5 nobody seated'
+    _c = ('\U0001fa91 ' + chair) if chair else '\U0001fa91 nobody seated'
     return '%s · %s waiting · \U0001f4f1 %s · \U0001f916 %s' % (_c, waiting, wa, model) + chr(10)
 def _stat_line():  # PROMPT-STATE v85.173: the prompt line, cached five seconds - the keyboard is never held for a status
     import time as _pst
