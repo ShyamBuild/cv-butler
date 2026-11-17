@@ -50,7 +50,7 @@ def _git_stamp():
 GIT_STAMP = _git_stamp()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-LOCK_FILE = os.path.join(BASE_DIR, "butler.lock")
+# LOCK-GRAVE v85.170: the single global lock constant is retired - the living lock wears the per-root hash name, and no code may gate on a dead pid
 def _names_by_phone():
     try:
         import json as _j
@@ -1667,7 +1667,11 @@ def _eyename_cache():
  for _try in (0, 1):  # CACHE-ATOMIC v85.164: a torn read (a writer mid-replace) is retried once, then treated as a MISS - never as a silence
   try:
    _d = _je.load(open(cf))
-   if isinstance(_d, dict): return _d, cf
+   if isinstance(_d, dict):
+    for _k in list(_d.keys()):  # EYE-CACHE-REKEY v85.170: a key that is not a path belongs to the retired name-keyed scheme - renamed in memory, never deleted, so no reader mistakes it for a verdict
+     if '/' not in str(_k) and not str(_k).startswith('legacy:'):
+      _d['legacy:' + str(_k)] = _d.pop(_k)
+    return _d, cf
   except Exception:
    pass
   _je_time.sleep(0.05)
@@ -5100,7 +5104,7 @@ def _selftest(root):
     _tm = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates', 'missed.txt')).read() if os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates', 'missed.txt')) else ''
     ck('S57 unified voice + emojis', 'Regards,' in _tm and '📞' in _tm and 'where=at' in _br)
     ck('S58 nudge speaks awaiting voice', "words=['awaiting', 'confirmation']" in _br and 'def do_missed(arg, root, say=print, ask=None, words=None)' in _br)
-    ck('S58 brace-proof drafts', 'class _SafeDict' in _br and 'where=at' in _br)
+    ck('S545 brace-proof drafts', 'class _SafeDict' in _br and 'where=at' in _br)
     ck('S59 nudge speaks awaiting voice', "'nudge': 'awaiting'" in _br and "TPL_DIR, 'awaiting.txt')" in _br)
     ck('S60 stage-aware follow', 'def _stage_words(' in _br and "cmd == 'follow'" in _br)
     ck('S61 nothing is ever reported as sent by the house', 'sent (you clicked in WhatsApp)' not in _wa and 'draft is in the WhatsApp field' in _wa)
@@ -5262,7 +5266,7 @@ def _selftest(root):
     ck('S468 no chair is ever built inside a chair', 0 <= _src.find('def handle_tags') < _src.find('STAGE-NEVER-' + 'BASE v85.128') and _src.count('os.path.basename(base) in _tag_vocab()') >= 1)
     ck('S466 the service gate sits inside the service door', 0 <= _src.find('def _service_act') < _src.find('CASE-GATE v85.117') < _src.find('CASE-SELF v85.82', _src.find('def _service_act')))
     ck('S467 the sweep gate stands above the service door', 0 <= _src.find('CASE-GATE v85.115') < _src.find('def _service_act') < _src.find('CASE-GATE v85.117'))
-    ck('S468 the wake queues only scars and watermarks', (chr(35)+' WAKE-Q v85.118') in _src and ('def on_moved(self, ev):' in _src) and ('WAKE_Q.append(d)' in _src))
+    ck('S546 the wake queues only scars and watermarks', (chr(35)+' WAKE-Q v85.118') in _src and ('def on_moved(self, ev):' in _src) and ('WAKE_Q.append(d)' in _src))
     ck('S469 the wake drains through the service door twice - idle and busy', _src.count(chr(35)+' WAKE-DRAIN v85.118') >= 2)
     ck('S470 the wake globals stand at module level, never inside a nested room', _src.count(chr(10) + 'WAKE_Q = []') >= 1 and _src.count(chr(10) + 'WAKE_L = threading.Lock()') >= 1)
     ck('S473 the Santosh email anchor defeats degree labels', (chr(35)+' STOP-EXT5 v85.121') in _src and (chr(35)+' EYE-REBIRTH v85.121') in _src and (chr(35)+' PHONE-TAIL v85.121') in _src and _acceptance_ok())
@@ -5282,20 +5286,20 @@ def _selftest(root):
     ck('S460 the email anchor speaks for mid-page caps names', (chr(35)+' EMAIL-ANCHOR v85.111') in _src and _src.count('wa[0].lower() in local or wa[-1].lower() in ' + 'local') >= 1)
     ck('S462 the seed identities are born before their first reading', _src.count('res_id = ' + '{}') == 1 and 0 <= _src.find('res_id = ' + '{}') < _src.find('res_id.items()'))
     ck('S461 the eye cache bumps when the brain learns a new anchor rule', _src.count('_EYE_VSN = ' + chr(39) + 'v85.1') >= 1 and (chr(35)+' EYE-REBIRTH v85.1') in _src)  # VERSION-FREE v85.113: a rebirth guard pins the lineage prefix, never one number, so the next bump never breaks it
-    ck('S462 a mononym caps head speaks through the email witness', (chr(35)+' MONO-CAPS v85.122') in _src and _src.count('all(w.isalpha() and len(w) >= ' + '3 for w in wa)') >= 1)
+    ck('S547 a mononym caps head speaks through the email witness', (chr(35)+' MONO-CAPS v85.122') in _src and _src.count('all(w.isalpha() and len(w) >= ' + '3 for w in wa)') >= 1)
     ck('S463 the desk survives a change of mind mid-gaze', (chr(35)+' WORK-INTERRUPT v85.127') in _br and _br.count('except Key' + 'boardInterrupt:') >= 2)
     ck('S464 a dead holder leaves no ghost lock', (chr(35)+' LOCK-REAP v85.128') in _src and _src.count('except ProcessLookup' + 'Error:') >= 1)
     ck('S465 a name welded to its address line speaks as a prefix', (chr(35)+' EMAIL-TITLE-ANCHOR v85.130') in _src and _src.count('local.startswith(wc[0].lower()) and wc[-1].lower() in ' + 'local') >= 1)
-    ck('S466 a heading is never a human shape', (chr(35)+' STOP-EXT6 v85.130') in _src and _src.count('technical qualification curriculum ' + 'vitae') >= 1)
-    ck('S467 a scar stem never testifies through the filename heuristic', (chr(35)+' HEURISTIC-LAST-FOR-GARBAGE v85.130') in _src and _src.count('if _garbage0 else heuristic_' + 'name(p)') >= 1)
-    ck('S468 the learned book serves only human-shaped names', (chr(35)+' LEARN-GATE v85.131') in _src and _src.count('def _learn_worthy(') >= 1)
-    ck('S469 twins of one witness wear the house suffix, never invented text', (chr(35)+' TWIN-SEAT v85.131') in _src and _src.count('house suffix, never inven' + 'ted text') >= 2)
-    ck('S470 a doorplate is stripped before the head is read', (chr(35)+' LABEL-STRIP v85.131') in _src and _src.count('Candidate|Applicant') >= 1)
-    ck('S463 the first breath of the page is a name when the email agrees', (chr(35)+' FIRST-LINE-MONONYM v85.123') in _src and _src.count('len(_mls[0].split()) == 1 and _mls[0].' + 'isupper()') >= 1)
-    ck('S464 the email anchor sits at the top of the brain', _src.count('_wa[0].lower() in _mlocal or _wa[-1].lower() in ' + '_mlocal') >= 1 and (chr(35)+' re-seated v85.123') in _src)
-    ck('S464 a shortened coat is completed, a stranger still only proposes', _stem_inside_name('Einstein G', 'Albert Einstein G') and _stem_inside_name('Manoj', 'Manoj Rana') and not _stem_inside_name('Rakesh Kumar', 'Chandan Kumar'))
-    ck('S465 the completion test stands before the proposal in the service gate', 0 <= _src.find('_stem_inside_name(_sn, d2)') < _src.find('a different human - proposal only') and (chr(35)+' NAME-COMPLETE v85.126') in _src)
-    ck('S464 the case-gate stands above the case-fix', 0 <= _src.find('CASE-GATE v85.115') < _src.find('CASE-SELF v85.82') < _src.find('NAME-SCAN-SERVICE v85.95'))
+    ck('S548 a heading is never a human shape', (chr(35)+' STOP-EXT6 v85.130') in _src and _src.count('technical qualification curriculum ' + 'vitae') >= 1)
+    ck('S549 a scar stem never testifies through the filename heuristic', (chr(35)+' HEURISTIC-LAST-FOR-GARBAGE v85.130') in _src and _src.count('if _garbage0 else heuristic_' + 'name(p)') >= 1)
+    ck('S550 the learned book serves only human-shaped names', (chr(35)+' LEARN-GATE v85.131') in _src and _src.count('def _learn_worthy(') >= 1)
+    ck('S551 twins of one witness wear the house suffix, never invented text', (chr(35)+' TWIN-SEAT v85.131') in _src and _src.count('house suffix, never inven' + 'ted text') >= 2)
+    ck('S552 a doorplate is stripped before the head is read', (chr(35)+' LABEL-STRIP v85.131') in _src and _src.count('Candidate|Applicant') >= 1)
+    ck('S553 the first breath of the page is a name when the email agrees', (chr(35)+' FIRST-LINE-MONONYM v85.123') in _src and _src.count('len(_mls[0].split()) == 1 and _mls[0].' + 'isupper()') >= 1)
+    ck('S554 the email anchor sits at the top of the brain', _src.count('_wa[0].lower() in _mlocal or _wa[-1].lower() in ' + '_mlocal') >= 1 and (chr(35)+' re-seated v85.123') in _src)
+    ck('S555 a shortened coat is completed, a stranger still only proposes', _stem_inside_name('Einstein G', 'Albert Einstein G') and _stem_inside_name('Manoj', 'Manoj Rana') and not _stem_inside_name('Rakesh Kumar', 'Chandan Kumar'))
+    ck('S556 the completion test stands before the proposal in the service gate', 0 <= _src.find('_stem_inside_name(_sn, d2)') < _src.find('a different human - proposal only') and (chr(35)+' NAME-COMPLETE v85.126') in _src)
+    ck('S557 the case-gate stands above the case-fix', 0 <= _src.find('CASE-GATE v85.115') < _src.find('CASE-SELF v85.82') < _src.find('NAME-SCAN-SERVICE v85.95'))
     ck('S445 the confession stands before the first guard it must explain', ('FAIL WHY' in _src) and ((chr(35)+' FAIL-LOUD v85.99') in _src))
     ck('S446 the gate tests behaviour on synthetic heads, so green means works', ('def _acceptance_ok(' in _src) and _acceptance_ok())
     ck('S447 one naming law lives in one pure function, and the eye delegates to it', _src.count('def _name_from_head_' + 'lines(') == 1 and _src.count('_name_from_head_' + 'lines(t.split') >= 1)  # MIRROR-SAFE v85.103: a guard that counts a string must not contain it whole
@@ -5474,7 +5478,7 @@ def _selftest(root):
     ck('S323 the sheet speaks one line per beat and every door wears its face', (chr(35)+' ONE-LINE v84.51') in _src and (chr(35)+' EMOJI-CUE v84.51') in _src and (chr(35)+' ACTION-ECHO v84.51') in _src)
     ck('S324 no lap may bury a law - deleted lines carry their witnesses', (chr(35)+' WITNESS-CARRY v84.52') in _src)
     ck('S325 the emoji cue coexists with the banned glyph'+chr(39)+'s absence', chr(128231) not in _src and (chr(35)+' EMOJI-CUE v84.51') in _src)
-    ck('S325 the emoji cue coexists with the banned glyph'+chr(39)+'s absence', chr(128231) not in _src and (chr(35)+' EMOJI-CUE v84.51') in _src)
+    ck('S558 the emoji cue coexists with the banned glyph'+chr(39)+'s absence', chr(128231) not in _src and (chr(35)+' EMOJI-CUE v84.51') in _src)
     ck('S316 the seated paper opens in Preview, behind your eyes, never closed by the machine', (chr(35)+' PREVIEW v84.46') in _src and ('def _preview_open(' in _src))
     ck('S317 every single-letter door answers to the keystroke alone', (chr(35)+' ONE-KEY v84.46') in open(os.path.join(BASE_DIR, 'wa.py')).read() and ('def menu_key(' in _src))
     try:
@@ -5487,8 +5491,8 @@ def _selftest(root):
         _sb = open(os.path.join(BASE_DIR, 'summary_builder.py')).read()
     except Exception:
         _sb = ''
-    ck('S493 the summary resolver lives beside its builder', (chr(35)+' SUMMARY-RESOLVE v85.' + '142') in (_src + _sb) and ('def _summary_template_' + 'for(') in (_src + _sb))
-    ck('S494 the resolver names the canonical workbook and orphans nothing', _summary_fixture_ok())
+    ck('S559 the summary resolver lives beside its builder', (chr(35)+' SUMMARY-RESOLVE v85.' + '142') in (_src + _sb) and ('def _summary_template_' + 'for(') in (_src + _sb))
+    ck('S560 the resolver names the canonical workbook and orphans nothing', _summary_fixture_ok())
     ck('S318 one keystroke decides the deed and the draft - no second prompt', (chr(35)+' ONE-INPUT v84.47') in _src and (('draft WhatsApp? ' + '[y] yes') not in _src))  # S318 repinned v84.48: the probe is built from parts, so the guard never carries the forbidden literal in its own body
     ck('S319 the unknown-outcome confession counts all seven doors', ('digits 1 to 7' in _src))
     ck('S320 no question may listen in silence - the cue line waits visibly and Ctrl+C cancels', (chr(35)+' ASK-LINE v84.49') in _src and ('x03' in _src) and ('one key, master' in _src))
@@ -5601,6 +5605,10 @@ def _selftest(root):
     ck('S207 the visual name carries the human, not the paper'+chr(39)+'s shout', (chr(35)+' CANON-FORM v82.0') in _src and ('name, tag = vv, ' + chr(39) + 'visual' + chr(39)) not in _src)
     ck('S198 every pick-list speaks its numbers'+chr(39)+' addresses', (chr(35)+' PROVENANCE-AT-PICK v81.92') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and _src.count('def provenance_'+'of(') == 1 and _src.find('def provenance_'+'of(') < _src.find('def phones_'+'of('))  # needles split: a count-guard must not count its own needle
     ck('S199 the paper'+chr(39)+'s own witness picks the candidate'+chr(39)+'s number', (chr(35)+' CANDIDATE-FIRST v81.93') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and any(x.strip().startswith('return _lv') for x in _src.split(chr(10))))
+    _gid = re.findall(r"ck\(\'(S\d+[A-Z]?)", _src)
+    ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
+    ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
+    ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
