@@ -556,7 +556,10 @@ def _ear_intent(q, root, say=_say):  # EAR v84.35: a sentence about a human beco
     say('· proposal waiting - type y or n on the next line')
     return True
 
-def _smart_input(prompt):  # LISTEN-REPL v85.4  # ALWAYS-RAW v85.6: the REPL always hears keys - a digit or y/t/n lands on the press; a word accumulates with live echo and backspace; Enter terminates words only
+def _hot_key(c, buf, hot):  # HOTKEY-SCOPE v85.172: one pure test decides whether a keystroke is an answer - a word being typed is never an answer
+    return bool(hot and not buf and c in '1234567ytn')
+
+def _smart_input(prompt, hot=False):  # LISTEN-REPL v85.4  # ALWAYS-RAW v85.6: the REPL always hears keys - a digit or y/t/n lands on the press; a word accumulates with live echo and backspace; Enter terminates words only  # HOTKEY-SCOPE v85.172: the reader always hears keys, but a key is an answer only when a question waits
     import sys, termios, tty
     if getattr(sys.stdout, 'last', '\n') != '\n': sys.stdout.write('\r\n')  # NEWLINE-DISCIPLINE v85.18  # CRLF-RAW v85.22: in raw mode the writer is the driver - LF alone leaves the column where it stood
     sys.stdout.write(prompt); sys.stdout.flush()
@@ -576,7 +579,7 @@ def _smart_input(prompt):  # LISTEN-REPL v85.4  # ALWAYS-RAW v85.6: the REPL alw
                     if buf:
                         buf = buf[:-1]; sys.stdout.write('\b '); sys.stdout.flush()
                     continue
-                if not buf and c in '1234567ytn':
+                if _hot_key(c, buf, hot):
                     sys.stdout.write(c + '\r\n'); sys.stdout.flush()  # CRLF-RAW v85.22: in raw mode the writer is the driver - LF alone leaves the column where it stood
                     return c
                 buf += c
@@ -586,6 +589,7 @@ def _smart_input(prompt):  # LISTEN-REPL v85.4  # ALWAYS-RAW v85.6: the REPL alw
     except KeyboardInterrupt:
         raise
     except Exception:
+        print('⚠️ reader fell back to cooked input - keys are not heard raw', flush=True)  # HOTKEY-SCOPE v85.172: a silent fallback is a lie about the keyboard
         return input('')
 
 def answer(root, q, say=_say):
@@ -1724,7 +1728,7 @@ if __name__ == "__main__":
 
         while True:
             try:
-                q = _smart_input("you> ").strip()
+                q = _smart_input("you> ", hot=butler.any_question()).strip()
                 if butler.listen_teach(q): continue  # LISTEN v81.67: after a no-phone confession, the master's bare ten digits are the lesson
             except EOFError:
                 break

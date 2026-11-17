@@ -859,6 +859,9 @@ def confirm_wait(say=print):  # KEY-CONFIRM v84.6: the answer is a keystroke, no
     sys.stdout.write('\n'); sys.stdout.flush()
     return k if k not in ('\r', '\n') else None
 
+def any_question():  # HOTKEY-SCOPE v85.172: one predicate answers "is a question waiting?" - the reader and the prompt consult the same door
+    return bool(action_pending() or sheet_current() or tag_pick_pending())
+
 def action_pending():  # PROPOSE-FIRST v84.4
     import json as _j
     try: return _j.load(open(os.path.join(BASE_DIR, 'pending_action.json'))).get('ts', 0) > time.time() - 600
@@ -4940,6 +4943,24 @@ def _summary_fixture_ok():  # SUMMARY-RESOLVE v85.142: a hermetic tree proves th
 def _dummy_door(x): return x
 
 
+def _hk_probe():  # HOTKEY-SCOPE v85.172: the fixture S564 leans on - a word is never a key, a key is an answer only when asked
+    try:
+        import briefing as _bf
+        _f = getattr(_bf, _hot_name(), None)
+        if not _f:
+            return False
+        _cases = [('n', '', False, False), ('n', '', True, True), ('1', '', True, True),
+                  ('n', 'u', True, False), ('m', '', True, False), ('y', '', False, False),
+                  ('t', '', False, False), ('7', '', False, False), ('7', '', True, True)]
+        for _c, _b, _hot, _want in _cases:
+            if bool(_f(_c, _b, _hot)) != _want:
+                return False
+        return True
+    except Exception:
+        return False
+def _hot_name():  # HOTKEY-SCOPE v85.172: spelled in pieces so no guard certifies its own text
+    return '_hot' + '_key'
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -5609,6 +5630,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S564 a word beginning with a hotkey letter is never eaten', _hk_probe())
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)
     if fails or missing: return False
