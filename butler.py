@@ -1808,6 +1808,17 @@ def _eyename_of(p, trace=False, log=None):  # EYES-IN-SWEEP v85.90: the OCR-back
   os.replace(_tmp, cf)  # CACHE-ATOMIC v85.164: atomic swap
  except Exception:
   pass
+ if not name:  # COLD-CLOSURE v85.165: a readable paper with no verdict is a question, never a final silence - ask the chain once more, then confess
+     try:
+         _t2 = (extract_text(p) or '')
+         if _t2.strip():
+             _r2 = _name_from_head_lines(_t2.split(chr(10))) or _name_from_first_line(p) or ''
+             _c2 = _canonical_person_name(_r2) if _r2 else ''
+             name = _display_name(_c2) if _c2 else ''
+         if not name:
+             _tick_log('🔇 verdict empty: %s | txt=%d | asked twice' % (os.path.basename(p), len(_t2 or '')))
+     except Exception:
+         pass
  return name
 def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a property of the name, not of the ceremony's memory  # SWEEP-TRACE v85.70: with trace on, every file speaks its verdict, so a silent sweep names the guard that silenced it
     try:
@@ -5347,6 +5358,8 @@ def _selftest(root):
     ck('S536 one deed, one line, one door, and the dam still reads them', _src.count(chr(35) + ' WITNESS-DEDUP v85.' + '163') >= 3 and ('renamed (gated ' + 'eyes)') not in _src and "or '[rename]' in l" in _src and (chr(35) + ' RENAME-SPOKEN v85.' + '161') in _src)
     ck('S537 the verdict book is written whole or not at all', 'os.replace(_tmp, cf)' in _src and (chr(35) + ' CACHE-ATOMIC v85.' + '164') in _src and 'for _try in (0, 1):' in _src)
     ck('S538 a miss is never cached as silence', 'if name: c[key] = [' in _src and 'silence is a question, not a verdict' in _src)
+    ck('S539 an empty verdict over a readable paper is re-asked and confessed', (chr(35) + ' COLD-CLOSURE v85.' + '165') in _src and 'verdict empty:' in _src and 'asked twice' in _src)
+    ck('S540 the warm door refuses inside five seconds', 'timeout=5000' in open(os.path.join(BASE_DIR, 'wa_warm.py')).read())
     ck('S362 the ritual installs its own policy and a loop nobody runs', (chr(35)+' POLICY-RESET v85.25') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S363 a second download never re-enters the chair wearing a portal mask', (chr(35)+' DUP-SEED v85.26') in _src and ('second download of' in _src))
     ck('S364 a logged-out window asks for one scan, named aloud', (chr(35)+' QR-RESCAN v85.26') in open(os.path.join(BASE_DIR, 'wa.py')).read())
