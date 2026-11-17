@@ -887,16 +887,20 @@ def _stage_words(who):
     if 'feedback pending' in st or 'ready for manager' in st or 'awaiting cv' in st: return ['outbox']
     if 'call scheduled' in st: return ['missed']
     return None
-def _tpl_name(words):
+def _tpl_name(words):  # TPL-EXACT v85.167: an exact name is the master's own file - a substring is only a neighbour, never a substitute
     words = words or ['missed']
+    _low = [str(w).lower() for w in words]
     try:
-        for f in sorted(os.listdir(TPL_DIR)):
-            stem = os.path.splitext(f)[0].lower()
-            if any(w in stem or stem in w for w in words): return stem
+        _fs = sorted(os.listdir(TPL_DIR))
+        for f in _fs:  # JD-VOICE v85.167: exact first - 'jd' must reach jd.txt, never 'awaiting jd confirmation'
+            _st = os.path.splitext(f)[0].lower()
+            if _st in _low: return _st
+        for f in _fs:
+            _st = os.path.splitext(f)[0].lower()
+            if any(w in _st or _st in w for w in _low): return _st
     except Exception: pass
     return 'awaiting (fallback)'
 
-@_armor
 def do_desk(arg, root, say=_say):  # DESK v84.0
     butler.desk_cmd(arg, root, say)
 @_armor

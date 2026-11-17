@@ -4928,6 +4928,21 @@ def _summary_fixture_ok():  # SUMMARY-RESOLVE v85.142: a hermetic tree proves th
 def _dummy_door(x): return x
 
 
+def _br_ok():  # JD-VOICE v85.167: the fixture the guard leans on - exact template names win, and the JD voice is the JD voice
+    try:
+        import briefing as _b, os as _o
+        if _b._tpl_name(['jd']) != 'jd': return False
+        if _b._tpl_name(['missed']) != 'missed': return False
+        _d = _b.TPL_DIR
+        _jd = _o.path.join(_d, 'jd.txt')
+        if not _o.path.exists(_jd): return False
+        _t = open(_jd, encoding='utf-8', errors='ignore').read().lower()
+        _aw = _o.path.join(_d, 'awaiting jd confirmation.txt')
+        _a = open(_aw, encoding='utf-8', errors='ignore').read().lower() if _o.path.exists(_aw) else ''
+        return ('shared the job description' in _t) and ('gentle reminder' not in _t) and ('gentle reminder' in _a)
+    except Exception:
+        return False
+
 def _selftest(root):
     _DAM['on'] = False  # OSCILLATION-DAM v85.153: fixtures rehearse on an empty river, so the dam never drowns the gate
     print('SELFTEST START', root, flush=True)
@@ -5361,6 +5376,7 @@ def _selftest(root):
     ck('S539 an empty verdict over a readable paper is re-asked and confessed', (chr(35) + ' COLD-CLOSURE v85.' + '165') in _src and 'verdict empty:' in _src and 'asked twice' in _src)
     ck('S540 the warm door refuses inside five seconds', 'timeout=5000' in open(os.path.join(BASE_DIR, 'wa_warm.py')).read())
     ck('S541 the nudge keyword has a voice and the chat keeps keywords for the pipeline', 'def do_nudge(' in open(os.path.join(BASE_DIR, 'briefing.py')).read() and '_kw0 in (' + chr(39) + 'jd' + chr(39) + ', ' + chr(39) + 'missed' + chr(39) + ', ' + chr(39) + 'nudge' + chr(39) + ', ' + chr(39) + 'refer' + chr(39) + ')' in open(os.path.join(BASE_DIR, 'briefing.py')).read())
+    ck('S542 the JD door speaks the JD words, never a neighbour'+chr(39)+'s reminder', _br_ok())
     ck('S362 the ritual installs its own policy and a loop nobody runs', (chr(35)+' POLICY-RESET v85.25') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S363 a second download never re-enters the chair wearing a portal mask', (chr(35)+' DUP-SEED v85.26') in _src and ('second download of' in _src))
     ck('S364 a logged-out window asks for one scan, named aloud', (chr(35)+' QR-RESCAN v85.26') in open(os.path.join(BASE_DIR, 'wa.py')).read())
