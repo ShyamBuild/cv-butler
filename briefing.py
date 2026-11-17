@@ -1077,14 +1077,14 @@ def do_missed(arg, root, say=print, ask=None, words=None):
 
 TPL_DIR = os.path.join(BASE_DIR, "templates")
 
-def _tpl_for(words):
+def _tpl_for(words):  # ONE-RESOLVER v85.168: the keyword door and the chair door read one exact-first table - a neighbouring reminder never speaks as the master's own file
     SYN = {'nudge': 'awaiting', 'reminder': 'awaiting', 'followup': 'outbox', 'follow': 'outbox', 'chase': 'outbox', 'goodluck': 'interview', 'wish': 'interview', 'fb': 'feedback'}
     words = list(words) + [SYN[w] for w in words if w in SYN]
     os.makedirs(TPL_DIR, exist_ok=True)
-    for f in sorted(os.listdir(TPL_DIR)):
-        stem = os.path.splitext(f)[0].lower()
-        if any(w in stem or stem in w for w in words):
-            return open(os.path.join(TPL_DIR, f)).read().strip()
+    _nm = _tpl_name(words)  # ONE-RESOLVER v85.168: exact-first resolution is owned by one function, so both doors answer alike and 'jd' reaches jd.txt
+    if _nm and _nm != 'awaiting (fallback)':
+        _fp = os.path.join(TPL_DIR, _nm + '.txt')
+        if os.path.exists(_fp): return open(_fp).read().strip()
     p = os.path.join(TPL_DIR, 'awaiting.txt')
     return open(p).read().strip() if os.path.exists(p) else _read_tpl()
 
