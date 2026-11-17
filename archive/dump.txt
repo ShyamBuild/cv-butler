@@ -1,3 +1,4 @@
+🔒 live lock: butler_96dd71f7.lock -> 3095|/Users/apple/Downloads/Sunsoft Technology/05 Micromatic Grinding/Plant Head - Ghaziabad
 ==== _service_act ====
 def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawful and local  # DRAIN-ARMOR v85.92: no path returns silent and a crash logs itself
  x = os.path.basename(p)
@@ -10,7 +11,7 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
    if _jd_like_name(x) or _portal_name(x): log('🧭 service: %s | masked (jd/portal) - name kept by law' % x); return
   except Exception: log('🧭 service: %s | mask check failed - left as is' % x); return
   disp = _display_name(stem)
-  if not (2 <= len(_stem_norm(stem).split()) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _stem_norm(stem).split())): disp = stem  # CASE-GATE v85.117: seated inside _service_act by function, not by string - a garbage stem never wears a display name here, so the FIRST click goes straight to the eyes and one click is enough
+  if not (2 <= len(_stem_norm(stem).split()) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _stem_norm(stem).split()) and not (set(_stem_norm(stem).lower().split()) & _PLACE_STOP)): disp = stem  # CASE-GATE v85.117: seated inside _service_act by function, not by string - a garbage stem never wears a display name here, so the FIRST click goes straight to the eyes and one click is enough  # PLACE-STEM-IS-GARBAGE v85.157: the CASE-GATE never case-fixes a coat - a town stem is no display name here either
   q = os.path.join(os.path.dirname(p), disp + ext)
   if disp != stem and not (os.path.exists(q) and os.path.basename(q).lower() != x.lower()):  # CASE-SELF v85.82: a case-variant of yourself is you
    try:
@@ -21,8 +22,24 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
     return
    except Exception as _se: log('⚠️ service rename failed: %s | %r' % (x, _se)); return
   v = ''
-  try: v = ('' if _garbage0 else heuristic_name(p)) or _name_from_first_line(p) or _eyename_of(p) or _name_from_head_lines((extract_text(p) or '').split(chr(10))) or get_visual_name(p)  # DIRECT-BRAIN v85.136: if the cached eye misfires, the brain reads the text layer straight, cache-free, before the pupil is summoned  # NAME-SCAN-SERVICE v85.95: the right-click borrows the scanning eye and its cache, so a photo-headed CV is named from its own head  # SERVICE-LAYOUT-EYE v85.121: layout-aware fallback reads separated visual CV headers after text/OCR eyes  # HEURISTIC-LAST-FOR-GARBAGE v85.130: a scar stem never testifies about its own paper - the filename heuristic rests when the stem wears no human
-  except Exception: v = ''
+  _v1 = ''
+  try: _v1 = '' if _garbage0 else heuristic_name(p) or ''  # SILENT-EXPIRY v85.154: each eye answers alone, so one eye's exception can never silence the eyes beneath it
+  except Exception: _v1 = ''
+  _v2 = ''
+  try: _v2 = _name_from_first_line(p) or ''
+  except Exception: _v2 = ''
+  _v3 = ''
+  try: _v3 = _eyename_of(p) or ''
+  except Exception: _v3 = ''
+  _v4 = ''
+  try: _v4 = _name_from_head_lines((extract_text(p) or '').split(chr(10))) or ''
+  except Exception: _v4 = ''
+  _v5 = ''
+  if not (_v1 or _v2 or _v3 or _v4):
+      try: _v5 = get_visual_name(p) or ''  # SILENT-EXPIRY v85.154: a silent head falls through to the pupil before any refusal - the click never gives up above the shields
+      except Exception: _v5 = ''
+  v = _v1 or _v2 or _v3 or _v4 or _v5
+  # DIRECT-BRAIN v85.136: if the cached eye misfires, the brain reads the text layer straight, cache-free, before the pupil is summoned  # NAME-SCAN-SERVICE v85.95: the right-click borrows the scanning eye and its cache, so a photo-headed CV is named from its own head  # SERVICE-LAYOUT-EYE v85.121: layout-aware fallback reads separated visual CV headers after text/OCR eyes  # HEURISTIC-LAST-FOR-GARBAGE v85.130: a scar stem never testifies about its own paper - the filename heuristic rests when the stem wears no human
   log('🔎 service diag: %s | eye-head: %s' % (x, (v or 'SILENT')[:60]))  # DIAG-EVERY-CLICK v85.110: no right-click is ever dark - the eye's raw head speaks into the log before any judgement
   if not v: log('🧭 service: %s | every eye silent (text, word, ocr) - vision or teaching needed' % x); return
   c = ''
@@ -65,14 +82,14 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
            return
        log('🧭 service: %s | another paper holds %s and no shared witness - twin law keeps both apart' % (x, os.path.basename(q2))); return
   _sn = _stem_norm(stem); _w0 = _sn.split()
-  _garbage = not (2 <= len(_w0) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _w0)) or bool(set(_sn.lower().split()) & _NAME_STOP)  # GARBAGE-TEST v85.110: a stem no person wears - scar or watermark - is corrected, not debated
+  _garbage = not (2 <= len(_w0) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _w0)) or bool(set(_sn.lower().split()) & _NAME_STOP) or bool(set(_sn.lower().split()) & _PLACE_STOP)  # GARBAGE-TEST v85.110: a stem no person wears - scar or watermark - is corrected, not debated  # PLACE-STEM-IS-GARBAGE v85.157: a stem wearing a town is a coat, not a human - it is never its own display name and never "a different human", so both doors hand it to the eye chain
   if not _garbage and not _stem_inside_name(_sn, d2) and _name_key(_sn) != _name_key(d2) and 2 <= len(_w0) <= 4: log('🧭 service: %s | eyes say %s, a different human - proposal only, never a guess' % (x, d2)); return
   try:
    if os.path.exists(q2) and os.path.basename(q2).lower() != x.lower(): log('🧭 service: %s | another paper holds %s - left as is' % (x, os.path.basename(q2))); return
    if (d2 + ext).lower() == x.lower(): log('🪤 identity rest: %s' % x); return  # NOOP-RENAME v85.153: a deed that changes nothing is not a deed
    if set(d2.lower().split()) & _PLACE_STOP: log('🪤 town coat refused: %s' % (d2 + ext)); return  # PLACE-REFUSE v85.153: a town never wears a coat
-   if _DAM['on'] and sum(1 for _t in _tail_renames() if x in _t or (d2 + ext) in _t) > 2: log('🪤 oscillation rest: %s' % x); return  # OSCILLATION-DAM v85.153: a paper that trembles rests until a hand or a fixture steadies it
-   os.rename(p, q2); log('✏️ service renamed (gated eyes): %s → %s' % (x, d2 + ext))  # SERVICE-EYES v85.85 (gated-deed v85.104): the right-click is the master's own hand, so behind the identity gate and the twin check the deed is lawful again; the background sweep keeps its silence forever
+   if _DAM['on'] and sum(1 for _t in _tail_renames() if x in _t) > 2: log('🪤 oscillation rest: %s' % x); return  # OSCILLATION-DAM v85.153: a paper that trembles rests until a hand or a fixture steadies it  # DAM-PER-PAPER v85.157: a paper that never trembled is never dammed by another paper's history - the counter reads this paper's own name only
+   os.rename(p, q2); pass  # WITNESS-DEDUP v85.163: the single witness writes this deed with its door tag  # SERVICE-EYES v85.85 (gated-deed v85.104): the right-click is the master's own hand, so behind the identity gate and the twin check the deed is lawful again; the background sweep keeps its silence forever
    try:
     _safe_rename_ledger(p, d2, 'service-eyes', once=True); _safe_repath_ledgers(p, q2)
    except Exception: pass
@@ -106,7 +123,7 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
             except Exception:
                 continue
             ws = stem.split()
-            if not (2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws)) or bool(set(stem.lower().split()) & _NAME_STOP) or os.path.splitext(stem)[1].lower() in ('.pdf', '.doc', '.docx', '.rtf'):  # GARBAGE-WIDE v85.110  # DOUBLE-EXT v85.136: a stem that wears its own extension is a download scar, never a human  # GARBAGE-WIDE v85.110: watermark stems are scars too, and the tick heals them
+            if not (2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws)) or bool(set(stem.lower().split()) & _NAME_STOP) or os.path.splitext(stem)[1].lower() in ('.pdf', '.doc', '.docx', '.rtf') or bool(set(stem.lower().split()) & _PLACE_STOP):  # GARBAGE-WIDE v85.110  # DOUBLE-EXT v85.136: a stem that wears its own extension is a download scar, never a human  # GARBAGE-WIDE v85.110: watermark stems are scars too, and the tick heals them  # PLACE-STEM-IS-GARBAGE v85.157: a stem wearing a town is a coat, not a human - it is never its own display name and never "a different human", so both doors hand it to the eye chain
                 _en4 = ''
                 try: _en4 = _eyename_of(p) or _name_from_head_lines((extract_text(p) or '').split(chr(10))) or ''  # DIRECT-BRAIN v85.136: the sweep too reads the text layer straight when the cached eye misfires
                 except Exception: _en4 = ''
@@ -119,8 +136,8 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
                  try:
                   if (_d4 + ext).lower() == x.lower(): continue  # NOOP-RENAME v85.153: identity is not a deed
                   if set(_d4.lower().split()) & _PLACE_STOP: continue  # PLACE-REFUSE v85.153: a town never wears a coat
-                  if _DAM['on'] and sum(1 for _t in _tail_renames() if x in _t or (_d4 + ext) in _t) > 2: continue  # OSCILLATION-DAM v85.153: a paper that trembles rests until a hand or a fixture steadies it
-                  os.rename(p, _q4); log('✏️ sweep renamed (gated eyes): %s → %s' % (x, _d4 + ext))  # SWEEP-GARBAGE-DEED v85.108: a stem no human wears is a scar, and the paper's own fixture-tested head names it again on the file-change trigger - behind canon, gate, collision check and the undo ledger; a stem that is another human's name still only proposes
+                  if _DAM['on'] and sum(1 for _t in _tail_renames() if x in _t) > 2: continue  # OSCILLATION-DAM v85.153: a paper that trembles rests until a hand or a fixture steadies it  # DAM-PER-PAPER v85.157: a paper that never trembled is never dammed by another paper's history - the counter reads this paper's own name only
+                  os.rename(p, _q4); pass  # WITNESS-DEDUP v85.163: the single witness writes this deed with its door tag  # SWEEP-GARBAGE-DEED v85.108: a stem no human wears is a scar, and the paper's own fixture-tested head names it again on the file-change trigger - behind canon, gate, collision check and the undo ledger; a stem that is another human's name still only proposes
                   try:
                    _safe_rename_ledger(p, _d4, 'sweep-garbage', once=True); _safe_repath_ledgers(p, _q4)
                   except Exception: pass
@@ -248,18 +265,49 @@ def _tick_loop():  # WATCH-HOOK v85.53 (version v85.64): the bell is owned by th
                 pass
             break
         _tt.sleep(10)
+    _shouted = False  # BELL-ALIVE v85.159: one shout per stale episode, never a chatter
     while True:
+        _t0 = _tt.time()
         try:
-            if open(pf).read().strip().split('|')[0] != str(os.getpid()):  # BELL-ABDICATE v85.64: an ousted owner stops beating on its next breath - abdication, not rivalry
+            _bs = open(pf).read().strip().split('|')[0]
+        except Exception:
+            _bs = str(os.getpid())
+        if _bs != str(os.getpid()):  # BELL-ABDICATE v85.64: an ousted owner stops beating on its next breath - abdication, not rivalry  # BELL-ALIVE v85.159: but a DEAD owner is inherited, never mourned
+            _alive = True
+            try:
+                os.kill(int(_bs), 0)
+            except Exception:
+                _alive = False
+            if _alive:
                 return
+            try:  # BELL-TAKEOVER v85.159: the living watcher takes the bell from a dead pid on its next beat and says so aloud
+                open(pf, 'w').write('%s|%s' % (os.getpid(), _me))
+                _tick_log('🔔 bell taken over: dead pid %s -> %s (%s)' % (_bs, os.getpid(), _me))
+            except Exception:
+                pass
+        try:
+            try: _b_age = _tt.time() - os.stat(os.path.join(BASE_DIR, 'tick.log')).st_mtime
+            except Exception: _b_age = 0
+            if _b_age > 30 and not _shouted:  # BELL-DEAD v85.159: a live pid proves nothing - the tick.log own age is the witness, and it shouts where house already reads
+                _tick_log('🔔 BELL-DEAD: no tick line for %.0fs (pid %s alive)' % (_b_age, os.getpid()))
+                _shouted = True
+            elif _b_age <= 30:
+                _shouted = False
             os.utime(pf, None)  # BELL-HEARTBEAT v85.59: the stamp is refreshed every beat - a pulse, not a lock; the witness of the rewritten block rides the line that is the heartbeat
+            try: os.utime(os.path.join(BASE_DIR, 'tick.log'), None)  # BELL-PULSE v85.159: the beat touches the ledger's mtime, so the bell's age measures the pulse and never the chatter - BELL-DEAD stays true the moment the loop stops
+            except Exception: pass
         except Exception:
             pass
         try:
             _event_tick((desk_load() or {}).get('primary') or os.getcwd(), _tick_log)
+        except Exception as _te:
+            _tick_log('🔔 bell stopped: %r' % (_te,))  # BELL-CONFESS v85.159: a beat that dies says why before it goes quiet
+        _tt.sleep(5)
+        try:  # BELL-CONFESS v85.159: a beat that took longer than thirty-five seconds confesses its own sleep
+            _gap = _tt.time() - _t0
+            if _gap > 35: _tick_log('🔔 bell slept %.0fs' % _gap)
         except Exception:
             pass
-        _tt.sleep(5)
 
 ==== _tick_log ====
 def _tick_log(msg):  # BELL-TOWER v85.55: the bell keeps its own book - one timestamped line per deed, readable from any folder, independent of whichever process owns the key
@@ -325,20 +373,12 @@ def _name_from_first_line(p):  # FIRST-LINE v85.20: when both developed eyes sta
     try:
         t = _word_text(p) or extract_text(p) or ''
         if not t.strip():
-            try: t = extract_text_ocr(p) or ''  # FIRST-LINE v85.20 (ocr-fallback v85.22): a text layer that refuses to open yields to the capped pixels
+            try: t = extract_text_ocr(p) or ''  # FIRST-LINE v85.20 (ocr-fallback v85.22): a text layer that refuses to open yields to the capped eye
             except Exception: t = ''
     except Exception:
         return ''
-    for ln in t.split('\n'):
-        ln = ln.strip()
-        if not ln: continue
-        if any(ch.isdigit() for ch in ln): continue
-        if '@' in ln: continue
-        ws = ln.split()
-        if 2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws) and not (set(w.lower() for w in ws) & _NAME_STOP):  # NAME-GATE v85.97: the fallback single-line path wears the same gate as the scan
-            return ' '.join(w.capitalize() for w in ws)
-        return ''
-    return ''
+    return _name_from_lines(t)  # GATE-REFUSE v85.156: one naming law in one place - the head band first, then eight breaths
+    # # FIRST-LINE v85.20  # # NAME-GATE v85.97
 
 ==== heuristic_name ====
 def heuristic_name(text):
@@ -469,15 +509,16 @@ def _eyename_of(p, trace=False, log=None):  # EYES-IN-SWEEP v85.90: the OCR-back
   st = os.stat(p)
  except Exception:
   return ''
- key = os.path.basename(p)
+ key = os.path.realpath(p)  # CACHE-KEY-TRUTH v85.162: the verdict belongs to one paper, not to a name two papers may share - stale basename entries are simply never asked for again
  c, cf = _eyename_cache()
  e = c.get(key)
- if e and len(e) > 3 and e[3] == _EYE_VSN and e[0] == st.st_size and abs(e[1] - st.st_mtime) < 1:  # EYECACHE-VSN v85.96: a naming-logic change invalidates every cached verdict, so stale blindness cannot outlive its cure
+ if e and len(e) > 3 and e[3] == _EYE_VSN and e[0] == st.st_size and abs(e[1] - st.st_mtime) < 1 and (e[2] or '').strip():  # EYECACHE-VSN v85.96: a naming-logic change invalidates every cached verdict, so stale blindness cannot outlive its cure  # SILENT-EXPIRY v85.154: a cached silence is a miss, not a verdict - the eye reads the paper instead of serving yesterday's blindness
   return e[2]
  name = ''
  t = ''
  try:
   t = extract_text(p) or ''
+  if not (t or '').strip(): t = extract_text(p) or ''  # CACHE-ATOMIC v85.164: a first-use reader that came back empty is asked once more before any verdict
  except Exception:
   t = ''
  fl = ''
@@ -494,12 +535,25 @@ def _eyename_of(p, trace=False, log=None):  # EYES-IN-SWEEP v85.90: the OCR-back
    name = _display_name(cn) if cn else ''
   except Exception:
    name = ''
- c[key] = [st.st_size, st.st_mtime, name, _EYE_VSN]  # EYECACHE-VSN v85.96: the verdict carries its logic version into the book
+ if name: c[key] = [st.st_size, st.st_mtime, name, _EYE_VSN]  # CACHE-ATOMIC v85.164: silence is a question, not a verdict - a miss is never written, so the next look always asks again
  try:
   import json as _je2
-  _je2.dump(c, open(cf, 'w'))
+  _tmp = cf + '.tmp'  # CACHE-ATOMIC v85.164: the book is written whole and swapped in, so no reader ever meets a half-written json
+  _je2.dump(c, open(_tmp, 'w'))
+  os.replace(_tmp, cf)  # CACHE-ATOMIC v85.164: atomic swap
  except Exception:
   pass
+ if not name:  # COLD-CLOSURE v85.165: a readable paper with no verdict is a question, never a final silence - ask the chain once more, then confess
+     try:
+         _t2 = (extract_text(p) or '')
+         if _t2.strip():
+             _r2 = _name_from_head_lines(_t2.split(chr(10))) or _name_from_first_line(p) or ''
+             _c2 = _canonical_person_name(_r2) if _r2 else ''
+             name = _display_name(_c2) if _c2 else ''
+         if not name:
+             _tick_log('🔇 verdict empty: %s | txt=%d | asked twice' % (os.path.basename(p), len(_t2 or '')))
+     except Exception:
+         pass
  return name
 
 ==== _stem_norm ====
@@ -637,13 +691,13 @@ def seat_rename_check(root, say=print, only=None):  # SEAT-RENAME v85.11 (examin
         if not _is_desk_candidate(x): continue
         if _jd_like_name(x) or _portal_name(x): continue
         v = heuristic_name(p) or _name_from_first_line(p)  # TEXT-EYES v85.16  # FIRST-LINE v85.20: every rewritten line carries the witnesses it already wore
-        if not v and x not in rec.get('vtried', []):  # VISION-ONCE v85.35: the expensive pupil is asked once per paper per day; a silent answer rests, so misses cost milliseconds thereafter
+        if not v and x not in rec.get('vtried', []):  # VISION-ONCE v85.35: the expensive pupil is asked once per paper per day; a silent answer is remembered, never re-bought
             v = _vision_safe(p)
             rec.setdefault('vtried', []).append(x)
-            if not v:  # STEM-FALLBACK v85.61: when every eye is silent and the filename itself is a human shape, the filename becomes the candidate - masks stay excluded by law, twins stay safe by the key compare
-                _ws = os.path.splitext(x)[0].split()
-                if 2 <= len(_ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _ws):
-                    v = os.path.splitext(x)[0]
+        if not v:  # STEM-FALLBACK v85.61: when every eye is silent and the filename itself is a human shape, the filename becomes the candidate  # GATE-REFUSE v85.156: and it answers on every up, not only the first - a tried pupil is not a closed door
+            _ws = os.path.splitext(x)[0].split()
+            if 2 <= len(_ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _ws):
+                v = os.path.splitext(x)[0]
         try:
             import asyncio as _a
             _a.set_event_loop(None)  # LOOP-CLEAN v85.21: the vision eye may leave an idle loop behind; playwright sync must find none
@@ -719,5 +773,5 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 OCRBIN = os.path.join(BASE_DIR, "cvocr")
 126 
 OCR_SEM = threading.Semaphore(2)
-5471 
+5615 
 extract_text = extract_text_ocr  # ALIAS v85.89: one name for the whole chain, bound after every def has landed - the diag pdf column, emails_in_text and every bare caller wake from swallowing NameError

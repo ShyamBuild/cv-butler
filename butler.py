@@ -266,7 +266,15 @@ def teach_digits_inline(name, basename, say):  # TEACH-IN-PLACE v85.49: when the
             return dgs
         say('⚠️ that is not a 10-digit mobile (6-9 start) - try again, or Enter to skip')
 
-def phones_of(p, quiet=False):  # QUIET-CLERK v81.87: the picker may ask without the ceremony; the law of speaking identity still binds every voice that drafts
+def _only_digits(_lst):  # NUMBER-AT-SOURCE v85.169: the picker's predicate written once - a witness is a number only when digits alone own it
+    _out = []
+    for _x in (_lst or []):
+        _s = str(_x)
+        if re.fullmatch(r'\d{10}|\d{12}', re.sub(r'\D', '', _s) or '') and not re.search(r'[A-Za-z@]', _s): _out.append(_x)
+    return _out
+def phones_of(p, quiet=False):  # NUMBER-AT-SOURCE v85.169: every number leaves through one sieve - an email in the witness list never becomes a dialling target
+    return _only_digits(_phones_of_raw(p, quiet))
+def _phones_of_raw(p, quiet=False):  # QUIET-CLERK v81.87: the picker may ask without the ceremony; the law of speaking identity still binds every voice that drafts
     _pbk, _pcf = _phonebook()  # PHONEBOOK-FIRST v85.48: a number learned once is known forever, in microseconds, even if the paper later goes silent
     _bn = os.path.basename(p)
     if _pbk.get(_bn): return list(_pbk[_bn])
@@ -4928,6 +4936,20 @@ def _summary_fixture_ok():  # SUMMARY-RESOLVE v85.142: a hermetic tree proves th
 def _dummy_door(x): return x
 
 
+def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
+    try:
+        _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
+        if '9217908487' not in _r: return False
+        if '+91-9992072806' not in _r: return False
+        if any('@' in str(x) for x in _r): return False
+        if any(len(re.sub(r'\D', '', str(x))) not in (10, 12) for x in _r): return False
+        if _only_digits([]) != []: return False
+        _src = open(__file__, encoding='utf-8', errors='ignore').read()
+        if ('def _phones' + '_of_raw(p, quiet=False):') not in _src: return False
+        return ('return _only_digits(_phones' + '_of_raw(p, quiet))') in _src
+    except Exception:
+        return False
+
 def _vd_ok():  # ONE-RESOLVER v85.168: the fixture S543 leans on - the keyword door and the chair door answer with one voice
     try:
         import briefing as _b, os as _o
@@ -5396,6 +5418,7 @@ def _selftest(root):
     ck('S541 the nudge keyword has a voice and the chat keeps keywords for the pipeline', 'def do_nudge(' in open(os.path.join(BASE_DIR, 'briefing.py')).read() and '_kw0 in (' + chr(39) + 'jd' + chr(39) + ', ' + chr(39) + 'missed' + chr(39) + ', ' + chr(39) + 'nudge' + chr(39) + ', ' + chr(39) + 'refer' + chr(39) + ')' in open(os.path.join(BASE_DIR, 'briefing.py')).read())
     ck('S542 the JD door speaks the JD words, never a neighbour'+chr(39)+'s reminder', _br_ok())
     ck('S543 both doors resolve templates through one exact-first resolver', _vd_ok())
+    ck('S544 a number is digits at the source, never an email', _nd_ok())
     ck('S362 the ritual installs its own policy and a loop nobody runs', (chr(35)+' POLICY-RESET v85.25') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S363 a second download never re-enters the chair wearing a portal mask', (chr(35)+' DUP-SEED v85.26') in _src and ('second download of' in _src))
     ck('S364 a logged-out window asks for one scan, named aloud', (chr(35)+' QR-RESCAN v85.26') in open(os.path.join(BASE_DIR, 'wa.py')).read())
