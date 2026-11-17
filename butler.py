@@ -807,6 +807,9 @@ def _prep_calls(candidate, root, say=print):  # UP-PREP v85.149: Preview opens b
         phones = phones_of(p, quiet=True) or []
     except Exception:
         phones = []
+    _pd = [x for x in phones if re.fullmatch(r'\d{10}|\d{12}', re.sub(r'\D', '', str(x)) or '') and not re.search(r'[A-Za-z@]', str(x))]  # NUMBER-IS-DIGITS v85.160: a number is digits alone - an email is a witness, never a candidate
+    if len(_pd) != len(phones): say('📱 a witness is not a number: %d entr(y/ies) refused - only digits are candidates' % (len(phones) - len(_pd)))  # NUMBER-IS-DIGITS v85.160: one loud line, then the digits walk on
+    phones = _pd
     if not phones:
         return
     chosen = phones[0] if len(phones) == 1 else None
@@ -2130,6 +2133,8 @@ def _tick_loop():  # WATCH-HOOK v85.53 (version v85.64): the bell is owned by th
             elif _b_age <= 30:
                 _shouted = False
             os.utime(pf, None)  # BELL-HEARTBEAT v85.59: the stamp is refreshed every beat - a pulse, not a lock; the witness of the rewritten block rides the line that is the heartbeat
+            try: os.utime(os.path.join(BASE_DIR, 'tick.log'), None)  # BELL-PULSE v85.159: the beat touches the ledger's mtime, so the bell's age measures the pulse and never the chatter - BELL-DEAD stays true the moment the loop stops
+            except Exception: pass
         except Exception:
             pass
         try:
@@ -5323,6 +5328,8 @@ def _selftest(root):
     ck('S527 a dead bell is inherited on the next beat', (chr(35) + ' BELL-TAKEOVER v85.' + '159') in _src and 'bell taken over: dead pid' in _src)
     ck('S528 a stale bell shouts by age, not by pid', (chr(35) + ' BELL-DEAD v85.' + '159') in _src and 'BELL-DEAD: tick.log' in open(os.path.join(BASE_DIR, 'ship.sh')).read())
     ck('S529 a stopped or sleeping beat confesses first', (chr(35) + ' BELL-CONFESS v85.' + '159') in _src and 'bell stopped: %r' in _src and 'bell slept' in _src)
+    ck('S530 a number is digits alone, an email is never a candidate', (chr(35) + ' NUMBER-IS-DIGITS v85.' + '160') in _src and '_pd = [x for x in phones' in _src and 'a witness is not a number' in _src)
+    ck('S531 the beat pulses the ledger so the bell has an age', (chr(35) + ' BELL-PULSE v85.' + '159') in _src and "os.utime(os.path.join(BASE_DIR, 'tick.log')" in _src)
     ck('S362 the ritual installs its own policy and a loop nobody runs', (chr(35)+' POLICY-RESET v85.25') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S363 a second download never re-enters the chair wearing a portal mask', (chr(35)+' DUP-SEED v85.26') in _src and ('second download of' in _src))
     ck('S364 a logged-out window asks for one scan, named aloud', (chr(35)+' QR-RESCAN v85.26') in open(os.path.join(BASE_DIR, 'wa.py')).read())
