@@ -1663,6 +1663,7 @@ _NAME_STOP |= set('best ability of my the a an to in for with and or at on is ar
 _NAME_STOP |= set('urdu english hindi arabic french german spanish marathi tamil telugu kannada bengali punjabi sanskrit mandarin chinese'.split())  # STOP-EXT3 v85.109: language names never pose as people
 _NAME_STOP |= set('by powered resumegemini gemini indeed monster naukri shine generated created prepared watermark zety visualcv'.split())  # STOP-EXT4 v85.110: watermarks and portal ghosts never pose as people
 _NAME_STOP |= set('basic knowledge technical qualification curriculum vitae'.split())  # STOP-EXT6 v85.130: section headings are never people, so a stem wearing one is garbage and the gated deed heals it on click and on tick
+_NAME_STOP |= set('responsibilities responsbilities duties deliverables'.split())  # SCAR-STOP v85.158: a JD section label under a CV is a scar, not a human - GARBAGE-WIDE and the service _garbage test now re-eye the paper instead of calling the eye's name 'a different human'
 _NAME_STOP |= set('automobile engineering mechanical electrical electronics civil computer science diploma undergraduate graduate degree'.split())  # STOP-EXT5 v85.121: degree and discipline labels never outrank a human name anchored by the candidate email
 def _stem_inside_name(stem, name):  # NAME-COMPLETE v85.126: a shortened coat is the same human - when every token of the stem appears inside the eye's name in order, the deed completes the name instead of proposing; a stranger's tokens still only propose
     a = [t for t in re.sub(r'[^a-z ]', ' ', (stem or '').lower()).split() if t]
@@ -5288,6 +5289,7 @@ def _selftest(root):
     ck('S522 a place-stemmed paper is re-eyed at both doors', _src.count(chr(35) + ' PLACE-STEM-IS-GARBAGE v85.' + '157') >= 3 and '_PLACE_STOP' in _src)
     ck('S523 a top-three mononym the email witnesses outranks an address line', _name_from_head_lines(['Sector 145 Noida', 'AJAY', 'ajay.kumar@gmail.com']) == 'Ajay' and _name_from_head_lines(['Near Railway Flyover, Rohtak', 'AJAY', 'ajay999@gmail.com']) == 'Ajay')
     ck('S524 a town-only head yields no coat at either door', _name_from_head_lines(['Near Railway Flyover, Rohtak', 'Contact: +91-9992072806']) == '' and _name_from_lines('Near Railway Flyover Rohtak') == '')
+    ck('S526 a scar label is not a human - the coat is re-eyed', (chr(35) + ' SCAR-STOP v85.' + '158') in _src and 'responsbilities' in _src and 'responsibilities' in _src)
     ck('S362 the ritual installs its own policy and a loop nobody runs', (chr(35)+' POLICY-RESET v85.25') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S363 a second download never re-enters the chair wearing a portal mask', (chr(35)+' DUP-SEED v85.26') in _src and ('second download of' in _src))
     ck('S364 a logged-out window asks for one scan, named aloud', (chr(35)+' QR-RESCAN v85.26') in open(os.path.join(BASE_DIR, 'wa.py')).read())
