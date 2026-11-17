@@ -1457,7 +1457,7 @@ def _name_from_lines(t):  # GATE-REFUSE v85.156: the first-line eye as a pure fu
         if any(ch.isdigit() for ch in ln): continue
         if '@' in ln: continue
         ws = ln.split()
-        if 2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws) and not (set(w.lower() for w in ws) & _NAME_STOP):
+        if 2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws) and not (set(w.lower() for w in ws) & _NAME_STOP) and not (set(w.lower() for w in ws) & _PLACE_STOP):  # PLACE-LINE-REFUSE v85.157: a line naming a town can never win where a human line exists
             return ' '.join(w.capitalize() for w in ws)
     return ''
 
@@ -1680,6 +1680,10 @@ def _name_from_head_lines(lines):  # ACCEPTANCE v85.101: the naming brain as a p
         _mm = re.search(r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}', _ml)
         if _mm: _mmail = _mm.group(0); break
     _mlocal = re.sub(r'[^a-z]', '', _mmail.split('@')[0].lower()) if _mmail else ''
+    for _l3 in [l.strip() for l in lines if l.strip()][:3]:  # TOP-THREE-MONONYM v85.157: any of the first three breaths that is one caps word the email witnesses IS the human - it outranks an address line above it
+        _w3 = _l3.split()
+        if len(_w3) == 1 and _l3.isupper() and _l3.isalpha() and len(_l3) >= 3 and _l3.lower() not in _NAME_STOP and not (set(_l3.lower().split()) & _PLACE_STOP) and _mlocal and _l3.lower() in _mlocal and (_canonical_person_name(_l3) or ''):
+            return _display_name(_canonical_person_name(_l3))
     if _mls and len(_mls[0].split()) == 1 and _mls[0].isupper() and _mls[0].isalpha() and len(_mls[0]) >= 3 and _mls[0].lower() not in _NAME_STOP and (len(_mls) < 2 or not (len(_mls[1].split()) == 1 and _mls[1].isupper() and _mls[1].isalpha())) and (not _mlocal or _mls[0].lower() in _mlocal) and (_canonical_person_name(_mls[0]) or ''):  # FIRST-LINE-MONONYM v85.123: the first breath of the page, one caps word the email witness agrees with (or no email at all), IS the name - AJAY is never silent again; a name split over two lines defers to the pair path below
         return _display_name(_canonical_person_name(_mls[0]))
     if _mlocal:
@@ -1698,7 +1702,7 @@ def _name_from_head_lines(lines):  # ACCEPTANCE v85.101: the naming brain as a p
         if i + 2 < len(ls): cands.append(ls[i] + ' ' + ls[i+1] + ' ' + ls[i+2])
         for cut in cands:
             ws = cut.split()
-            if 2 <= len(ws) <= 4 and len(cut) <= 40 and all(w.isalpha() or '-' in w or '.' in w for w in ws) and not any('@' in w for w in ws) and not (set(w.lower() for w in ws) & _NAME_STOP) and (_canonical_person_name(cut) or ''):  # MAIL-REFUSE v85.109: an address is never a word of a name
+            if 2 <= len(ws) <= 4 and len(cut) <= 40 and all(w.isalpha() or '-' in w or '.' in w for w in ws) and not any('@' in w for w in ws) and not (set(w.lower() for w in ws) & _NAME_STOP) and not (set(w.lower() for w in ws) & _PLACE_STOP) and (_canonical_person_name(cut) or ''):  # MAIL-REFUSE v85.109: an address is never a word of a name  # PLACE-LINE-REFUSE v85.157: a line naming a town can never win where a human line exists
                 return _display_name(_canonical_person_name(cut))
         i += 1
     mail = ''
@@ -1816,7 +1820,7 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
             except Exception:
                 continue
             ws = stem.split()
-            if not (2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws)) or bool(set(stem.lower().split()) & _NAME_STOP) or os.path.splitext(stem)[1].lower() in ('.pdf', '.doc', '.docx', '.rtf'):  # GARBAGE-WIDE v85.110  # DOUBLE-EXT v85.136: a stem that wears its own extension is a download scar, never a human  # GARBAGE-WIDE v85.110: watermark stems are scars too, and the tick heals them
+            if not (2 <= len(ws) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in ws)) or bool(set(stem.lower().split()) & _NAME_STOP) or os.path.splitext(stem)[1].lower() in ('.pdf', '.doc', '.docx', '.rtf') or bool(set(stem.lower().split()) & _PLACE_STOP):  # GARBAGE-WIDE v85.110  # DOUBLE-EXT v85.136: a stem that wears its own extension is a download scar, never a human  # GARBAGE-WIDE v85.110: watermark stems are scars too, and the tick heals them  # PLACE-STEM-IS-GARBAGE v85.157: a stem wearing a town is a coat, not a human - it is never its own display name and never "a different human", so both doors hand it to the eye chain
                 _en4 = ''
                 try: _en4 = _eyename_of(p) or _name_from_head_lines((extract_text(p) or '').split(chr(10))) or ''  # DIRECT-BRAIN v85.136: the sweep too reads the text layer straight when the cached eye misfires
                 except Exception: _en4 = ''
@@ -1894,7 +1898,7 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
    if _jd_like_name(x) or _portal_name(x): log('🧭 service: %s | masked (jd/portal) - name kept by law' % x); return
   except Exception: log('🧭 service: %s | mask check failed - left as is' % x); return
   disp = _display_name(stem)
-  if not (2 <= len(_stem_norm(stem).split()) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _stem_norm(stem).split())): disp = stem  # CASE-GATE v85.117: seated inside _service_act by function, not by string - a garbage stem never wears a display name here, so the FIRST click goes straight to the eyes and one click is enough
+  if not (2 <= len(_stem_norm(stem).split()) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _stem_norm(stem).split()) and not (set(_stem_norm(stem).lower().split()) & _PLACE_STOP)): disp = stem  # CASE-GATE v85.117: seated inside _service_act by function, not by string - a garbage stem never wears a display name here, so the FIRST click goes straight to the eyes and one click is enough  # PLACE-STEM-IS-GARBAGE v85.157: the CASE-GATE never case-fixes a coat - a town stem is no display name here either
   q = os.path.join(os.path.dirname(p), disp + ext)
   if disp != stem and not (os.path.exists(q) and os.path.basename(q).lower() != x.lower()):  # CASE-SELF v85.82: a case-variant of yourself is you
    try:
@@ -1965,7 +1969,7 @@ def _service_act(p, root, log):  # QUEUE-ACT v85.76: the right-click deed, lawfu
            return
        log('🧭 service: %s | another paper holds %s and no shared witness - twin law keeps both apart' % (x, os.path.basename(q2))); return
   _sn = _stem_norm(stem); _w0 = _sn.split()
-  _garbage = not (2 <= len(_w0) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _w0)) or bool(set(_sn.lower().split()) & _NAME_STOP)  # GARBAGE-TEST v85.110: a stem no person wears - scar or watermark - is corrected, not debated
+  _garbage = not (2 <= len(_w0) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _w0)) or bool(set(_sn.lower().split()) & _NAME_STOP) or bool(set(_sn.lower().split()) & _PLACE_STOP)  # GARBAGE-TEST v85.110: a stem no person wears - scar or watermark - is corrected, not debated  # PLACE-STEM-IS-GARBAGE v85.157: a stem wearing a town is a coat, not a human - it is never its own display name and never "a different human", so both doors hand it to the eye chain
   if not _garbage and not _stem_inside_name(_sn, d2) and _name_key(_sn) != _name_key(d2) and 2 <= len(_w0) <= 4: log('🧭 service: %s | eyes say %s, a different human - proposal only, never a guess' % (x, d2)); return
   try:
    if os.path.exists(q2) and os.path.basename(q2).lower() != x.lower(): log('🧭 service: %s | another paper holds %s - left as is' % (x, os.path.basename(q2))); return
@@ -5281,6 +5285,9 @@ def _selftest(root):
     ck('S519 an explicit digit drafts at once and the cue stays for the undecided', _sh4.count(chr(35) + ' ONE-KEY-DRAFT v85.' + '155') >= 2 and ('n = cancel, he stays in the chai' in _sh4) and ('else menu_key(' in _sh4))
     ck('S520 why answers a name for the three named papers', _name_from_lines('Sachin dwivedi' + chr(10) + 'Noida , UP | Sachindid8@gmail.com|' + chr(10) + 'Summary') == 'Sachin Dwivedi' and _name_from_lines('RESUME' + chr(10) + 'Arvind Kumar Chaurasia' + chr(10) + 'Whatsapp Mobile: 8279640833') == 'Arvind Kumar Chaurasia' and _name_from_lines('RAHUL MISHRA' + chr(10) + 'Contact: +91-8090075922 / +91-8317016411') == 'Rahul Mishra')  # GATE-REFUSE v85.156b: the three named papers are pinned as behaviour, not as a story
     ck('S521 the control set still names and a town still does not', _name_from_lines('Saurav Kumar') == 'Saurav Kumar' and _name_from_lines('Hari Krishna Shukla') == 'Hari Krishna Shukla' and _name_from_lines('Kumar Anurag Krishna') == 'Kumar Anurag Krishna' and bool(set('Near Railway Flyover Rohtak'.lower().split()) & _PLACE_STOP) and _name_from_head_lines(['sdfssdfsdf']) == '')  # GATE-REFUSE v85.156b: the control set keeps its names and PLACE-REFUSE keeps refusing
+    ck('S522 a place-stemmed paper is re-eyed at both doors', _src.count(chr(35) + ' PLACE-STEM-IS-GARBAGE v85.' + '157') >= 3 and '_PLACE_STOP' in _src)
+    ck('S523 a top-three mononym the email witnesses outranks an address line', _name_from_head_lines(['Sector 145 Noida', 'AJAY', 'ajay.kumar@gmail.com']) == 'Ajay' and _name_from_head_lines(['Near Railway Flyover, Rohtak', 'AJAY', 'ajay999@gmail.com']) == 'Ajay')
+    ck('S524 a town-only head yields no coat at either door', _name_from_head_lines(['Near Railway Flyover, Rohtak', 'Contact: +91-9992072806']) == '' and _name_from_lines('Near Railway Flyover Rohtak') == '')
     ck('S362 the ritual installs its own policy and a loop nobody runs', (chr(35)+' POLICY-RESET v85.25') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S363 a second download never re-enters the chair wearing a portal mask', (chr(35)+' DUP-SEED v85.26') in _src and ('second download of' in _src))
     ck('S364 a logged-out window asks for one scan, named aloud', (chr(35)+' QR-RESCAN v85.26') in open(os.path.join(BASE_DIR, 'wa.py')).read())
