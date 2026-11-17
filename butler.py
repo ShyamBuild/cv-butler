@@ -1654,10 +1654,17 @@ WAKE_L = threading.Lock()
 def _eyename_cache():
  import json as _je
  cf = os.path.join(BASE_DIR, '.eyename.json')
- try:
-  return _je.load(open(cf)), cf
- except Exception:
-  return {}, cf
+ cf = os.path.join(BASE_DIR, '.eyename.json')
+ import time as _je_time
+ for _try in (0, 1):  # CACHE-ATOMIC v85.164: a torn read (a writer mid-replace) is retried once, then treated as a MISS - never as a silence
+  try:
+   _d = _je.load(open(cf))
+   if isinstance(_d, dict): return _d, cf
+  except Exception:
+   pass
+  _je_time.sleep(0.05)
+ return {}, cf
+
 def _stem_norm(s):  # STEM-NORM v85.90: download artifacts (_1, (2), trailing digits) are not part of a human's name
  return re.sub(r'[_\s]*(?:\(\d+\)|\d+)$', '', s).strip()
 _NAME_STOP = set('curriculum vitae resume summary profile objective challenging competitive dynamic results result oriented driven seeking looking opportunity position positions role roles manager engineer executive officer head director specialist consultant trainee intern fresher experienced professional personal contact educational education employment work experience skills strengths achievements awards certifications languages hobbies interests references address phone mobile email tel date birth age sex gender marital nationality indian india passport aadhar pan number ltd limited pvt inc co company companies industries industry technologies technology solutions services group corporation firm associates partners llc llp details information declaration father husband wife name'.split())  # NAME-GATE v85.97: a motto is not a man - any line touching the vocabulary of CVs-that-are-not-names is refused as a candidate
@@ -1776,6 +1783,7 @@ def _eyename_of(p, trace=False, log=None):  # EYES-IN-SWEEP v85.90: the OCR-back
  t = ''
  try:
   t = extract_text(p) or ''
+  if not (t or '').strip(): t = extract_text(p) or ''  # CACHE-ATOMIC v85.164: a first-use reader that came back empty is asked once more before any verdict
  except Exception:
   t = ''
  fl = ''
@@ -1792,10 +1800,12 @@ def _eyename_of(p, trace=False, log=None):  # EYES-IN-SWEEP v85.90: the OCR-back
    name = _display_name(cn) if cn else ''
   except Exception:
    name = ''
- c[key] = [st.st_size, st.st_mtime, name, _EYE_VSN]  # EYECACHE-VSN v85.96: the verdict carries its logic version into the book
+ if name: c[key] = [st.st_size, st.st_mtime, name, _EYE_VSN]  # CACHE-ATOMIC v85.164: silence is a question, not a verdict - a miss is never written, so the next look always asks again
  try:
   import json as _je2
-  _je2.dump(c, open(cf, 'w'))
+  _tmp = cf + '.tmp'  # CACHE-ATOMIC v85.164: the book is written whole and swapped in, so no reader ever meets a half-written json
+  _je2.dump(c, open(_tmp, 'w'))
+  os.replace(_tmp, cf)  # CACHE-ATOMIC v85.164: atomic swap
  except Exception:
   pass
  return name
@@ -5335,6 +5345,8 @@ def _selftest(root):
     ck('S534 the eye cache keys by real path and carries its version', ('key = os.path.' + 'realpath(p)') in _src and '_EYE_VSN = ' + chr(39) + 'v85.' + '162' + chr(39) in _src and ('key = os.path.' + 'basename(p)') not in _src)
     ck('S535 a missing path speaks its miss', 'no such paper: %s' in _src and (chr(35) + ' WHY-LOUD-MISSING v85.' + '162') in _src)
     ck('S536 one deed, one line, one door, and the dam still reads them', _src.count(chr(35) + ' WITNESS-DEDUP v85.' + '163') >= 3 and ('renamed (gated ' + 'eyes)') not in _src and "or '[rename]' in l" in _src and (chr(35) + ' RENAME-SPOKEN v85.' + '161') in _src)
+    ck('S537 the verdict book is written whole or not at all', 'os.replace(_tmp, cf)' in _src and (chr(35) + ' CACHE-ATOMIC v85.' + '164') in _src and 'for _try in (0, 1):' in _src)
+    ck('S538 a miss is never cached as silence', 'if name: c[key] = [' in _src and 'silence is a question, not a verdict' in _src)
     ck('S362 the ritual installs its own policy and a loop nobody runs', (chr(35)+' POLICY-RESET v85.25') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S363 a second download never re-enters the chair wearing a portal mask', (chr(35)+' DUP-SEED v85.26') in _src and ('second download of' in _src))
     ck('S364 a logged-out window asks for one scan, named aloud', (chr(35)+' QR-RESCAN v85.26') in open(os.path.join(BASE_DIR, 'wa.py')).read())
