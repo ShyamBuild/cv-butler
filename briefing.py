@@ -599,6 +599,21 @@ def _focusvoice_probe():  # FOCUS-VOICE v85.227: the fixture S616 leans on - the
     except Exception:
         return False
 
+def _stampflow_probe():  # STAMP-FLOW v85.236: the decision table is law - hold on closed or incomplete, else move
+    try:
+        import stampkeeper as _sk
+        if _sk.decide("Closed – Not Proceeding", True)[0] != "hold":
+            return False
+        if _sk.decide("Ready for Manager Review", False)[0] != "hold":
+            return False
+        if _sk.decide("Awaiting JD Confirmation", True)[0] != "move":
+            return False
+        if _sk.decide("Awaiting CV Update", True)[0] != "move":
+            return False
+        return hasattr(_sk, "refresh_flow") and hasattr(_sk, "apply_stamp")
+    except Exception:
+        return False
+
 def _house_rows():  # DASHBOARD v85.184: the tray in three numbers - loose candidates, those waiting on the master or the client, and those ready to show a manager
     import time as _ht
     try:
@@ -1872,6 +1887,14 @@ if __name__ == "__main__":
              butler.lessons_list(_say); continue
             if q.strip().lower() in ('jdfix', 'jd fix'):  # JD-HOUSE v85.214
              butler._jd_house(root, _say)
+            if q.strip().lower() in ('refresh', 'tagnew', 'tag new'):  # STAMP-FLOW v85.236: tag-first for twin pairs
+             try:
+              import stampkeeper
+              _d, _h = stampkeeper.refresh_flow(root, _say)
+              _say("🏷️ tag-first: %d moved to ready · %d held" % (_d, _h))
+             except Exception as _e:
+              _say("⚠️ tag-first failed: %r" % (_e,))
+             continue
              continue
             if q.startswith('desk'): do_desk(q[4:].strip(), root); continue  # DESK v84.0
             if q.startswith('briefing'): do_briefing(q[8:].strip(), root); continue

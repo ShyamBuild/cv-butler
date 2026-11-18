@@ -7018,6 +7018,7 @@ def _selftest(root):
     ck('S622 a suffix seat is Name_1.pdf with an underscore, never a dot', _twinunderscore_probe())
     ck('S623 the litter audit names litter and never makes it', _litter_probe())
     ck('S624 an empty template is refused and a filled block is accepted', _stampcomplete_probe())
+    ck('S625 the tag travels first and the move obeys the decision table', briefing._stampflow_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
