@@ -1534,7 +1534,9 @@ def calls_cmd(arg, root, say=print, hint=True):  # CHAIR v84.10b (v84.30): FOLDE
                 row = next((i for i in s0.get('items', []) if os.path.realpath(i.get('p', '')) == rp), None)
                 if row and row.get('status') == 'waiting': continue
                 if row:
-                    row['status'] = 'waiting'; row['outcome'] = ''; reopened += 1; continue  # FOLDER-TRUTH v84.30: dragged out means to be contacted again
+                    if str(row.get('outcome') or '') in ('covered elsewhere', 'description', 'gone'):
+                     continue  # NO-REOPEN-COVERED v85.227: a settled row stays settled - reopening it was churn
+                    row['status'] = 'waiting'; row['outcome'] = ''; reopened += 1; continue  # FOLDER-TRUTH v84.30: dragged out means the master wants it back
                 _ids = _ident_of(p)
                 _hit = next((v for k2, v in res_id.items() if _ids and (_ids & set(k2))), None)
                 if _hit:
@@ -6721,6 +6723,7 @@ def _selftest(root):
     ck('S613 a description is never counted as a pending candidate', briefing._jdcount_probe())
     ck('S614 every briefing door raises the window through one clerk', briefing._wadoor_probe())
     ck('S615 the seed never queues a description and the retry speaks once', _seedskip_probe())
+    ck('S616 the door names the desk and a settled row is never reopened', briefing._focusvoice_probe() and 'NO-REOPEN-COVERED v85.227' in _src)
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())

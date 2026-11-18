@@ -590,6 +590,15 @@ def _wadoor_probe():  # WA-DOOR-ONE v85.225: the fixture S614 leans on - every d
     except Exception:
         return False
 
+def _focusvoice_probe():  # FOCUS-VOICE v85.227: the fixture S616 leans on - the door names the desk
+    try:
+        _b = open(__file__, encoding="utf-8", errors="ignore").read()
+        if "FOCUS-VOICE v85.227" not in _b:
+            return False
+        return "🎯 desk: " in _b
+    except Exception:
+        return False
+
 def _house_rows():  # DASHBOARD v85.184: the tray in three numbers - loose candidates, those waiting on the master or the client, and those ready to show a manager
     import time as _ht
     try:
@@ -1786,6 +1795,11 @@ if __name__ == "__main__":
         import butler as _butler_refresh
         _butler_refresh._desk_refresh(root, print); _butler_refresh._SWEEP_QUIET['on'] = True  # DESK-REFRESH v85.148: the desk arrives already swept
         print(f"🤖 butler chat - 📂 {root}")
+        try:  # FOCUS-VOICE v85.227: the desk is named at the door, so a stale focus can never surprise a call
+         _fv = _read_focus() or {}
+         print(chr(32) * 3 + chr(127919) + ' desk: ' + str(_fv.get('display') or 'house root') + (' (' + str(_fv.get('client')) + ')' if _fv.get('client') else ''))
+        except Exception:
+         pass
         live = []
         for fn in os.listdir(BASE_DIR):
             if fn.startswith('butler_') and fn.endswith('.lock'):
