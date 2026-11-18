@@ -1524,6 +1524,9 @@ def calls_cmd(arg, root, say=print, hint=True):  # CHAIR v84.10b (v84.30): FOLDE
             if os.path.basename(dp) in _tag_vocab(): continue  # FOLDER-TRUTH v84.30: a stage folder's residents are already spoken for
             for x in fn:
                 if not _is_desk_candidate(x): continue
+                if (_jd_like_name(x) or _portal_name(x) or _client_doc(os.path.join(dp, x))
+                        or os.path.basename(dp) in ("JD Files", "Summaries")):
+                 continue  # JD-SEED-SKIP v85.226: a description is never queued, not even for one pass
                 p = os.path.join(dp, x); rp = os.path.realpath(p)
                 if _in_nonqueue(p): continue  # NON-QUEUE v84.39 (moved v84.43): a check stands after the path it reads is born, never before
                 if rp in seen or rp in sk or _name_key(x) in mem: continue
@@ -2603,6 +2606,9 @@ def _focus_path(root=None):  # SCOPE v85.215: one terminal, one position - the f
 
 _UP_DEPTH = [0]  # NO-RECURSE v85.222: the reseed retries once and never again - a loop is not a tray
 
+def _mute(*_a, **_k):  # SEED-ONCE v85.226: the one allowed reseed retry keeps its voice down
+    return None
+
 def _rp(p):  # MISSING-PATH v85.223: a folder the master renamed or removed is not a crash - realpath answers
     try:
         return os.path.realpath(str(p))
@@ -2656,8 +2662,9 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
         i = it; break
     sheet_save(s)
     if not i:  # SELF-REFRESH v84.32: an empty sheet re-seeds itself from the living folders, so a dragged-out paper rises without a command
-        say('🔎 seeding the sheet - fingerprints cached, new papers hashed once')  # SEED-SAY v85.18: even a cold pass speaks while it works
-        calls_cmd('', root, say, False)  # ONE-LINE v84.51: the self-refresh reseeds without the throat-clearing hint
+        if not _UP_DEPTH[0]:
+         say('🔎 seeding the sheet - fingerprints cached, new papers hashed once')  # SEED-SAY v85.18  # SEED-ONCE v85.226: spoken once per up
+        calls_cmd('', root, _mute if _UP_DEPTH[0] else say, False)  # ONE-LINE v84.51: the self-refresh reseeds without the throat-clearing hint
         _sc3 = _focus_path(root) + os.sep  # NO-RECURSE v85.222: a paper outside this chair waits for its own - it must not re-enter up_cmd
         _wt3 = [x for x in sheet_load().get('items', []) if x.get('status') == 'waiting']
         _mv3 = [x for x in _wt3 if os.path.abspath(str(x.get('p') or '')).startswith(_sc3)]
@@ -6028,6 +6035,17 @@ def _misspath_probe():  # MISSING-PATH v85.223: the fixture S612 leans on - a va
     except Exception:
         return False
 
+def _seedskip_probe():  # JD-SEED-SKIP v85.226: the fixture S615 leans on - a description never enters the sheet
+    try:
+        _b = open(__file__, encoding="utf-8", errors="ignore").read()
+        if "JD-SEED-SKIP v85.226" not in _b or "SEED-ONCE v85.226" not in _b:
+            return False
+        if "def _mute(" not in _b:
+            return False
+        return "if not _UP_DEPTH[0]:" in _b
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6702,6 +6720,7 @@ def _selftest(root):
     ck('S612 a folder the master removed answers instead of raising', _misspath_probe())
     ck('S613 a description is never counted as a pending candidate', briefing._jdcount_probe())
     ck('S614 every briefing door raises the window through one clerk', briefing._wadoor_probe())
+    ck('S615 the seed never queues a description and the retry speaks once', _seedskip_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
