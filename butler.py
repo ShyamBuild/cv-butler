@@ -2663,8 +2663,21 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
                 known.add(rq)
                 say(f'🆕 joined the sheet: {x}')
     i = None  # SEAT-CHECK v84.15: coverage is enforced at the chair, not merely at the seed
+    _cur = s.get('current') or {}  # SEAT-ADVANCE v85.230: the man already in the chair
+    _cur_p = _rp(_cur.get('p') or '') if _cur.get('status') == 'waiting' else ''
+    _skipped_cur = False
     for it in sorted(s.get('items', []), key=lambda x: 1 if x.get('re') else 0):  # RETRAY v84.55: new blood outranks the re-review tray in the chair
         if it.get('status') != 'waiting': continue
+        if _cur_p and not (arg or "").strip():  # SEAT-ADVANCE v85.230: every row of the seated human is skipped
+         _hit3 = _rp(it.get("p") or "") == _cur_p or (_name_key(it.get("name") or "") == _name_key(_cur.get("name") or "") and bool(_cur.get("name")))
+         if not _hit3:
+          try:
+           _ey3 = _eyename_of(it.get("p") or "") or ""
+           _hit3 = bool(_ey3) and _name_key(_ey3) == _name_key(_cur.get("name") or "")
+          except Exception:
+           _hit3 = False
+         if _hit3:
+          _skipped_cur = True; continue  # the same human is not seated twice in a row
         if not os.path.abspath(it.get("p") or "").startswith(_focus_path(root) + os.sep):
          continue  # SCOPE v85.215: a paper from another position waits for its own chair
         p = it['p']
@@ -2679,6 +2692,9 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
          it["status"] = "done"; it["outcome"] = "description"; continue
         i = it; break
     sheet_save(s)
+    if not i and _cur_p:  # SEAT-ADVANCE v85.230: nobody else seatable - the seated man keeps the chair
+     say('🪑 %s is the last candidate - he stays in the chair' % (_cur.get('name') or 'he'))
+     i = _cur
     if not i:  # SELF-REFRESH v84.32: an empty sheet re-seeds itself from the living folders, so a dragged-out paper rises without a command
         if not _UP_DEPTH[0]:
          say('🔎 seeding the sheet - fingerprints cached, new papers hashed once')  # SEED-SAY v85.18  # SEED-ONCE v85.226: spoken once per up
@@ -6093,6 +6109,15 @@ def _doorcard_probe():  # DOOR-CARD v85.229: the fixture S618 leans on - a door 
     except Exception:
         return False
 
+def _seatadvance_probe():  # SEAT-ADVANCE v85.230: the fixture S619 leans on - up steps past the seated man
+    try:
+        _b = open(__file__, encoding="utf-8", errors="ignore").read()
+        if "SEAT-ADVANCE v85.230" not in _b:
+            return False
+        return "_skipped_cur" in _b and "_hit3" in _b and "_ey3" in _b
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6771,6 +6796,7 @@ def _selftest(root):
     ck('S616 the door names the desk and a settled row is never reopened', briefing._focusvoice_probe() and 'NO-REOPEN-COVERED v85.227' in _src)
     ck('S617 a second copy of the same witness takes a suffix seat, never a wrong name', _twinseat_probe())
     ck('S618 every door leaves its card and retry repeats those words', _doorcard_probe())
+    ck('S619 up steps past the man already in the chair and never drops the last one', _seatadvance_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
