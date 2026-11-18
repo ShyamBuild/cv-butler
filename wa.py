@@ -24,17 +24,16 @@ class WaBusy(RuntimeError):  # PROFILE-LOCK v85.150: a held profile is a sentenc
     pass
 
 
-def _pw_fresh():  # PLAYWRIGHT-FRESH v85.185: a cached instance answers only while its loop is open
+def _pw_fresh():  # PLAYWRIGHT-FRESH v85.185  # ALIVE-FLAG v85.186: a dead driver is cleared before any door is handed one
     try:
-        _pw0 = _state.get('pw')
-        if _pw0 is not None:
-            _pw0.chromium  # touching the browser factory raises once the instance is stopped
-            return _pw0
+        if not _state.get('alive'):
+            _PW[0] = None
+            _state.pop('ctx', None)
     except Exception:
-        _state.pop('pw', None)
-        _state.pop('ctx', None)
-    return _pw()
-
+        pass
+    _p = _pw()
+    _state['alive'] = True
+    return _p
 def _lock_words(e):  # PROFILE-LOCK v85.150: the shapes playwright wears when another Chrome already owns wa_profile
     t = ('%r' % (e,)).lower()
     return any(w in t for w in ('processsingleton', 'singletonlock', 'already in use', 'is already running', 'profile directory', 'user data directory'))
@@ -390,6 +389,8 @@ def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  #
             pass
         try:
             if via_cdp: pw.stop()  # PERSISTENT-WA v84.38: only the CDP playwright instance stops
+            _PW[0] = None  # ALIVE-FLAG v85.186: the one cache the doors share is emptied the moment the driver stops
+            _state['alive'] = False
             _state.pop('pw', None)  # PLAYWRIGHT-FRESH v85.185: a stopped instance is never reused - 'Event loop is closed' cost the master three retries
             _state.pop('ctx', None)  # PLAYWRIGHT-FRESH v85.185: the context belonged to that instance
         except Exception:
