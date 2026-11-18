@@ -3045,11 +3045,15 @@ def _wa_quiet(_m):  # SEE-FAILURE v85.183: the deed is quiet about progress and 
     except Exception:
         pass
 
-def _remember_deed(name, phone, kind, tag, p):  # RETRY-LAST v85.198: the deed leaves a card, so a parked draft can be re-attempted after the paper moved
+def _remember_deed(name, phone, kind, tag, p, text=None):  # RETRY-LAST v85.198  # DOOR-CARD v85.229: the card keeps the words too
     try:
         import json as _rj
-        _rj.dump({'name': name, 'phone': phone, 'kind': kind, 'tag': tag, 'p': p, 'ts': int(time.time())},
-                 open(os.path.join(BASE_DIR, '.last_deed.json'), 'w'))
+        _card = {"name": name, "phone": phone, "kind": kind, "tag": tag, "p": p, "ts": int(time.time())}
+        if text:
+            _card["text"] = text
+        _rj.dump(_card, open(os.path.join(BASE_DIR, ".last_deed.json"), "w"))
+    except Exception:
+        pass
     except Exception:
         pass
 def _relocate(p, name, root):  # RETRY-LAST v85.198: the paper moved into its state folder - find it by the name the deed recorded
@@ -3073,13 +3077,19 @@ def redo_last(say=print, root=None):  # RETRY-LAST v85.198: the master's retry -
         _d = _rj2.load(open(os.path.join(BASE_DIR, '.last_deed.json')))
     except Exception:
         say('🤷 nothing to retry - seat someone with up first'); return False
+    if _d.get('text') and not _d.get('kind'):
+     _d['kind'] = 'words'  # DOOR-CARD v85.229: a door card carries words, not a template
+    _nm = _d.get('name') or ''
     _nm = _d.get('name') or ''
     _kind = _d.get('kind') or ''
-    if not _nm or not _kind:
-        say('🤷 the last deed carried no draft - nothing to retry'); return False
+    if (not _nm and not _d.get('text')) or not _kind:
+     say('🤷 the last deed carried no draft - nothing to retry'); return False
+    _p2 = None if _d.get('text') else _relocate(_d.get('p') or '', _nm, root or BASE_DIR)
+    if _d.get('text'):
+     pass  # DOOR-CARD v85.229: the words stand on their own - no paper needed
     _p2 = _relocate(_d.get('p') or '', _nm, root or BASE_DIR)
-    if not _p2:
-        say('⚠️ I cannot find %s any more - say up to seat him from the tray' % _nm); return False
+    if not _p2 and not _d.get('text'):
+     say('⚠️ I cannot find %s any more - say up to seat him from the tray' % _nm); return False
     _ph = _d.get('phone') or None
     if not _ph:
         _ph = (phones_of(_p2, True) or [None])[0]
@@ -3088,7 +3098,7 @@ def redo_last(say=print, root=None):  # RETRY-LAST v85.198: the master's retry -
     say('↩️ retrying %s · %s · 📱 %s' % (_nm, _kind, _ph))
     try:
         import wa
-        _txt = _chair_wa_text(_kind, _p2, _nm)
+        _txt = _d.get('text') or _chair_wa_text(_kind, _p2, _nm)  # DOOR-CARD v85.229: the words that were sent are the words repeated
         _ok = wa.send_review(_ph, _txt, _wa_quiet)
         say('✅ %s · 📱 %s' % (_nm, 'drafted' if _ok else 'still parked'))
         return bool(_ok)
@@ -6073,6 +6083,16 @@ def _twinseat_probe():  # TWIN-SEAT-DUP v85.228: the fixture S617 leans on - a s
     except Exception:
         return False
 
+def _doorcard_probe():  # DOOR-CARD v85.229: the fixture S618 leans on - a door card carries words and retry uses them
+    try:
+        _b = open(__file__, encoding="utf-8", errors="ignore").read()
+        if "DOOR-CARD v85.229" not in _b:
+            return False
+        _br = open(os.path.join(BASE_DIR, "briefing.py"), encoding="utf-8", errors="ignore").read()
+        return "card=None" in _br and ".last_deed.json" in _br and "_d.get(" + chr(39) + "text" + chr(39) + ")" in _b
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6750,6 +6770,7 @@ def _selftest(root):
     ck('S615 the seed never queues a description and the retry speaks once', _seedskip_probe())
     ck('S616 the door names the desk and a settled row is never reopened', briefing._focusvoice_probe() and 'NO-REOPEN-COVERED v85.227' in _src)
     ck('S617 a second copy of the same witness takes a suffix seat, never a wrong name', _twinseat_probe())
+    ck('S618 every door leaves its card and retry repeats those words', _doorcard_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())

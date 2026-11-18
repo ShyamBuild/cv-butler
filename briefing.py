@@ -649,7 +649,14 @@ def _jdcount_probe():  # JD-NOT-PENDING v85.224: the fixture S613 leans on - a d
     except Exception:
         return False
 
-def _wa_send(phone, text, say=print, **kw):  # WA-DOOR-ONE v85.225: one clerk for every door - the window rises before the dial
+def _wa_send(phone, text, say=print, card=None, **kw):  # WA-DOOR-ONE v85.225  # DOOR-CARD v85.229: every door leaves its card
+    try:  # DOOR-CARD v85.229: the words actually sent are remembered, so retry repeats THIS act
+        import json as _dj
+        _cd = dict(card or {})
+        _cd.update({"phone": phone, "text": text, "ts": int(__import__("time").time())})
+        _dj.dump(_cd, open(os.path.join(BASE_DIR, ".last_deed.json"), "w"))
+    except Exception:
+        pass
     try:
         import butler as _bw
         _bw._ensure_warm(say)
