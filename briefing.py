@@ -610,6 +610,15 @@ def _stampflow_probe():  # STAMP-FLOW v85.236: the decision table is law - hold 
             return False
         if _sk.decide("Awaiting CV Update", True)[0] != "move":
             return False
+        # READY-DROP v85.237: a CV dropped into Ready is tagged in place, never moved again
+        if _sk.decide('Awaiting CV Update', True, 'Ready for Manager Review')[0] != 'stay':
+         return False
+        if _sk.decide('Closed – Not Proceeding', True, 'Plant Head - Ghaziabad')[0] != 'hold':
+         return False
+        if _sk.decide('Awaiting CV Update', False, 'Ready for Manager Review')[0] != 'hold':
+         return False
+        if not hasattr(_sk, "any_stamp_text"):
+         return False
         return hasattr(_sk, "refresh_flow") and hasattr(_sk, "apply_stamp")
     except Exception:
         return False
