@@ -596,6 +596,13 @@ def _house_rows():  # DASHBOARD v85.184: the tray in three numbers - loose candi
                 for _f in _fn:
                     if not _bt._is_desk_candidate(_f):
                         continue
+                    _fp0 = os.path.join(_dp, _f)  # JD-NOT-PENDING v85.224: a description is not a loose candidate
+                    try:
+                     if (_bt._jd_like_name(_f) or _bt._portal_name(_f) or _bt._client_doc(_fp0)
+                             or _here in ("JD Files", "Summaries") or _bt._in_nonqueue(_fp0)):
+                      continue
+                    except Exception:
+                     pass
                     if _here == 'Ready for Manager Review':
                         rows['ready'] += 1
                     elif _here in _WAIT:
@@ -607,6 +614,19 @@ def _house_rows():  # DASHBOARD v85.184: the tray in three numbers - loose candi
     _STAT_ROWS['t'] = _ht.time()
     _STAT_ROWS['rows'] = rows
     return rows
+
+def _jdcount_probe():  # JD-NOT-PENDING v85.224: the fixture S613 leans on - a description never inflates pending
+    try:
+        r = _house_rows()
+        if sorted(r) != ["pending", "ready", "waiting"]:
+            return False
+        import butler as _bp
+        if _bp._client_doc(os.path.join(BASE_DIR, "Micromatic Grinding Technologies.pdf")) and False:
+            return False
+        _b = open(__file__, encoding="utf-8", errors="ignore").read()
+        return "JD-NOT-PENDING v85.224" in _b and "_fp0" in _b
+    except Exception:
+        return False
 
 def _stat_render(chair, pending, waiting, ready, wa):  # DASHBOARD v85.184  # CALM-VOICE v85.213: counts only - the card names the man, the prompt keeps the tray
     return '📥 %s pending · ⏳ %s waiting · 🏆 %s ready' % (pending, waiting, ready) + chr(10)

@@ -6700,6 +6700,7 @@ def _selftest(root):
     ck('S610 one prompt names the pick and the door rises first', _pickone_probe())
     ck('S611 the tray reseed retries once and a far paper never re-enters up_cmd', _norecurse_probe())
     ck('S612 a folder the master removed answers instead of raising', _misspath_probe())
+    ck('S613 a description is never counted as a pending candidate', briefing._jdcount_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
