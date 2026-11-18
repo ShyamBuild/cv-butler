@@ -805,7 +805,9 @@ def _doc_sweep(root, say=print, dry=False):  # DOC-SWEEP v85.200: a source doc w
                     continue
                 _arch = os.path.join(_dp, 'Converted Files')
                 _src = os.path.join(_dp, _f)
-                _dest = os.path.join(_arch, _f)
+                _stem_pdf = os.path.splitext(os.path.basename(_pdf))[0]  # SHELF-NO-CONVERT v85.205: the source wears the paper's name, so the shelf pair matches
+                _want = _stem_pdf + os.path.splitext(_f)[1]
+                _dest = os.path.join(_arch, _want)
                 _c = 1
                 while os.path.exists(_dest):
                     _dest = os.path.join(_arch, os.path.splitext(_f)[0] + _c_sep() + str(_c) + os.path.splitext(_f)[1])
@@ -3581,6 +3583,11 @@ class Butler:
             say(f"\n⚠️ [archive] failed: {os.path.basename(p)}: {ex}")
 
     def handle_convert(self, p, say):
+        try:  # SHELF-NO-CONVERT v85.205: a source in Converted Files was already converted - converting it again is what bred the _1 twins
+         if os.path.basename(os.path.dirname(os.path.abspath(p))).lower() in ('converted files', 'converted doc files'):
+          return None
+        except Exception:
+         pass
         ext = os.path.splitext(p)[1].lower()
         try:
             st = os.stat(p); key = f"{st.st_ino}|{st.st_size}"
@@ -5557,6 +5564,17 @@ def _seatflow_probe():  # SEAT-FLOW v85.204: the fixture S593 leans on - picker 
     except Exception:
         return False
 
+def _shelfconvert_probe():  # SHELF-NO-CONVERT v85.205: the fixture S594 leans on - a shelved source is never converted and wears the paper name
+    try:
+        _b = open(__file__, encoding='utf-8', errors='ignore').read()
+        if 'SHELF-NO-CONVERT v85.205' not in _b:
+            return False
+        if "('converted files', 'converted doc files')" not in _b:
+            return False
+        return '_want = _stem_pdf + os.path.splitext(_f)[1]' in _b
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6226,6 +6244,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S594 a shelved source is never converted twice', _shelfconvert_probe())
     ck('S593 the seat asks once, survives ^C and advances', _seatflow_probe())
     ck('S592 a shelf holds sources, never a paper', _shelfprobe())
     ck('S591 the same page is never read twice in one process', _snap_probe())
