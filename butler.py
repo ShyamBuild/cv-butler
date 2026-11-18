@@ -2582,6 +2582,56 @@ def _chair_card(name, p, ph, em, say=print, phones=None):  # CHAIR-CARD v85.181 
         return True
     except Exception:
         return False
+STAMP_KEYS = ("Sunsoft", "Total Experience", "Current CTC", "Expected CTC", "Present Location",
+              "Permanent Location", "Notice Period")  # STAMP-READ v85.231: the block the master copies by hand
+
+def stamp_of(p):  # STAMP-READ v85.231: page, lines, colours, box - the stamp as the paper really carries it
+    try:
+        import pdfplumber
+        with pdfplumber.open(p) as pdf:
+            for pno, pg in enumerate(pdf.pages):
+                _txt = pg.extract_text() or ""
+                if "Total Experience" not in _txt and "Current CTC" not in _txt:
+                    continue  # STAMP-READ v85.231: a cheap gate before the expensive scan
+                ws = []
+                try:
+                    ws = pg.extract_words(extra_attrs=["non_stroking_color", "size"])
+                except Exception:
+                    try:
+                        ws = pg.extract_words()
+                    except Exception:
+                        ws = []
+                hits = [w for w in ws if any(k.lower() in (w.get("text") or "").lower() for k in STAMP_KEYS)]
+                if len(hits) < 2 and not ws:
+                    continue
+                box = (min(w["x0"] for w in hits), min(w["top"] for w in hits),
+                       max(w["x1"] for w in hits), max(w["bottom"] for w in hits))
+                lines = []
+                for ln in _txt.split(chr(10)):
+                    if any(k.lower() in ln.lower() for k in STAMP_KEYS):
+                        lines.append(ln.strip())
+                cols = []
+                for w in hits[:4]:
+                    c = w.get("non_stroking_color")
+                    if c not in cols:
+                        cols.append(c)
+                return {"page": pno + 1, "lines": lines, "box": box, "colours": cols,
+                        "size": round(float(hits[0].get("size") or 0), 2), "h": pg.height, "w": pg.width}
+    except Exception:
+        return None
+    return None
+
+def stamp_say(p, say=print):  # STAMP-READ v85.231: spoken, never written
+    s = stamp_of(p)
+    if not s:
+        say("🤷 no Sunsoft stamp on " + os.path.basename(str(p))); return None
+    say("🏷️ stamp · %s · page %d · %spt" % (os.path.basename(str(p)), s["page"], s["size"]))
+    for ln in s["lines"]:
+        say("   " + ln)
+    say("   (colour %s · box %.0f,%.0f-%.0f,%.0f)" % (s["colours"][0] if s["colours"] else "?",
+                                           s["box"][0], s["box"][1], s["box"][2], s["box"][3]))
+    return s
+
 def _client_doc(p):  # CLIENT-DOC v85.216: the company name on a paper is the company document, not a human
     try:
         _stem = re.sub("[^a-z0-9]+", " ", os.path.splitext(os.path.basename(p))[0].lower()).strip()
@@ -6118,6 +6168,15 @@ def _seatadvance_probe():  # SEAT-ADVANCE v85.230: the fixture S619 leans on - u
     except Exception:
         return False
 
+def _stampread_probe():  # STAMP-READ v85.231: the fixture S620 leans on - the stamp is read, never written
+    try:
+        _b = open(__file__, encoding="utf-8", errors="ignore").read()
+        if "STAMP-READ v85.231" not in _b or "def stamp_of(" not in _b:
+            return False
+        return "STAMP_KEYS" in _b and "no Sunsoft stamp on " in _b
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6797,6 +6856,7 @@ def _selftest(root):
     ck('S617 a second copy of the same witness takes a suffix seat, never a wrong name', _twinseat_probe())
     ck('S618 every door leaves its card and retry repeats those words', _doorcard_probe())
     ck('S619 up steps past the man already in the chair and never drops the last one', _seatadvance_probe())
+    ck('S620 the stamp is read out of the paper and spoken, never written', _stampread_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
