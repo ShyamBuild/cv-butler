@@ -1234,6 +1234,7 @@ def _is_desk_candidate(x):  # PAPER-OR-NOT v84.10d: only humans take the chair
     low = (x or '').lower()
     if not low.endswith(('.pdf', '.docx')): return False
     stem = low[:-5] if low.endswith('.docx') else low[:-4]
+    if stem.startswith('jd-') or re.search(r'(^|[\s_-])jd$', stem): return False  # JD-IS-NOT-A-CANDIDATE v85.184: a description is a paper, never a person to ring
     for pre in NON_CANDIDATE_PREFIXES:
         if stem.startswith(pre): return False
     return True
@@ -5009,15 +5010,15 @@ def _hk_probe():  # HOTKEY-SCOPE v85.172: the fixture S564 leans on - a word is 
 def _hot_name():  # HOTKEY-SCOPE v85.172: spelled in pieces so no guard certifies its own text
     return '_hot' + '_key'
 
-def _st_probe():  # PROMPT-STATE v85.173: the fixture S565 leans on - four truths on one line, and a refusal to crash
+def _st_probe():  # DASHBOARD v85.184: the fixture S565 leans on - one line, five truths, and a refusal to crash  # PROMPT-STATE v85.173: the prompt carries the truth
     try:
         import briefing as _bf
-        _r = _bf._stat_render('Rahul', '3', 'warm', 'qwen2.5-coder:7b')
-        for _w in ('\U0001fa91', 'Rahul', '3 waiting', '\U0001f4f1 warm', '\U0001f916 qwen2.5-coder:7b'):
+        _r = _bf._stat_render('Rahul', 2, 5, 1, 'warm')
+        for _w in ('🪑 Rahul', '2 pending', '5 waiting', '1 ready', '📱 warm'):
             if _w not in _r:
                 return False
-        _r2 = _bf._stat_render('', '0', 'cold', 'none')
-        if 'nobody seated' not in _r2 or '\U0001f4f1 cold' not in _r2:
+        _r2 = _bf._stat_render('', 0, 0, 0, 'cold')
+        if 'nobody seated' not in _r2 or '📱 cold' not in _r2:
             return False
         if _r.count(chr(10)) != 1:
             return False
@@ -5838,7 +5839,7 @@ def _selftest(root):
     ck('S568 the house speaks to no cloud, only this Mac and the master' + chr(39) + 's own WhatsApp Web', _nocloud_probe())
     ck('S567 the prompt shows a chair, not a plank', _st_probe() and 'nobody seated' in _br)
     ck('S566 the send takes the warm tab, never a fresh one', _wa_probe())
-    ck('S565 the prompt names the chair, the door and the mind', _st_probe() and '_stat_line() + "you> "' in _br)
+    ck('S565 the prompt names the chair, the tray and the door', _st_probe() and '_stat_line() + "you> "' in _br)
     ck('S564 a word beginning with a hotkey letter is never eaten', _hk_probe())
     missing = [f'S{n}' for n in range(1, 20) if f'S{n}' not in ran]
     if missing: print('SKILLS MISSING', missing, flush=True)

@@ -577,28 +577,54 @@ def _model_state():  # PROMPT-STATE v85.173: the mind in one word - the model th
         return _pick_model(_n) if _n else 'none'
     except Exception:
         return 'none'
-def _stat_render(chair, waiting, wa, model):  # PROMPT-STATE v85.173: one line, four truths; pure, so the fixture can judge it
-    _c = ('\U0001fa91 ' + chair) if chair else '\U0001fa91 nobody seated'
-    return '%s · %s waiting · \U0001f4f1 %s · \U0001f916 %s' % (_c, waiting, wa, model) + chr(10)
-def _stat_line():  # PROMPT-STATE v85.173: the prompt line, cached five seconds - the keyboard is never held for a status
+_STAT_ROWS = {'t': 0.0, 'rows': None}
+def _house_rows():  # DASHBOARD v85.184: the tray in three numbers - loose candidates, those waiting on the master or the client, and those ready to show a manager
+    import time as _ht
+    try:
+        if _STAT_ROWS.get('rows') and _ht.time() - _STAT_ROWS.get('t', 0) < 30:
+            return _STAT_ROWS['rows']
+    except Exception:
+        pass
+    rows = {'pending': 0, 'waiting': 0, 'ready': 0}
+    try:
+        import butler as _bt
+        _WAIT = (
+            'Awaiting JD Confirmation', 'Awaiting CV Update', 'Feedback Pending', 'Call Scheduled')
+        for _base in _bt.desk_paths():
+            for _dp, _dn, _fn in os.walk(_base):
+                _here = os.path.basename(_dp)
+                for _f in _fn:
+                    if not _bt._is_desk_candidate(_f):
+                        continue
+                    if _here == 'Ready for Manager Review':
+                        rows['ready'] += 1
+                    elif _here in _WAIT:
+                        rows['waiting'] += 1
+                    elif os.path.abspath(_dp) == os.path.abspath(_base):
+                        rows['pending'] += 1
+    except Exception:
+        pass
+    _STAT_ROWS['t'] = _ht.time()
+    _STAT_ROWS['rows'] = rows
+    return rows
+
+def _stat_render(chair, pending, waiting, ready, wa):  # DASHBOARD v85.184: one line - who sits, how many loose, how many waiting, how many ready, is the door warm  # PROMPT-STATE v85.173: the prompt carries the truth, cached
+    _c = ('🪑 ' + chair) if chair else '🪑 nobody seated'
+    return '%s · 📥 %s pending · ⏳ %s waiting · 🏆 %s ready · 📱 %s' % (_c, pending, waiting, ready, wa) + chr(10)
+def _stat_line():  # DASHBOARD v85.184: the prompt line, cached five seconds - the keyboard is never held for a status
     import time as _pst
     try:
         if _pst.time() - _STAT_CACHE['t'] < 5.0 and _STAT_CACHE['line']:
             return _STAT_CACHE['line']
         _cur = butler.sheet_current() or {}
         _nm = (_cur.get('name') or '') if isinstance(_cur, dict) else ''
-        _wt = 0
-        try:
-            _wt = len([_i for _i in butler.sheet_load().get('items', []) if _i.get('status') == 'waiting'])
-        except Exception:
-            _wt = 0
-        _ln = _stat_render(_nm, _wt, _wa_state(), _model_state())
+        _r = _house_rows()
+        _ln = _stat_render(_nm, _r['pending'], _r['waiting'], _r['ready'], _wa_state())
         _STAT_CACHE['t'] = _pst.time()
         _STAT_CACHE['line'] = _ln
         return _ln
     except Exception:
         return ''
-
 def _smart_input(prompt, hot=False):  # LISTEN-REPL v85.4  # ALWAYS-RAW v85.6: the REPL always hears keys - a digit or y/t/n lands on the press; a word accumulates with live echo and backspace; Enter terminates words only  # HOTKEY-SCOPE v85.172: the reader always hears keys, but a key is an answer only when a question waits
     import sys, termios, tty
     if getattr(sys.stdout, 'last', '\n') != '\n': sys.stdout.write('\r\n')  # NEWLINE-DISCIPLINE v85.18  # CRLF-RAW v85.22: in raw mode the writer is the driver - LF alone leaves the column where it stood
