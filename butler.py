@@ -2597,6 +2597,39 @@ def _chair_card(name, p, ph, em, say=print, phones=None):  # CHAIR-CARD v85.181 
         return True
     except Exception:
         return False
+STAMP_FIELDS = (("Total Experience", "num"), ("Current CTC", "num"), ("Expected", "num"),
+                ("Present Location", "word"), ("Permanent Location", "word"),
+                ("Notice Period", "num"))  # STAMP-COMPLETE v85.235: a field is filled only by a real value
+
+def _stamp_value(line):  # STAMP-COMPLETE v85.235: what stands after the colon is the value
+    try:
+        return line.split(':', 1)[1].strip() if ':' in line else ''
+    except Exception:
+        return ''
+
+def stamp_complete(text):  # STAMP-COMPLETE v85.235: the empty template Suman Kumar carries is not a stamp
+    try:
+        t = str(text or "")
+        low = t.lower()
+        if "sunsoft" not in low or "technology" not in low:
+            return False, ["Sunsoft Technology"]
+        lines = t.split(chr(10))
+        missing = []
+        for name, kind in STAMP_FIELDS:
+            row = next((l for l in lines if l.strip().lower().startswith(name.lower())), None)
+            if row is None:
+                missing.append(name); continue
+            val = _stamp_value(row)
+            if kind == "num":
+                if not any(ch.isdigit() for ch in val):
+                    missing.append(name)
+            else:
+                if not any(ch.isalpha() for ch in val):
+                    missing.append(name)
+        return (len(missing) == 0), missing
+    except Exception:
+        return False, ["unreadable"]
+
 STAMP_KEYS = ("Sunsoft", "Total Experience", "Current CTC", "Expected CTC", "Present Location",
               "Permanent Location", "Notice Period")  # STAMP-READ v85.231: the block the master copies by hand
 
@@ -6283,6 +6316,24 @@ def _litter_probe():  # LITTER-AUDIT v85.234: the fixture S623 leans on - the au
     except Exception:
         return False
 
+def _stampcomplete_probe():  # STAMP-COMPLETE v85.235: Suman template is refused, Umashankar block is accepted
+    try:
+        _tmpl = chr(10).join(["Sunsoft Technology", "Total Experience:  years", "Current CTC:  LPA",
+                              "Expected: % hike", "Present Location: ", "Permanent Location: ", "Notice Period:  days"])
+        _ok1, _miss1 = stamp_complete(_tmpl)
+        if _ok1 or len(_miss1) < 5:
+            return False
+        _full = chr(10).join(["Sunsoft Technology", "Total Experience: 22 years", "Current CTC: 48 LPA",
+                              "Expected: 20-25% hike", "Present Location: Noida", "Permanent Location: Chennai",
+                              "Notice Period: 90 days (Nego. to 75 days)"])
+        _ok2, _miss2 = stamp_complete(_full)
+        if not _ok2 or _miss2:
+            return False
+        _ok3, _miss3 = stamp_complete("")
+        return (not _ok3)
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6966,6 +7017,7 @@ def _selftest(root):
     ck('S621 a candidate file wears the CV name and never a salutation', _salutation_probe())
     ck('S622 a suffix seat is Name_1.pdf with an underscore, never a dot', _twinunderscore_probe())
     ck('S623 the litter audit names litter and never makes it', _litter_probe())
+    ck('S624 an empty template is refused and a filled block is accepted', _stampcomplete_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
