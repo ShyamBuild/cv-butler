@@ -4615,7 +4615,9 @@ def main():
                     except Exception:
                         _sa = False
                     _pa = os.system("pgrep -f 'wa_warm.py' >/dev/null 2>&1") == 0
-                    if not _rc and not _sa and not _pa:
+                    if _pa and not _sa:  # WARM-RECOVER v85.196: a keeper process with no door is stale - sweep it before raising a new one
+                     os.system("pkill -f 'wa_warm.py' 2>/dev/null")
+                    if not _rc and not _sa:  # WARM-RECOVER v85.196: the door is raised from the socket truth, never from a process count
                         subprocess.Popen([sys.executable, os.path.join(BASE_DIR, 'wa_warm.py'), 'ensure'], cwd=BASE_DIR, stdout=open(os.path.join(BASE_DIR, 'wa_warm.log'), 'a'), stderr=subprocess.STDOUT, start_new_session=True)
                         print('\U0001f525 warm keepalive: relaunching wa_warm', flush=True)
                 except Exception:
@@ -5265,6 +5267,17 @@ def _chairname_probe():  # CHAIR-NAME-REFRESH v85.194: the fixture S584 leans on
         if 'CHAIR-NAME-REFRESH v85.194' not in _b:
             return False
         return "_en = _eyename_of(p) or ''" in _b
+    except Exception:
+        return False
+
+def _warmrecover_probe():  # WARM-RECOVER v85.196: the fixture S586 leans on - a keeper without a door is swept, then the door is raised
+    try:
+        _b = open(__file__, encoding='utf-8', errors='ignore').read()
+        if 'WARM-RECOVER v85.196' not in _b:
+            return False
+        if 'if _pa and not _sa:' not in _b:
+            return False
+        return 'if not _rc and not _sa:' in _b
     except Exception:
         return False
 
@@ -5937,6 +5950,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S586 a keeper without a door is swept and the door raised', _warmrecover_probe())
     ck('S584 the chair asks the eye, not the sheet alone', _chairname_probe())
     ck('S583 both doors refuse to write over a draft', _freetabboth_probe())
     ck('S581 a tab holding a draft is never reused', _drafttab_probe())
