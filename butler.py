@@ -2509,7 +2509,7 @@ def _paint(t, k):  # CHAIR-CARD v85.181: colour is a courtesy - NO_COLOR and pip
         return _CLR.get(k, '') + str(t) + _CLR['x']
     except Exception:
         return str(t)
-def _prep_phone_pick(phones, p, say=print):  # UI-NUMBERS v85.217: one prompt after the card, remembered, ^C-safe
+def _prep_phone_pick(phones, p, say=print):  # UI-NUMBERS v85.217  # PICK-ONE v85.221: one prompt, Enter = 1, and the pick is spoken back
     try:
         import json as _pj3
         _psd = {}
@@ -2519,15 +2519,17 @@ def _prep_phone_pick(phones, p, say=print):  # UI-NUMBERS v85.217: one prompt af
             _psd = {}
         if _psd.get("phone") in phones and os.path.realpath(str(_psd.get("path") or "")) == os.path.realpath(str(p)):
             return _psd["phone"]
-        say("   pick phone # (1-" + str(len(phones)) + ") > ")
         try:
-            _ch = input("   # ").strip()
+            _ch = input("   pick phone # (1-%d), Enter = 1 > " % len(phones)).strip()
         except (KeyboardInterrupt, EOFError):
             say(""); say("   no pick - he stays seated, nothing opened"); return None
-        if not (_ch.isdigit() and 1 <= int(_ch) <= len(phones)):
-            say("   (no pick - the first number stands)")
-            return phones[0]
-        _p3 = phones[int(_ch) - 1]
+        if not _ch:
+            _p3 = phones[0]
+        elif _ch.isdigit() and 1 <= int(_ch) <= len(phones):
+            _p3 = phones[int(_ch) - 1]
+        else:
+            say("   (not a number - the first stands)"); _p3 = phones[0]
+        say("   -> using " + str(_p3))
         try:
             _pj3.dump({"path": p, "phone": _p3, "phones": list(phones)}, open(os.path.join(BASE_DIR, ".prep_state.json"), "w"))
         except Exception:
@@ -2535,7 +2537,6 @@ def _prep_phone_pick(phones, p, say=print):  # UI-NUMBERS v85.217: one prompt af
         return _p3
     except Exception:
         return phones[0] if phones else None
-
 def _chair_card(name, p, ph, em, say=print, phones=None):  # CHAIR-CARD v85.181  # UI-NUMBERS v85.217: every number is on the card before the pick
     try:
         _idn = {}
@@ -3050,11 +3051,39 @@ def redo_last(say=print, root=None):  # RETRY-LAST v85.198: the master's retry -
     except Exception as _re:
         say('⚠️ retry failed: %r' % (_re,)); return False
 
+def _ensure_warm(say=print, wait=18):  # DOOR-FIRST v85.221: the deed raises the warm door before it dials - a closed page is not a refusal
+    try:
+        import socket as _sk2, subprocess as _sp2, sys as _sy2, time as _tm2
+        def _up2():
+            try:
+                _s2 = _sk2.create_connection(("127.0.0.1", 9222), timeout=0.5)
+                _s2.close()
+                return True
+            except Exception:
+                return False
+        if _up2():
+            return True
+        say("   📶 raising the WhatsApp door…")
+        try:
+            _sp2.Popen([_sy2.executable, os.path.join(BASE_DIR, "wa_warm.py")], stdout=_sp2.DEVNULL, stderr=_sp2.DEVNULL, start_new_session=True)
+        except Exception:
+            pass
+        for _i2 in range(int(wait)):
+            if _up2():
+                return True
+            _tm2.sleep(1)
+        return False
+    except Exception:
+        return False
+
 def _deed_send(ph, text, p, name, say=print):  # NEXT-NUMBER v85.220: a dead number is not the end - the next witness hears the same words
     try:
         import wa
     except Exception:
         return False, ph
+    if not _ensure_warm(say):  # DOOR-FIRST v85.221: one line instead of three warnings
+     say("📵 WhatsApp door did not rise - nothing was sent; say retry")
+     return False, ph
     _ok = wa.send_review(ph, text, _wa_quiet)
     if _ok:
         return True, ph
@@ -5940,6 +5969,19 @@ def _nextnumber_probe():  # NEXT-NUMBER v85.220: the fixture S609 leans on - a d
     except Exception:
         return False
 
+def _pickone_probe():  # PICK-ONE v85.221: the fixture S610 leans on - one prompt and a door raised before the dial
+    try:
+        _b = open(__file__, encoding="utf-8", errors="ignore").read()
+        if "PICK-ONE v85.221" not in _b or "DOOR-FIRST v85.221" not in _b:
+            return False
+        if "Enter = 1" not in _b:
+            return False
+        if _b.count("wa.send_review(ph, text, _wa_quiet)") < 1:
+            return False
+        return "_ensure_warm(say)" in _b
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6609,6 +6651,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S610 one prompt names the pick and the door rises first', _pickone_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
