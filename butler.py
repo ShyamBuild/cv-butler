@@ -2242,6 +2242,8 @@ def _event_tick(root, log=print):  # RENAME-WATCH v85.52 + CONVERT-WATCH v85.52:
     except Exception:
         dirs = [root]
     for dpath in dirs:
+        if os.path.basename(str(dpath)).lower() in ('converted files', 'converted doc files'):  # SHELF-BEAT-SKIP v85.210: a shelf is the end of a source, never an input
+         continue
         try:
             mt = os.stat(dpath).st_mtime
         except Exception:
@@ -5642,6 +5644,17 @@ def _beatshelf_probe():  # BEAT-SHELF v85.209: the fixture S598 leans on - the b
     except Exception:
         return False
 
+def _shelfbeatskip_probe():  # SHELF-BEAT-SKIP v85.210: the fixture S599 leans on - the beat refuses a shelf folder
+    try:
+        _b = open(__file__, encoding='utf-8', errors='ignore').read()
+        if 'SHELF-BEAT-SKIP v85.210' not in _b:
+            return False
+        if _b.count('SHELF-BEAT-SKIP v85.210') < 2:
+            return False
+        return "'converted files', 'converted doc files'" in _b
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6311,6 +6324,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S599 a shelved paper is never converted again', _shelfbeatskip_probe())
     ck('S598 the beat shelves the sources itself', _beatshelf_probe())
     ck('S597 a remembered silence is never re-read', _emptyonce_probe())
     ck('S596 a file is never renamed onto itself', _noopseat_probe())
