@@ -2531,6 +2531,30 @@ def _chair_card(name, p, ph, em, say=print):  # CHAIR-CARD v85.181: five lines -
     except Exception:
         return False
 
+def _client_doc(p):  # CLIENT-DOC v85.216: the company name on a paper is the company document, not a human
+    try:
+        _stem = re.sub("[^a-z0-9]+", " ", os.path.splitext(os.path.basename(p))[0].lower()).strip()
+        if not _stem:
+            return False
+        _probe = os.path.dirname(os.path.abspath(p))
+        for _step in range(3):
+            try:
+                _kids = os.listdir(_probe)
+            except Exception:
+                _kids = []
+            for _d in _kids:
+                if not os.path.isdir(os.path.join(_probe, _d)):
+                    continue
+                _nm = re.sub("[^a-z0-9]+", " ", re.sub("^[0-9]+[ _-]*", "", _d).lower()).strip()
+                if not _nm:
+                    continue
+                if _stem == _nm or _stem.startswith(_nm) or _nm.startswith(_stem):
+                    return True
+            _probe = os.path.dirname(_probe)
+    except Exception:
+        pass
+    return False
+
 def _focus_path(root=None):  # SCOPE v85.215: one terminal, one position - the focus names the folder the chair may draw from
     try:
         import json as _fj
@@ -2589,7 +2613,7 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
         if os.path.basename(os.path.dirname(p)) in _tag_vocab() or _name_key(os.path.basename(p)) in mem or _in_nonqueue(p):
             it['status'] = 'done'; it['outcome'] = 'covered elsewhere'; continue  # FOLDER-TRUTH v84.30
             it['status'] = 'done'; it['outcome'] = 'covered elsewhere'; continue
-        if _jd_like_name(os.path.basename(p)) or _portal_name(os.path.basename(p)) or os.path.basename(os.path.dirname(p)) in ("JD Files", "Summaries"):  # JD-HOUSE v85.214: a description is never a chair
+        if _jd_like_name(os.path.basename(p)) or _portal_name(os.path.basename(p)) or os.path.basename(os.path.dirname(p)) in ("JD Files", "Summaries") or _client_doc(p):  # JD-HOUSE v85.214: a description is never a chair
          it["status"] = "done"; it["outcome"] = "description"; continue
         i = it; break
     sheet_save(s)
@@ -5802,6 +5826,13 @@ def _scope_probe():  # SCOPE v85.215: the fixture S604 leans on - the chair draw
     except Exception:
         return False
 
+def _clientdoc_probe():  # CLIENT-DOC v85.216: the fixture S605 leans on - a client-named paper is refused
+    try:
+        _q = "Micromatic Grinding Technologies"
+        return _client_doc("/Users/apple/Downloads/Sunsoft Technology/05 Micromatic Grinding/X/" + _q + ".pdf") is True
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6471,6 +6502,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S605 a client-named paper never takes the chair', _clientdoc_probe())
     ck('S604 the chair draws from one position only', _scope_probe())
     ck('S603 a description is housed, never seated', _jdhouse_probe())
     ck('S602 the prompt speaks counts only and a park keeps its chair', _calmvoice_probe())
