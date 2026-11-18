@@ -5148,7 +5148,7 @@ def _keepopen_probe():  # KEEP-OPEN v85.182: the fixture S574 leans on - the hou
         _w = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa.py'), encoding='utf-8', errors='ignore').read()
         if (chr(35) + ' KEEP-OPEN v85.182') not in _w:
             return False
-        return ('via_cdp and page is not None and _made' in _w) and ('_made = False' in _w)
+        return ('if (not via_cdp) and page is not None and _made: page.' + 'close()') in _w and ('_made = False' in _w)
     except Exception:
         return False
 
@@ -5215,6 +5215,15 @@ def _sweepall_probe():  # SWEEP-QUIET-ALL v85.188: the fixture S579 leans on - t
         finally:
             _SWEEP_QUIET['on'] = _q0
         return True
+    except Exception:
+        return False
+
+def _keeptab_probe():  # KEEP-A-TAB v85.189: the fixture S580 leans on - the warm browser is never closed out of its last window
+    try:
+        _w = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa.py'), encoding='utf-8', errors='ignore').read()
+        if 'KEEP-A-TAB v85.189' not in _w:
+            return False
+        return ('if (not via_cdp) and page is not None and _made: page.' + 'close()') in _w
     except Exception:
         return False
 
@@ -5483,7 +5492,7 @@ def _selftest(root):
     ck('S152 the keeper probes closure instead of assuming an API', 'browser.is_connected' not in open(os.path.join(BASE_DIR, 'wa_warm.py')).read() and (chr(35)+' CLOSE-WATCH v81.46') in open(os.path.join(BASE_DIR, 'wa_warm.py')).read())
     ck('S153 download scars are stripped from names', (chr(35)+' DASH-CLEAN v81.48') in _src and 'rename-clean' in _src)
     ck('S160 chat rides the warm door, never fights it', 'WARM-CLIENT v81.47' in open(os.path.join(BASE_DIR, 'wa.py')).read())
-    ck('S161 connected clients close only their page', ('via_cdp and page is not None and _made: page.' + 'close()') in open(os.path.join(BASE_DIR, 'wa.py')).read() and 'KEEP-OPEN v85.182' in open(os.path.join(BASE_DIR, 'wa.py')).read())
+    ck('S161 connected clients close only their page', ('if (not via_cdp) and page is not None and _made: page.' + 'close()') in open(os.path.join(BASE_DIR, 'wa.py')).read() and 'KEEP-A-TAB v85.189' in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S162 scars born in a scan are cleaned in the same scan', (chr(35)+' DASH-CLEAN-PASS2 v81.50') in _src and (chr(35)+' DASH-2 v81.50') in _src)
     ck('S163 a failed rename speaks its reason', (chr(35)+' RENAME-LOUD v81.51') in _src)
     ck('S164 the heal runs in every mode', (chr(35)+' RENAME-IN-TICK v81.52') in _src)
@@ -5887,6 +5896,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S580 the warm door keeps its last tab', _keeptab_probe())
     ck('S579 the bell keeps warnings and drops housekeeping', _sweepall_probe())
     ck('S578 the sweep keeps quiet at the chair', _sweepquiet_probe())
     ck('S577 a stopped playwright is dead, never sleeping', _alive_probe())

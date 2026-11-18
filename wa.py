@@ -384,7 +384,7 @@ def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  #
         return False
     finally:
         try:
-            if via_cdp and page is not None and _made: page.close()  # KEEP-OPEN v85.182: a page the house made is its own to close; a page it borrowed from the master stays open
+            if (not via_cdp) and page is not None and _made: page.close()  # KEEP-A-TAB v85.189: a page born into the warm browser stays - closing the last tab takes the whole door with it
         except Exception:
             pass
         try:
