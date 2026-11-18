@@ -5171,28 +5171,18 @@ def _flow_probe():  # SEE-FAILURE v85.183: the fixture S575 leans on - failures 
     except Exception:
         return False
 
-def _pwfresh_probe():  # PLAYWRIGHT-FRESH v85.185: the fixture S576 leans on - the cache clears on stop, and a helper judges liveness
+def _pwfresh_probe():  # PLAYWRIGHT-FRESH v85.185  # NO-STOP v85.197: the driver is never stopped, so every door asks a live one
     try:
         _w = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa.py'), encoding='utf-8', errors='ignore').read()
-        if (chr(35) + ' PLAYWRIGHT-FRESH v85.185') not in _w:
-            return False
-        if '_state.pop(' + chr(39) + 'pw' + chr(39) + ', None)' not in _w:
-            return False
-        return 'def _pw_fresh():' in _w
+        return ('def _pw_fresh():' in _w) and ('NO-STOP v85.197' in _w)
     except Exception:
         return False
-
-def _alive_probe():  # ALIVE-FLAG v85.186: the fixture S577 leans on - the cache says whether the instance lives
+def _alive_probe():  # ALIVE-FLAG v85.186 (retired v85.197)  # NO-STOP v85.197: nothing sleeps because nothing is stopped
     try:
         _w = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa.py'), encoding='utf-8', errors='ignore').read()
-        if (chr(35) + ' ALIVE-FLAG v85.186') not in _w:
-            return False
-        if "_state['alive'] = True" not in _w or "_state['alive'] = False" not in _w:
-            return False
-        return "_state.get('alive')" in _w
+        return ('NO-STOP v85.197' in _w) and ('pw.' + 'stop()' not in _w)
     except Exception:
         return False
-
 def _sweepquiet_probe():  # SWEEP-QUIET v85.187: the fixture S578 leans on - the sweep can be silent and no marker is printed
     try:
         _b = open(__file__, encoding='utf-8', errors='ignore').read()
@@ -5278,6 +5268,15 @@ def _warmrecover_probe():  # WARM-RECOVER v85.196: the fixture S586 leans on - a
         if 'if _pa and not _sa:' not in _b:
             return False
         return 'if not _rc and not _sa:' in _b
+    except Exception:
+        return False
+
+def _nostop_probe():  # NO-STOP v85.197: the fixture S587 leans on - the driver is never stopped mid-process
+    try:
+        _w = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa.py'), encoding='utf-8', errors='ignore').read()
+        if 'NO-STOP v85.197' not in _w:
+            return False
+        return 'pw.' + 'stop()' not in _w
     except Exception:
         return False
 
@@ -5950,6 +5949,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S587 the driver serves the whole process', _nostop_probe())
     ck('S586 a keeper without a door is swept and the door raised', _warmrecover_probe())
     ck('S584 the chair asks the eye, not the sheet alone', _chairname_probe())
     ck('S583 both doors refuse to write over a draft', _freetabboth_probe())

@@ -398,11 +398,7 @@ def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  #
         except Exception:
             pass
         try:
-            if via_cdp: pw.stop()  # PERSISTENT-WA v84.38: only the CDP playwright instance stops
-            _PW[0] = None  # ALIVE-FLAG v85.186: the one cache the doors share is emptied the moment the driver stops
-            _state['alive'] = False
-            _state.pop('pw', None)  # PLAYWRIGHT-FRESH v85.185: a stopped instance is never reused - 'Event loop is closed' cost the master three retries
-            _state.pop('ctx', None)  # PLAYWRIGHT-FRESH v85.185: the context belonged to that instance
+            pass  # NO-STOP v85.197: the driver serves the whole process - a second sync_playwright() start in one process is what raised "Sync API inside the asyncio loop"
         except Exception:
             pass
 
