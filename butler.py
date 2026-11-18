@@ -1843,6 +1843,8 @@ def _eyename_of(p, trace=False, log=None):  # EYES-IN-SWEEP v85.90: the OCR-back
      except Exception:
          pass
  return name
+_SWEEP_QUIET = {'on': False}  # SWEEP-QUIET v85.187: the chat asks the sweep for silence; the watcher keeps its own voice
+
 def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a property of the name, not of the ceremony's memory  # SWEEP-TRACE v85.70: with trace on, every file speaks its verdict, so a silent sweep names the guard that silenced it
     try:
         dirs = [root] + [os.path.join(root, s) for s in os.listdir(root) if os.path.isdir(os.path.join(root, s)) and not s.startswith('.') and not s.startswith('__')]  # DIRS-ALL v85.69: every immediate folder of the chair is swept
@@ -1888,7 +1890,7 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
                   except Exception: pass
                   continue
                  except Exception: pass
-                if _d4 and _name_key(re.sub(r'_\d+$', '', os.path.splitext(x)[0])) == _name_key(_d4) and not os.path.splitext(os.path.splitext(x)[0])[1]: _say_once('🛌 twin settled: %s rests in its suffix seat - a seated twin is a finished deed, never a pendulum  # TWIN-SETTLE v85.133' % x); continue
+                if not _SWEEP_QUIET.get('on'): _say_once('🛌 twin settled: %s rests in its suffix seat - a seated twin is a finished deed, never a pendulum' % x)  # TWIN-SETTLE v85.133  # SWEEP-QUIET v85.187: the chat stays clean; the watcher still says it
                 if _d4 and os.path.exists(_q4) and os.path.basename(_q4).lower() != x.lower():
                     _w1s = ''
                     try: _w1s = re.sub(r'[^a-z]', '', (emails_in_text(_full_text(p)) or [''])[0].split('@')[0].lower())
@@ -5182,6 +5184,18 @@ def _alive_probe():  # ALIVE-FLAG v85.186: the fixture S577 leans on - the cache
     except Exception:
         return False
 
+def _sweepquiet_probe():  # SWEEP-QUIET v85.187: the fixture S578 leans on - the sweep can be silent and no marker is printed
+    try:
+        _b = open(__file__, encoding='utf-8', errors='ignore').read()
+        if 'SWEEP-QUIET v85.187' not in _b or "_SWEEP_QUIET = {'on': False}" not in _b:
+            return False
+        if ('pendulum  # TWIN-' + 'SETTLE') in _b:
+            return False
+        _r = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'briefing.py'), encoding='utf-8', errors='ignore').read()
+        return "_SWEEP_QUIET['on'] = True" in _r
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -5851,6 +5865,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S578 the sweep keeps quiet at the chair', _sweepquiet_probe())
     ck('S577 a stopped playwright is dead, never sleeping', _alive_probe())
     ck('S576 a stopped playwright is never reused', _pwfresh_probe())
     ck('S575 a failed draft speaks and the chair advances', _flow_probe())

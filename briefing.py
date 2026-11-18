@@ -1756,7 +1756,7 @@ if __name__ == "__main__":
         f.write(root)
     if mode == 'chat':
         import butler as _butler_refresh
-        _butler_refresh._desk_refresh(root, print)  # DESK-REFRESH v85.148: the desk arrives already swept
+        _butler_refresh._desk_refresh(root, print); _butler_refresh._SWEEP_QUIET['on'] = True  # DESK-REFRESH v85.148: the desk arrives already swept
         print(f"🤖 butler chat - 📂 {root}")
         live = []
         for fn in os.listdir(BASE_DIR):
