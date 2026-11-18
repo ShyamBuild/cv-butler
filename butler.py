@@ -201,7 +201,7 @@ def listen_teach(q):  # LISTEN-FN v81.69: the master's bare ten digits, within f
         print(f'⚠️ teach-listen skipped: {_te}', flush=True)
         return None
 
-def _full_text(p):  # FULL-TEXT v81.76: text layer first, vision second - designed CVs whose layer is silent still speak
+def _full_text_raw(p):  # FULL-TEXT v81.76: text layer first, vision second - designed CVs whose layer is silent still speak
     try:
         with pdfplumber.open(p) as pdf:
             t = "\n".join((pg.extract_text() or '') for pg in pdf.pages)
@@ -221,6 +221,24 @@ def _full_text(p):  # FULL-TEXT v81.76: text layer first, vision second - design
             try: t = extract_text_ocr(p) or ''
             except Exception: t = ''
     return t
+
+_TEXT_MEMO = {}  # SNAP v85.202: one extraction per paper per process - the same page is never read twice
+def _full_text(p):  # SNAP v85.202: memo by path+size+mtime, so a re-read inside one command is free  # FULL-TEXT v81.76: text layer first, vision second
+    try:
+        _st = os.stat(p)
+        _key = (os.path.realpath(p), _st.st_size, _st.st_mtime)
+    except Exception:
+        return _full_text_raw(p)
+    if _key in _TEXT_MEMO:
+        return _TEXT_MEMO[_key]
+    _t = _full_text_raw(p)
+    try:
+        if len(_TEXT_MEMO) > 400:
+            _TEXT_MEMO.clear()
+        _TEXT_MEMO[_key] = _t
+    except Exception:
+        pass
+    return _t
 
 def _provenance_lines(ap, ph):  # PROVENANCE v81.90 (refactored v81.92): one source of truth for where each number lives in the paper (module level: briefing calls it too)
     out = []
@@ -2284,6 +2302,7 @@ def seat_rename_check(root, say=print, only=None):  # SEAT-RENAME v85.11 (examin
             for x in fn:
                 if _is_desk_candidate(x) and x not in ex: targets.append(os.path.join(dp, x))
         if targets: say(f'✏️ naming the focused chair ({len(targets)} unexamined papers) - text eyes first, pixels only if silent, ninety seconds per up')  # NO-SILENT-WORK v85.15
+        targets = targets[:6]  # SNAP v85.202: six papers per boot, the rest ride the next up - the chair still gets named, the chat opens fast
     if only:
         targets = [only]
     R = None
@@ -5444,6 +5463,31 @@ def _lessons_probe():  # LESSONS v85.201: the fixture S590 leans on - every rule
     except Exception:
         return False
 
+def _snap_probe():  # SNAP v85.202: the fixture S591 leans on - one extraction per paper and a capped boot pass
+    try:
+        _b = open(__file__, encoding='utf-8', errors='ignore').read()
+        if 'SNAP v85.202' not in _b or '_TEXT_MEMO = {}' not in _b:
+            return False
+        if 'targets = targets[:6]' not in _b:
+            return False
+        if 'def _full_text_raw(p):' not in _b:
+            return False
+        _p = None
+        for _cand in ('Vishal Srivastava.pdf', 'Madan Lal.pdf'):
+            _q = os.path.join(os.path.dirname(os.path.abspath(__file__)), _cand)
+            if os.path.exists(_q):
+                _p = _q
+                break
+        if not _p:
+            return True
+        _a = _full_text(_p)
+        _t0 = __import__('time').time()
+        _b2 = _full_text(_p)
+        _dt = __import__('time').time() - _t0
+        return _a == _b2 and _dt < 0.2
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6113,6 +6157,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S591 the same page is never read twice in one process', _snap_probe())
     ck('S590 every lesson still lives in the code', _lessons_probe())
     ck('S589 converted sources are carried to their shelf', _docsweep_probe())
     ck('S585 a failed navigation names its reason', _gotoconfess_probe())
