@@ -2700,6 +2700,56 @@ def _wa_quiet(_m):  # SEE-FAILURE v85.183: the deed is quiet about progress and 
     except Exception:
         pass
 
+def _remember_deed(name, phone, kind, tag, p):  # RETRY-LAST v85.198: the deed leaves a card, so a parked draft can be re-attempted after the paper moved
+    try:
+        import json as _rj
+        _rj.dump({'name': name, 'phone': phone, 'kind': kind, 'tag': tag, 'p': p, 'ts': int(time.time())},
+                 open(os.path.join(BASE_DIR, '.last_deed.json'), 'w'))
+    except Exception:
+        pass
+def _relocate(p, name, root):  # RETRY-LAST v85.198: the paper moved into its state folder - find it by the name the deed recorded
+    try:
+        if p and os.path.exists(p):
+            return p
+    except Exception:
+        pass
+    try:
+        for _dp, _dn, _fn in os.walk(root or BASE_DIR):
+            _dn[:] = [_d for _d in _dn if not _d.startswith('.')]
+            for _f in _fn:
+                if _f.lower().endswith(('.pdf', '.docx')) and _name_key(os.path.splitext(_f)[0]) == _name_key(name):
+                    return os.path.join(_dp, _f)
+    except Exception:
+        pass
+    return ''
+def redo_last(say=print, root=None):  # RETRY-LAST v85.198: the master's retry - one candidate, one voice, one window, no tag or move repeated
+    try:
+        import json as _rj2
+        _d = _rj2.load(open(os.path.join(BASE_DIR, '.last_deed.json')))
+    except Exception:
+        say('🤷 nothing to retry - seat someone with up first'); return False
+    _nm = _d.get('name') or ''
+    _kind = _d.get('kind') or ''
+    if not _nm or not _kind:
+        say('🤷 the last deed carried no draft - nothing to retry'); return False
+    _p2 = _relocate(_d.get('p') or '', _nm, root or BASE_DIR)
+    if not _p2:
+        say('⚠️ I cannot find %s any more - say up to seat him from the tray' % _nm); return False
+    _ph = _d.get('phone') or None
+    if not _ph:
+        _ph = (phones_of(_p2, True) or [None])[0]
+    if not _ph:
+        say('⚠️ no number on record for %s - teach me: python3 butler.py teach %s <digits>' % (_nm, _nm.split()[0].lower())); return False
+    say('↩️ retrying %s · %s · 📱 %s' % (_nm, _kind, _ph))
+    try:
+        import wa
+        _txt = _chair_wa_text(_kind, _p2, _nm)
+        _ok = wa.send_review(_ph, _txt, _wa_quiet)
+        say('✅ %s · 📱 %s' % (_nm, 'drafted' if _ok else 'still parked'))
+        return bool(_ok)
+    except Exception as _re:
+        say('⚠️ retry failed: %r' % (_re,)); return False
+
 def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair remembers the paper, not merely its path
     _QUIET_ID['on'] = True  # QUIET-DEED v85.182: from here the deed speaks its one line
     _wr = True  # WR-FIRST v85.35: every path through the outcome carries its witness to the deed line, including the no-phone walk-on
@@ -2743,6 +2793,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
             if isinstance(ph0, list): ph0 = ph0[0] if ph0 else None
             if ph0:
                 import wa
+                _remember_deed(cur['name'], ph0, 'nudge', '', p)  # RETRY-LAST v85.198: the card comes before the window
                 _wr = wa.send_review(ph0, _chair_wa_text('nudge', p, cur['name']), _wa_quiet)
             else: say(f'⚠️ no phone for {cur["name"]} - teach me: python3 butler.py teach {cur["name"].split()[0].lower()} <digits>, then retry')
             _td = teach_digits_inline(cur['name'], os.path.basename(p), say)  # TEACH-IN-PLACE v85.49: ten digits spoken here become the number, the book entry and the window's address in one breath
@@ -2791,6 +2842,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
                 pos = _pos_of(p, root)
                 import wa
                 _wr = True  # DEED-TRUTH v85.31: the deed line reports what the window actually did - drafted, parked, or internal
+                _remember_deed(cur['name'], ph0, draft, tag, p)  # RETRY-LAST v85.198: the card comes before the window
                 if _k == 't': pass  # SKIP-WA v84.38 # CINE-LINE v85.1: the deed line already says no 📱 - the retired prompt's law rides on
                 else: _wr = wa.send_review(ph, _chair_wa_text(draft, p, cur['name']), _wa_quiet)
             else: say(f'⚠️ no phone for {cur["name"]} - teach me: python3 butler.py teach {cur["name"].split()[0].lower()} <digits>, then retry')
@@ -5280,6 +5332,18 @@ def _nostop_probe():  # NO-STOP v85.197: the fixture S587 leans on - the driver 
     except Exception:
         return False
 
+def _retry_probe():  # RETRY-LAST v85.198: the fixture S588 leans on - the card, the move, and the word
+    try:
+        _b = open(__file__, encoding='utf-8', errors='ignore').read()
+        if 'RETRY-LAST v85.198' not in _b or 'def redo_last(' not in _b or 'def _relocate(' not in _b:
+            return False
+        if _b.count('_remember_deed(') < 3:
+            return False
+        _r = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'briefing.py'), encoding='utf-8', errors='ignore').read()
+        return 'redo_last(' in _r
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -5949,6 +6013,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S588 a parked draft can be retried by one word', _retry_probe())
     ck('S587 the driver serves the whole process', _nostop_probe())
     ck('S586 a keeper without a door is swept and the door raised', _warmrecover_probe())
     ck('S584 the chair asks the eye, not the sheet alone', _chairname_probe())
