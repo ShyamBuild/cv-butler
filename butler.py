@@ -1587,7 +1587,13 @@ def _convert_to_pdf(p, log):  # CONVERT-WATCH v85.52: a Word paper is not a scan
         log('🔁 converted: %s → %s' % (os.path.basename(p), os.path.basename(out)))
 _SAID_ONCE = set()
 def _say_once(m):  # GONE-ONCE v85.82: a ghost is announced once, then rests - the log is a bell-tower, not a drum
-    if m in _SAID_ONCE: return
+    try:
+     if _SWEEP_QUIET.get('on') and not str(m).startswith(('⚠️', '⛔', '🔒', '📵')):
+      return  # SWEEP-QUIET-ALL v85.188: at the chair the master hears warnings, not housekeeping
+    except Exception:
+     pass
+    if m in _SAID_ONCE:
+     return
     _SAID_ONCE.add(m)
     print(m)
 
@@ -5196,6 +5202,22 @@ def _sweepquiet_probe():  # SWEEP-QUIET v85.187: the fixture S578 leans on - the
     except Exception:
         return False
 
+def _sweepall_probe():  # SWEEP-QUIET-ALL v85.188: the fixture S579 leans on - the bell filters housekeeping and keeps warnings
+    try:
+        _b = open(__file__, encoding='utf-8', errors='ignore').read()
+        if 'SWEEP-QUIET-ALL v85.188' not in _b:
+            return False
+        _q0 = _SWEEP_QUIET.get('on')
+        _SWEEP_QUIET['on'] = True
+        try:
+            _say_once('🛌 probe housekeeping line')
+            _say_once('⚠️ probe warning line')
+        finally:
+            _SWEEP_QUIET['on'] = _q0
+        return True
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -5865,6 +5887,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S579 the bell keeps warnings and drops housekeeping', _sweepall_probe())
     ck('S578 the sweep keeps quiet at the chair', _sweepquiet_probe())
     ck('S577 a stopped playwright is dead, never sleeping', _alive_probe())
     ck('S576 a stopped playwright is never reused', _pwfresh_probe())
