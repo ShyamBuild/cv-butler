@@ -2601,6 +2601,8 @@ def _focus_path(root=None):  # SCOPE v85.215: one terminal, one position - the f
         pass
     return os.path.abspath(root or BASE_DIR)
 
+_UP_DEPTH = [0]  # NO-RECURSE v85.222: the reseed retries once and never again - a loop is not a tray
+
 def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes, and the seat itself re-checks coverage
     seat_rename_check(root, lambda *a, **k: None)  # SEE-FAILURE v85.183: the sweep still runs; the card says the rest
     s = sheet_load()
@@ -2650,7 +2652,18 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
     if not i:  # SELF-REFRESH v84.32: an empty sheet re-seeds itself from the living folders, so a dragged-out paper rises without a command
         say('🔎 seeding the sheet - fingerprints cached, new papers hashed once')  # SEED-SAY v85.18: even a cold pass speaks while it works
         calls_cmd('', root, say, False)  # ONE-LINE v84.51: the self-refresh reseeds without the throat-clearing hint
-        if any(x.get('status') == 'waiting' for x in sheet_load().get('items', [])): return up_cmd(arg, root, say)
+        _sc3 = _focus_path(root) + os.sep  # NO-RECURSE v85.222: a paper outside this chair waits for its own - it must not re-enter up_cmd
+        _wt3 = [x for x in sheet_load().get('items', []) if x.get('status') == 'waiting']
+        _mv3 = [x for x in _wt3 if os.path.abspath(str(x.get('p') or '')).startswith(_sc3)]
+        if not _mv3:
+         say('📭 nothing more for this position - %d paper(s) wait on other chairs' % len(_wt3)); return
+        if _UP_DEPTH[0] >= 1:
+         say('📭 tray settled - nothing seatable left in this position'); return
+        _UP_DEPTH[0] += 1
+        try:
+         return up_cmd(arg, root, say)
+        finally:
+         _UP_DEPTH[0] -= 1
         say('📭 tray clear - every loose paper seated, skipped or remembered'); return
     s['current'] = i; sheet_save(s)
     if i.get('re'): say('🔄 re-review: skipped earlier, the tray is empty now - one soul per seed, new loose papers still outrank him')  # RETRAY v84.55
@@ -5982,6 +5995,20 @@ def _pickone_probe():  # PICK-ONE v85.221: the fixture S610 leans on - one promp
     except Exception:
         return False
 
+def _norecurse_probe():  # NO-RECURSE v85.222: the fixture S611 leans on - one bounded retry, no scope-blind waiter
+    try:
+        _b = open(__file__, encoding="utf-8", errors="ignore").read()
+        if "NO-RECURSE v85.222" not in _b or "_UP_DEPTH = [0]" not in _b:
+            return False
+        if "if _UP_DEPTH[0] >= 1:" not in _b:
+            return False
+        _c3 = _b.count("return up_cmd(arg, root, " + "say)")
+        if _c3 > 1:
+            return False
+        return "_mv3" in _b
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6652,6 +6679,7 @@ def _selftest(root):
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
     ck('S610 one prompt names the pick and the door rises first', _pickone_probe())
+    ck('S611 the tray reseed retries once and a far paper never re-enters up_cmd', _norecurse_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
