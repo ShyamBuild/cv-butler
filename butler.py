@@ -704,7 +704,7 @@ def _tag_write(p, tags):  # TAG-WRITE v84.0: libc setxattr, synchronous - what w
     import plistlib as _pl
     name = 'com.apple.metadata:_kMDItemUserTags'
     if tags: _xattr_set_raw(p, name, _pl.dumps(tags, fmt=_pl.FMT_BINARY))
-    else: _xattr_del_raw(p, name)
+    else: return  # TAG-NO-DELETE v85.241: an empty list IS a deletion - the house never removes a tag
 def _tag_roundtrip_ok():  # S217 witness body - prints its own steps if it ever falls again
     import tempfile, plistlib as _pl
     tp = None
@@ -6349,6 +6349,20 @@ def _tagonly_probe():  # TAG-ONLY v85.240  # NO-COUPLE v85.240: the flow moves n
     except Exception:
         return False
 
+def _tagdelete_probe():  # TAG-NO-DELETE v85.241: the setter stays, the deleter is unreachable from _tag_write
+    try:
+        _b = open(__file__, encoding="utf-8", errors="ignore").read()
+        if "TAG-NO-DELETE v85.241" not in _b:
+            return False
+        _i = _b.index("def _tag_write(")
+        _j = _b.index("def _tag_roundtrip_ok(")
+        _body = _b[_i:_j]
+        if "_xattr_del_raw(p" in _body:
+            return False  # the writer never deletes an attribute
+        return "never removes a tag" in _body
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -7035,6 +7049,7 @@ def _selftest(root):
     ck('S624 an empty template is refused and a filled block is accepted', _stampcomplete_probe())
     ck('S625 the tag travels first and the move obeys the decision table', briefing._stampflow_probe())
     ck('S627 the flow carries the tag and moves no file - tags move files, not the butler', _tagonly_probe())
+    ck('S628 the house swaps tags freely and never removes one', _tagdelete_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
