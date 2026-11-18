@@ -132,9 +132,20 @@ def wa_goto(phone, say=print):  # WA-GOTO v85.150: the prep door the seat alread
         say(f'⚠️ wa_goto failed for phone {phone}: {e}')
         return False
 
-def _arm_dialogs(page):  # DIALOG-ARM v85.179: WhatsApp asks "leave this page?" whenever a live draft sits in the composer; answer it so no navigation dies on a modal
+def _arm_dialogs(page, say=None):  # DIALOG-ARM v85.179  # DIALOG-SAFE v85.206: the answer can never crash the driver
     try:
-        page.on('dialog', lambda _d: _d.accept())
+        if getattr(page, '_butler_dialogs', False):
+            return True
+        def _answer(_dlg):
+            try:
+                _dlg.accept()
+            except Exception:
+                pass  # DIALOG-SAFE v85.206: a dialog that closed first is not an error - and never an uncaught one
+        page.on('dialog', _answer)
+        try:
+            page._butler_dialogs = True
+        except Exception:
+            pass
         return True
     except Exception:
         return False
@@ -157,6 +168,23 @@ def _goto(page, url, say=print):  # GOTO-CONFESS v85.195: a failed navigation na
 AUTOSEND = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates', '.autosend')
 
 COMPOSE_SELS = ('footer div[contenteditable="true"][data-tab="10"]', 'footer div[contenteditable="true"][data-lexical-editor="true"]', 'footer div[contenteditable="true"]', 'footer div[contenteditable="true"]')
+
+def _page_alive(page):  # DIALOG-SAFE v85.206: a page can be closed under us - ask before believing it
+    try:
+        return page is not None and (page.url or None) is not None
+    except Exception:
+        return False
+def _fresh_page(say=None):  # DIALOG-SAFE v85.206: after a TargetClosed, one re-arm from the warm door
+    try:
+        pw = _pw_fresh()
+        _door = pw.chromium.connect_over_cdp(_CDP_URL)
+        _c = _door.contexts[0] if _door.contexts else _door.new_context()
+        _pgs = [x for x in _c.pages if 'web.whatsapp.com' in (getattr(x, 'url', '') or '')]
+        _pg = _pgs[0] if _pgs else (_c.pages[0] if _c.pages else _c.new_page())
+        _arm_dialogs(_pg, say)
+        return _pg
+    except Exception:
+        return None
 
 def _composer_ready(page, timeout=30000):  # COMPOSER-WAIT v85.150: the field is waited for as a visible truth, so a slow load never wears the coat of a dead number
     for sel in COMPOSE_SELS:
@@ -411,7 +439,11 @@ def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  #
 def send_review(phone, text, say=print, *a, **k):  # PLAYWRIGHT-THREAD v85.23 (retired v85.150)  # PLAYWRIGHT-PROCESS v85.24 (retired v85.150)  # WA-STATUS v85.31 (retired v85.150)  # DRIVER-GOODBYE v85.42 (retired v85.150: no node driver of ours outlives a call)  # HANG-CEILING v85.42 (retired v85.150: no child may hang, because no child is born)  # EPIPE-INPROC v85.150: the draft is placed in this very process - the child-process fallback is gone, so no pipe can close beneath it
     LAST_FAIL[0] = ''
     try:
-        return bool(_send_review_body(phone, text, say))
+        try:
+         return bool(_send_review_body(phone, text, say))
+        except KeyboardInterrupt:  # DIALOG-SAFE v85.206: a ^C at the window costs the send, never the chat
+         say('⏸️ interrupted - nothing was sent; say retry when ready')
+         return False
     except WaBusy as e:  # PROFILE-LOCK v85.150: the master's cure in one line, and the chat stays open
         LAST_FAIL[0] = 'lock'
         say(str(e))

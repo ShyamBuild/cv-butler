@@ -5282,21 +5282,16 @@ def _preopen_probe():  # PREOPEN v85.178: the fixture S570 leans on - preopen ex
     except Exception:
         return False
 
-def _dialog_probe():  # DIALOG-ARM v85.179: the fixture S571 leans on - the arm exists and stands before both navigations
+def _dialog_probe():  # DIALOG-ARM v85.179  # DIALOG-SAFE v85.206: the answer is armoured and stands before every navigation
     try:
         _w = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa.py'), encoding='utf-8', errors='ignore').read()
-        if (chr(35) + ' DIALOG-ARM v85.179') not in _w:
+        if 'DIALOG-SAFE v85.206' not in _w or 'def _arm_dialogs(' not in _w:
             return False
-        if 'def _arm_dialogs(page):' not in _w:
+        if 'def _answer(_dlg):' not in _w:
             return False
-        _a = _w.find('_arm_dialogs(page)')
-        _g = _w.find('page.goto(url')
-        if _a < 0 or _g < 0 or _a > _g:
-            return False
-        return _w.count('_arm_dialogs(') >= 3
+        return _w.count('_arm_dialogs(') >= 3 and _w.find('_arm_dialogs(page, say)') < _w.find('page.goto(url')
     except Exception:
         return False
-
 def _card_probe():  # CHAIR-CARD v85.181  # SEAT-FLOW v85.204: five lines, and the card carries the number the master chose
     try:
         _b = open(__file__, encoding='utf-8', errors='ignore').read()
@@ -5572,6 +5567,19 @@ def _shelfconvert_probe():  # SHELF-NO-CONVERT v85.205: the fixture S594 leans o
         if "('converted files', 'converted doc files')" not in _b:
             return False
         return '_want = _stem_pdf + os.path.splitext(_f)[1]' in _b
+    except Exception:
+        return False
+
+def _dialogsafe_probe():  # DIALOG-SAFE v85.206: the fixture S595 leans on - an armoured answer, a re-arm, a contained ^C
+    try:
+        _w = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa.py'), encoding='utf-8', errors='ignore').read()
+        if 'DIALOG-SAFE v85.206' not in _w:
+            return False
+        if 'except Exception:' not in _w:
+            return False
+        if 'def _fresh_page(' not in _w or 'def _page_alive(' not in _w:
+            return False
+        return 'a ^C at the window costs the send, never the chat' in _w
     except Exception:
         return False
 
@@ -6244,6 +6252,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S595 the dialog answer never crashes the driver', _dialogsafe_probe())
     ck('S594 a shelved source is never converted twice', _shelfconvert_probe())
     ck('S593 the seat asks once, survives ^C and advances', _seatflow_probe())
     ck('S592 a shelf holds sources, never a paper', _shelfprobe())
