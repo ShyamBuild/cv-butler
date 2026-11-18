@@ -316,6 +316,14 @@ def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  #
          say('   ♻️ reusing the open chat - no reload')
         elif not _goto(page, f'https://web.whatsapp.com/send?phone={digits}', say):
          say('⚠️ chat page did not load - scan QR in the opened window if asked, then retry')
+        if ('/send?phone=' + digits) not in (page.url or ''):  # SEE-FAILURE v85.183: a navigation that did not arrive is a fact, not a guess
+         try:
+          page.reload(wait_until='domcontentloaded', timeout=30000)
+          _goto(page, f'https://web.whatsapp.com/send?phone={digits}', say)
+         except Exception:
+          pass
+        if ('/send?phone=' + digits) not in (page.url or ''):
+         say('⚠️ the window stayed on another chat - the draft will be parked, not placed')
          return False
         try:
             _html = page.content()

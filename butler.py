@@ -2298,7 +2298,7 @@ def _chair_card(name, p, ph, em, say=print):  # CHAIR-CARD v85.181: five lines -
         _sub = _role + (_paint(' · ', 'd') + _co if _co else '') + (_paint(' · ', 'd') + _loc if _loc else '')
         say(_paint('│  ', 'd') + _sub)
         if em:
-            say(_paint('│  ✉️  ', 'd') + _paint(em, 'y') + _paint('   (copy)', 'd'))
+            say(_paint('│  ✉️  ', 'd') + _paint(em, 'y'))
         if ph:
             say(_paint('│  📱 ', 'd') + _paint(ph, 'g'))
         say(_paint('└─ ', 'd') + _paint('1 jd · 2 refer · 3 cv · 4 nudge · 5 missed · 6 ready · 7 skip', 'm'))
@@ -2307,7 +2307,7 @@ def _chair_card(name, p, ph, em, say=print):  # CHAIR-CARD v85.181: five lines -
         return False
 
 def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes, and the seat itself re-checks coverage
-    seat_rename_check(root, say)  # SEAT-RENAME v85.11: check the focused chair before seating anyone
+    seat_rename_check(root, lambda *a, **k: None)  # SEE-FAILURE v85.183: the sweep still runs; the card says the rest
     s = sheet_load()
     sk = skips_load()
     mem = set(covered_load())  # FOLDER-TRUTH v84.30: outcome memory guards duplicates; the folders decide the rest
@@ -2676,6 +2676,14 @@ def followup_cmd(arg, root, say=print):  # FOLLOWUP v84.11: the debts, by name, 
 
 SKIPS_PATH = os.path.join(BASE_DIR, 'skips.json')  # SKIP v84.11: today's list, not today's verdicts
 
+def _wa_quiet(_m):  # SEE-FAILURE v85.183: the deed is quiet about progress and loud about failure - silence must never hide why a draft did not land
+    try:
+        _s = str(_m)
+        if _s.startswith(('⚠️', '🔌', '🔒', '📵', '⛔')):
+            print(_s, flush=True)
+    except Exception:
+        pass
+
 def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair remembers the paper, not merely its path
     _QUIET_ID['on'] = True  # QUIET-DEED v85.182: from here the deed speaks its one line
     _wr = True  # WR-FIRST v85.35: every path through the outcome carries its witness to the deed line, including the no-phone walk-on
@@ -2719,7 +2727,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
             if isinstance(ph0, list): ph0 = ph0[0] if ph0 else None
             if ph0:
                 import wa
-                _wr = wa.send_review(ph0, _chair_wa_text('nudge', p, cur['name']), lambda *a, **k: None)
+                _wr = wa.send_review(ph0, _chair_wa_text('nudge', p, cur['name']), _wa_quiet)
             else: say(f'⚠️ no phone for {cur["name"]} - teach me: python3 butler.py teach {cur["name"].split()[0].lower()} <digits>, then retry')
             _td = teach_digits_inline(cur['name'], os.path.basename(p), say)  # TEACH-IN-PLACE v85.49: ten digits spoken here become the number, the book entry and the window's address in one breath
             if _td: ph = _td  # TEACH-WIRE v85.50: the taught digits enter the same variable the window reads - one breath, one door
@@ -2768,9 +2776,15 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
                 import wa
                 _wr = True  # DEED-TRUTH v85.31: the deed line reports what the window actually did - drafted, parked, or internal
                 if _k == 't': pass  # SKIP-WA v84.38 # CINE-LINE v85.1: the deed line already says no 📱 - the retired prompt's law rides on
-                else: _wr = wa.send_review(ph, _chair_wa_text(draft, p, cur['name']), lambda *a, **k: None)
+                else: _wr = wa.send_review(ph, _chair_wa_text(draft, p, cur['name']), _wa_quiet)
             else: say(f'⚠️ no phone for {cur["name"]} - teach me: python3 butler.py teach {cur["name"].split()[0].lower()} <digits>, then retry')
     say(f"✅ {cur['name']} · 🏷️ {tag} · 📦 {os.path.basename(os.path.dirname(p))} · " + ('📱 drafted' if (_k != 't' and draft and _wr) else ('📱 parked' if (_k != 't' and draft and not _wr) else ('no 📱' if draft else 'internal · no 📱'))))  # ACTION-ECHO v84.51 CINE-LINE v85.1: one deed line, nothing repeated
+    try:  # AUTO-ADVANCE v85.183: one up starts the whole tray - the next candidate arrives without asking
+     _w2 = [x for x in sheet_load().get('items', []) if x.get('status') == 'waiting']
+     if _w2:
+      up_cmd('', root, say)
+    except Exception:
+     pass
     pass  # QUIET-DEED v85.182: the deed speaks one line  # CENSUS-AFTER v84.12: every closed row used to end with the scoreboard; the prompt shows it now
     w = [x for x in s.get('items', []) if x['status'] == 'waiting']  # ADVANCE v84.10b: the queue walks without being pushed
     pass  # QUIET-DEED v85.182: the deed speaks one line; the queue count rides the prompt
@@ -5129,6 +5143,22 @@ def _keepopen_probe():  # KEEP-OPEN v85.182: the fixture S574 leans on - the hou
     except Exception:
         return False
 
+def _flow_probe():  # SEE-FAILURE v85.183: the fixture S575 leans on - failures speak, the deed advances, the card carries no paste hint
+    try:
+        _b = open(__file__, encoding='utf-8', errors='ignore').read()
+        if 'def _wa_quiet(_m):' not in _b:
+            return False
+        if '_wa_quiet)' not in _b:
+            return False
+        if 'AUTO-ADVANCE v85.183' not in _b:
+            return False
+        if ('(co' + 'py)') in _b:
+            return False
+        _w = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa.py'), encoding='utf-8', errors='ignore').read()
+        return 'SEE-FAILURE v85.183' in _w and 'the draft will be parked' in _w
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -5798,6 +5828,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S575 a failed draft speaks and the chair advances', _flow_probe())
     ck('S574 the drafted window stays until the master sends', _keepopen_probe())
     ck('S573 the seat speaks five painted lines and opens nothing', _card_probe())
     ck('S572 the deed dials the number the master picked at the seat', 'def _chair_phone(' in _src and ('or _chair_' + 'phone(p) or phones_of') in _src and 'SEAT-NO-OPEN v85.180' in _src and 'wa.wa_' + 'goto(' not in _src)
