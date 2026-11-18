@@ -2531,6 +2531,22 @@ def _chair_card(name, p, ph, em, say=print):  # CHAIR-CARD v85.181: five lines -
     except Exception:
         return False
 
+def _focus_path(root=None):  # SCOPE v85.215: one terminal, one position - the focus names the folder the chair may draw from
+    try:
+        import json as _fj
+        _p = _fj.load(open(os.path.join(BASE_DIR, "focus.json"))).get("path") or ""
+        if _p and os.path.isdir(_p):
+            return os.path.abspath(_p)
+    except Exception:
+        pass
+    try:
+        _d = desk_load().get("primary") or ""
+        if _d and os.path.isdir(_d):
+            return os.path.abspath(_d)
+    except Exception:
+        pass
+    return os.path.abspath(root or BASE_DIR)
+
 def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes, and the seat itself re-checks coverage
     seat_rename_check(root, lambda *a, **k: None)  # SEE-FAILURE v85.183: the sweep still runs; the card says the rest
     s = sheet_load()
@@ -2542,6 +2558,8 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
         except Exception: pass
     for it in s.get('items', []):  # SHEET-LIVE v84.12
         if it.get('status') != 'waiting': continue
+        if not os.path.abspath(it.get("p") or "").startswith(_focus_path(root) + os.sep):
+         continue  # SCOPE v85.215: a paper from another position waits for its own chair
         p = it['p']
         if not os.path.exists(p):
             q = _find_by_fp(it.get('fp'), root)
@@ -2549,7 +2567,7 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
             else: it['status'] = 'done'; it['outcome'] = 'gone'; continue
         if os.path.basename(os.path.dirname(p)) in _tag_vocab() or _name_key(os.path.basename(p)) in mem or _in_nonqueue(p):
             it['status'] = 'done'; it['outcome'] = 'covered elsewhere'; continue  # FOLDER-TRUTH v84.30
-    for sc in desk_paths():
+    for sc in [_focus_path(root)]:  # SCOPE v85.215: the chair seeds only its own position
         for dp, dn, fn in os.walk(sc):
             for x in fn:
                 if not _is_desk_candidate(x): continue
@@ -2561,6 +2579,8 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
     i = None  # SEAT-CHECK v84.15: coverage is enforced at the chair, not merely at the seed
     for it in sorted(s.get('items', []), key=lambda x: 1 if x.get('re') else 0):  # RETRAY v84.55: new blood outranks the re-review tray in the chair
         if it.get('status') != 'waiting': continue
+        if not os.path.abspath(it.get("p") or "").startswith(_focus_path(root) + os.sep):
+         continue  # SCOPE v85.215: a paper from another position waits for its own chair
         p = it['p']
         if not os.path.exists(p):
             q = _find_by_fp(it.get('fp'), root)
@@ -5771,6 +5791,17 @@ def _jdhouse_probe():  # JD-HOUSE v85.214: the fixture S603 leans on - a descrip
     except Exception:
         return False
 
+def _scope_probe():  # SCOPE v85.215: the fixture S604 leans on - the chair draws from one position
+    try:
+        _b = open(__file__, encoding="utf-8", errors="ignore").read()
+        if "SCOPE v85.215" not in _b or "def _focus_path(" not in _b:
+            return False
+        if "for sc in [_focus_path(root)]:" not in _b:
+            return False
+        return _b.count("a paper from another " + "position waits") == 2
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6440,6 +6471,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S604 the chair draws from one position only', _scope_probe())
     ck('S603 a description is housed, never seated', _jdhouse_probe())
     ck('S602 the prompt speaks counts only and a park keeps its chair', _calmvoice_probe())
     ck('S601 a description wears JD_Position_Location', _jdcano_probe())
