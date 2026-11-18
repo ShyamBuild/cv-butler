@@ -2233,6 +2233,11 @@ def _event_tick(root, log=print):  # RENAME-WATCH v85.52 + CONVERT-WATCH v85.52:
             except Exception:
                 pass
         _case_sweep(root, log)  # CASE-SWEEP v85.57: the doorbell sweeps casing every beat, so a shout never outlives its arrival
+        try:  # BEAT-SHELF v85.209: the shelf belongs to the beat, never to a boot - a converted source is carried home at once
+         _doc_sweep(root, log)
+         _shelf_pure(root, log)
+        except Exception:
+         pass
         dirs = [root] + [os.path.join(root, s) for s in os.listdir(root) if os.path.isdir(os.path.join(root, s)) and not s.startswith('.') and not s.startswith('__')]  # DIRS-ALL v85.69: every immediate folder of the chair is swept - the stage folders hold every seated paper, and a bell that walks only the root walks an empty hall
     except Exception:
         dirs = [root]
@@ -5626,6 +5631,17 @@ def _emptyonce_probe():  # EMPTY-ONCE v85.208: the fixture S597 leans on - a sil
     except Exception:
         return False
 
+def _beatshelf_probe():  # BEAT-SHELF v85.209: the fixture S598 leans on - the beat itself shelves the sources
+    try:
+        _b = open(__file__, encoding='utf-8', errors='ignore').read()
+        if 'BEAT-SHELF v85.209' not in _b:
+            return False
+        if '_case_sweep(root, log)' not in _b:
+            return False
+        return '_doc_sweep(root, log)' in _b and '_shelf_pure(root, log)' in _b
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6295,6 +6311,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S598 the beat shelves the sources itself', _beatshelf_probe())
     ck('S597 a remembered silence is never re-read', _emptyonce_probe())
     ck('S596 a file is never renamed onto itself', _noopseat_probe())
     ck('S595 the dialog answer never crashes the driver', _dialogsafe_probe())
