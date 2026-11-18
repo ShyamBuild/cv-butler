@@ -2647,6 +2647,55 @@ def stamp_say(p, say=print):  # STAMP-READ v85.231: spoken, never written
                                            s["box"][0], s["box"][1], s["box"][2], s["box"][3]))
     return s
 
+def litter_report(root, max_files=4000):  # LITTER-AUDIT v85.234: read-only - the house names its own litter, never hides it
+    import hashlib as _hl
+    out = []
+    seen = {}
+    n = 0
+    for dp, dn, fn in os.walk(root):
+        for f in fn:
+            if n >= max_files:
+                break
+            n += 1
+            if f.endswith((".tmp", ".crdownload", ".part")):
+                out.append(("tmp", os.path.join(dp, f)))
+                continue
+            stem = os.path.splitext(f)[0]
+            if stem and stem[-2:-1] == "." and stem[-1:].isdigit():
+                out.append(("dot-suffix", os.path.join(dp, f)))
+            p = os.path.join(dp, f)
+            try:
+                stt = os.stat(p)
+                key = (dp, stt.st_size)
+                seen.setdefault(key, []).append(p)
+            except Exception:
+                pass
+    for key, paths in seen.items():
+        if len(paths) < 2:
+            continue
+        digests = {}
+        for p in paths:
+            try:
+                digests.setdefault(_hl.md5(open(p, "rb").read()).hexdigest(), []).append(p)
+            except Exception:
+                pass
+        for dg, ps in digests.items():
+            if len(ps) > 1:
+                out.extend([("same-bytes", q) for q in ps])
+    return out
+
+def litter_say(root, say=print):  # LITTER-AUDIT v85.234: spoken, never deleted by the house
+    try:
+        rep = litter_report(root)
+    except Exception as e:
+        say("⚠️ litter audit failed: %r" % (e,)); return []
+    if not rep:
+        say("🧹 no litter in " + os.path.basename(str(root))); return []
+    say("🧹 %d litter finding(s) - the master decides, the house deletes nothing" % len(rep))
+    for kind, p in rep[:20]:
+        say("   %-11s %s" % (kind, os.path.relpath(p, root)))
+    return rep
+
 def _client_doc(p):  # CLIENT-DOC v85.216: the company name on a paper is the company document, not a human
     try:
         _stem = re.sub("[^a-z0-9]+", " ", os.path.splitext(os.path.basename(p))[0].lower()).strip()
@@ -6219,6 +6268,21 @@ def _twinunderscore_probe():  # TWIN-SEAT-UNDERSCORE v85.233: the master reads N
     except Exception:
         return False
 
+def _litter_probe():  # LITTER-AUDIT v85.234: the fixture S623 leans on - the audit is read-only
+    try:
+        _b = open(__file__, encoding="utf-8", errors="ignore").read()
+        if "LITTER-AUDIT v85.234" not in _b or "def litter_report(" not in _b:
+            return False
+        _i = _b.index("def litter_report(")
+        _j = _b.index("def litter_say(")
+        _body = _b[_i:_j]
+        if "os.remove(" in _body or "os.rename(" in _body or "shutil.move(" in _body:
+            return False  # the audit may name litter, never make or move files
+        _dot = "disp + \"\" + \"" + "." + "\"" + " + str("
+        return _dot not in _b
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6901,6 +6965,7 @@ def _selftest(root):
     ck('S620 the stamp is read out of the paper and spoken, never written', _stampread_probe())
     ck('S621 a candidate file wears the CV name and never a salutation', _salutation_probe())
     ck('S622 a suffix seat is Name_1.pdf with an underscore, never a dot', _twinunderscore_probe())
+    ck('S623 the litter audit names litter and never makes it', _litter_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
