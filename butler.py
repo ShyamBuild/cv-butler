@@ -700,11 +700,21 @@ def desk_release(p, say=print):  # RELEASE v84.13: releasing the top chair hands
     desk_save(d)
     say(f"🪑 chair released: {os.path.basename(rp)}" + (f" · promoted: {os.path.basename(d['primary'])}" if d.get('primary') else ' · no chairs remain'))
 
-def _tag_write(p, tags):  # TAG-WRITE v84.0: libc setxattr, synchronous - what we write is what the next read sees
+def _tag_write(p, tags, told=False):  # TAG-WRITE v84.0: libc setxattr, synchronous - what we write is what the next read sees
     import plistlib as _pl
     name = 'com.apple.metadata:_kMDItemUserTags'
-    if tags: _xattr_set_raw(p, name, _pl.dumps(tags, fmt=_pl.FMT_BINARY))
-    else: return  # TAG-NO-DELETE v85.241: an empty list IS a deletion - the house never removes a tag
+    tags = [t for t in (tags or [])]
+    isdir = os.path.isdir(p)  # TAG-TIERS v85.242: two tiers - a folder tag is bookkeeping, a paper tag is its stage
+    if not tags:
+        if isdir and told:  # TAG-TIERS v85.242: a folder is set, swapped or cleared when the master tells it
+            _xattr_del_raw(p, name); return True
+        return False  # TAG-NO-DELETE v85.241: an empty list on a paper IS a deletion - the house never removes a tag
+    if not isdir:  # TAG-TIERS v85.242: rule B - a paper is never left without a stage
+        _cur = _tags_of(p)
+        if [t for t in _cur if _tag_stage(t)] and not [t for t in tags if _tag_stage(t)]:
+            return False  # TAG-TIERS v85.242: the last stage tag stays - a swap or a two-tag write passes
+    _xattr_set_raw(p, name, _pl.dumps(tags, fmt=_pl.FMT_BINARY))
+    return True
 def _tag_roundtrip_ok():  # S217 witness body - prints its own steps if it ever falls again
     import tempfile, plistlib as _pl
     tp = None
@@ -6349,7 +6359,41 @@ def _tagonly_probe():  # TAG-ONLY v85.240  # NO-COUPLE v85.240: the flow moves n
     except Exception:
         return False
 
-def _tagdelete_probe():  # TAG-NO-DELETE v85.241: the setter stays, the deleter is unreachable from _tag_write
+def _tagtiers_probe():  # TAG-TIERS v85.242: an empty write belongs to a folder, a paper keeps a stage - proven live, not by shape
+    import tempfile
+    _d = None; _f = None
+    try:
+        _d = tempfile.mkdtemp(prefix='tt_')
+        _fd, _f = tempfile.mkstemp(suffix='.pdf', dir=_d); os.close(_fd)
+        if not _tag_write(_f, ['Awaiting JD Confirmation']): return False
+        if _tags_of(_f) != ['Awaiting JD Confirmation']: return False
+        if not _tag_write(_f, ['Ready for Manager Review']): return False  # a paper swap: one stage for another
+        if _tags_of(_f) != ['Ready for Manager Review']: return False
+        if not _tag_write(_f, ['Ready for Manager Review', 'Awaiting CV Update']): return False  # two tags ride together
+        if 'Ready for Manager Review' not in _tags_of(_f): return False
+        if _tag_write(_f, []) is not False: return False  # rule B: the last stage never leaves a paper
+        if 'Ready for Manager Review' not in _tags_of(_f): return False
+        if _tag_write(_f, ['Some Note']) is not False: return False  # a note tag may never replace the stage
+        if 'Ready for Manager Review' not in _tags_of(_f): return False
+        if not _tag_write(_d, ['Position Active']): return False  # folder tier, set
+        if _tags_of(_d) != ['Position Active']: return False
+        if not _tag_write(_d, ['Position On Hold']): return False  # folder tier, swap
+        if _tags_of(_d) != ['Position On Hold']: return False
+        if _tag_write(_d, [], told=True) is not True: return False  # folder tier, clear - only on the word
+        if _tags_of(_d) != []: return False
+        if _tag_write(_d, [], told=False) is not False: return False  # a clear without the word is refused
+        _b = open(__file__, encoding='utf-8', errors='ignore').read()
+        _body = _b[_b.index('def _tag_write('):_b.index('def _tag_roundtrip_ok(')]
+        _k = _body.index('_xattr_del_raw(p')  # the deleter answers under the isdir gate, never free
+        _g = _body.find('os.path.isdir(')
+        if _g < 0 or _g > _k: return False
+        return True
+    except Exception:
+        return False
+    finally:
+        pass  # the mkdtemp tree is unique per run and reaped by the OS; the house speaks no deletion verb (S166-class guards)
+
+def _tagdelete_probe():  # TAG-NO-DELETE v85.241 (TAG-TIERS v85.242): the deleter answers to a folder gate alone
     try:
         _b = open(__file__, encoding="utf-8", errors="ignore").read()
         if "TAG-NO-DELETE v85.241" not in _b:
@@ -6358,7 +6402,10 @@ def _tagdelete_probe():  # TAG-NO-DELETE v85.241: the setter stays, the deleter 
         _j = _b.index("def _tag_roundtrip_ok(")
         _body = _b[_i:_j]
         if "_xattr_del_raw(p" in _body:
-            return False  # the writer never deletes an attribute
+            _k = _body.index("_xattr_del_raw(p")
+            _g = _body.find("os.path.isdir(")
+            if _g < 0 or _g > _k:
+                return False  # a removal with no isdir gate above it is the v635 hole reopened
         return "never removes a tag" in _body
     except Exception:
         return False
@@ -7050,6 +7097,7 @@ def _selftest(root):
     ck('S625 the tag travels first and the move obeys the decision table', briefing._stampflow_probe())
     ck('S627 the flow carries the tag and moves no file - tags move files, not the butler', _tagonly_probe())
     ck('S628 the house swaps tags freely and never removes one', _tagdelete_probe())
+    ck('S629 an empty tag write belongs to folders and a paper keeps its stage', _tagtiers_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
