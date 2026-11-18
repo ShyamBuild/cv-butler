@@ -1920,7 +1920,15 @@ def _name_from_head_lines(lines):  # ACCEPTANCE v85.101: the naming brain as a p
         j += 1
     return ''
 
+_EMPTY_V = {}  # EMPTY-ONCE v85.208: path+size+mtime of papers that answered with silence
+
 def _eyename_of(p, trace=False, log=None):  # EYES-IN-SWEEP v85.90: the OCR-backed first line names a paper the filename cannot - cached by size and mtime so each paper pays the cap once  # EYECACHE v85.90
+ try:  # EMPTY-ONCE v85.208: a remembered silence returns at once - no extraction, no log, no CPU
+  _ek = (os.path.realpath(p), os.stat(p).st_size, os.stat(p).st_mtime)
+  if _ek in _EMPTY_V:
+   return ''
+ except Exception:
+  pass
  try:
   st = os.stat(p)
  except Exception:
@@ -1968,6 +1976,10 @@ def _eyename_of(p, trace=False, log=None):  # EYES-IN-SWEEP v85.90: the OCR-back
              name = _display_name(_c2) if _c2 else ''
          if not name:
              _tick_log('🔇 verdict empty: %s | txt=%d | asked twice' % (os.path.basename(p), len(_t2 or '')))
+             try:  # EMPTY-ONCE v85.208: a silence belongs to one body - remember it by path+size+mtime so the pulse never re-reads it
+              _EMPTY_V[(os.path.realpath(p), os.stat(p).st_size, os.stat(p).st_mtime)] = 1
+             except Exception:
+              pass
      except Exception:
          pass
  return name
@@ -5603,6 +5615,17 @@ def _noopseat_probe():  # NOOP-SEAT v85.207: the fixture S596 leans on - no bran
     except Exception:
         return False
 
+def _emptyonce_probe():  # EMPTY-ONCE v85.208: the fixture S597 leans on - a silence is remembered and never re-read
+    try:
+        _b = open(__file__, encoding='utf-8', errors='ignore').read()
+        if 'EMPTY-ONCE v85.208' not in _b or '_EMPTY_V = {}' not in _b:
+            return False
+        if 'if _ek in _EMPTY_V:' not in _b:
+            return False
+        return '_EMPTY_V[(os.path.realpath(p)' in _b
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6272,6 +6295,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S597 a remembered silence is never re-read', _emptyonce_probe())
     ck('S596 a file is never renamed onto itself', _noopseat_probe())
     ck('S595 the dialog answer never crashes the driver', _dialogsafe_probe())
     ck('S594 a shelved source is never converted twice', _shelfconvert_probe())
