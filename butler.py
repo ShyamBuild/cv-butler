@@ -1210,6 +1210,7 @@ def sheet_save(s):
 def sheet_current(): return sheet_load().get('current')
 CHAIR_WORDS = {'missed': '5', 'no answer': '5', 'jd': '1', 'jd mailed': '1', 'cv': '3', 'update cv': '3', 'not interested': '2', 'ready': '6', 'manager': '6', 'skip': '7', 'skip him': '7', 'skip for now': '7', 'skip him for now': '7', 'nudge': '4', 'remind': '4', 'reminder': '4'}  # CHAIR-WORDS renumbered v84.44: the reminder owns four
 def chair_word(q): return CHAIR_WORDS.get((q or '').strip().lower())
+_QUIET_ID = {'on': False}  # QUIET-DEED v85.182: one switch silences the triple during a chair deed
 OUTCOMES = {'1': ('Awaiting JD Confirmation', 'interested · JD mailed', 'jd'), '2': ('Closed \u2013 Not Proceeding', 'not interested', 'refer'), '3': ('Awaiting CV Update', 'will update CV', 'cv'), '4': ('', 'nudge - remind to acknowledge the JD or send the updated CV', 'nudge'), '5': ('Call Scheduled', 'missed / no answer', 'missed'), '6': ('Ready for Manager Review', 'ready for manager', None), '7': (None, 'skipped', None)}  # NUDGE-OPTION v84.44: seven doors - the reminder changes no tag and moves nothing
 def taught_digits(name):  # CHAIR-PHONE v84.10c: the chair reads the taught book directly, then falls back to the paper
     import json as _j
@@ -2365,10 +2366,9 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
                 if _v: _em = _v[0] if isinstance(_v, (list, tuple)) else str(_v); break
             except Exception: pass
     seat_rename_check(root, lambda *a, **k: None, only=p)  # SEAT-RENAME v85.15: the seated paper is named even on days the whole-chair pass rests
-    _chair_card(i['name'], p, ph, _em, say)  # CHAIR-CARD v85.181: one card replaces the dossier and the triple  # HORIZONTAL v85.9 (re-seated v85.10): the dossier stands AFTER the block that births _em and ph - never before  # IDENTITY-AT-SEAT v84.39: the triple lives inside the card
+    _chair_card(i['name'], p, ph, _em, say)  # CHAIR-CARD v85.181: one card replaces the dossier and the triple  # HORIZONTAL v85.9 (re-seated v85.10): the dossier stands AFTER the block that births _em and ph - never before  # IDENTITY-AT-SEAT v84.39: the triple lives inside the card  # EMOJI-CUE v84.51: each door wears its face, and no face wears a banned glyph  # EMOJI-CUE v84.51 # MAP-COMPACT v84.37 # WITNESS-CARRY v84.52
     try: _prep_calls(i, root, say)  # UP-PREP v85.149
     except Exception as _prep_e: say(f'⚠️ prep failed: {_prep_e}')
-    say('   1 📤 jd→JD-Conf · 2 🙅 refer→Closed · 3 📝 cv→CV-Update · 4 🔔 nudge→reminder(no tag) · 5 📵 missed→Call-Sched · 6 🏆 internal→Ready · 7 ⏭️ skip→tray (one returns per empty seed)')  # EMOJI-CUE v84.51: each door wears its face, and no face wears a banned glyph  # EMOJI-CUE v84.51 # MAP-COMPACT v84.37 # WITNESS-CARRY v84.52  # WITNESS-CARRY v84.52: deleted lines hand their laws to the line that survives
 
 def covered_load():
     try: return json.load(open(COVERED_PATH))
@@ -2493,6 +2493,8 @@ def pos_identity(p, root=None):  # POS-ID v84.21: company from the client map, r
     out['company'] = cm.get(client_norm) or cm.get(client) or ov.get('company') or ''  # COMPANY-LIVE v84.27: the client map is the living truth; a frozen position copy never outranks it
     return out
 def say_identity_for(p, say=print):  # POS-ID v84.21: the triple, shown before anything sends
+    if _QUIET_ID.get('on'):  # QUIET-DEED v85.182: the card already named the triple - the deed need not repeat it
+     return
     i = pos_identity(p)
     parts = [x for x in (i['company'], i['role'], i['loc']) if x]
     if parts: say('🏢 ' + ' · '.join(parts))
@@ -2675,6 +2677,7 @@ def followup_cmd(arg, root, say=print):  # FOLLOWUP v84.11: the debts, by name, 
 SKIPS_PATH = os.path.join(BASE_DIR, 'skips.json')  # SKIP v84.11: today's list, not today's verdicts
 
 def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair remembers the paper, not merely its path
+    _QUIET_ID['on'] = True  # QUIET-DEED v85.182: from here the deed speaks its one line
     _wr = True  # WR-FIRST v85.35: every path through the outcome carries its witness to the deed line, including the no-phone walk-on
     s = sheet_load(); cur = s.get('current')
     if not cur: say('🪑 chair empty - type up'); return
@@ -2691,8 +2694,8 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
             say('🤷 the paper moved and I cannot find it by fingerprint - re-seed with calls, or tag it by its new name'); return
     pass  # IDENTITY-ONCE v84.41: the triple speaks at the seat; the proposal carries only the decision, the draft carries the truth inside
     _tagpart = 'SKIPPED, untagged, unmoved' if tag is None else ('[no tag change - reminder only]' if tag == '' else f'[{tag}]')  # NUDGE-OPTION v84.44
-    say(f"🤖 Proposal: {cur['name']} → " + _tagpart + f" ({outcome})" + (f' · 📱 {draft} draft unsent' if draft else ' · no 📱 - stays in the house'))  # ASK-LINE v84.49: the statement ends in its own line
-    if draft and str(key).strip().isdigit(): say('⚡ the digit is the deed - tagging, moving and drafting at once')  # ONE-KEY-DRAFT v85.155: the master sees the deed named before the window opens
+    pass  # QUIET-DEED v85.182: the deed speaks one line, the master reads the result
+    pass  # QUIET-DEED v85.182: the deed speaks one line, the master reads the result  # ONE-KEY-DRAFT v85.155: the master sees the deed named before the window opens
     k = 'y' if (draft and str(key).strip().isdigit()) else menu_key('y = 🏷️ tag + 📦 move + 📱 WhatsApp draft · t = 🏷️ tag + 📦 move, no 📱 · n = cancel, he stays in the chair ›  ')  # ASK-LINE v84.49: the question waits at a visible cue and the key signs it  # PLAIN-CUE v84.50: the cue names the deeds in the master's words - tag, move, text  # ONE-KEY-DRAFT v85.155: an explicit digit never meets a second key - the cue is asked only where the master left the answer open
     if k == 'n':
         say('⏸️ row open - he stays in the chair'); return
@@ -2716,7 +2719,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
             if isinstance(ph0, list): ph0 = ph0[0] if ph0 else None
             if ph0:
                 import wa
-                _wr = wa.send_review(ph0, _chair_wa_text('nudge', p, cur['name']), say)
+                _wr = wa.send_review(ph0, _chair_wa_text('nudge', p, cur['name']), lambda *a, **k: None)
             else: say(f'⚠️ no phone for {cur["name"]} - teach me: python3 butler.py teach {cur["name"].split()[0].lower()} <digits>, then retry')
             _td = teach_digits_inline(cur['name'], os.path.basename(p), say)  # TEACH-IN-PLACE v85.49: ten digits spoken here become the number, the book entry and the window's address in one breath
             if _td: ph = _td  # TEACH-WIRE v85.50: the taught digits enter the same variable the window reads - one breath, one door
@@ -2725,10 +2728,9 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
                 it['status'] = 'done'; it['outcome'] = 'nudged'; it['ts'] = int(time.time())
         s['current'] = None; sheet_save(s)
         _stage_note(cur['name'], _tags_of(p), _tags_of(p), os.path.basename(os.path.dirname(p)), os.path.basename(os.path.dirname(p)), 'chair-nudge')
-        say(f'🔔 nudged {cur["name"]} - no tag changed, nothing moved; his debts stay on the followup board')
+        pass  # QUIET-DEED v85.182: the deed speaks one line, the master reads the result
         w = [x for x in s.get('items', []) if x['status'] == 'waiting']
-        if w: say(f'⏭️ next: {w[0]["name"]} · up when ready')
-        else: say('🏁 sheet covered - every soul has an outcome')
+        pass  # QUIET-DEED v85.182: the deed speaks one line; the queue count rides the prompt
         return
     if tag is None:  # SKIP v84.11: remembered, untagged, unmoved, silent
         sk = skips_load(); sk[os.path.realpath(p)] = {'name': cur['name'], 'ts': int(time.time()), 'in': os.path.basename(os.path.dirname(p))}
@@ -2741,7 +2743,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
                 it['status'] = 'done'; it['outcome'] = outcome
         _stage_note(cur['name'], _tags_of(p), _tags_of(p), os.path.basename(os.path.dirname(p)), os.path.basename(os.path.dirname(p)), 'chair-skip')
         covered_add(_name_key(os.path.basename(p)), _fp(p), 'skipped', os.path.basename(p))
-        say(f"⏭️ skipped {cur['name']} - untagged, unmoved, remembered; unskip {cur['name'].split()[0].lower()} brings him back")
+        pass  # QUIET-DEED v85.182: the deed speaks one line, the master reads the result
     else:
         ph0 = taught_digits(cur['name']) or _chair_phone(p) or phones_of(p, True) or None  # PHONE-FIRST v84.31: read the number before the paper moves, never from a ghost path
         cur_tags = _tags_of(p)
@@ -2749,7 +2751,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
         newtags = [t for t in cur_tags if t not in drops] + ([tag] if tag not in cur_tags else [])
         try:
             _tag_write(p, newtags)
-            say(f"🏷️ {cur['name']}: {tag}" + (f' (dropped {", ".join(drops)})' if drops else ''))
+            pass  # QUIET-DEED v85.182: the deed speaks one line, the master reads the result
             _stage_note(cur['name'], cur_tags, newtags, os.path.basename(os.path.dirname(p)), tag, 'chair')
             covered_add(_name_key(os.path.basename(p)), _fp(p), tag, os.path.basename(p))
             _stage_move(p, tag, lambda *a, **k: None)
@@ -2766,13 +2768,12 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
                 import wa
                 _wr = True  # DEED-TRUTH v85.31: the deed line reports what the window actually did - drafted, parked, or internal
                 if _k == 't': pass  # SKIP-WA v84.38 # CINE-LINE v85.1: the deed line already says no 📱 - the retired prompt's law rides on
-                else: _wr = wa.send_review(ph, _chair_wa_text(draft, p, cur['name']), say)
+                else: _wr = wa.send_review(ph, _chair_wa_text(draft, p, cur['name']), lambda *a, **k: None)
             else: say(f'⚠️ no phone for {cur["name"]} - teach me: python3 butler.py teach {cur["name"].split()[0].lower()} <digits>, then retry')
     say(f"✅ {cur['name']} · 🏷️ {tag} · 📦 {os.path.basename(os.path.dirname(p))} · " + ('📱 drafted' if (_k != 't' and draft and _wr) else ('📱 parked' if (_k != 't' and draft and not _wr) else ('no 📱' if draft else 'internal · no 📱'))))  # ACTION-ECHO v84.51 CINE-LINE v85.1: one deed line, nothing repeated
-    desk_dashboard(say)  # CENSUS-AFTER v84.12: every closed row ends with the living scoreboard
+    pass  # QUIET-DEED v85.182: the deed speaks one line  # CENSUS-AFTER v84.12: every closed row used to end with the scoreboard; the prompt shows it now
     w = [x for x in s.get('items', []) if x['status'] == 'waiting']  # ADVANCE v84.10b: the queue walks without being pushed
-    if w: say(f'⏭️ next: {w[0]["name"]} · up when ready')
-    else: say('🏁 sheet covered - every soul has an outcome')
+    pass  # QUIET-DEED v85.182: the deed speaks one line; the queue count rides the prompt
 
 def _chase_draft(p, tag):  # CHASE v84.0 (v84.19): the background chase speaks through the same composer too
     name = os.path.splitext(os.path.basename(p))[0]
@@ -5119,6 +5120,15 @@ def _src0():  # CHAIR-CARD v85.181: one reader, so no guard certifies its own te
     except Exception:
         return ''
 
+def _keepopen_probe():  # KEEP-OPEN v85.182: the fixture S574 leans on - the house never closes the page it drafted into
+    try:
+        _w = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa.py'), encoding='utf-8', errors='ignore').read()
+        if (chr(35) + ' KEEP-OPEN v85.182') not in _w:
+            return False
+        return ('via_cdp and page is not None and _made' in _w) and ('_made = False' in _w)
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -5384,7 +5394,7 @@ def _selftest(root):
     ck('S152 the keeper probes closure instead of assuming an API', 'browser.is_connected' not in open(os.path.join(BASE_DIR, 'wa_warm.py')).read() and (chr(35)+' CLOSE-WATCH v81.46') in open(os.path.join(BASE_DIR, 'wa_warm.py')).read())
     ck('S153 download scars are stripped from names', (chr(35)+' DASH-CLEAN v81.48') in _src and 'rename-clean' in _src)
     ck('S160 chat rides the warm door, never fights it', 'WARM-CLIENT v81.47' in open(os.path.join(BASE_DIR, 'wa.py')).read())
-    ck('S161 connected clients close only their page', 'via_cdp and page is not None: page.close()' in open(os.path.join(BASE_DIR, 'wa.py')).read())
+    ck('S161 connected clients close only their page', ('via_cdp and page is not None and _made: page.' + 'close()') in open(os.path.join(BASE_DIR, 'wa.py')).read() and 'KEEP-OPEN v85.182' in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S162 scars born in a scan are cleaned in the same scan', (chr(35)+' DASH-CLEAN-PASS2 v81.50') in _src and (chr(35)+' DASH-2 v81.50') in _src)
     ck('S163 a failed rename speaks its reason', (chr(35)+' RENAME-LOUD v81.51') in _src)
     ck('S164 the heal runs in every mode', (chr(35)+' RENAME-IN-TICK v81.52') in _src)
@@ -5788,6 +5798,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S574 the drafted window stays until the master sends', _keepopen_probe())
     ck('S573 the seat speaks five painted lines and opens nothing', _card_probe())
     ck('S572 the deed dials the number the master picked at the seat', 'def _chair_phone(' in _src and ('or _chair_' + 'phone(p) or phones_of') in _src and 'SEAT-NO-OPEN v85.180' in _src and 'wa.wa_' + 'goto(' not in _src)
     ck('S571 the leave-page question never blocks a navigation', _dialog_probe())

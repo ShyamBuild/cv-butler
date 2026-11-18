@@ -287,6 +287,7 @@ def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  #
     pw = _pw()
     page = None
     browser = None  # the shared door is never queried as an owned browser
+    _made = False  # KEEP-OPEN v85.182: did this call create the page, or borrow one?
     via_cdp = False
     try:
         try:
@@ -295,6 +296,7 @@ def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  #
             _wa_pgs = [pg for pg in _ctx2.pages if 'web.whatsapp.com' in (getattr(pg, 'url', '') or '')]  # WARM-TAKE-OVER v85.174: the tab the house warmed is the door - seventeen tabs and a fresh load per press was the wound
             if _wa_pgs:
              page = _wa_pgs[0]
+             _made = False  # KEEP-OPEN v85.182: borrowed, never closed
              for _xp in _wa_pgs[1:]:  # WARM-TAKE-OVER v85.174: only the tabs this house opened are swept - the master's own stay
               try:
                if '/send?phone=' in (getattr(_xp, 'url', '') or ''): _xp.close()
@@ -302,10 +304,12 @@ def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  #
                pass
             else:
              page = (_ctx2.pages[0] if _ctx2.pages else _ctx2.new_page())  # WARM-TAKE-OVER v85.174: the context's own page before any new tab
+             _made = not bool(_ctx2.pages)  # KEEP-OPEN v85.182: closing is for pages this house created
             via_cdp = True
         except Exception:
             ctx = _ctx()  # PERSISTENT-WA v84.38: reuse the living window instead of launching and closing one per draft
             page = ctx.pages[0] if ctx.pages else ctx.new_page()
+            _made = not bool(ctx.pages)  # KEEP-OPEN v85.182: the living window is borrowed, not ours
             via_cdp = False
         _already = ('/send?phone=' + digits) in (page.url or '')  # PREOPEN v85.178: the seat already opened this chat - a digit must never reload it
         if _already:
@@ -362,7 +366,7 @@ def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  #
         return False
     finally:
         try:
-            if via_cdp and page is not None: page.close()  # PERSISTENT-WA v84.38: the persistent browser is never closed; only a CDP guest page goes home
+            if via_cdp and page is not None and _made: page.close()  # KEEP-OPEN v85.182: a page the house made is its own to close; a page it borrowed from the master stays open
         except Exception:
             pass
         try:
