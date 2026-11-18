@@ -848,7 +848,7 @@ def _phones_by_basename(p):
     return []
 
 def _phone_first(arg):
-    m = re.match(r'^\s*(\d{10}|\d{12})\b\s*(.*)$', arg or '', re.S)
+    m = re.match(r'^\s*(\d{9,13})\b\s*(.*)$', arg or '', re.S)
     if not m: return None, arg
     d = m.group(1)
     if len(d) == 10: d = '91' + d

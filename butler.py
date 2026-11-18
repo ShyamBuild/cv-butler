@@ -288,7 +288,7 @@ def _only_digits(_lst):  # NUMBER-AT-SOURCE v85.169: the picker's predicate writ
     _out = []
     for _x in (_lst or []):
         _s = str(_x)
-        if re.fullmatch(r'\d{10}|\d{12}', re.sub(r'\D', '', _s) or '') and not re.search(r'[A-Za-z@]', _s): _out.append(_x)
+        if re.fullmatch(r'\d{9,13}', re.sub(r'\D', '', _s) or '') and not re.search(r'[A-Za-z@]', _s): _out.append(_x)
     return _out
 def phones_of(p, quiet=False):  # NUMBER-AT-SOURCE v85.169: every number leaves through one sieve - an email in the witness list never becomes a dialling target
     return _only_digits(_phones_of_raw(p, quiet))
@@ -903,7 +903,7 @@ def _prep_calls(candidate, root, say=print):  # UP-PREP v85.149: Preview opens b
         phones = phones_of(p, quiet=True) or []
     except Exception:
         phones = []
-    _pd = [x for x in phones if re.fullmatch(r'\d{10}|\d{12}', re.sub(r'\D', '', str(x)) or '') and not re.search(r'[A-Za-z@]', str(x))]  # NUMBER-IS-DIGITS v85.160: a number is digits alone - an email is a witness, never a candidate
+    _pd = [x for x in phones if re.fullmatch(r'\d{9,13}', re.sub(r'\D', '', str(x)) or '') and not re.search(r'[A-Za-z@]', str(x))]  # NUMBER-IS-DIGITS v85.160: a number is digits alone - an email is a witness, never a candidate
     if len(_pd) != len(phones): say('📱 a witness is not a number: %d entr(y/ies) refused - only digits are candidates' % (len(phones) - len(_pd)))  # NUMBER-IS-DIGITS v85.160: one loud line, then the digits walk on
     phones = _pd
     try:  # SEAT-FLOW v85.204: a pick already made for this paper stands - the master is never asked twice
@@ -5880,6 +5880,13 @@ def _uinumbers_probe():  # UI-NUMBERS v85.217: the fixture S606 leans on - numbe
     except Exception:
         return False
 
+def _width_probe():  # NUMBER-WIDTH v85.218: the fixture S607 leans on - a 9-digit print is still offered
+    try:
+        _r = _only_digits(["855050151", "810561355", "manish@x.com", "12345"] )
+        return "855050151" in _r and "810561355" in _r and len(_r) == 2
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6549,6 +6556,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S607 a printed number is offered even at nine digits', _width_probe())
     ck('S606 the card names every number and the prompt stays bare', _uinumbers_probe())
     ck('S605 a client-named paper never takes the chair', _clientdoc_probe())
     ck('S604 the chair draws from one position only', _scope_probe())
