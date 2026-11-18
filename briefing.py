@@ -578,6 +578,18 @@ def _model_state():  # PROMPT-STATE v85.173: the mind in one word - the model th
     except Exception:
         return 'none'
 _STAT_ROWS = {'t': 0.0, 'rows': None}
+def _wadoor_probe():  # WA-DOOR-ONE v85.225: the fixture S614 leans on - every door passes the one clerk
+    try:
+        _b = open(__file__, encoding="utf-8", errors="ignore").read()
+        if "WA-DOOR-ONE v85.225" not in _b:
+            return False
+        _needle = "wa.send_" + "review("
+        if _b.count(_needle) != 1:
+            return False
+        return _b.count("_wa_send(") >= 8
+    except Exception:
+        return False
+
 def _house_rows():  # DASHBOARD v85.184: the tray in three numbers - loose candidates, those waiting on the master or the client, and those ready to show a manager
     import time as _ht
     try:
@@ -627,6 +639,15 @@ def _jdcount_probe():  # JD-NOT-PENDING v85.224: the fixture S613 leans on - a d
         return "JD-NOT-PENDING v85.224" in _b and "_fp0" in _b
     except Exception:
         return False
+
+def _wa_send(phone, text, say=print, **kw):  # WA-DOOR-ONE v85.225: one clerk for every door - the window rises before the dial
+    try:
+        import butler as _bw
+        _bw._ensure_warm(say)
+    except Exception:
+        pass
+    import wa as _wa
+    return wa.send_review(phone, text, say, **kw)
 
 def _stat_render(chair, pending, waiting, ready, wa):  # DASHBOARD v85.184  # CALM-VOICE v85.213: counts only - the card names the man, the prompt keeps the tray
     return '📥 %s pending · ⏳ %s waiting · 🏆 %s ready' % (pending, waiting, ready) + chr(10)
@@ -1054,14 +1075,14 @@ def do_missed(arg, root, say=print, ask=None, words=None):
         text = _fmt_tpl(_tpl_for(words or ['missed']), None, f, nm)
         try:
             import wa
-            _sent = wa.send_review(ph0, text, say, ask=ask)
+            _sent = _wa_send(ph0, text, say, ask=ask)
             if not _sent and (getattr(wa, 'LAST_FAIL', ['']) or [''])[0] != 'lock':  # WHATSAPP-FALLBACK v85.149  # LOCK-QUIET v85.150: a held profile is not a dead number - the next witness is never dialled on a lock
                 _phones = butler.phones_of(f['path'], quiet=True) or []  # WHATSAPP-FALLBACK v85.149: a dead number hands the draft to the next witness in silence
                 if ph0 in _phones:
                     _idx = _phones.index(ph0)
                     if _idx + 1 < len(_phones):
                         say(f'📵 {ph0} not on WhatsApp, trying {_phones[_idx+1]}…')
-                        wa.send_review(_phones[_idx+1], text, say, ask=ask)
+                        _wa_send(_phones[_idx+1], text, say, ask=ask)
         except Exception as e:
             say(f'⚠️ whatsapp failed: {e}')
         try: import butler; butler._preview_close(f['path'], say)  # PREVIEW-CLOSE v85.149: a missed call closes its own face
@@ -1146,7 +1167,7 @@ def do_missed(arg, root, say=print, ask=None, words=None):
     text = _fmt_tpl(_tpl_for(words or ['missed']), hit, f, name)
     try:
         import wa
-        wa.send_review(phone, text, say, ask=ask)
+        _wa_send(phone, text, say, ask=ask)
         try: import fitrank; fitrank.mark_called(hit)
         except Exception: pass
     except Exception as e:
@@ -1194,7 +1215,7 @@ def do_reject(arg, root, say=print, ask=None):
         text = tpl
     try:
         import wa
-        wa.send_review(phone, text, say, ask=ask)
+        _wa_send(phone, text, say, ask=ask)
         try: import fitrank; fitrank.mark_called(hit)
         except Exception: pass
     except Exception as e:
@@ -1213,7 +1234,7 @@ def do_send(arg, root, tpl_words, say=print, ask=None):
         text = _fmt_tpl(_tpl_for(tpl_words), None, f, nm)
         try:
             import wa
-            wa.send_review(ph0, text, say, ask=ask)
+            _wa_send(ph0, text, say, ask=ask)
         except Exception as e:
             say(f"⚠️ whatsapp failed: {e}")
         return
@@ -1246,7 +1267,7 @@ def do_send(arg, root, tpl_words, say=print, ask=None):
         text = tpl
     try:
         import wa
-        wa.send_review(phone, text, say, ask=ask)
+        _wa_send(phone, text, say, ask=ask)
         try: import fitrank; fitrank.mark_called(hit)
         except Exception: pass
     except Exception as e:
@@ -1316,7 +1337,7 @@ def do_text(arg, root, say=print, ask=None):
                 text = tpl
             try:
                 import wa
-                wa.send_review(phone, text, say, ask=ask)
+                _wa_send(phone, text, say, ask=ask)
                 try: import fitrank; fitrank.mark_called(os.path.join(folder, x))
                 except Exception: pass
             except KeyboardInterrupt:
@@ -1652,8 +1673,8 @@ def do_wa(arg, root, say=print, ask=None):
         askfn = locals().get('ask')
         try:
             import wa
-            try: wa.send_review(toks0[0], msg, say, **({'ask': askfn} if askfn else {}))
-            except TypeError: wa.send_review(toks0[0], msg, say)
+            try: _wa_send(toks0[0], msg, say, **({'ask': askfn} if askfn else {}))
+            except TypeError: _wa_send(toks0[0], msg, say)
         except Exception as e:
             say(f"⚠️ whatsapp failed: {e}")
         return
@@ -1682,7 +1703,7 @@ def do_wa(arg, root, say=print, ask=None):
         say("🤷 no phone found in that CV"); return
     try:
         import wa
-        wa.send_review(phone, msg, say, ask=ask)
+        _wa_send(phone, msg, say, ask=ask)
     except Exception as e:
         say(f"⚠️whatsapp failed: {e}")
 
