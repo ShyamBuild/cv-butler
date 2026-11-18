@@ -5245,6 +5245,15 @@ def pg_empty():  # DRAFT-TAB v85.190: the fixture judges a field that cannot exi
     import wa as _wa
     return _wa._tab_free(_Pg())
 
+def _freetabboth_probe():  # FREE-TAB-BOTH v85.192: the fixture S583 leans on - both doors refuse to write over a draft
+    try:
+        _w = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa.py'), encoding='utf-8', errors='ignore').read()
+        if 'FREE-TAB-BOTH v85.192' not in _w:
+            return False
+        return _w.count('_tab_free(') >= 2
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -5914,6 +5923,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S583 both doors refuse to write over a draft', _freetabboth_probe())
     ck('S581 a tab holding a draft is never reused', _drafttab_probe())
     ck('S580 the warm door keeps its last tab', _keeptab_probe())
     ck('S579 the bell keeps warnings and drops housekeeping', _sweepall_probe())

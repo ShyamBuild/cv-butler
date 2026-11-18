@@ -330,7 +330,8 @@ def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  #
             via_cdp = True
         except Exception:
             ctx = _ctx()  # PERSISTENT-WA v84.38: reuse the living window instead of launching and closing one per draft
-            page = ctx.pages[0] if ctx.pages else ctx.new_page()
+            _free2 = next((_pg for _pg in ctx.pages if 'web.whatsapp.com' in (getattr(_pg, 'url', '') or '') and _tab_free(_pg)), None)  # FREE-TAB-BOTH v85.192: the fallback never writes over a draft either
+            page = _free2 if _free2 is not None else ctx.new_page()
             _made = not bool(ctx.pages)  # KEEP-OPEN v85.182: the living window is borrowed, not ours
             via_cdp = False
         _already = ('/send?phone=' + digits) in (page.url or '')  # PREOPEN v85.178: the seat already opened this chat - a digit must never reload it
