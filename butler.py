@@ -824,6 +824,34 @@ def _doc_sweep(root, say=print, dry=False):  # DOC-SWEEP v85.200: a source doc w
     if _moved:
         say('🗂 %d source doc(s) carried to Converted Files' % _moved)
     return _moved
+def _shelf_pure(root, say=print, dry=False):  # SHELF-PURE v85.203: a shelf holds sources, never a paper - a PDF inside Converted Files goes home, never overwritten, never deleted
+    _back = 0
+    try:
+        for _dp, _dn, _fn in os.walk(root or BASE_DIR):
+            if os.path.basename(_dp).lower() not in ('converted files', 'converted doc files'):
+                continue
+            _home = os.path.dirname(_dp)
+            for _f in list(_fn):
+                if not _f.lower().endswith('.pdf'):
+                    continue
+                _src = os.path.join(_dp, _f)
+                _dst = os.path.join(_home, _f)
+                _c = 1
+                while os.path.exists(_dst):
+                    _dst = os.path.join(_home, os.path.splitext(_f)[0] + '_shelf' + (str(_c) if _c > 1 else '') + '.pdf')
+                    _c += 1
+                if dry:
+                    continue
+                try:
+                    shutil.move(_src, _dst)
+                    _back += 1
+                    say(f'🏠 {_f} came home from Converted Files')
+                except Exception as _be:
+                    say(f'⚠️ could not bring {_f} home: {_be}')
+    except Exception as _se:
+        say(f'⚠️ shelf check failed: {_se}')
+    return _back
+
 def _c_sep():  # DOC-SWEEP v85.200: one place for the collision separator
     return '_'
 
@@ -839,7 +867,7 @@ def _desk_refresh(root, say=print):  # DESK-REFRESH v85.148: stat each stage fol
             if mt > last.get(dp, 0):
                 last[dp] = mt; changed = True
     if changed:
-        try: _case_sweep(root, say); _doc_sweep(root, say)  # DOC-SWEEP v85.200: every refresh carries converted sources to their shelf
+        try: _case_sweep(root, say); _doc_sweep(root, say)  # DOC-SWEEP v85.200: every refresh carries converted sources to their shelf; _shelf_pure(root, say)  # SHELF-PURE v85.203: the shelf is kept to sources on every refresh
         except Exception as e: say(f'⚠️ desk refresh sweep failed: {e}')
         try: _jr.dump(last, open(rf, 'w'))
         except Exception: pass
@@ -5488,6 +5516,17 @@ def _snap_probe():  # SNAP v85.202: the fixture S591 leans on - one extraction p
     except Exception:
         return False
 
+def _shelfprobe():  # SHELF-PURE v85.203: the fixture S592 leans on - a shelf holds sources; a PDF inside is sent home
+    try:
+        _b = open(__file__, encoding='utf-8', errors='ignore').read()
+        if 'SHELF-PURE v85.203' not in _b or 'def _shelf_pure(' not in _b:
+            return False
+        if '_shelf_pure(root, say)' not in _b:
+            return False
+        return ("not in ('converted files', 'converted doc files')") in _b
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6157,6 +6196,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S592 a shelf holds sources, never a paper', _shelfprobe())
     ck('S591 the same page is never read twice in one process', _snap_probe())
     ck('S590 every lesson still lives in the code', _lessons_probe())
     ck('S589 converted sources are carried to their shelf', _docsweep_probe())
