@@ -24,6 +24,17 @@ class WaBusy(RuntimeError):  # PROFILE-LOCK v85.150: a held profile is a sentenc
     pass
 
 
+def _pw_fresh():  # PLAYWRIGHT-FRESH v85.185: a cached instance answers only while its loop is open
+    try:
+        _pw0 = _state.get('pw')
+        if _pw0 is not None:
+            _pw0.chromium  # touching the browser factory raises once the instance is stopped
+            return _pw0
+    except Exception:
+        _state.pop('pw', None)
+        _state.pop('ctx', None)
+    return _pw()
+
 def _lock_words(e):  # PROFILE-LOCK v85.150: the shapes playwright wears when another Chrome already owns wa_profile
     t = ('%r' % (e,)).lower()
     return any(w in t for w in ('processsingleton', 'singletonlock', 'already in use', 'is already running', 'profile directory', 'user data directory'))
@@ -58,7 +69,7 @@ def _reap_stale_lock():  # WARM-REUSE v85.177: a lock whose owner is gone is lit
 
 def _ctx():
     if 'ctx' not in _state:
-        pw = _pw()
+        pw = _pw_fresh()  # PLAYWRIGHT-FRESH v85.185: a live instance or a new one, never a stopped one
         _reap_stale_lock()  # WARM-REUSE v85.177: reap before launching, so a dead owner never blocks the living one
         try:
             ctx = pw.chromium.launch_persistent_context(
@@ -223,7 +234,7 @@ def _key(prompt):  # ONE-KEY v84.46: the menu answers to the keystroke alone; En
 def watest(say=print):  # WA-STEP v85.29: each door of the ritual opened in order and named aloud, with a QR pause the moment one is visible - the master's instinct, made a ladder
     from playwright.sync_api import sync_playwright
     say('1 start…')
-    pw = _pw()
+    pw = _pw_fresh()  # PLAYWRIGHT-FRESH v85.185: a live instance or a new one, never a stopped one
     say('1 ok')
     page = None
     try:
@@ -264,7 +275,7 @@ def preopen(phone, say=None):  # PREOPEN v85.178: at the seat, the chat is opene
             _d = '91' + _d
         if not _d:
             return False
-        pw = _pw()
+        pw = _pw_fresh()  # PLAYWRIGHT-FRESH v85.185: a live instance or a new one, never a stopped one
         _door = pw.chromium.connect_over_cdp(_CDP_URL)
         _c = _door.contexts[0] if _door.contexts else _door.new_context()
         _pg = next((x for x in _c.pages if 'web.whatsapp.com' in (getattr(x, 'url', '') or '')), None)
@@ -284,7 +295,7 @@ def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  #
     digits = re.sub(r'\D', '', str(phone))
     if len(digits) == 10: digits = '91' + digits
     say(f"🌐 opening WhatsApp Web in the BUTLER window for +{digits}…")
-    pw = _pw()
+    pw = _pw_fresh()  # PLAYWRIGHT-FRESH v85.185: a live instance or a new one, never a stopped one
     page = None
     browser = None  # the shared door is never queried as an owned browser
     _made = False  # KEEP-OPEN v85.182: did this call create the page, or borrow one?
@@ -378,7 +389,9 @@ def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  #
         except Exception:
             pass
         try:
-            if via_cdp: pw.stop()  # PERSISTENT-WA v84.38: only the CDP playwright instance stops; the living one rests in _state
+            if via_cdp: pw.stop()  # PERSISTENT-WA v84.38: only the CDP playwright instance stops
+            _state.pop('pw', None)  # PLAYWRIGHT-FRESH v85.185: a stopped instance is never reused - 'Event loop is closed' cost the master three retries
+            _state.pop('ctx', None)  # PLAYWRIGHT-FRESH v85.185: the context belonged to that instance
         except Exception:
             pass
 

@@ -5160,6 +5160,17 @@ def _flow_probe():  # SEE-FAILURE v85.183: the fixture S575 leans on - failures 
     except Exception:
         return False
 
+def _pwfresh_probe():  # PLAYWRIGHT-FRESH v85.185: the fixture S576 leans on - the cache clears on stop, and a helper judges liveness
+    try:
+        _w = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa.py'), encoding='utf-8', errors='ignore').read()
+        if (chr(35) + ' PLAYWRIGHT-FRESH v85.185') not in _w:
+            return False
+        if '_state.pop(' + chr(39) + 'pw' + chr(39) + ', None)' not in _w:
+            return False
+        return 'def _pw_fresh():' in _w
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -5829,6 +5840,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S576 a stopped playwright is never reused', _pwfresh_probe())
     ck('S575 a failed draft speaks and the chair advances', _flow_probe())
     ck('S574 the drafted window stays until the master sends', _keepopen_probe())
     ck('S573 the seat speaks five painted lines and opens nothing', _card_probe())
