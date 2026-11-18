@@ -314,10 +314,8 @@ def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  #
             _ctx2 = _door.contexts[0] if _door.contexts else _door.new_context()
             _wa_pgs = [pg for pg in _ctx2.pages if 'web.whatsapp.com' in (getattr(pg, 'url', '') or '')]  # WARM-TAKE-OVER v85.174: the tab the house warmed is the door - seventeen tabs and a fresh load per press was the wound
             if _wa_pgs:
-             page = next((_pg for _pg in _wa_pgs if _tab_free(_pg)), None)  # DRAFT-TAB v85.190: reuse only a free tab
-             if page is None:
-              page = _ctx2.new_page()  # DRAFT-TAB v85.190: a drafted tab is never navigated away - the deed gets its own
-              _made = False  # KEEP-A-TAB v85.189: even a page born here stays, so the draft is reachable
+             page = _wa_pgs[0]  # SAME-TAB v85.193: one WhatsApp tab serves every deed - the master's drafts live in WhatsApp's own store, so navigating loses nothing
+             _made = False  # KEEP-A-TAB v85.189: borrowed, never closed
              _made = False  # KEEP-OPEN v85.182: borrowed, never closed
              for _xp in _wa_pgs[1:]:  # WARM-TAKE-OVER v85.174: only the tabs this house opened are swept - the master's own stay
               try:
@@ -330,8 +328,7 @@ def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  #
             via_cdp = True
         except Exception:
             ctx = _ctx()  # PERSISTENT-WA v84.38: reuse the living window instead of launching and closing one per draft
-            _free2 = next((_pg for _pg in ctx.pages if 'web.whatsapp.com' in (getattr(_pg, 'url', '') or '') and _tab_free(_pg)), None)  # FREE-TAB-BOTH v85.192: the fallback never writes over a draft either
-            page = _free2 if _free2 is not None else ctx.new_page()
+            page = ctx.pages[0] if ctx.pages else ctx.new_page()  # SAME-TAB v85.193: the fallback also keeps one page - WhatsApp holds the drafts  # FREE-TAB-BOTH v85.192 (retired v85.193: the master confirmed WhatsApp persists each draft itself)
             _made = not bool(ctx.pages)  # KEEP-OPEN v85.182: the living window is borrowed, not ours
             via_cdp = False
         _already = ('/send?phone=' + digits) in (page.url or '')  # PREOPEN v85.178: the seat already opened this chat - a digit must never reload it

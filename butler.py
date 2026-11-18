@@ -5034,12 +5034,13 @@ def _st_probe():  # DASHBOARD v85.184: the fixture S565 leans on - one line, fiv
     except Exception:
         return False
 
-def _wa_probe():  # WARM-TAKE-OVER v85.174  # DRAFT-TAB v85.190: the warm door is used, and only a free tab is taken
+def _wa_probe():  # WARM-TAKE-OVER v85.174  # SAME-TAB v85.193: the warm door is used, one tab at a time
     try:
         _w = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa.py'), encoding='utf-8', errors='ignore').read()
-        return ('_wa_pgs' in _w) and ('_tab_free(_pg)' in _w) and ('WARM-TAKE-OVER v85.174' in _w)
+        return ('_wa_pgs' in _w) and ('page = _wa_pgs[0]' in _w) and ('WARM-TAKE-OVER v85.174' in _w)
     except Exception:
         return False
+
 def _nocloud_probe():  # OFFLINE-CONFIG v85.176: the fixture S568 leans on - every URL in every live module must point at this Mac or the master's own WhatsApp Web
     try:
         import re as _nr, glob as _ng
@@ -5220,16 +5221,15 @@ def _keeptab_probe():  # KEEP-A-TAB v85.189: the fixture S580 leans on - the war
     except Exception:
         return False
 
-def _drafttab_probe():  # DRAFT-TAB v85.190: the fixture S581 leans on - a tab with text in the field is not free
+def _drafttab_probe():  # SAME-TAB v85.193: the fixture S581 leans on - one tab serves every deed, borrowed and never closed
     try:
         _w = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa.py'), encoding='utf-8', errors='ignore').read()
-        if 'DRAFT-TAB v85.190' not in _w or 'def _tab_free(pg):' not in _w:
+        if 'SAME-TAB v85.193' not in _w:
             return False
-        if '_tab_free(_pg)' not in _w:
-            return False
-        return pg_empty() is True
+        return ('page = _wa_pgs[0]' in _w) and ('KEEP-A-TAB v85.189' in _w)
     except Exception:
         return False
+
 def pg_empty():  # DRAFT-TAB v85.190: the fixture judges a field that cannot exist
     class _Pg:
         def locator(self, _s):
@@ -5245,12 +5245,10 @@ def pg_empty():  # DRAFT-TAB v85.190: the fixture judges a field that cannot exi
     import wa as _wa
     return _wa._tab_free(_Pg())
 
-def _freetabboth_probe():  # FREE-TAB-BOTH v85.192: the fixture S583 leans on - both doors refuse to write over a draft
+def _freetabboth_probe():  # SAME-TAB v85.193  # FREE-TAB-BOTH v85.192 (retired): the fixture S583 leans on - the fallback keeps one page too
     try:
         _w = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa.py'), encoding='utf-8', errors='ignore').read()
-        if 'FREE-TAB-BOTH v85.192' not in _w:
-            return False
-        return _w.count('_tab_free(') >= 2
+        return ('page = ctx.pages[0] if ctx.pages else ctx.new_page()' in _w) and ('SAME-TAB v85.193' in _w)
     except Exception:
         return False
 
