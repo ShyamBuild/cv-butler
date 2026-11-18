@@ -1056,8 +1056,11 @@ def _tag_apply_one(p, tag, on, say=print):  # TAG-VOICE v84.5: waiting tags add 
     if not on:
         if tag in cur:
             newt = [t for t in cur if t != tag]
-            _tag_write(p, newt); say(f'🏷️ untagged {os.path.basename(p)}: {tag}')
-            _stage_note(os.path.basename(p), cur, newt, os.path.basename(os.path.dirname(p)), os.path.basename(os.path.dirname(p)), 'chat/terminal')
+            if _tag_write(p, newt):  # CALLER-TRUTH v85.243: the voice may only speak a write that happened
+                say(f'🏷️ untagged {os.path.basename(p)}: {tag}')
+                _stage_note(os.path.basename(p), cur, newt, os.path.basename(os.path.dirname(p)), os.path.basename(os.path.dirname(p)), 'chat/terminal')
+            else:  # CALLER-TRUTH v85.243: a refused write is never spoken as a removal
+                say(f"🏷️ {os.path.basename(p)} keeps {tag} - the last stage never leaves a paper; removal is the master's hand")
         else: say(f'🏷️ {os.path.basename(p)} already lacks {tag} - nothing changed')
         return
     drops0 = [t for t in cur if _tag_stage(t) and t != tag]
@@ -1326,8 +1329,11 @@ def tags_tidy(say=print):  # TIDY v84.9: carry each misplaced paper home, one ke
                     say(f'🧭 {x} wears {st[0]} but rests loose - untag it back to the contact list? y / n')
                     if confirm_wait(say) == 'y':
                         newt = [t for t in tgs if t != st[0]]
-                        _tag_write(p, newt); _stage_note(x, tgs, newt, stage, stage, 'tidy-folder')
-                        say(f'🏷️ untagged {x}: {st[0]} - back to the contact list')
+                        if _tag_write(p, newt):  # CALLER-TRUTH v85.243: note and voice both wait on the write
+                            _stage_note(x, tgs, newt, stage, stage, 'tidy-folder')
+                            say(f'🏷️ untagged {x}: {st[0]} - back to the contact list')
+                        else:  # CALLER-TRUTH v85.243: a paper is never left without a stage, so say it plainly
+                            say(f"🏷️ {x} keeps {st[0]} - the last stage never leaves a paper; removal is the master's hand")
     if moved: say(f'🧺 carried {moved} paper(s) home')
     elif held: say('🧺 nothing moved - twins wait for your Bin')
     else: say('🧺 every paper rests where its tag says')
@@ -6393,6 +6399,48 @@ def _tagtiers_probe():  # TAG-TIERS v85.242: an empty write belongs to a folder,
     finally:
         pass  # the mkdtemp tree is unique per run and reaped by the OS; the house speaks no deletion verb (S166-class guards)
 
+def _callertruth_probe():  # CALLER-TRUTH v85.243: no caller may speak a removal the writer refused - the voice answers the write
+    import tempfile
+    _spoke = []; _noted = []
+    _glob = globals(); _real = _glob['_stage_note']
+    def _fake_note(*a, **k):  # CALLER-TRUTH v85.243: counted, never written - no test row ever enters stage_log.json
+        _noted.append(a)
+    try:
+        _d = tempfile.mkdtemp(prefix='ct_')
+        _fd, _f = tempfile.mkstemp(suffix='.pdf', dir=_d); os.close(_fd)
+        _glob['_stage_note'] = _fake_note
+        if not _tag_write(_f, ['Awaiting JD Confirmation']): return False
+        _tag_apply_one(_f, 'Awaiting JD Confirmation', False, say=_spoke.append)
+        if _tags_of(_f) != ['Awaiting JD Confirmation']: return False  # 1a: the refused last stage is still on disk
+        if len(_noted) != 0: return False  # 1b: a refused write writes no note
+        _w = ' '.join(str(s) for s in _spoke)
+        if 'keeps' not in _w or 'never leaves a paper' not in _w: return False  # 1c: the refusal is spoken
+        if 'untagged' in _w: return False  # 1d: the old lie is gone
+        _spoke[:] = []
+        if not _tag_write(_f, ['Awaiting JD Confirmation', 'Awaiting CV Update']): return False
+        _tag_apply_one(_f, 'Awaiting CV Update', False, say=_spoke.append)
+        if 'Awaiting CV Update' in _tags_of(_f): return False  # 2a: a lawful untag really removes
+        if len(_noted) != 1: return False  # 2b: and writes exactly one note
+        if not any('untagged' in str(s) for s in _spoke): return False  # 2c: and says so
+        _glob['_stage_note'] = _real
+        _b = open(__file__, encoding='utf-8', errors='ignore').read()
+        _a = _b.index('def _tag_apply_one('); _a2 = _b.index('drops0 = [t for t in cur', _a)
+        _aseg = _b[_a:_a2]
+        if 'if _tag_write(p, newt):' not in _aseg: return False  # 4a: the untag voice waits on the write
+        if ('_tag_write(p, newt); ' + 'say(') in _aseg: return False  # 4b: no unguarded write+speak survives
+        _t = _b.index('elif stage not in _tag_vocab() and st:')
+        _t2 = _b.index('if moved: say(', _t)
+        _tseg = _b[_t:_t2]
+        if 'if _tag_write(p, newt):' not in _tseg: return False  # 4c: the tidy branch gates its note
+        if ('_tag_write(p, newt); ' + '_stage_note(x, tgs, newt') in _tseg: return False  # 4d: no unguarded note
+        if ("ck('S" + "561") not in _b: return False  # 5a: the uniqueness witness stands
+        if ("ck('S" + "166") not in _b: return False  # 5b: the no-delete witness stands
+        return True
+    except Exception:
+        return False
+    finally:
+        _glob['_stage_note'] = _real
+        pass  # the mkdtemp tree is unique per run and reaped by the OS; the house speaks no deletion verb
 def _tagdelete_probe():  # TAG-NO-DELETE v85.241 (TAG-TIERS v85.242): the deleter answers to a folder gate alone
     try:
         _b = open(__file__, encoding="utf-8", errors="ignore").read()
@@ -7098,6 +7146,7 @@ def _selftest(root):
     ck('S627 the flow carries the tag and moves no file - tags move files, not the butler', _tagonly_probe())
     ck('S628 the house swaps tags freely and never removes one', _tagdelete_probe())
     ck('S629 an empty tag write belongs to folders and a paper keeps its stage', _tagtiers_probe())
+    ck('S630 no caller speaks a removal the writer refused', _callertruth_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
