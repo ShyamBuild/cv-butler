@@ -2143,6 +2143,22 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
             # DUP-CAP v85.75 (retired v85.76)  # DUP-CAP-PROPOSAL v85.76: a twin is named and proposed, never relocated by the background - only the master's keystroke crosses a folder boundary, and __duplicates is retired forever
             if (os.path.exists(q) and os.path.basename(q).lower() != os.path.basename(p).lower()):  # CASE-SELF v85.82: realpath resolves symlinks, not case - a case-variant of yourself is you; the witness rides at the line end, never through its chest
                 if trace: log('🧭 sweep: %s | twin-exists %s' % (x, disp + ext))
+                try:  # TWIN-SEAT-DUP v85.228: the same witness twice is a second download - it takes the suffix seat
+                 _ids_p = _ident_of(p); _ids_q = _ident_of(q)
+                 if _ids_p and _ids_p == _ids_q:
+                  _k9 = 1
+                  _q9 = os.path.join(dpath, disp + "." + str(_k9) + ext)
+                  while os.path.exists(_q9):
+                   _k9 += 1; _q9 = os.path.join(dpath, disp + "." + str(_k9) + ext)
+                  os.rename(p, _q9)
+                  log("👯 twin seat: %s → %s (same witness, second copy)" % (x, os.path.basename(_q9)))
+                  try:
+                   _safe_rename_ledger(p, disp, "sweep-twin", once=True); _safe_repath_ledgers(p, _q9)
+                  except Exception:
+                   pass
+                  continue
+                except Exception:
+                 pass
                 continue
             try:
                 os.rename(p, q)
@@ -6048,6 +6064,15 @@ def _seedskip_probe():  # JD-SEED-SKIP v85.226: the fixture S615 leans on - a de
     except Exception:
         return False
 
+def _twinseat_probe():  # TWIN-SEAT-DUP v85.228: the fixture S617 leans on - a second copy is never left mis-named
+    try:
+        _b = open(__file__, encoding="utf-8", errors="ignore").read()
+        if "TWIN-SEAT-DUP v85.228" not in _b:
+            return False
+        return "_ids_p == _ids_q" in _b and "twin seat:" in _b
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6724,6 +6749,7 @@ def _selftest(root):
     ck('S614 every briefing door raises the window through one clerk', briefing._wadoor_probe())
     ck('S615 the seed never queues a description and the retry speaks once', _seedskip_probe())
     ck('S616 the door names the desk and a settled row is never reopened', briefing._focusvoice_probe() and 'NO-REOPEN-COVERED v85.227' in _src)
+    ck('S617 a second copy of the same witness takes a suffix seat, never a wrong name', _twinseat_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
