@@ -1352,6 +1352,57 @@ def taught_digits(name):  # CHAIR-PHONE v84.10c: the chair reads the taught book
     return None
 
 NON_CANDIDATE_PREFIXES = ('jd', 'summary', 'rated_', 'candidate', 'form', 'template')  # PAPER-OR-NOT v84.10d: the desk knows a CV from its furniture
+def _jd_house(root, say=print, dry=False):  # JD-HOUSE v85.214: a description goes to JD Files/, a summary to Summaries/ - the tray keeps only humans
+    _moved = 0
+    try:
+        for _dp, _dn, _fn in os.walk(root or BASE_DIR):
+            _dn[:] = [_x for _x in _dn if not _x.startswith(".") and _x.lower() not in ("converted files", "converted doc files", "jd files", "summaries")]
+            for _f in list(_fn):
+                _bl = _f.lower()
+                _src = os.path.join(_dp, _f)
+                if _bl.endswith(".xlsx"):
+                    _home = os.path.join(_dp, "Summaries")
+                    _want = _f
+                elif _bl.endswith(".pdf"):
+                    _byname = _bl.startswith("jd") or "_jd" in _bl or " jd" in _bl or _bl.endswith("jd.pdf") or "job description" in _bl
+                    _byhead = False
+                    if not _byname:
+                        try:
+                            _hd = (_cached_head(_src) or "").lower()
+                            _byhead = any(_x in _hd for _x in STRONG_JD) and sum(1 for _x in JD_SIGNALS if _x in _hd) >= 2 and sum(1 for _x in CV_SIGNALS if _x in _hd) == 0
+                        except Exception:
+                            _byhead = False
+                    if not (_byname or _byhead):
+                        continue
+                    _canon = _jd_canon(_src)
+                    _home = os.path.join(_dp, "JD Files")
+                    _want = (_canon + ".pdf") if _canon else _f
+                else:
+                    continue
+                _dst = os.path.join(_home, _want)
+                if os.path.abspath(_dst) == os.path.abspath(_src):
+                    continue
+                _base = os.path.splitext(_want)[0]
+                _ext = os.path.splitext(_want)[1]
+                _k = 1
+                while os.path.exists(_dst):
+                    _dst = os.path.join(_home, _base + "_" + str(_k) + _ext)
+                    _k += 1
+                if dry:
+                    continue
+                try:
+                    os.makedirs(_home, exist_ok=True)
+                    os.rename(_src, _dst)
+                    _moved += 1
+                    say("🏷️ %s -> %s/" % (_f, os.path.basename(_home)))
+                except Exception as _me:
+                    say("⚠️ could not house %s: %s" % (_f, _me))
+    except Exception as _we:
+        say("⚠️ jd house failed: %s" % _we)
+    if _moved:
+        say("🏷️ %d description(s)/summary(s) housed" % _moved)
+    return _moved
+
 def _jd_canon(p):  # JD-CANON v85.212: the folder names the job and the file wears it
     try:
         _posdir = os.path.basename(os.path.dirname(os.path.abspath(p)))
@@ -2252,6 +2303,7 @@ def _event_tick(root, log=print):  # RENAME-WATCH v85.52 + CONVERT-WATCH v85.52:
         _case_sweep(root, log)  # CASE-SWEEP v85.57: the doorbell sweeps casing every beat, so a shout never outlives its arrival
         try:  # BEAT-SHELF v85.209: the shelf belongs to the beat, never to a boot - a converted source is carried home at once
          _doc_sweep(root, log)
+         _jd_house(root, log)  # JD-HOUSE v85.214: every beat puts descriptions and summaries out of the tray
          _shelf_pure(root, log)
         except Exception:
          pass
@@ -2517,6 +2569,8 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
         if os.path.basename(os.path.dirname(p)) in _tag_vocab() or _name_key(os.path.basename(p)) in mem or _in_nonqueue(p):
             it['status'] = 'done'; it['outcome'] = 'covered elsewhere'; continue  # FOLDER-TRUTH v84.30
             it['status'] = 'done'; it['outcome'] = 'covered elsewhere'; continue
+        if _jd_like_name(os.path.basename(p)) or _portal_name(os.path.basename(p)) or os.path.basename(os.path.dirname(p)) in ("JD Files", "Summaries"):  # JD-HOUSE v85.214: a description is never a chair
+         it["status"] = "done"; it["outcome"] = "description"; continue
         i = it; break
     sheet_save(s)
     if not i:  # SELF-REFRESH v84.32: an empty sheet re-seeds itself from the living folders, so a dragged-out paper rises without a command
@@ -5706,6 +5760,17 @@ def _calmvoice_probe():  # CALM-VOICE v85.213: the fixture S602 leans on - count
     except Exception:
         return False
 
+def _jdhouse_probe():  # JD-HOUSE v85.214: the fixture S603 leans on - a description is named, housed and never seated
+    try:
+        _b = open(__file__, encoding="utf-8", errors="ignore").read()
+        if "JD-HOUSE v85.214" not in _b or "def _jd_house(" not in _b:
+            return False
+        if "JD Files" not in _b or "Summaries" not in _b:
+            return False
+        return "a description is never a chair" in _b
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6375,6 +6440,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S603 a description is housed, never seated', _jdhouse_probe())
     ck('S602 the prompt speaks counts only and a park keeps its chair', _calmvoice_probe())
     ck('S601 a description wears JD_Position_Location', _jdcano_probe())
     ck('S600 a house seat is never treated as a scar', _twinnotscar_probe())

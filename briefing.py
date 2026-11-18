@@ -1815,6 +1815,9 @@ if __name__ == "__main__":
              butler.redo_last(_say, root); continue
             if q.strip().lower() in ('lessons', 'lesson', 'rules'):  # LESSONS v85.201
              butler.lessons_list(_say); continue
+            if q.strip().lower() in ('jdfix', 'jd fix'):  # JD-HOUSE v85.214
+             butler._jd_house(root, _say)
+             continue
             if q.startswith('desk'): do_desk(q[4:].strip(), root); continue  # DESK v84.0
             if q.startswith('briefing'): do_briefing(q[8:].strip(), root); continue
             if q.startswith('chase'): do_chase(q[5:].strip(), root); continue
