@@ -368,7 +368,13 @@ def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  #
         if _already:
          say('   ♻️ reusing the open chat - no reload')
         elif not _goto(page, f'https://web.whatsapp.com/send?phone={digits}', say):
-         say('⚠️ chat page did not load - scan QR in the opened window if asked, then retry')
+         _np = _fresh_page(say)  # TARGET-RECOVER v85.219: a page closed under us gets one re-arm before any refusal
+         if _np is not None:
+          page = _np
+          if not _goto(page, f'https://web.whatsapp.com/send?phone={digits}', say):
+           say('⚠️ chat page did not load - scan QR in the opened window if asked, then retry')
+         else:
+          say('⚠️ chat page did not load - scan QR in the opened window if asked, then retry')
         if ('/send?phone=' + digits) not in (page.url or ''):  # SEE-FAILURE v85.183: a navigation that did not arrive is a fact, not a guess
          try:
           page.reload(wait_until='domcontentloaded', timeout=30000)

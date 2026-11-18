@@ -5887,6 +5887,15 @@ def _width_probe():  # NUMBER-WIDTH v85.218: the fixture S607 leans on - a 9-dig
     except Exception:
         return False
 
+def _targetrecover_probe():  # TARGET-RECOVER v85.219: the fixture S608 leans on - one re-arm before a park
+    try:
+        _w = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "wa.py"), encoding="utf-8", errors="ignore").read()
+        if "TARGET-RECOVER v85.219" not in _w or "def _fresh_page(" not in _w:
+            return False
+        return _w.count("_fresh_page(say)") >= 1 and "_np is not None" in _w
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6556,6 +6565,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
     ck('S606 the card names every number and the prompt stays bare', _uinumbers_probe())
     ck('S605 a client-named paper never takes the chair', _clientdoc_probe())
