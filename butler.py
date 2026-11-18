@@ -2035,6 +2035,9 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
                     if (_w1s and _w1s == _w2s) or (_p1s and _p1s == _p2s):
                         _c3 = 1; _q6 = os.path.join(dpath, _d4 + '_%d' % _c3 + ext)
                         while os.path.exists(_q6) and os.path.abspath(_q6) != os.path.abspath(p): _c3 += 1; _q6 = os.path.join(dpath, _d4 + '_%d' % _c3 + ext)
+                        if os.path.abspath(_q6) == os.path.abspath(p):  # NOOP-SEAT v85.207: a file already in its twin seat is finished - renaming it onto itself only bumps the clock and re-queues it
+                         _say_once('🧭 twin seat: already seated: %s' % x)
+                         continue
                         try:
                             os.rename(p, _q6); log('✏️ sweep renamed (twin seat): %s → %s  # TWIN-SEAT v85.131: same witness (email local part or phone), second chair in the house suffix, never invented text' % (x, os.path.basename(_q6)))
                             try:
@@ -2050,6 +2053,8 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
             disp = _display_name(stem)
             if disp == stem: continue
             q = os.path.join(dpath, disp + ext)
+            if os.path.abspath(q) == os.path.abspath(p):  # NOOP-SEAT v85.207: casing already agrees - nothing to do
+             continue
             # DUP-CAP v85.75 (retired v85.76)  # DUP-CAP-PROPOSAL v85.76: a twin is named and proposed, never relocated by the background - only the master's keystroke crosses a folder boundary, and __duplicates is retired forever
             if (os.path.exists(q) and os.path.basename(q).lower() != os.path.basename(p).lower()):  # CASE-SELF v85.82: realpath resolves symlinks, not case - a case-variant of yourself is you; the witness rides at the line end, never through its chest
                 if trace: log('🧭 sweep: %s | twin-exists %s' % (x, disp + ext))
@@ -3453,6 +3458,8 @@ class Butler:
         d = os.path.dirname(old_path); ob = os.path.basename(old_path)
         if not os.path.exists(old_path): return
         if new_name == ob: return
+        if os.path.abspath(os.path.join(d, new_name)) == os.path.abspath(old_path):  # NOOP-SEAT v85.207: identity is not a deed, in any casing
+         return
         existing = {f.lower() for f in os.listdir(d) if f != ob and os.path.isfile(os.path.join(d, f))}
         b, e = os.path.splitext(new_name); cand, c = new_name, 1
         while cand.lower() in existing: cand, c = f"{b}_{c}{e}", c + 1
@@ -5583,6 +5590,19 @@ def _dialogsafe_probe():  # DIALOG-SAFE v85.206: the fixture S595 leans on - an 
     except Exception:
         return False
 
+def _noopseat_probe():  # NOOP-SEAT v85.207: the fixture S596 leans on - no branch renames a file onto itself
+    try:
+        _b = open(__file__, encoding='utf-8', errors='ignore').read()
+        if 'NOOP-SEAT v85.207' not in _b:
+            return False
+        if _b.count('NOOP-SEAT v85.207') < 3:
+            return False
+        if 'twin seat: already seated' not in _b:
+            return False
+        return 'os.path.abspath(_q6) == os.path.abspath(p)' in _b
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6252,6 +6272,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S596 a file is never renamed onto itself', _noopseat_probe())
     ck('S595 the dialog answer never crashes the driver', _dialogsafe_probe())
     ck('S594 a shelved source is never converted twice', _shelfconvert_probe())
     ck('S593 the seat asks once, survives ^C and advances', _seatflow_probe())
