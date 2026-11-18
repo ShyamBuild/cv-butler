@@ -769,6 +769,46 @@ def menu_key(prompt='', allowed=('y', 't', 'n')):  # ONE-INPUT v84.47 (ASK-LINE 
     return ''
 
 
+def _doc_sweep(root, say=print, dry=False):  # DOC-SWEEP v85.200: a source doc whose PDF already sits beside it is carried to Converted Files - the master's review shelf
+    _moved = 0
+    _seen = 0
+    try:
+        for _dp, _dn, _fn in os.walk(root or BASE_DIR):
+            _dn[:] = [_x for _x in _dn if not _x.startswith('.') and _x.lower() not in ('converted files', 'converted doc files')]
+            for _f in list(_fn):
+                if not _f.lower().endswith(('.doc', '.docx')):
+                    continue
+                _seen += 1
+                _pdf = os.path.join(_dp, os.path.splitext(_f)[0] + '.pdf')
+                try:
+                    if not (os.path.exists(_pdf) and os.path.getsize(_pdf) > 0):
+                        continue
+                except OSError:
+                    continue
+                _arch = os.path.join(_dp, 'Converted Files')
+                _src = os.path.join(_dp, _f)
+                _dest = os.path.join(_arch, _f)
+                _c = 1
+                while os.path.exists(_dest):
+                    _dest = os.path.join(_arch, os.path.splitext(_f)[0] + _c_sep() + str(_c) + os.path.splitext(_f)[1])
+                    _c += 1
+                if dry:
+                    continue
+                try:
+                    os.makedirs(_arch, exist_ok=True)
+                    shutil.move(_src, _dest)
+                    _moved += 1
+                    say(f'🗂 {_f} -> Converted Files/')
+                except Exception as _de:
+                    say(f'⚠️ could not archive {_f}: {_de}')
+    except Exception as _we:
+        say(f'⚠️ doc sweep failed: {_we}')
+    if _moved:
+        say('🗂 %d source doc(s) carried to Converted Files' % _moved)
+    return _moved
+def _c_sep():  # DOC-SWEEP v85.200: one place for the collision separator
+    return '_'
+
 def _desk_refresh(root, say=print):  # DESK-REFRESH v85.148: stat each stage folder; if any mtime newer than .desk_refresh.json, run one _case_sweep pass
     import json as _jr, time as _jt
     rf = os.path.join(BASE_DIR, '.desk_refresh.json')
@@ -781,7 +821,7 @@ def _desk_refresh(root, say=print):  # DESK-REFRESH v85.148: stat each stage fol
             if mt > last.get(dp, 0):
                 last[dp] = mt; changed = True
     if changed:
-        try: _case_sweep(root, say)
+        try: _case_sweep(root, say); _doc_sweep(root, say)  # DOC-SWEEP v85.200: every refresh carries converted sources to their shelf
         except Exception as e: say(f'⚠️ desk refresh sweep failed: {e}')
         try: _jr.dump(last, open(rf, 'w'))
         except Exception: pass
@@ -5353,6 +5393,17 @@ def _gotoconfess_probe():  # GOTO-CONFESS v85.195: the fixture S585 leans on - a
     except Exception:
         return False
 
+def _docsweep_probe():  # DOC-SWEEP v85.200: the fixture S589 leans on - the shelf is built and the refresh calls it
+    try:
+        _b = open(__file__, encoding='utf-8', errors='ignore').read()
+        if 'DOC-SWEEP v85.200' not in _b or 'def _doc_sweep(' not in _b:
+            return False
+        if '_doc_sweep(root, say)' not in _b:
+            return False
+        return "'Converted Files'" in _b
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6022,6 +6073,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S589 converted sources are carried to their shelf', _docsweep_probe())
     ck('S585 a failed navigation names its reason', _gotoconfess_probe())
     ck('S588 a parked draft can be retried by one word', _retry_probe())
     ck('S587 the driver serves the whole process', _nostop_probe())
