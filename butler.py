@@ -2162,9 +2162,9 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
                  _ids_p = _ident_of(p); _ids_q = _ident_of(q)
                  if _ids_p and _ids_p == _ids_q:
                   _k9 = 1
-                  _q9 = os.path.join(dpath, disp + "." + str(_k9) + ext)
+                  _q9 = os.path.join(dpath, disp + "_" + str(_k9) + ext)
                   while os.path.exists(_q9):
-                   _k9 += 1; _q9 = os.path.join(dpath, disp + "." + str(_k9) + ext)
+                   _k9 += 1; _q9 = os.path.join(dpath, disp + "_" + str(_k9) + ext)
                   os.rename(p, _q9)
                   log("👯 twin seat: %s → %s (same witness, second copy)" % (x, os.path.basename(_q9)))
                   try:
@@ -6209,6 +6209,16 @@ def _salutation_probe():  # NAME-NO-SALUTATION v85.232: titles drop, real initia
     except Exception:
         return False
 
+def _twinunderscore_probe():  # TWIN-SEAT-UNDERSCORE v85.233: the master reads Name_1.pdf, never Name.1.pdf
+    try:
+        _b = open(__file__, encoding="utf-8", errors="ignore").read()
+        if "TWIN-SEAT-UNDERSCORE v85.233" not in _b:
+            return False
+        _dot = 'disp + "' + '.' + '" + str(_k9) + ext'
+        return _dot not in _b and 'disp + "_" + str(_k9) + ext' in _b
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6890,6 +6900,7 @@ def _selftest(root):
     ck('S619 up steps past the man already in the chair and never drops the last one', _seatadvance_probe())
     ck('S620 the stamp is read out of the paper and spoken, never written', _stampread_probe())
     ck('S621 a candidate file wears the CV name and never a salutation', _salutation_probe())
+    ck('S622 a suffix seat is Name_1.pdf with an underscore, never a dot', _twinunderscore_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
