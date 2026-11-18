@@ -1814,6 +1814,8 @@ if __name__ == "__main__":
             if q.strip().lower() in ('recruit', 'recruit desk', 'ta', 'ta desk'): import recruit; recruit.run(root, _say); continue  # TA-DESK v85.122: live role priorities are read-only and leave every candidate file and ledger untouched
             if q.strip().lower() in ('retry', 'redo', 'reopen'):  # RETRY-LAST v85.198: one word re-attempts the last candidate's draft
              butler.redo_last(_say, root); continue
+            if q.strip().lower() in ('lessons', 'lesson', 'rules'):  # LESSONS v85.201
+             butler.lessons_list(_say); continue
             if q.startswith('desk'): do_desk(q[4:].strip(), root); continue  # DESK v84.0
             if q.startswith('briefing'): do_briefing(q[8:].strip(), root); continue
             if q.startswith('chase'): do_chase(q[5:].strip(), root); continue

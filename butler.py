@@ -905,6 +905,27 @@ def confirm_wait(say=print):  # KEY-CONFIRM v84.6: the answer is a keystroke, no
     sys.stdout.write('\n'); sys.stdout.flush()
     return k if k not in ('\r', '\n') else None
 
+def lessons_list(say=print):  # LESSONS v85.201: the house reads its own rule book and proves every rule still lives in the code
+    try:
+        import json as _lj
+        _d = _lj.load(open(os.path.join(BASE_DIR, 'lessons.json')))
+    except Exception:
+        say('🤷 no lesson book yet'); return False
+    _src = ''
+    for _f in ('butler.py', 'briefing.py', 'wa.py'):
+        try:
+            _src += open(os.path.join(BASE_DIR, _f), encoding='utf-8', errors='ignore').read()
+        except Exception:
+            pass
+    _ok = 0
+    for _i in _d:
+        _mk = _i.get('marker') or ''
+        _has = (_mk in _src) if _mk else False
+        _ok += 1 if _has else 0
+        say(('✅ ' if _has else '⚠️ ') + '%s — %s  [%s]' % (_i.get('id', '?'), _i.get('rule', ''), _i.get('guard', '')))
+    say('📚 %d/%d lessons hold' % (_ok, len(_d)))
+    return _ok == len(_d)
+
 def any_question():  # HOTKEY-SCOPE v85.172: one predicate answers "is a question waiting?" - the reader and the prompt consult the same door
     return bool(action_pending() or sheet_current() or tag_pick_pending())
 
@@ -5404,6 +5425,25 @@ def _docsweep_probe():  # DOC-SWEEP v85.200: the fixture S589 leans on - the she
     except Exception:
         return False
 
+def _lessons_probe():  # LESSONS v85.201: the fixture S590 leans on - every rule names a marker that still exists
+    try:
+        import json as _lj
+        _d = _lj.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lessons.json')))
+        if not isinstance(_d, list) or len(_d) < 12:
+            return False
+        _src = ''
+        for _f in ('butler.py', 'briefing.py', 'wa.py'):
+            try:
+                _src += open(os.path.join(os.path.dirname(os.path.abspath(__file__)), _f), encoding='utf-8', errors='ignore').read()
+            except Exception:
+                pass
+        for _i in _d:
+            if not _i.get('marker') or _i['marker'] not in _src:
+                return False
+        return True
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6073,6 +6113,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S590 every lesson still lives in the code', _lessons_probe())
     ck('S589 converted sources are carried to their shelf', _docsweep_probe())
     ck('S585 a failed navigation names its reason', _gotoconfess_probe())
     ck('S588 a parked draft can be retried by one word', _retry_probe())
