@@ -2363,6 +2363,13 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
     s['current'] = i; sheet_save(s)
     if i.get('re'): say('🔄 re-review: skipped earlier, the tray is empty now - one soul per seed, new loose papers still outrank him')  # RETRAY v84.55
     p = i['p']; ph = taught_digits(i['name']) or phones_of(p, True) or None  # QUIET-CHAIR v84.37: the dossier takes the number without the clerk's ceremony
+    try:  # CHAIR-NAME-REFRESH v85.194: the sheet stores a name; the eye stores the truth - the seat asks the eye every time
+     _en = _eyename_of(p) or ''
+     if _en and _name_key(_en) != _name_key(i.get('name') or ''):
+      i['name'] = _en
+      sheet_save(s)
+    except Exception:
+     pass
     if isinstance(ph, list): ph = ph[0] if ph else None
     _preview_open(p, say)
     _em = ''  # CONTACT-ONCE v84.39: every truth exactly once - email and phone in a single line
@@ -5252,6 +5259,15 @@ def _freetabboth_probe():  # SAME-TAB v85.193  # FREE-TAB-BOTH v85.192 (retired)
     except Exception:
         return False
 
+def _chairname_probe():  # CHAIR-NAME-REFRESH v85.194: the fixture S584 leans on - the seat asks the eye, never the sheet alone
+    try:
+        _b = open(__file__, encoding='utf-8', errors='ignore').read()
+        if 'CHAIR-NAME-REFRESH v85.194' not in _b:
+            return False
+        return "_en = _eyename_of(p) or ''" in _b
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -5921,6 +5937,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S584 the chair asks the eye, not the sheet alone', _chairname_probe())
     ck('S583 both doors refuse to write over a draft', _freetabboth_probe())
     ck('S581 a tab holding a draft is never reused', _drafttab_probe())
     ck('S580 the warm door keeps its last tab', _keeptab_probe())
