@@ -6334,6 +6334,21 @@ def _stampcomplete_probe():  # STAMP-COMPLETE v85.235: Suman template is refused
     except Exception:
         return False
 
+def _tagonly_probe():  # TAG-ONLY v85.240  # NO-COUPLE v85.240: the flow moves nothing, it only carries the tag
+    try:
+        import stampkeeper as _sk
+        _s = open(os.path.join(BASE_DIR, "stampkeeper.py"), encoding="utf-8", errors="ignore").read()
+        if "TAG-ONLY v85.240" not in _s:
+            return False
+        for _bad in ("_tag_apply_one", "os.rename", "shutil.move", "_free_name"):
+            if _bad in _s.split("def refresh_flow(")[1]:
+                return False  # the flow itself may never move or couple a file
+        if not hasattr(_sk, "apply_stamp") or not hasattr(_sk, "any_stamp_text"):
+            return False
+        return True
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -7019,6 +7034,7 @@ def _selftest(root):
     ck('S623 the litter audit names litter and never makes it', _litter_probe())
     ck('S624 an empty template is refused and a filled block is accepted', _stampcomplete_probe())
     ck('S625 the tag travels first and the move obeys the decision table', briefing._stampflow_probe())
+    ck('S627 the flow carries the tag and moves no file - tags move files, not the butler', _tagonly_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
