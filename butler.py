@@ -5034,19 +5034,12 @@ def _st_probe():  # DASHBOARD v85.184: the fixture S565 leans on - one line, fiv
     except Exception:
         return False
 
-def _wa_probe():  # WARM-TAKE-OVER v85.174: the fixture S566 leans on - the send reuses a page, and no unconditional tab is opened
+def _wa_probe():  # WARM-TAKE-OVER v85.174  # DRAFT-TAB v85.190: the warm door is used, and only a free tab is taken
     try:
         _w = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa.py'), encoding='utf-8', errors='ignore').read()
-        if (chr(35) + ' WARM-TAKE-OVER v85.174') not in _w:
-            return False
-        if ('page = _ctx2.' + 'new_page()') in _w:
-            return False
-        if '_wa_pgs' not in _w or 'if _wa_pgs:' not in _w:
-            return False
-        return True
+        return ('_wa_pgs' in _w) and ('_tab_free(_pg)' in _w) and ('WARM-TAKE-OVER v85.174' in _w)
     except Exception:
         return False
-
 def _nocloud_probe():  # OFFLINE-CONFIG v85.176: the fixture S568 leans on - every URL in every live module must point at this Mac or the master's own WhatsApp Web
     try:
         import re as _nr, glob as _ng
@@ -5226,6 +5219,31 @@ def _keeptab_probe():  # KEEP-A-TAB v85.189: the fixture S580 leans on - the war
         return ('if (not via_cdp) and page is not None and _made: page.' + 'close()') in _w
     except Exception:
         return False
+
+def _drafttab_probe():  # DRAFT-TAB v85.190: the fixture S581 leans on - a tab with text in the field is not free
+    try:
+        _w = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa.py'), encoding='utf-8', errors='ignore').read()
+        if 'DRAFT-TAB v85.190' not in _w or 'def _tab_free(pg):' not in _w:
+            return False
+        if '_tab_free(_pg)' not in _w:
+            return False
+        return pg_empty() is True
+    except Exception:
+        return False
+def pg_empty():  # DRAFT-TAB v85.190: the fixture judges a field that cannot exist
+    class _Pg:
+        def locator(self, _s):
+            class _L:
+                def count(self):
+                    return 1
+                def first(self):
+                    class _E:
+                        def inner_text(self):
+                            return ''
+                    return _E()
+            return _L()
+    import wa as _wa
+    return _wa._tab_free(_Pg())
 
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
@@ -5896,6 +5914,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S581 a tab holding a draft is never reused', _drafttab_probe())
     ck('S580 the warm door keeps its last tab', _keeptab_probe())
     ck('S579 the bell keeps warnings and drops housekeeping', _sweepall_probe())
     ck('S578 the sweep keeps quiet at the chair', _sweepquiet_probe())

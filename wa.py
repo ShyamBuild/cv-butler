@@ -267,6 +267,15 @@ def watest(say=print):  # WA-STEP v85.29: each door of the ritual opened in orde
     say('watest complete - the window stays open for the next send')
     return bool(ok)
 
+def _tab_free(pg):  # DRAFT-TAB v85.190: a tab holding a draft belongs to the master - the next deed must not navigate it away
+    try:
+        _sel = 'footer div[contenteditable="true"]'
+        if pg.locator(_sel).count() == 0:
+            return True
+        return not (pg.locator(_sel).first.inner_text() or '').strip()
+    except Exception:
+        return True
+
 def preopen(phone, say=None):  # PREOPEN v85.178: at the seat, the chat is opened once - the digit later only fills the composer
     try:
         _d = re.sub(r'\D', '', str(phone))
@@ -305,7 +314,10 @@ def _send_review_body(phone, text, say=print, ask=None):  # LOOP-CLEAN v85.21  #
             _ctx2 = _door.contexts[0] if _door.contexts else _door.new_context()
             _wa_pgs = [pg for pg in _ctx2.pages if 'web.whatsapp.com' in (getattr(pg, 'url', '') or '')]  # WARM-TAKE-OVER v85.174: the tab the house warmed is the door - seventeen tabs and a fresh load per press was the wound
             if _wa_pgs:
-             page = _wa_pgs[0]
+             page = next((_pg for _pg in _wa_pgs if _tab_free(_pg)), None)  # DRAFT-TAB v85.190: reuse only a free tab
+             if page is None:
+              page = _ctx2.new_page()  # DRAFT-TAB v85.190: a drafted tab is never navigated away - the deed gets its own
+              _made = False  # KEEP-A-TAB v85.189: even a page born here stays, so the draft is reachable
              _made = False  # KEEP-OPEN v85.182: borrowed, never closed
              for _xp in _wa_pgs[1:]:  # WARM-TAKE-OVER v85.174: only the tabs this house opened are swept - the master's own stay
               try:
