@@ -2603,6 +2603,12 @@ def _focus_path(root=None):  # SCOPE v85.215: one terminal, one position - the f
 
 _UP_DEPTH = [0]  # NO-RECURSE v85.222: the reseed retries once and never again - a loop is not a tray
 
+def _rp(p):  # MISSING-PATH v85.223: a folder the master renamed or removed is not a crash - realpath answers
+    try:
+        return os.path.realpath(str(p))
+    except Exception:
+        return os.path.abspath(str(p))
+
 def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes, and the seat itself re-checks coverage
     seat_rename_check(root, lambda *a, **k: None)  # SEE-FAILURE v85.183: the sweep still runs; the card says the rest
     s = sheet_load()
@@ -2610,7 +2616,7 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
     mem = set(covered_load())  # FOLDER-TRUTH v84.30: outcome memory guards duplicates; the folders decide the rest
     known = set()
     for it in s.get('items', []):
-        try: known.add(os.path.realpath(it['p']))
+        try: known.add(_rp(it['p']))
         except Exception: pass
     for it in s.get('items', []):  # SHEET-LIVE v84.12
         if it.get('status') != 'waiting': continue
@@ -2627,7 +2633,7 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
         for dp, dn, fn in os.walk(sc):
             for x in fn:
                 if not _is_desk_candidate(x): continue
-                q = os.path.join(dp, x); rq = os.path.realpath(q)
+                q = os.path.join(dp, x); rq = _rp(q)
                 if rq in known or rq in sk or os.path.basename(dp) in _tag_vocab() or _name_key(x) in mem or _in_nonqueue(q): continue  # FOLDER-TRUTH v84.30
                 s.setdefault('items', []).append({'p': q, 'name': os.path.splitext(x)[0], 'status': 'waiting', 'fp': _fp(q)})
                 known.add(rq)
@@ -2735,7 +2741,7 @@ def _covered_names(root):  # COVERED-WIDE v84.16: five signals of already-spoken
         for dp, dn, fn in os.walk(sc):
             for x in fn:
                 if not _is_desk_candidate(x): continue
-                q = os.path.join(dp, x); rq = os.path.realpath(q)
+                q = os.path.join(dp, x); rq = _rp(q)
                 if rq in seen: continue
                 seen.add(rq)
                 if _tags_of(q) or os.path.basename(dp) in _tag_vocab(): keys.add(_name_key(x))
@@ -6009,6 +6015,19 @@ def _norecurse_probe():  # NO-RECURSE v85.222: the fixture S611 leans on - one b
     except Exception:
         return False
 
+def _misspath_probe():  # MISSING-PATH v85.223: the fixture S612 leans on - a vanished folder answers, never raises
+    try:
+        _gone = os.path.join(BASE_DIR, "__no_such_folder__", "x.pdf")
+        if _rp(_gone) != os.path.abspath(_gone):
+            return False
+        _b = open(__file__, encoding="utf-8", errors="ignore").read()
+        if "MISSING-PATH v85.223" not in _b:
+            return False
+        _n4 = "os.path.real" + "path(it["
+        return _b.count(_n4) == 0
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6680,6 +6699,7 @@ def _selftest(root):
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
     ck('S610 one prompt names the pick and the door rises first', _pickone_probe())
     ck('S611 the tray reseed retries once and a far paper never re-enters up_cmd', _norecurse_probe())
+    ck('S612 a folder the master removed answers instead of raising', _misspath_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
