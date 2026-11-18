@@ -1702,7 +1702,22 @@ def _vision_safe(p):  # VISION-THREAD v85.22: the vision eye reads in its own th
     th.start(); th.join(45)
     return out[0] if out else ''
 
+SALUTATIONS = ('mr', 'mrs', 'ms', 'miss', 'dr', 'prof', 'shri', 'shree', 'sri', 'smt', 'er')  # NAME-NO-SALUTATION v85.232
+
+def _strip_salutation(s):  # NAME-NO-SALUTATION v85.232: the master wants the CV name, never a title
+    try:
+        ws = str(s).split()
+        while ws:
+            head = ws[0].lower().rstrip('.')
+            if head in SALUTATIONS and (ws[0].endswith('.') or len(ws) >= 3):
+                ws = ws[1:]; continue
+            break
+        return ' '.join(ws) if ws else str(s)
+    except Exception:
+        return str(s)
+
 def _display_name(s):  # CASE-LAW v85.35: the original butler's rule returns - a shout is not a name: RAHUL KUMAR becomes Rahul Kumar, single letters stay capital, short initial-blocks keep their form
+    s = _strip_salutation(s)  # NAME-NO-SALUTATION v85.232: MR. SURESH KUMAR is Suresh Kumar
     out = []
     for w in str(s).split():
         if len(w) == 1: out.append(w.upper())
@@ -3444,6 +3459,7 @@ def _is_candidate_paper(p):  # RENAME-GATE v82.0: only a paper that can hold a p
     st = os.path.splitext(os.path.basename(p))[0]
     return not _jd_like_name(st) and not _portal_name(st)
 def _canonical_person_name(s):  # CANON-FORM v82.0: a pipeline name carries the human, not the paper's shout
+    s = _strip_salutation(s)  # NAME-NO-SALUTATION v85.232: the pipeline name wears no title either
     t = (s or '')
     t = re.sub(r'\b\d{1,2}[./-]\d{1,2}[./-]\d{2,4}\b', ' ', t)
     t = re.sub(r'\b(20\d{2}|19\d{2})\b', ' ', t)
@@ -6177,6 +6193,22 @@ def _stampread_probe():  # STAMP-READ v85.231: the fixture S620 leans on - the s
     except Exception:
         return False
 
+def _salutation_probe():  # NAME-NO-SALUTATION v85.232: titles drop, real initials stay (MS Dhoni is a name)
+    try:
+        if _strip_salutation('Mr. Meenaketan Sahu') != 'Meenaketan Sahu':
+            return False
+        if _strip_salutation('DR SURESH KUMAR') != 'SURESH KUMAR':
+            return False
+        if _display_name('Mr. Meenaketan Sahu') != 'Meenaketan Sahu':
+            return False
+        if _strip_salutation('MS Dhoni') != 'MS Dhoni':
+            return False  # two tokens, no dot - an initial pair is not a title
+        if _strip_salutation('Meenaketan Sahu') != 'Meenaketan Sahu':
+            return False
+        return True
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6857,6 +6889,7 @@ def _selftest(root):
     ck('S618 every door leaves its card and retry repeats those words', _doorcard_probe())
     ck('S619 up steps past the man already in the chair and never drops the last one', _seatadvance_probe())
     ck('S620 the stamp is read out of the paper and spoken, never written', _stampread_probe())
+    ck('S621 a candidate file wears the CV name and never a salutation', _salutation_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
