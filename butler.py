@@ -3050,6 +3050,39 @@ def redo_last(say=print, root=None):  # RETRY-LAST v85.198: the master's retry -
     except Exception as _re:
         say('⚠️ retry failed: %r' % (_re,)); return False
 
+def _deed_send(ph, text, p, name, say=print):  # NEXT-NUMBER v85.220: a dead number is not the end - the next witness hears the same words
+    try:
+        import wa
+    except Exception:
+        return False, ph
+    _ok = wa.send_review(ph, text, _wa_quiet)
+    if _ok:
+        return True, ph
+    try:
+        _dead = (getattr(wa, "LAST_FAIL", [""]) or [""])[0] == "dead"
+    except Exception:
+        _dead = False
+    if not _dead:
+        return False, ph
+    try:
+        _all = _only_digits(phones_of(p, quiet=True) or [])
+    except Exception:
+        _all = []
+    for _n in _all:
+        if str(_n) == str(ph):
+            continue
+        say("📵 %s is not on WhatsApp - trying %s" % (ph, _n))
+        if wa.send_review(_n, text, _wa_quiet):
+            try:
+                import json as _ndj
+                _rd = _ndj.load(open(os.path.join(BASE_DIR, ".last_deed.json")))
+                _rd["phone"] = _n
+                _ndj.dump(_rd, open(os.path.join(BASE_DIR, ".last_deed.json"), "w"))
+            except Exception:
+                pass
+            return True, _n
+    return False, ph
+
 def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair remembers the paper, not merely its path
     _QUIET_ID['on'] = True  # QUIET-DEED v85.182: from here the deed speaks its one line
     _wr = True  # WR-FIRST v85.35: every path through the outcome carries its witness to the deed line, including the no-phone walk-on
@@ -3094,7 +3127,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
             if ph0:
                 import wa
                 _remember_deed(cur['name'], ph0, 'nudge', '', p)  # RETRY-LAST v85.198: the card comes before the window
-                _wr = wa.send_review(ph0, _chair_wa_text('nudge', p, cur['name']), _wa_quiet)
+                _wr, _ph_used = _deed_send(ph0, _chair_wa_text('nudge', p, cur['name']), p, cur['name'], say)  # NEXT-NUMBER v85.220
             else: say(f'⚠️ no phone for {cur["name"]} - teach me: python3 butler.py teach {cur["name"].split()[0].lower()} <digits>, then retry')
             _td = teach_digits_inline(cur['name'], os.path.basename(p), say)  # TEACH-IN-PLACE v85.49: ten digits spoken here become the number, the book entry and the window's address in one breath
             if _td: ph = _td  # TEACH-WIRE v85.50: the taught digits enter the same variable the window reads - one breath, one door
@@ -3144,7 +3177,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
                 _wr = True  # DEED-TRUTH v85.31: the deed line reports what the window actually did - drafted, parked, or internal
                 _remember_deed(cur['name'], ph0, draft, tag, p)  # RETRY-LAST v85.198: the card comes before the window
                 if _k == 't': pass  # SKIP-WA v84.38 # CINE-LINE v85.1: the deed line already says no 📱 - the retired prompt's law rides on
-                else: _wr = wa.send_review(ph, _chair_wa_text(draft, p, cur['name']), _wa_quiet)
+                else: _wr, _ph_used = _deed_send(ph, _chair_wa_text(draft, p, cur['name']), p, cur['name'], say)  # NEXT-NUMBER v85.220
             else: say(f'⚠️ no phone for {cur["name"]} - teach me: python3 butler.py teach {cur["name"].split()[0].lower()} <digits>, then retry')
     say(f"✅ {cur['name']} · 🏷️ {tag} · 📦 {os.path.basename(os.path.dirname(p))} · " + ('📱 drafted' if (_k != 't' and draft and _wr) else ('📱 parked' if (_k != 't' and draft and not _wr) else ('no 📱' if draft else 'internal · no 📱'))))  # ACTION-ECHO v84.51 CINE-LINE v85.1: one deed line, nothing repeated
     try:  # AUTO-ADVANCE v85.183: one up starts the whole tray - the next candidate arrives without asking
@@ -5896,6 +5929,17 @@ def _targetrecover_probe():  # TARGET-RECOVER v85.219: the fixture S608 leans on
     except Exception:
         return False
 
+def _nextnumber_probe():  # NEXT-NUMBER v85.220: the fixture S609 leans on - a dead number hands on to the next witness
+    try:
+        _b = open(__file__, encoding="utf-8", errors="ignore").read()
+        if "NEXT-NUMBER v85.220" not in _b or "def _deed_send(" not in _b:
+            return False
+        if _b.count("_deed_send(") < 3:
+            return False
+        return "is not on WhatsApp - trying" in _b
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6338,7 +6382,7 @@ def _selftest(root):
     ck('S376 the expensive pupil is asked once per paper per day', (chr(35)+' VISION-ONCE v85.35') in _src)
     ck('S377 a shout is not a name and a split mobile is one number, while pincodes keep their digits', (chr(35)+' CASE-LAW v85.35') in _src and (chr(35)+' PHONE-GLUE v85.35') in _src and ('[6-9]' in _src))
     ck('S370 the deed line reports what the window actually did', (chr(39)+'📱 parked'+chr(39)) in _src and ('_wr = wa.send_review' in _src))
-    ck('S371 the deed'+chr(39)+'s witness stands on the draft-send line itself', any(('_wr = wa.send_review(ph,' in x and '_chair_wa_text(draft' in x) for x in _src.split('def outcome_cmd(')[1].split(chr(10) + 'def ')[0].split(chr(10))))  # S371 tightened v85.33: the postcode is the draft line, not any send line
+    ck('S371 the deed'+chr(39)+'s witness stands on the draft-send line itself', any(('_deed_send(ph,' in x and '_chair_wa_text(draft' in x) for x in _src.split('def outcome_cmd(')[1].split(chr(10) + 'def ')[0].split(chr(10))))  # S371 tightened v85.33: the postcode is the draft line, not any send line
     ck('S358 in raw mode the writer is the driver - every raw newline carries its carriage', (chr(35)+' CRLF-RAW v85.22') in _src and (chr(35)+' CRLF-RAW v85.22') in open(os.path.join(BASE_DIR, 'briefing.py')).read() and (chr(35)+' CRLF-RAW v85.22') in open(os.path.join(BASE_DIR, 'wa.py')).read())
     ck('S359 the vision eye reads in its own thread and never lends the thumb its loop', (chr(35)+' VISION-THREAD v85.22') in _src and ('_vision_safe(p)' in _src))
     ck('S360 the whole-chair ceremony runs once per keystroke and each miss confesses once', (chr(35)+' ONCE-PER-COMMAND v85.22') in _src and ('_IN_CEREMONY' in _src))
@@ -6565,6 +6609,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
     ck('S606 the card names every number and the prompt stays bare', _uinumbers_probe())
