@@ -139,14 +139,19 @@ def _arm_dialogs(page):  # DIALOG-ARM v85.179: WhatsApp asks "leave this page?" 
     except Exception:
         return False
 
-def _goto(page, url, say=print):
+def _goto(page, url, say=print):  # GOTO-CONFESS v85.195: a failed navigation names its own reason, once
     _arm_dialogs(page)  # DIALOG-ARM v85.179: every goto answers the leave-page question first
-    for a in (0, 1):
+    _errs = []
+    for _a, _mode in enumerate((('commit', 45000), ('domcontentloaded', 60000))):
         try:
-            page.goto(url, timeout=90000, wait_until='domcontentloaded'); return True
-        except Exception:
-            if a == 0: time.sleep(2)
-    say('⚠️ WhatsApp page did not load (network?) - try again in a minute')
+            page.goto(url, timeout=_mode[1], wait_until=_mode[0])
+            return True
+        except Exception as _ge:
+            _errs.append(repr(_ge)[:120])
+            if _a == 0:
+                time.sleep(2)
+    if _errs:
+        say('⚠️ WhatsApp page did not load - %s' % _errs[-1])  # GOTO-CONFESS v85.195: the real reason, not a guess
     return False
 
 AUTOSEND = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates', '.autosend')

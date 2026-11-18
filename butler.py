@@ -5344,6 +5344,15 @@ def _retry_probe():  # RETRY-LAST v85.198: the fixture S588 leans on - the card,
     except Exception:
         return False
 
+def _gotoconfess_probe():  # GOTO-CONFESS v85.195: the fixture S585 leans on - a failed navigation carries its reason
+    try:
+        _w = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa.py'), encoding='utf-8', errors='ignore').read()
+        if 'GOTO-CONFESS v85.195' not in _w:
+            return False
+        return ('commit' in _w) and ('_errs[-1]' in _w)
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6013,6 +6022,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S585 a failed navigation names its reason', _gotoconfess_probe())
     ck('S588 a parked draft can be retried by one word', _retry_probe())
     ck('S587 the driver serves the whole process', _nostop_probe())
     ck('S586 a keeper without a door is swept and the door raised', _warmrecover_probe())
