@@ -608,9 +608,8 @@ def _house_rows():  # DASHBOARD v85.184: the tray in three numbers - loose candi
     _STAT_ROWS['rows'] = rows
     return rows
 
-def _stat_render(chair, pending, waiting, ready, wa):  # DASHBOARD v85.184: one line - who sits, how many loose, how many waiting, how many ready, is the door warm  # PROMPT-STATE v85.173: the prompt carries the truth, cached
-    _c = ('🪑 ' + chair) if chair else '🪑 nobody seated'
-    return '%s · 📥 %s pending · ⏳ %s waiting · 🏆 %s ready · 📱 %s' % (_c, pending, waiting, ready, wa) + chr(10)
+def _stat_render(chair, pending, waiting, ready, wa):  # DASHBOARD v85.184  # CALM-VOICE v85.213: counts only - the card names the man, the prompt keeps the tray
+    return '📥 %s pending · ⏳ %s waiting · 🏆 %s ready' % (pending, waiting, ready) + chr(10)
 def _stat_line():  # DASHBOARD v85.184: the prompt line, cached five seconds - the keyboard is never held for a status
     import time as _pst
     try:

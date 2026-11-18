@@ -329,7 +329,7 @@ def _phones_of_raw(p, quiet=False):  # QUIET-CLERK v81.87: the picker may ask wi
         if ocr.strip(): ph = phones_in_text(ocr)
     em = emails_in_text(txt)  # IDENTITY-FIRST-EXTRACT v81.73: file, email and source before the window opens
     if ph and not quiet: print(f'\U0001faaa {os.path.basename(ap)} · email: {em[0] if em else "none readable"} · phone extracted: {ph[0]}', flush=True)
-    if ph and em: print(f'\U0001f4e7 {os.path.basename(ap)} · {em[0]}', flush=True)
+    pass  # CALM-VOICE v85.213: the email line is retired - the card carries the contact, the terminal keeps its calm
     if ph:
         store[ap] = {'k': k, 'phones': ph}
         try: json.dump(store, open(PHONES_FILE, 'w'))
@@ -3016,7 +3016,7 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
     say(f"✅ {cur['name']} · 🏷️ {tag} · 📦 {os.path.basename(os.path.dirname(p))} · " + ('📱 drafted' if (_k != 't' and draft and _wr) else ('📱 parked' if (_k != 't' and draft and not _wr) else ('no 📱' if draft else 'internal · no 📱'))))  # ACTION-ECHO v84.51 CINE-LINE v85.1: one deed line, nothing repeated
     try:  # AUTO-ADVANCE v85.183: one up starts the whole tray - the next candidate arrives without asking
      _w2 = [x for x in sheet_load().get('items', []) if x.get('status') == 'waiting']
-     if _w2:
+     if _w2 and not (draft and not _wr):  # CALM-VOICE v85.213: a parked draft keeps the chair, so retry and the card always name the same man
       up_cmd('', root, say)
     except Exception:
      pass
@@ -5254,22 +5254,18 @@ def _hk_probe():  # HOTKEY-SCOPE v85.172: the fixture S564 leans on - a word is 
 def _hot_name():  # HOTKEY-SCOPE v85.172: spelled in pieces so no guard certifies its own text
     return '_hot' + '_key'
 
-def _st_probe():  # DASHBOARD v85.184: the fixture S565 leans on - one line, five truths, and a refusal to crash  # PROMPT-STATE v85.173: the prompt carries the truth
+def _st_probe():  # DASHBOARD v85.184  # PROMPT-STATE v85.173  # CALM-VOICE v85.213: counts only, one line, no crash
     try:
         import briefing as _bf
         _r = _bf._stat_render('Rahul', 2, 5, 1, 'warm')
-        for _w in ('🪑 Rahul', '2 pending', '5 waiting', '1 ready', '📱 warm'):
+        for _w in ('2 pending', '5 waiting', '1 ready'):
             if _w not in _r:
                 return False
-        _r2 = _bf._stat_render('', 0, 0, 0, 'cold')
-        if 'nobody seated' not in _r2 or '📱 cold' not in _r2:
+        if '📱' in _r or 'Rahul' in _r:
             return False
-        if _r.count(chr(10)) != 1:
-            return False
-        return True
+        return _r.count(chr(10)) == 1
     except Exception:
         return False
-
 def _wa_probe():  # WARM-TAKE-OVER v85.174  # SAME-TAB v85.193: the warm door is used, one tab at a time
     try:
         _w = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'wa.py'), encoding='utf-8', errors='ignore').read()
@@ -5694,6 +5690,19 @@ def _jdcano_probe():  # JD-CANON v85.212: the fixture S601 leans on - the folder
         if _jd_canon("/x/05 Micromatic Grinding/Manager Maintenance - Ghaziabad/w.pdf") != "JD_Manager_Maintenance_Ghaziabad":
             return False
         return _jd_canon("/x/01 Omega Icehill/Accountant - Noida/a.pdf") == "JD_Accountant_Noida"
+    except Exception:
+        return False
+
+def _calmvoice_probe():  # CALM-VOICE v85.213: the fixture S602 leans on - counts only, no email line, a park keeps its chair
+    try:
+        _b = open(__file__, encoding="utf-8", errors="ignore").read()
+        if "CALM-VOICE v85.213" not in _b:
+            return False
+        if "and not (draft and not _wr)" not in _b:
+            return False
+            return False
+        _r = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "briefing.py"), encoding="utf-8", errors="ignore").read()
+        return "%s pending" in _r and "📱 %s" not in _r
     except Exception:
         return False
 
@@ -6366,6 +6375,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S602 the prompt speaks counts only and a park keeps its chair', _calmvoice_probe())
     ck('S601 a description wears JD_Position_Location', _jdcano_probe())
     ck('S600 a house seat is never treated as a scar', _twinnotscar_probe())
     ck('S599 a shelved paper is never converted again', _shelfbeatskip_probe())
@@ -6399,7 +6409,7 @@ def _selftest(root):
     ck('S570 the seat opens the chat once and the digit only fills it', _preopen_probe())
     ck('S569 a held profile with a live door is joined, not refused', _warmreuse_probe())
     ck('S568 the house speaks to no cloud, only this Mac and the master' + chr(39) + 's own WhatsApp Web', _nocloud_probe())
-    ck('S567 the prompt shows a chair, not a plank', _st_probe() and 'nobody seated' in _br)
+    ck('S567 the card speaks the chair and the prompt speaks the tray', _st_probe() and '_stat_render' in _br)
     ck('S566 the send takes the warm tab, never a fresh one', _wa_probe())
     ck('S565 the prompt names the chair, the tray and the door', _st_probe() and '_stat_line() + "you> "' in _br)
     ck('S564 a word beginning with a hotkey letter is never eaten', _hk_probe())
