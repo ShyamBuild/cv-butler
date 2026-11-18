@@ -1352,6 +1352,23 @@ def taught_digits(name):  # CHAIR-PHONE v84.10c: the chair reads the taught book
     return None
 
 NON_CANDIDATE_PREFIXES = ('jd', 'summary', 'rated_', 'candidate', 'form', 'template')  # PAPER-OR-NOT v84.10d: the desk knows a CV from its furniture
+def _jd_canon(p):  # JD-CANON v85.212: the folder names the job and the file wears it
+    try:
+        _posdir = os.path.basename(os.path.dirname(os.path.abspath(p)))
+        while _posdir and _posdir[0].isdigit():
+            _posdir = _posdir[1:].lstrip(" _-")
+        _parts = _posdir.split(" - ")
+        _role = (_parts[0] or "").strip()
+        _loc = (_parts[1] if len(_parts) > 1 else "").strip()
+        _clean = lambda s: re.sub("[^A-Za-z0-9]+", "_", s).strip("_")
+        _r = _clean(_role)
+        _l = _clean(_loc)
+        if not _r:
+            return ""
+        return "JD_" + _r + (("_" + _l) if _l else "")
+    except Exception:
+        return ""
+
 def _is_desk_candidate(x):  # PAPER-OR-NOT v84.10d: only humans take the chair
     low = (x or '').lower()
     if not low.endswith(('.pdf', '.docx')): return False
@@ -3729,15 +3746,14 @@ class Butler:
         strong = any(x in head for x in STRONG_JD)
         return strong and jd >= 2 and cv == 0   # only unmistakable JDs
 
-    def _rename_jd(self, p, base, head, say):
-        cur = os.path.splitext(base)[0]
-        new = cur
-        new = re.sub(r'\s*[\(\[]\d+[\)\]]\s*$', '', new)          # (1) [2]
-        new = re.sub(r'\s+copy\s*\d*$', '', new, flags=re.I)        # " copy" / " copy 2"
-        new = re.sub(r'\s*[_\-]\s*copy\s*\d*$', '', new, flags=re.I)
-        new = re.sub(r'\s{2,}', ' ', new).strip(' -_')                # double spaces / edge junk
-        if new and new != cur:
-            self._rename(p, f"{new}.pdf", say, 'jd-clean')
+    def _rename_jd(self, p, base, head, say):  # JD-CANON v85.212
+        _canon = _jd_canon(p)
+        if not _canon:
+            return
+        _want = _canon + ".pdf"
+        if base.lower() == _want.lower():
+            return
+        self._rename(p, _want, say, "jd-canon")
 
     def handle_pdf(self, p, say):
         base = os.path.basename(p)
@@ -5670,6 +5686,17 @@ def _twinnotscar_probe():  # TWIN-NOT-SCAR v85.211: the fixture S600 leans on - 
     except Exception:
         return False
 
+def _jdcano_probe():  # JD-CANON v85.212: the fixture S601 leans on - the folder names the job
+    try:
+        _b = open(__file__, encoding="utf-8", errors="ignore").read()
+        if "JD-CANON v85.212" not in _b or "def _jd_canon(" not in _b:
+            return False
+        if _jd_canon("/x/05 Micromatic Grinding/Manager Maintenance - Ghaziabad/w.pdf") != "JD_Manager_Maintenance_Ghaziabad":
+            return False
+        return _jd_canon("/x/01 Omega Icehill/Accountant - Noida/a.pdf") == "JD_Accountant_Noida"
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6339,6 +6366,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S601 a description wears JD_Position_Location', _jdcano_probe())
     ck('S600 a house seat is never treated as a scar', _twinnotscar_probe())
     ck('S599 a shelved paper is never converted again', _shelfbeatskip_probe())
     ck('S598 the beat shelves the sources itself', _beatshelf_probe())
