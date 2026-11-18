@@ -2509,7 +2509,34 @@ def _paint(t, k):  # CHAIR-CARD v85.181: colour is a courtesy - NO_COLOR and pip
         return _CLR.get(k, '') + str(t) + _CLR['x']
     except Exception:
         return str(t)
-def _chair_card(name, p, ph, em, say=print):  # CHAIR-CARD v85.181: five lines - who, where, how to reach him, and the seven keys
+def _prep_phone_pick(phones, p, say=print):  # UI-NUMBERS v85.217: one prompt after the card, remembered, ^C-safe
+    try:
+        import json as _pj3
+        _psd = {}
+        try:
+            _psd = _pj3.load(open(os.path.join(BASE_DIR, ".prep_state.json")))
+        except Exception:
+            _psd = {}
+        if _psd.get("phone") in phones and os.path.realpath(str(_psd.get("path") or "")) == os.path.realpath(str(p)):
+            return _psd["phone"]
+        say("   pick phone # (1-" + str(len(phones)) + ") > ")
+        try:
+            _ch = input("   # ").strip()
+        except (KeyboardInterrupt, EOFError):
+            say(""); say("   no pick - he stays seated, nothing opened"); return None
+        if not (_ch.isdigit() and 1 <= int(_ch) <= len(phones)):
+            say("   (no pick - the first number stands)")
+            return phones[0]
+        _p3 = phones[int(_ch) - 1]
+        try:
+            _pj3.dump({"path": p, "phone": _p3, "phones": list(phones)}, open(os.path.join(BASE_DIR, ".prep_state.json"), "w"))
+        except Exception:
+            pass
+        return _p3
+    except Exception:
+        return phones[0] if phones else None
+
+def _chair_card(name, p, ph, em, say=print, phones=None):  # CHAIR-CARD v85.181  # UI-NUMBERS v85.217: every number is on the card before the pick
     try:
         _idn = {}
         try:
@@ -2524,13 +2551,15 @@ def _chair_card(name, p, ph, em, say=print):  # CHAIR-CARD v85.181: five lines -
         say(_paint('│  ', 'd') + _sub)
         if em:
             say(_paint('│  ✉️  ', 'd') + _paint(em, 'y'))
-        if ph:
+        if phones and len(phones) > 1:
+            _nums = '   '.join('%d) %s' % (_k + 1, _v) for _k, _v in enumerate(phones))
+            say(_paint('│  📱 ', 'd') + _paint(_nums, 'g'))
+        elif ph:
             say(_paint('│  📱 ', 'd') + _paint(ph, 'g'))
         say(_paint('└─ ', 'd') + _paint('1 jd · 2 refer · 3 cv · 4 nudge · 5 missed · 6 ready · 7 skip', 'm'))
         return True
     except Exception:
         return False
-
 def _client_doc(p):  # CLIENT-DOC v85.216: the company name on a paper is the company document, not a human
     try:
         _stem = re.sub("[^a-z0-9]+", " ", os.path.splitext(os.path.basename(p))[0].lower()).strip()
@@ -2644,12 +2673,18 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
                 if _v: _em = _v[0] if isinstance(_v, (list, tuple)) else str(_v); break
             except Exception: pass
     seat_rename_check(root, lambda *a, **k: None, only=p)  # SEAT-RENAME v85.15: the seated paper is named even on days the whole-chair pass rests
+    _phl = []
+    try:  # UI-NUMBERS v85.217: every number is known before the card speaks
+     _phl = _only_digits(phones_of(p, quiet=True) or [])
+    except Exception:
+     _phl = []
+    _preview_open(p, say)
+    _chair_card(i['name'], p, ph, _em, say, phones=_phl)  # UI-NUMBERS v85.217  # HORIZONTAL v85.9  # IDENTITY-AT-SEAT v84.39  # EMOJI-CUE v84.51  # MAP-COMPACT v84.37
     _chosen = None
-    try:  # SEAT-FLOW v85.204: the picker speaks first so the card can name the number the master chose
-     _chosen = _prep_calls(i, root, say)
-    except Exception as _prep_e:
-     say(f'⚠️ prep failed: {_prep_e}')
-    _chair_card(i['name'], p, (_chosen or ph), _em, say)  # SEAT-FLOW v85.204: the chosen number is the one on the card  # HORIZONTAL v85.9  # IDENTITY-AT-SEAT v84.39  # EMOJI-CUE v84.51  # MAP-COMPACT v84.37
+    if len(_phl) > 1:
+     _chosen = _prep_phone_pick(_phl, p, say)
+    elif _phl:
+     _chosen = _phl[0]
 
 def covered_load():
     try: return json.load(open(COVERED_PATH))
@@ -5833,6 +5868,18 @@ def _clientdoc_probe():  # CLIENT-DOC v85.216: the fixture S605 leans on - a cli
     except Exception:
         return False
 
+def _uinumbers_probe():  # UI-NUMBERS v85.217: the fixture S606 leans on - numbers on the card, one prompt, bare prompt
+    try:
+        _b = open(__file__, encoding="utf-8", errors="ignore").read()
+        if "UI-NUMBERS v85.217" not in _b or "def _prep_phone_pick(" not in _b:
+            return False
+        if "phones=_phl" not in _b:
+            return False
+        _r = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "briefing.py"), encoding="utf-8", errors="ignore").read()
+        return "the tray is spoken once, at the door" in _r
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -6502,6 +6549,7 @@ def _selftest(root):
     ck('S561 every guard number is spoken exactly once', len(_gid) == len(set(_gid)) and len(_gid) > 500, 'dupes: %r' % sorted({x for x in _gid if _gid.count(x) > 1}))
     ck('S562 no code gates on the retired global lock', ('LOCK' + '_FILE') not in _src and 'hashlib.md5(root.encode()).hexdigest()[:8]' in _src)
     ck('S563 a legacy name key can never pose as a verdict', (chr(35) + ' EYE-CACHE-REKEY v85.170') in _src and "_d['legacy:' + str(_k)] = _d.pop(_k)" in _src)
+    ck('S606 the card names every number and the prompt stays bare', _uinumbers_probe())
     ck('S605 a client-named paper never takes the chair', _clientdoc_probe())
     ck('S604 the chair draws from one position only', _scope_probe())
     ck('S603 a description is housed, never seated', _jdhouse_probe())

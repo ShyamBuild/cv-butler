@@ -610,20 +610,8 @@ def _house_rows():  # DASHBOARD v85.184: the tray in three numbers - loose candi
 
 def _stat_render(chair, pending, waiting, ready, wa):  # DASHBOARD v85.184  # CALM-VOICE v85.213: counts only - the card names the man, the prompt keeps the tray
     return '📥 %s pending · ⏳ %s waiting · 🏆 %s ready' % (pending, waiting, ready) + chr(10)
-def _stat_line():  # DASHBOARD v85.184: the prompt line, cached five seconds - the keyboard is never held for a status
-    import time as _pst
-    try:
-        if _pst.time() - _STAT_CACHE['t'] < 5.0 and _STAT_CACHE['line']:
-            return _STAT_CACHE['line']
-        _cur = butler.sheet_current() or {}
-        _nm = (_cur.get('name') or '') if isinstance(_cur, dict) else ''
-        _r = _house_rows()
-        _ln = _stat_render(_nm, _r['pending'], _r['waiting'], _r['ready'], _wa_state())
-        _STAT_CACHE['t'] = _pst.time()
-        _STAT_CACHE['line'] = _ln
-        return _ln
-    except Exception:
-        return ''
+def _stat_line():  # DASHBOARD v85.184  # UI-NUMBERS v85.217: the prompt is bare - the tray is spoken once at boot
+    return ""
 def _smart_input(prompt, hot=False):  # LISTEN-REPL v85.4  # ALWAYS-RAW v85.6: the REPL always hears keys - a digit or y/t/n lands on the press; a word accumulates with live echo and backspace; Enter terminates words only  # HOTKEY-SCOPE v85.172: the reader always hears keys, but a key is an answer only when a question waits
     import sys, termios, tty
     if getattr(sys.stdout, 'last', '\n') != '\n': sys.stdout.write('\r\n')  # NEWLINE-DISCIPLINE v85.18  # CRLF-RAW v85.22: in raw mode the writer is the driver - LF alone leaves the column where it stood
@@ -1780,6 +1768,11 @@ if __name__ == "__main__":
                        'client': re.sub(r'^\d+[\s_-]*', '', os.path.basename(os.path.dirname(pickr))), 'also': []},
                       open(FOCUS_FILE, 'w'), indent=2)
             print(f"   🎯 focus synced to running butler: {os.path.relpath(pickr, root)}")
+            try:  # UI-NUMBERS v85.217: the tray is spoken once, at the door
+             _r0 = _house_rows()
+             print('📥 %s pending · ⏳ %s waiting · 🏆 %s ready' % (_r0['pending'], _r0['waiting'], _r0['ready']))
+            except Exception:
+             pass
         import faulthandler as _fh; _fh.enable()  # HARD-CRASH-VOICE v85.51: if the interpreter itself dies, the stack speaks to the terminal instead of vanishing
         import atexit as _ax, sys as _sysx, traceback as _tbx
         def _name_exit():  # NO-SILENT-EXIT v85.51: every process ending rings one bell, so a bare shell prompt is never the only evidence of an ending
