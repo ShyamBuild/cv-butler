@@ -2331,15 +2331,10 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
             disp = _display_name(stem)
             _nfd = name_for(p, eye=_no_eye)  # DESK-FAST v85.255: a desk walk never pays OCR - the text brain names, the CLICK asks the eye  # NAME-AUTHORITY v85.252: the ONE authority answers first - the eye, then the brain, cached by content version
             if _nfd: disp = _nfd
-            if _name_key(disp) == _name_key(stem):  # RENAME-EYE v85.244: the heading agrees with itself - ask the eye
-             try:
-              _ey4 = _eyename_of(p) or ''
-              if _ey4:
-                _cand4 = _display_name(_canonical_person_name(_ey4) or _ey4) or disp
-                # NO-SHORTEN v85.247: RETIRED by NAME-AUTHORITY v85.252 - the eye wins even when its verdict is shorter; the CONTENT CACHE, not a veto, is what stops the churn
-                if _cand4: disp = _cand4  # NAME-AUTHORITY v85.252: a frozen wrong name was the worse fault - the cache carries the churn guard now
-             except Exception:
-              pass
+            # RENAME-EYE v85.244: the heading agrees with itself - in a SWEEP that is a settled name, never an OCR  # CHAT-RESTORE-2 v85.258: the CLICK still asks the eye; the walk must not pay 25s per paper
+            # NO-SHORTEN v85.247: RETIRED by NAME-AUTHORITY v85.252 - the eye wins even when its verdict is shorter; the CONTENT CACHE, not a veto, is what stops the churn
+            # if _cand4: disp = _cand4  # NAME-AUTHORITY v85.252: a frozen wrong name was the worse fault - the cache carries the churn guard now
+            continue
             if disp == stem: continue
             q = os.path.join(dpath, disp + ext)
             if os.path.abspath(q) == os.path.abspath(p):  # NOOP-SEAT v85.207: casing already agrees - nothing to do
