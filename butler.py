@@ -1843,7 +1843,7 @@ def name_for(p, eye=None):  # NAME-AUTHORITY v85.252: ONE authority for every re
     if paper_kind(p) != 'cv':  # NAMING-PERFECT v85.254: only a CV is named here - a JD, a summary, a scar, an xlsx or a mail never pays an eye
         _name_for_store(key, '')
         return ''
-        return _c[key] or ''
+    _fast = eye is _no_eye  # CHAT-RESTORE v85.257: the cheap witness silences the WHOLE expensive half - no eye, no text, no OCR on a desk walk (the `up` freeze)
     _eye = ''
     try:
         _eye = (eye or _eyename_of)(p) or ''
@@ -1852,12 +1852,12 @@ def name_for(p, eye=None):  # NAME-AUTHORITY v85.252: ONE authority for every re
     nm = ''
     if _eye:  # NAME-AUTHORITY v85.252: the eye is the first witness - no veto may shorten it away
         nm = _display_name(_canonical_person_name(_eye) or _eye) or ''
-    if not nm:  # NAME-AUTHORITY v85.252: the brain speaks second, on the same head lines the eye reads
+    if not nm and not _fast:  # CHAT-RESTORE v85.257: a desk walk takes no text path at all
         try:
             nm = _display_name(_name_from_head_lines((extract_text(p) or chr(10)).split(chr(10)))) or ''
         except Exception:
             nm = ''
-    if not nm:
+    if not nm and not _fast:  # CHAT-RESTORE v85.257: a desk walk takes no text path at all
         try: nm = _display_name(_name_from_first_line(p) or '') or ''
         except Exception: nm = ''
     if not nm:  # NAME-AUTHORITY v85.252: the filename heuristic is LAST and only for a human-shaped stem (GARBAGE-FIRST)
