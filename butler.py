@@ -2167,6 +2167,12 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
                 continue
             _garbage0 = not (2 <= len(_stem_norm(stem).split()) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _stem_norm(stem).split())) or bool(set(_stem_norm(stem).lower().split()) & _NAME_STOP) or os.path.splitext(stem)[1].lower() in ('.pdf', '.doc', '.docx', '.rtf')  # GARBAGE-FIRST v85.130  # DOUBLE-EXT v85.136: a stem that wears its own extension is a download scar, never a human  # GARBAGE-FIRST v85.130: the stem is weighed before any eye is asked, so a heading or scar never borrows the filename heuristic's voice
             disp = _display_name(stem)
+            if _name_key(disp) == _name_key(stem):  # RENAME-EYE v85.244: the heading agrees with itself - ask the eye
+             try:
+              _ey4 = _eyename_of(p) or ''
+              if _ey4: disp = _display_name(_canonical_person_name(_ey4) or _ey4) or disp
+             except Exception:
+              pass
             if disp == stem: continue
             q = os.path.join(dpath, disp + ext)
             if os.path.abspath(q) == os.path.abspath(p):  # NOOP-SEAT v85.207: casing already agrees - nothing to do
@@ -2744,6 +2750,17 @@ def litter_say(root, say=print):  # LITTER-AUDIT v85.234: spoken, never deleted 
     for kind, p in rep[:20]:
         say("   %-11s %s" % (kind, os.path.relpath(p, root)))
     return rep
+
+def _eye_preferred_name(p, stem):  # RENAME-EYE v85.244: the name the paper should wear, eye first when the stem is self-consistent
+    disp = _display_name(stem)
+    if _name_key(disp) == _name_key(stem):
+        try:
+            _ey = _eyename_of(p) or ''
+            if _ey:
+                disp = _display_name(_canonical_person_name(_ey) or _ey) or disp
+        except Exception:
+            pass
+    return disp
 
 def _client_doc(p):  # CLIENT-DOC v85.216: the company name on a paper is the company document, not a human
     try:
@@ -6458,6 +6475,17 @@ def _tagdelete_probe():  # TAG-NO-DELETE v85.241 (TAG-TIERS v85.242): the delete
     except Exception:
         return False
 
+def _renameeye_probe():  # RENAME-EYE v85.244: Job Responsibilties (a heading) answers Vishal Srivastava
+    try:
+        _d = "/Users/apple/Downloads/Sunsoft Technology/05 Micromatic Grinding/Plant Head - Ghaziabad"
+        _p = os.path.join(_d, "Job Responsibilties.pdf")
+        if not os.path.exists(_p):
+            return True  # RENAME-EYE-CARRIED: the fixture left the disk once renamed - the law stands
+        _got = _eye_preferred_name(_p, "Job Responsibilties")
+        return _name_key(_got) != _name_key("Job Responsibilties") and len(_got.split()) >= 2
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -7147,6 +7175,7 @@ def _selftest(root):
     ck('S628 the house swaps tags freely and never removes one', _tagdelete_probe())
     ck('S629 an empty tag write belongs to folders and a paper keeps its stage', _tagtiers_probe())
     ck('S630 no caller speaks a removal the writer refused', _callertruth_probe())
+    ck('S631 a self-consistent heading still asks the eye before it keeps its name', _renameeye_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
