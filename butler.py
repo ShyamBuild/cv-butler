@@ -2173,7 +2173,11 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
             if _name_key(disp) == _name_key(stem):  # RENAME-EYE v85.244: the heading agrees with itself - ask the eye
              try:
               _ey4 = _eyename_of(p) or ''
-              if _ey4: disp = _display_name(_canonical_person_name(_ey4) or _ey4) or disp
+              if _ey4:
+                _cand4 = _display_name(_canonical_person_name(_ey4) or _ey4) or disp
+                # NO-SHORTEN v85.247: the eye may complete a name, never shorten one - a one-word eye
+                # verdict must not undo the brain's full name (that ping-pong ran every 40s).
+                if len(_cand4.split()) >= len(disp.split()): disp = _cand4
              except Exception:
               pass
             if disp == stem: continue
@@ -6556,6 +6560,15 @@ def _tagfollow_probe():  # TAG-FOLLOW v85.246: tagged moves, untagged stays
     except Exception:
         return False
 
+def _noshorten_probe():  # NO-SHORTEN v85.247: a one-word eye verdict never undoes a two-word name
+    try:
+        _b = open(__file__, encoding="utf-8", errors="ignore").read()
+        if "NO-SHORTEN v85.247" not in _b:
+            return False
+        return "len(_cand4.split()) >= len(disp.split())" in _b
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -7248,6 +7261,7 @@ def _selftest(root):
     ck('S631 a self-consistent heading still asks the eye before it keeps its name', _renameeye_probe())
     ck('S632 the tag sits below the text, aligned left, with air under it', _belowtext_probe())
     ck('S633 a tagged file lives in its tag folder and an untagged file never moves', _tagfollow_probe())
+    ck('S634 the eye completes a name and never shortens it', _noshorten_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
