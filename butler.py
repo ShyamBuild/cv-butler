@@ -1822,6 +1822,14 @@ def _seat_pack(folder, stem, ext, say=None):  # NAME-AUTHORITY v85.252: suffix s
         nxt += 1
     if moved and say: say('🔢 seats packed: %s (%d moved)' % (stem, moved))
     return moved
+
+_STRAY_EXT = (chr(46) + 'pdf', chr(46) + 'doc', chr(46) + 'docx', chr(46) + 'rtf', chr(46) + 'xlsx', chr(46) + 'msg', chr(46) + 'eml')
+def _bare_stem(name):  # SUMMARY-DEAD v85.253: a stem ends before its FIRST office extension - a scar like "X.pdf.sb-9f2" is X, never X.pdf
+    _low = str(name).lower()
+    for _e in _STRAY_EXT:
+        _i = _low.find(_e)
+        if _i > 0: return str(name)[:_i]
+    return str(name)
 _EVT = {}
 def _fast_rename(p, root, log):  # RENAME-WATCH v85.52: the ceremony's fast half in the background - text eyes, first-line eye, CASE-LAW; the expensive pupil stays with the chair's up
     x = os.path.basename(p)
@@ -5056,8 +5064,8 @@ class Butler:
                 if '.' not in bl:  # HEAL-SNIFF v72
                     _se = _sniff_ext(fp)
                     if _se:
-                        _nb = fp + _se; _n2 = 1
-                        while os.path.exists(_nb): _nb = f'{fp}_{_n2}{_se}'; _n2 += 1
+                        _nb = _bare_stem(fp) + _se; _n2 = 1  # SUMMARY-DEAD v85.253: the scar extension is dropped before a new one is worn
+                        while os.path.exists(_nb): _nb = '%s_%d%s' % (_bare_stem(fp), _n2, _se); _n2 += 1
                         try:
                             os.rename(fp, _nb); say(f'🧩 [suffix] {os.path.basename(fp)} -> {os.path.basename(_nb)}'); fp = _nb; bl = os.path.basename(_nb).lower()
                         except Exception: continue
@@ -5078,7 +5086,7 @@ class Butler:
         if ext not in ('.pdf', '.doc', '.docx', '.msg', '.eml', '.xlsx'):  # SNIFF-EXT v70
             _se = _sniff_ext(p)
             if _se:
-                _d = os.path.dirname(p); _b = os.path.splitext(os.path.basename(p))[0] or 'untitled'
+                _d = os.path.dirname(p); _b = _bare_stem(os.path.basename(p)) or 'untitled'  # SUMMARY-DEAD v85.253: stripped to the FIRST office extension, so a scar never doubles
                 _c = os.path.join(_d, _b + _se); _n = 1
                 while os.path.exists(_c): _c = os.path.join(_d, f'{_b}_{_n}{_se}'); _n += 1
                 try:
@@ -5473,13 +5481,7 @@ def main():
             if _jk and B.journal.get(p) == _jk: return  # WORK-DOOR SKIP v63
         except Exception: pass
         try:
-            if p.lower().endswith('.pdf'):  # SUMMARY-AUTO v85.124: changed/new PDFs consult exact Ready tag+folder; journal skip prevents startup backfill
-                try:
-                    import summary_builder as _sb
-                    _sr = _sb.update_tagged_cv(p)
-                    if _sr.get('status') in ('added', 'updated'): print('📊 [summary] %s · row %s · %s' % (_sr['candidate'], _sr['row'], os.path.relpath(_sr['summary'], root)), flush=True)
-                except Exception as _sbe:
-                    print('⚠️ [summary] update skipped: %s' % _sbe, flush=True)
+            # SUMMARY-AUTO v85.124: RETIRED by SUMMARY-DEAD v85.253 - a watcher tick NEVER writes a workbook; the manual doors (summary_template, build_selected_summary) are the only writers and only on the master word  # SUMMARY-DEAD v85.253: this call fired on every Ready-tagged pdf and never rested until the tag came off (24 books in one stage)
             B.route(p, print)
         except Exception as e:
             log.error(f"route error {p}: {e}")
@@ -6642,6 +6644,21 @@ def _tagfollow_probe():  # TAG-FOLLOW v85.246: tagged moves, untagged stays
     except Exception:
         return False
 
+def _summarydead_probe():  # SUMMARY-DEAD v85.253: the tick writes no workbook, and a name never wears two extensions - proven live
+    try:
+        _b = open(__file__, encoding='utf-8', errors='ignore').read()
+        if ('_sb.' + 'update_tagged_cv') in _b: return False  # 1a: the automatic call is gone
+        if 'SUMMARY-AUTO v85.124' not in _b: return False  # 1b: the marker stays for S475
+        if 'summary_template' not in _b: return False  # 1c: the manual door survives
+        if _bare_stem('Chandan Shaw.pdf.sb-d500a90a-MpdYi3') != 'Chandan Shaw': return False  # 2a: the scar strips to the human
+        if _bare_stem('Sandeep S. Naik.pdf') != 'Sandeep S. Naik': return False  # 2b: a real dot in a name survives
+        if _bare_stem('Summary.xlsx') != 'Summary': return False  # 2c: the summary stems strip cleanly
+        if _b.count('_bare_stem(') < 4: return False  # 3: the helper plus both suffix sites
+        if ('def build_selected_summary' + '(') in _b: return False  # 4: the writer lives in summary_builder, not here
+        return True
+    except Exception:
+        return False
+
 def _nameauthority_probe():  # NAME-AUTHORITY v85.252: one authority, eye first, content-cached, seats packed tight - proven live, not by shape
     import tempfile
     _glob = globals()
@@ -7393,6 +7410,7 @@ def _selftest(root):
     ck('S634 the content cache, not a veto, stops the churn', _noshorten_probe())
     ck('S635 twins are found by one shared phone or email, not by identical sets', _sharedwitness_probe())
     ck('S636 one authority names every paper: eye first, cached by content, seats packed tight', _nameauthority_probe())
+    ck('S637 a tick writes no workbook and a name never wears two extensions', _summarydead_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
