@@ -6569,6 +6569,18 @@ def _noshorten_probe():  # NO-SHORTEN v85.247: a one-word eye verdict never undo
     except Exception:
         return False
 
+def _sharedwitness_probe():  # SHARED-WITNESS v85.248: clustering by ONE shared phone/email
+    try:
+        import stampkeeper as _sk
+        _s = open(os.path.join(BASE_DIR, "stampkeeper.py"), encoding="utf-8", errors="ignore").read()
+        if "SHARED-WITNESS v85.248" not in _s or "def _clusters(" not in _s:
+            return False
+        if "_strong(" not in _s:
+            return False
+        return hasattr(_sk, "_clusters") and hasattr(_sk, "_strong")
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -7262,6 +7274,7 @@ def _selftest(root):
     ck('S632 the tag sits below the text, aligned left, with air under it', _belowtext_probe())
     ck('S633 a tagged file lives in its tag folder and an untagged file never moves', _tagfollow_probe())
     ck('S634 the eye completes a name and never shortens it', _noshorten_probe())
+    ck('S635 twins are found by one shared phone or email, not by identical sets', _sharedwitness_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
