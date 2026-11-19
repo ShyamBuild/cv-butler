@@ -6486,6 +6486,19 @@ def _renameeye_probe():  # RENAME-EYE v85.244: Job Responsibilties (a heading) a
     except Exception:
         return False
 
+def _belowtext_probe():  # BELOW-TEXT v85.245: the master geometry - left-aligned, 13pt under the text, 18pt air
+    try:
+        _s = open(os.path.join(BASE_DIR, "stampkeeper.py"), encoding="utf-8", errors="ignore").read()
+        if "BELOW-FIRST v85.245" not in _s:
+            return False
+        if "(H - _lastb) - 13" not in _s and "(H - _lastb) - 13" not in _s.replace(chr(39), chr(34)):
+            return False
+        if "_top - h >= 18" not in _s:
+            return False
+        return "lines = [l for l in str(text).split(chr(10)) if l.strip()]" in _s
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -7176,6 +7189,7 @@ def _selftest(root):
     ck('S629 an empty tag write belongs to folders and a paper keeps its stage', _tagtiers_probe())
     ck('S630 no caller speaks a removal the writer refused', _callertruth_probe())
     ck('S631 a self-consistent heading still asks the eye before it keeps its name', _renameeye_probe())
+    ck('S632 the tag sits below the text, aligned left, with air under it', _belowtext_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
