@@ -2090,6 +2090,9 @@ def _eyename_of(p, trace=False, log=None):  # EYES-IN-SWEEP v85.90: the OCR-back
 _SWEEP_QUIET = {'on': False}  # SWEEP-QUIET v85.187: the chat asks the sweep for silence; the watcher keeps its own voice
 
 def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a property of the name, not of the ceremony's memory  # SWEEP-TRACE v85.70: with trace on, every file speaks its verdict, so a silent sweep names the guard that silenced it
+    try: tag_follow(root, lambda *a, **k: None)  # TAG-FOLLOW v85.246: every beat starts by obeying the tags
+    except Exception:
+        pass
     try:
         dirs = [root] + [os.path.join(root, s) for s in os.listdir(root) if os.path.isdir(os.path.join(root, s)) and not s.startswith('.') and not s.startswith('__')]  # DIRS-ALL v85.69: every immediate folder of the chair is swept
     except Exception:
@@ -2761,6 +2764,45 @@ def _eye_preferred_name(p, stem):  # RENAME-EYE v85.244: the name the paper shou
         except Exception:
             pass
     return disp
+
+def tag_follow(root, say=print):  # TAG-FOLLOW v85.246: the tag is the order - the folder obeys it
+    moved = 0
+    try:
+        _voc = _tag_vocab()
+        for dp, dn, fn in os.walk(root):
+            for f in fn:
+                if not f.lower().endswith(".pdf"):
+                    continue
+                p = os.path.join(dp, f)
+                try:
+                    st = [t for t in _tags_of(p) if t in _voc and t not in TAG_WAITING]
+                except Exception:
+                    continue
+                if not st:
+                    continue  # an untagged paper never moves by itself
+                want = os.path.join(root, st[0])
+                if os.path.abspath(os.path.dirname(p)) == os.path.abspath(want):
+                    continue
+                try:
+                    os.makedirs(want, exist_ok=True)
+                    q = os.path.join(want, f)
+                    if os.path.exists(q):
+                        _k = 1
+                        while os.path.exists(q):
+                            q = os.path.join(want, "%s_%d%s" % (os.path.splitext(f)[0], _k, os.path.splitext(f)[1]))
+                            _k += 1
+                    os.rename(p, q)
+                    moved += 1
+                    say("🧲 %s → %s (follows its tag)" % (f, st[0]))
+                    try:
+                        _safe_repath_ledgers(p, q)
+                    except Exception:
+                        pass
+                except Exception as _e:
+                    say("⚠️ could not move %s: %r" % (f, _e))
+    except Exception:
+        pass
+    return moved
 
 def _client_doc(p):  # CLIENT-DOC v85.216: the company name on a paper is the company document, not a human
     try:
@@ -6499,6 +6541,21 @@ def _belowtext_probe():  # BELOW-TEXT v85.245: the master geometry - left-aligne
     except Exception:
         return False
 
+def _tagfollow_probe():  # TAG-FOLLOW v85.246: tagged moves, untagged stays
+    try:
+        import tempfile as _tf
+        _d = _tf.mkdtemp()
+        _tagged = os.path.join(_d, "a.pdf"); _plain = os.path.join(_d, "b.pdf")
+        for _x in (_tagged, _plain):
+            open(_x, "wb").write(b"%PDF-1.4\n")
+        _tag_write(_tagged, ["Call Scheduled"])
+        _n = tag_follow(_d, lambda *a, **k: None)
+        _ok = os.path.exists(os.path.join(_d, "Call Scheduled", "a.pdf"))
+        _stay = os.path.exists(_plain)
+        return _n == 1 and _ok and _stay
+    except Exception:
+        return False
+
 def _nd_ok():  # NUMBER-AT-SOURCE v85.169: the fixture S544 leans on - the sieve refuses an email and keeps every number
     try:
         _r = _only_digits(['9217908487', 'manish_kumar1000@rediffmail.com', '+91-9992072806', '', '12345'])
@@ -7190,6 +7247,7 @@ def _selftest(root):
     ck('S630 no caller speaks a removal the writer refused', _callertruth_probe())
     ck('S631 a self-consistent heading still asks the eye before it keeps its name', _renameeye_probe())
     ck('S632 the tag sits below the text, aligned left, with air under it', _belowtext_probe())
+    ck('S633 a tagged file lives in its tag folder and an untagged file never moves', _tagfollow_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
