@@ -2940,7 +2940,9 @@ def tag_follow(root, say=print):  # TAG-FOLLOW v85.246: the tag is the order - t
                     continue
                 if not st:
                     continue  # an untagged paper never moves by itself
-                want = os.path.join(root, st[0])
+                _par = os.path.dirname(p)  # TAG-FOLLOW-POSITION v85.259: where the paper stands decides where its stage lives
+                _pos = os.path.dirname(_par) if os.path.basename(_par) in _voc else _par  # TAG-FOLLOW-POSITION v85.259: inside a stage, the position is the stage parent; inside a position, it is the parent itself
+                want = os.path.join(_pos, st[0])  # TAG-FOLLOW-POSITION v85.259: the stage is a SIBLING of its position, never a child of the house root (the 166-file collapse)
                 if os.path.abspath(os.path.dirname(p)) == os.path.abspath(want):
                     continue
                 try:
