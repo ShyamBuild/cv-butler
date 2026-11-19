@@ -1764,14 +1764,82 @@ def _name_for_store(k, v):  # NAME-AUTHORITY v85.252: bounded, never fatal - a l
     except Exception:
         pass
 
+_JD_HDR = ('responsibilities', 'duties', 'qualification', 'qualifications', 'requirements', 'job description', 'experience required')
+def _garbage_stem(stem):  # NAMING-PERFECT v85.254: a scar, a heading or a shout is no human - a stem carrying an office extension is a DOUBLE-EXT scar
+    _s = str(stem)
+    _w = _s.split()
+    if any(_e in _s.lower() for _e in _STRAY_EXT): return True
+    if not (2 <= len(_w) <= 4) or not all(w.isalpha() or chr(45) in w or chr(46) in w for w in _w): return True
+    if set(w.lower() for w in _w) & _NAME_STOP: return True
+    return False
+
+_KINDC = {}
+def _xlsx_head(p):  # NAMING-PERFECT v85.254: rows 1-3 of a sheet, read cheaply - the only header sniff the kind needs
+    try:
+        import openpyxl
+        _wb = openpyxl.load_workbook(p, read_only=True, data_only=True)
+        _ws = _wb.active
+        _v = []
+        for _row in _ws.iter_rows(min_row=1, max_row=3, values_only=True):
+            _v += [str(_c or '').strip().lower() for _c in _row]
+        _wb.close()
+        return ' | '.join(_v)
+    except Exception:
+        return ''
+
+def _paper_kind_of(p):  # NAMING-PERFECT v85.254: no OCR ever, fastest test first
+    try:
+        _bn = os.path.basename(p)
+    except Exception:
+        return 'other'
+    _low = _bn.lower(); _ext = os.path.splitext(_low)[1]
+    if _ext == '.xlsx':
+        _h = _xlsx_head(p)
+        if 'candidate name' in _h and 'position' in _h: return 'summary'
+        if any(w in _h for w in _JD_HDR): return 'jd'
+        return 'other'
+    if _ext in ('.eml', '.msg'): return 'jd'
+    if _ext == '.pdf':
+        _stem = os.path.splitext(_bn)[0]
+        if _jd_like_name(_low) or _portal_name(_low) or os.path.basename(os.path.dirname(p)) in ('JD Files', 'Summaries'): return 'jd'
+        try:  # NAMING-PERFECT v85.254: mail-born proof - a same-stem .eml/.msg in the position shelf makes this pdf a description
+            _cf = os.path.join(os.path.dirname(os.path.dirname(p)), 'Converted Files')
+            if os.path.isdir(_cf):
+                for _n in os.listdir(_cf):
+                    if os.path.splitext(_n)[0].lower() == _stem.lower() and os.path.splitext(_n)[1].lower() in ('.eml', '.msg'):
+                        return 'jd'
+        except Exception:
+            pass
+        if _is_desk_candidate(_bn) and not _garbage_stem(_stem): return 'cv'
+        return 'other'
+    return 'other'
+
+def paper_kind(p):  # NAMING-PERFECT v85.254: the paper declares its kind before any eye is asked, and the answer is remembered per content version
+    try:
+        _st = os.stat(p)
+        _k = (os.path.realpath(p), _st.st_size, getattr(_st, 'st_mtime_ns', 0))
+    except Exception:
+        _k = None
+    if _k is not None and _k in _KINDC:
+        return _KINDC[_k]
+    _kind = _paper_kind_of(p)
+    if _k is not None:
+        if len(_KINDC) > 6000: _KINDC.clear()
+        _KINDC[_k] = _kind
+    return _kind
+
 def name_for(p, eye=None):  # NAME-AUTHORITY v85.252: ONE authority for every rename path - the EYE first, the brain second, the case law last, then the content cache answers
     try:
         _st = os.stat(p)
     except Exception:
         return ''
-    key = str(_st.st_size) + chr(124) + str(int(_st.st_mtime))  # NAME-AUTHORITY v85.252: the key is the content version, exactly as the master named it
+    key = str(_st.st_size) + chr(124) + str(getattr(_st, 'st_mtime_ns', int(_st.st_mtime * 1000000000)))  # NAME-PERFECT v85.254: the key carries NANOSECONDS, so two papers written in one second never share a decision  # NAME-AUTHORITY v85.252: the key is the content version, exactly as the master named it
     _c = _name_for_cache()
     if key in _c:
+        return _c[key] or ''
+    if paper_kind(p) != 'cv':  # NAMING-PERFECT v85.254: only a CV is named here - a JD, a summary, a scar, an xlsx or a mail never pays an eye
+        _name_for_store(key, '')
+        return ''
         return _c[key] or ''
     _eye = ''
     try:
@@ -6644,6 +6712,44 @@ def _tagfollow_probe():  # TAG-FOLLOW v85.246: tagged moves, untagged stays
     except Exception:
         return False
 
+def _namingperfect_probe():  # NAMING-PERFECT v85.254: only a CV pays an eye, and the kind is decided before any read of the paper - proven live
+    import tempfile
+    _g = globals(); _real = _g['_eyename_of']; _calls = []
+    try:
+        _g['_eyename_of'] = lambda _p, **k: (_calls.append(_p), 'SUMAN KUMAR')[1]
+        _d = tempfile.mkdtemp(prefix='np_')
+        for _nm in ('JD - Sales Manager.pdf', 'resdex report.pdf', 'Chandan Shaw.pdf.sb-9f2.pdf', 'sheet.xlsx', 'mail.eml'):
+            _p = os.path.join(_d, _nm); open(_p, 'wb').write(b'x')
+            if name_for(_p) != '': return False
+        if len(_calls) != 0: return False  # 1: no eye for a JD, a portal name, a scar, a sheet or a mail
+        _cv = os.path.join(_d, 'Suman Kumar.pdf'); open(_cv, 'wb').write(b'y' * 16)
+        _n = name_for(_cv)
+        if _n != 'Suman Kumar': return False  # 2a: a CV asks the eye and the case law titles it
+        if len(_calls) != 1: return False
+        if name_for(_cv) != _n or len(_calls) != 1: return False  # 2b: cached - no second eye
+        _pos = tempfile.mkdtemp(prefix='np_pos_'); _stage = os.path.join(_pos, 'Ready for Manager Review'); os.makedirs(_stage)
+        _cf = os.path.join(_pos, 'Converted Files'); os.makedirs(_cf)
+        open(os.path.join(_cf, 'Offer Letter.msg'), 'wb').write(b'z')
+        _mb = os.path.join(_stage, 'Offer Letter.pdf'); open(_mb, 'wb').write(b'z' * 8)
+        if paper_kind(_mb) != 'jd': return False  # 3: mail-born is a description, never a person
+        import openpyxl
+        def _mk(_name, _hdr):
+            _wb = openpyxl.Workbook(); _ws = _wb.active; _ws.append(_hdr); _wb.save(os.path.join(_d, _name)); _wb.close()
+        _mk('Ready Sheet.xlsx', ['Candidate Name', 'Position', 'Total Experience'])
+        _mk('JD Sheet.xlsx', ['Responsibilities', 'Qualification'])
+        if paper_kind(os.path.join(_d, 'Ready Sheet.xlsx')) != 'summary': return False  # 4a: the master's sheet stays a summary
+        if paper_kind(os.path.join(_d, 'JD Sheet.xlsx')) != 'jd': return False  # 4b: an xlsx description is a JD
+        if paper_kind(_cv) != 'cv': return False
+        _b = open(__file__, encoding='utf-8', errors='ignore').read()
+        if ('def paper_kind' + '(') not in _b: return False  # 5a
+        if 'paper_kind(p)' not in _b: return False  # 5b: the gate really asks
+        if 'st_mtime_ns' not in _b: return False  # 5c: the nanosecond key
+        return True
+    except Exception:
+        return False
+    finally:
+        _g['_eyename_of'] = _real
+
 def _summarydead_probe():  # SUMMARY-DEAD v85.253: the tick writes no workbook, and a name never wears two extensions - proven live
     try:
         _b = open(__file__, encoding='utf-8', errors='ignore').read()
@@ -6667,7 +6773,7 @@ def _nameauthority_probe():  # NAME-AUTHORITY v85.252: one authority, eye first,
     try:
         _glob['_eyename_of'] = lambda _p, **k: (_calls.append(_p), 'SUMAN KUMAR')[1]
         _d = tempfile.mkdtemp(prefix='na_')
-        _f = os.path.join(_d, 'Resume.pdf')
+        _f = os.path.join(_d, 'Suman Kumar.pdf')
         open(_f, 'wb').write(b'x' * 64)
         _n1 = name_for(_f)
         _n2 = name_for(_f)
@@ -7411,6 +7517,7 @@ def _selftest(root):
     ck('S635 twins are found by one shared phone or email, not by identical sets', _sharedwitness_probe())
     ck('S636 one authority names every paper: eye first, cached by content, seats packed tight', _nameauthority_probe())
     ck('S637 a tick writes no workbook and a name never wears two extensions', _summarydead_probe())
+    ck('S638 only a CV pays an eye and the kind is decided before the name', _namingperfect_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
