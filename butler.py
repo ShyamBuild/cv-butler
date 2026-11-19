@@ -1828,6 +1828,9 @@ def paper_kind(p):  # NAMING-PERFECT v85.254: the paper declares its kind before
         _KINDC[_k] = _kind
     return _kind
 
+def _no_eye(p):  # DESK-FAST v85.255: the cheap witness - an empty verdict tells name_for to skip the eye entirely
+    return ''
+
 def name_for(p, eye=None):  # NAME-AUTHORITY v85.252: ONE authority for every rename path - the EYE first, the brain second, the case law last, then the content cache answers
     try:
         _st = os.stat(p)
@@ -2326,7 +2329,7 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
                 continue
             _garbage0 = not (2 <= len(_stem_norm(stem).split()) <= 4 and all(w.isalpha() or '-' in w or '.' in w for w in _stem_norm(stem).split())) or bool(set(_stem_norm(stem).lower().split()) & _NAME_STOP) or os.path.splitext(stem)[1].lower() in ('.pdf', '.doc', '.docx', '.rtf')  # GARBAGE-FIRST v85.130  # DOUBLE-EXT v85.136: a stem that wears its own extension is a download scar, never a human  # GARBAGE-FIRST v85.130: the stem is weighed before any eye is asked, so a heading or scar never borrows the filename heuristic's voice
             disp = _display_name(stem)
-            _nfd = name_for(p)  # NAME-AUTHORITY v85.252: the ONE authority answers first - the eye, then the brain, cached by content version
+            _nfd = name_for(p, eye=_no_eye)  # DESK-FAST v85.255: a desk walk never pays OCR - the text brain names, the CLICK asks the eye  # NAME-AUTHORITY v85.252: the ONE authority answers first - the eye, then the brain, cached by content version
             if _nfd: disp = _nfd
             if _name_key(disp) == _name_key(stem):  # RENAME-EYE v85.244: the heading agrees with itself - ask the eye
              try:
@@ -6712,6 +6715,29 @@ def _tagfollow_probe():  # TAG-FOLLOW v85.246: tagged moves, untagged stays
     except Exception:
         return False
 
+def _deskfast_probe():  # DESK-FAST v85.255: a desk walk names without the eye - proven live
+    import tempfile
+    _g = globals(); _real = _g['_eyename_of']; _calls = []
+    try:
+        _g['_eyename_of'] = lambda _p, **k: (_calls.append(_p), 'SUMAN KUMAR')[1]
+        _d = tempfile.mkdtemp(prefix='df_')
+        _cv = os.path.join(_d, 'Suman Kumar.pdf'); open(_cv, 'wb').write(b'q' * 24)
+        _n = name_for(_cv, eye=_no_eye)
+        if len(_calls) != 0: return False  # 1: the desk path asks no eye
+        if _n != 'Suman Kumar': return False  # 2: the brain still names it (the stem is human-shaped)
+        _cv2 = os.path.join(_d, 'Suman Kumari.pdf'); open(_cv2, 'wb').write(b'q' * 32)
+        _n2 = name_for(_cv2)
+        if len(_calls) != 1: return False  # 3: an explicit call still asks the eye once
+        if _n2 != 'Suman Kumar': return False
+        _b = open(__file__, encoding='utf-8', errors='ignore').read()
+        if 'eye=_no_eye' not in _b: return False  # 4: the sweep really passes it
+        if ('def _no_eye' + '(') not in _b: return False
+        return True
+    except Exception:
+        return False
+    finally:
+        _g['_eyename_of'] = _real
+
 def _namingperfect_probe():  # NAMING-PERFECT v85.254: only a CV pays an eye, and the kind is decided before any read of the paper - proven live
     import tempfile
     _g = globals(); _real = _g['_eyename_of']; _calls = []
@@ -7518,6 +7544,7 @@ def _selftest(root):
     ck('S636 one authority names every paper: eye first, cached by content, seats packed tight', _nameauthority_probe())
     ck('S637 a tick writes no workbook and a name never wears two extensions', _summarydead_probe())
     ck('S638 only a CV pays an eye and the kind is decided before the name', _namingperfect_probe())
+    ck('S639 a desk walk names without the eye and the click still asks it', _deskfast_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
