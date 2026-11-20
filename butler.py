@@ -5550,6 +5550,13 @@ def main():
         except Exception: pass
         try:
             # SUMMARY-AUTO v85.124: RETIRED by SUMMARY-DEAD v85.253 - a watcher tick NEVER writes a workbook; the manual doors (summary_template, build_selected_summary) are the only writers and only on the master word  # SUMMARY-DEAD v85.253: this call fired on every Ready-tagged pdf and never rested until the tag came off (24 books in one stage)
+            try:  # STAMP-ON-ARRIVAL v85.263: a CV landing in Ready for Manager Review gets its twin block, by itself
+                if os.path.basename(os.path.dirname(p)) == "Ready for Manager Review":
+                    import stampkeeper as _sk
+                    _st = _sk.stamp_on_arrival(p)
+                    if _st and _st[0] in ("stamped", "report"): print("🖋️ [stamp] %s" % _st[1], flush=True)
+            except Exception as _se:
+                print("⚠️ [stamp] skipped: %s" % _se, flush=True)
             B.route(p, print)
         except Exception as e:
             log.error(f"route error {p}: {e}")
@@ -6773,6 +6780,25 @@ def _namingperfect_probe():  # NAMING-PERFECT v85.254: only a CV pays an eye, an
     finally:
         _g['_eyename_of'] = _real
 
+def _stamponarrival_probe():  # STAMP-ON-ARRIVAL v85.263: the gates hold - proven on a temp tree, never on a real paper
+    import tempfile as _tf
+    try:
+        import stampkeeper as _sk2
+        if not hasattr(_sk2, 'stamp_on_arrival'): return False
+        d = _tf.mkdtemp(prefix='soa_')
+        pos = os.path.join(d, 'Pos'); stg = os.path.join(pos, 'Ready for Manager Review'); os.makedirs(stg)
+        bare = os.path.join(pos, 'elsewhere.pdf'); open(bare, 'wb').write(b'%PDF-1.4' + chr(10).encode())
+        if _sk2.stamp_on_arrival(bare)[0] != 'skip': return False  # 1: not a Ready arrival -> skip
+        r = os.path.join(stg, 'new.pdf'); open(r, 'wb').write(b'%PDF-1.4' + chr(10).encode())
+        got = _sk2.stamp_on_arrival(r)
+        if got[0] != 'report': return False  # 2: no readable witness or no stamped twin -> report, never invent
+        src = open(__file__, encoding='utf-8', errors='ignore').read()
+        if 'STAMP-ON-ARRIVAL v85.263' not in src: return False
+        return 'stamp_on_arrival(p)' in src  # 3: the watcher really asks
+    except Exception:
+        return False
+
+
 def _summarydead_probe():  # SUMMARY-DEAD v85.253: the tick writes no workbook, and a name never wears two extensions - proven live
     try:
         _b = open(__file__, encoding='utf-8', errors='ignore').read()
@@ -7542,6 +7568,7 @@ def _selftest(root):
     ck('S637 a tick writes no workbook and a name never wears two extensions', _summarydead_probe())
     ck('S638 only a CV pays an eye and the kind is decided before the name', _namingperfect_probe())
     ck('S639 a desk walk names without the eye and the click still asks it', _deskfast_probe())
+    ck('S640 a CV landing in Ready for Manager Review receives its twin block by itself', _stamponarrival_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
