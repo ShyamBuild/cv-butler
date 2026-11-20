@@ -697,7 +697,8 @@ def _wa_send(phone, text, say=print, card=None, **kw):  # WA-DOOR-ONE v85.225  #
     except Exception:
         pass
     import wa as _wa
-    return wa.send_review(phone, text, say, **kw)
+    import wa as _wa  # WA-IMPORT v85.279: the module was never imported here - every send died with NameError
+    return _wa.send_review(phone, text, say, **kw)
 
 def _stat_render(chair, pending, waiting, ready, wa):  # DASHBOARD v85.184  # CALM-VOICE v85.213: counts only - the card names the man, the prompt keeps the tray
     return '📥 %s pending · ⏳ %s waiting · 🏆 %s ready' % (pending, waiting, ready) + chr(10)
