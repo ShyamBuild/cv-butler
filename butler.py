@@ -5546,11 +5546,7 @@ def main():
         try:
             if not hasattr(B, 'journal'): B._jload()
             _jk = B._jkey(p)
-            if _jk and B.journal.get(p) == _jk: return  # WORK-DOOR SKIP v63
-        except Exception: pass
-        try:
-            # SUMMARY-AUTO v85.124: RETIRED by SUMMARY-DEAD v85.253 - a watcher tick NEVER writes a workbook; the manual doors (summary_template, build_selected_summary) are the only writers and only on the master word  # SUMMARY-DEAD v85.253: this call fired on every Ready-tagged pdf and never rested until the tag came off (24 books in one stage)
-            try:  # STAMP-ON-ARRIVAL v85.263: a CV landing in Ready for Manager Review gets its twin block, by itself
+            try:  # INSTANT-STAMP v85.272 (before the skip)  # STAMP-ON-ARRIVAL v85.263: a CV landing in Ready for Manager Review gets its twin block, by itself
                 if os.path.basename(os.path.dirname(p)) == "Ready for Manager Review":
                     # STAMP-ISOLATE v85.270: the stamp act runs in a CHILD process - a native crash there can never kill the watcher
                     _code = 'import sys, stampkeeper as s; r = s.stamp_on_arrival(sys.argv[1]); print(r[0] + chr(58) + str(r[1]))'
@@ -5560,6 +5556,10 @@ def main():
                     # STAMP-NAME v85.271: the child process prints its own result above - the in-process _st no longer exists, and asking for it aborted every stamp act (name _st is not defined)
             except Exception as _se:
                 print("⚠️ [stamp] skipped: %s" % _se, flush=True)
+            if _jk and B.journal.get(p) == _jk: return  # WORK-DOOR SKIP v63
+        except Exception: pass
+        try:
+            # SUMMARY-AUTO v85.124: RETIRED by SUMMARY-DEAD v85.253 - a watcher tick NEVER writes a workbook; the manual doors (summary_template, build_selected_summary) are the only writers and only on the master word  # SUMMARY-DEAD v85.253: this call fired on every Ready-tagged pdf and never rested until the tag came off (24 books in one stage)
             B.route(p, print)
         except Exception as e:
             log.error(f"route error {p}: {e}")
