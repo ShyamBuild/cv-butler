@@ -1734,8 +1734,12 @@ def _strip_salutation(s):  # NAME-NO-SALUTATION v85.232: the master wants the CV
 
 def _display_name(s):  # CASE-LAW v85.35: the original butler's rule returns - a shout is not a name: RAHUL KUMAR becomes Rahul Kumar, single letters stay capital, short initial-blocks keep their form
     s = _strip_salutation(s)  # NAME-NO-SALUTATION v85.232: MR. SURESH KUMAR is Suresh Kumar
+    def _undouble(x):  # NAME-ACCURACY v85.276: KKrraannttii -> Kranti
+        if isinstance(x, str) and x.isalpha() and len(x) >= 4 and x[0::2].lower() == x[1::2].lower():
+            return x[0::2]
+        return x
     out = []
-    for w in str(s).split():
+    for w in [_undouble(_x) for _x in str(s).split()]:  # NAME-ACCURACY v85.276
         if len(w) == 1: out.append(w.upper())
         elif w.isalpha() and w.isupper() and len(w) <= 3: out.append(w)
         elif w.isalpha() and (w.isupper() or w.islower()): out.append(w.capitalize())
@@ -2089,6 +2093,7 @@ _NAME_STOP |= set('by powered resumegemini gemini indeed monster naukri shine ge
 _NAME_STOP |= set('basic knowledge technical qualification curriculum vitae'.split())  # STOP-EXT6 v85.130: section headings are never people, so a stem wearing one is garbage and the gated deed heals it on click and on tick
 _NAME_STOP |= set('responsibilities responsbilities duties deliverables'.split())  # SCAR-STOP v85.158: a JD section label under a CV is a scar, not a human - GARBAGE-WIDE and the service _garbage test now re-eye the paper instead of calling the eye's name 'a different human'
 _NAME_STOP |= set('automobile engineering mechanical electrical electronics civil computer science diploma undergraduate graduate degree'.split())  # STOP-EXT5 v85.121: degree and discipline labels never outrank a human name anchored by the candidate email
+_NAME_STOP |= set('classified confidential biodata declaration disclaimer objective-summary'.split())  # NAME-ACCURACY v85.276: a banner is not a person
 def _stem_inside_name(stem, name):  # NAME-COMPLETE v85.126: a shortened coat is the same human - when every token of the stem appears inside the eye's name in order, the deed completes the name instead of proposing; a stranger's tokens still only propose
     a = [t for t in re.sub(r'[^a-z ]', ' ', (stem or '').lower()).split() if t]
     b = [t for t in re.sub(r'[^a-z ]', ' ', (name or '').lower()).split() if t]
