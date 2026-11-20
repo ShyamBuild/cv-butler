@@ -1774,7 +1774,7 @@ def _garbage_stem(stem):  # NAMING-PERFECT v85.254: a scar, a heading or a shout
     _w = _s.split()
     if any(_e in _s.lower() for _e in _STRAY_EXT): return True
     if not (2 <= len(_w) <= 4) or not all(w.isalpha() or chr(45) in w or chr(46) in w for w in _w): return True
-    if set(w.lower() for w in _w) & _NAME_STOP: return True
+    if set(w.lower().strip(chr(45) + chr(46)) for w in _w) & _NAME_STOP: return True  # ADDRESS-GUARD v85.277: a hyphen or dot does not hide a stop word
     return False
 
 _KINDC = {}
@@ -2094,6 +2094,7 @@ _NAME_STOP |= set('basic knowledge technical qualification curriculum vitae'.spl
 _NAME_STOP |= set('responsibilities responsbilities duties deliverables'.split())  # SCAR-STOP v85.158: a JD section label under a CV is a scar, not a human - GARBAGE-WIDE and the service _garbage test now re-eye the paper instead of calling the eye's name 'a different human'
 _NAME_STOP |= set('automobile engineering mechanical electrical electronics civil computer science diploma undergraduate graduate degree'.split())  # STOP-EXT5 v85.121: degree and discipline labels never outrank a human name anchored by the candidate email
 _NAME_STOP |= set('classified confidential biodata declaration disclaimer objective-summary'.split())  # NAME-ACCURACY v85.276: a banner is not a person
+_NAME_STOP |= set('vill village post p o dist district tehsil taluka near ward h no house pin pincode address residence'.split())  # ADDRESS-GUARD v85.277: a postal line is never a person
 def _stem_inside_name(stem, name):  # NAME-COMPLETE v85.126: a shortened coat is the same human - when every token of the stem appears inside the eye's name in order, the deed completes the name instead of proposing; a stranger's tokens still only propose
     a = [t for t in re.sub(r'[^a-z ]', ' ', (stem or '').lower()).split() if t]
     b = [t for t in re.sub(r'[^a-z ]', ' ', (name or '').lower()).split() if t]
