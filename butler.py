@@ -5552,8 +5552,11 @@ def main():
             # SUMMARY-AUTO v85.124: RETIRED by SUMMARY-DEAD v85.253 - a watcher tick NEVER writes a workbook; the manual doors (summary_template, build_selected_summary) are the only writers and only on the master word  # SUMMARY-DEAD v85.253: this call fired on every Ready-tagged pdf and never rested until the tag came off (24 books in one stage)
             try:  # STAMP-ON-ARRIVAL v85.263: a CV landing in Ready for Manager Review gets its twin block, by itself
                 if os.path.basename(os.path.dirname(p)) == "Ready for Manager Review":
-                    import stampkeeper as _sk
-                    _st = _sk.stamp_on_arrival(p)
+                    # STAMP-ISOLATE v85.270: the stamp act runs in a CHILD process - a native crash there can never kill the watcher
+                    _code = 'import sys, stampkeeper as s; r = s.stamp_on_arrival(sys.argv[1]); print(r[0] + chr(58) + str(r[1]))'
+                    _rc = subprocess.run([sys.executable, '-c', _code, p], capture_output=True, text=True, timeout=25)
+                    _out = (_rc.stdout or '').strip()
+                    if _out and not _out.startswith('skip'): print('🖋️ [stamp] %s' % _out, flush=True)
                     if _st and _st[0] in ("stamped", "report"): print("🖋️ [stamp] %s" % _st[1], flush=True)
             except Exception as _se:
                 print("⚠️ [stamp] skipped: %s" % _se, flush=True)
