@@ -1835,6 +1835,29 @@ def paper_kind(p):  # NAMING-PERFECT v85.254: the paper declares its kind before
 def _no_eye(p):  # DESK-FAST v85.255: the cheap witness - an empty verdict tells name_for to skip the eye entirely
     return ''
 
+def _header_ocr_name(p):  # HEADER-EYE v85.278: the name may be drawn into the header - read the top of the page with the eye
+    try:
+        t = extract_text_ocr(p) or ''
+    except Exception:
+        return ''
+    for line in t.split(chr(10))[:8]:
+        s = (line or '').strip()
+        if not s or len(s) > 60:
+            continue
+        ws = s.split()
+        if not (1 <= len(ws) <= 4):
+            continue
+        if not all(w.isalpha() or chr(45) in w or chr(46) in w for w in ws):
+            continue
+        if set(w.lower().strip(chr(45) + chr(46)) for w in ws) & _NAME_STOP:
+            continue
+        cn = _canonical_person_name(s) or ''
+        nm = _display_name(cn or s) or ''
+        if nm and not _garbage_stem(nm):
+            return nm
+    return ''
+
+
 def name_for(p, eye=None):  # NAME-AUTHORITY v85.252: ONE authority for every rename path - the EYE first, the brain second, the case law last, then the content cache answers
     try:
         _st = os.stat(p)
@@ -1864,6 +1887,8 @@ def name_for(p, eye=None):  # NAME-AUTHORITY v85.252: ONE authority for every re
     if not nm and not _fast:  # CHAT-RESTORE v85.257: a desk walk takes no text path at all
         try: nm = _display_name(_name_from_first_line(p) or '') or ''
         except Exception: nm = ''
+    if not nm:  # HEADER-EYE v85.278: the eye is the last honest witness before the filename is trusted
+        nm = _header_ocr_name(p) or ''
     if not nm:  # NAME-AUTHORITY v85.252: the filename heuristic is LAST and only for a human-shaped stem (GARBAGE-FIRST)
         _stem = os.path.splitext(os.path.basename(p))[0]
         _ws = _stem.split()
