@@ -6780,6 +6780,24 @@ def _namingperfect_probe():  # NAMING-PERFECT v85.254: only a CV pays an eye, an
     finally:
         _g['_eyename_of'] = _real
 
+def _movestamp_probe():  # MOVE-STAMP v85.267: the rect moves, the stamp's words and look do not
+    import tempfile as _t
+    try:
+        import stampkeeper as _sk3
+        if not hasattr(_sk3, 'move_stamp'): return False
+        src = open(os.path.join(BASE_DIR, 'stampkeeper.py'), encoding='utf-8', errors='ignore').read()
+        if 'MOVE-STAMP v85.267' not in src: return False
+        _i = src.index('def move_stamp(')
+        _j = src.index('def stamp_on_arrival(')
+        body = src[_i:_j]
+        if '/Contents' in body: return False  # MOVE-STAMP: a move never writes the words
+        if '/DA' in body or '/DS' in body: return False  # MOVE-STAMP: a move never writes the look
+        if '/Rect' not in body: return False  # MOVE-STAMP: the rectangle IS the act
+        return True
+    except Exception:
+        return False
+
+
 def _stamponarrival_probe():  # STAMP-ON-ARRIVAL v85.263: the gates hold - proven on a temp tree, never on a real paper
     import tempfile as _tf
     try:
@@ -7569,6 +7587,7 @@ def _selftest(root):
     ck('S638 only a CV pays an eye and the kind is decided before the name', _namingperfect_probe())
     ck('S639 a desk walk names without the eye and the click still asks it', _deskfast_probe())
     ck('S640 a CV landing in Ready for Manager Review receives its twin block by itself', _stamponarrival_probe())
+    ck('S642 a stamp may be MOVED but never rewritten - the rect moves, the words and the look stay', _movestamp_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
