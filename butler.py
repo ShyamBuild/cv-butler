@@ -5557,7 +5557,7 @@ def main():
                     _rc = subprocess.run([sys.executable, '-c', _code, p], capture_output=True, text=True, timeout=25)
                     _out = (_rc.stdout or '').strip()
                     if _out and not _out.startswith('skip'): print('🖋️ [stamp] %s' % _out, flush=True)
-                    if _st and _st[0] in ("stamped", "report"): print("🖋️ [stamp] %s" % _st[1], flush=True)
+                    # STAMP-NAME v85.271: the child process prints its own result above - the in-process _st no longer exists, and asking for it aborted every stamp act (name _st is not defined)
             except Exception as _se:
                 print("⚠️ [stamp] skipped: %s" % _se, flush=True)
             B.route(p, print)
