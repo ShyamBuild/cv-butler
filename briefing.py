@@ -1854,6 +1854,7 @@ if __name__ == "__main__":
         live = [r for r in live if os.path.abspath(r) == os.path.abspath(root)
                 or os.path.abspath(r).startswith(os.path.abspath(root) + os.sep)
                 or os.path.abspath(root).startswith(os.path.abspath(r) + os.sep)]
+        live = [r for r in live if os.path.abspath(r) != os.path.abspath(root)]  # FOCUS-KEEP v85.290: a watcher on the HOUSE ROOT serves every position, so it must never override the position the master clicked with Ctrl+B
         if live:
             pickr = live[0]
             if len(live) > 1:
