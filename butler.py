@@ -2969,9 +2969,9 @@ def tag_follow(root, say=print):  # TAG-FOLLOW v85.246: the tag is the order - t
                     st = [t for t in _tags_of(p) if t in _voc]  # TAG-ALL v85.292: EVERY tag orders the folder - there is no waiting-tag category (master S9)
                 except Exception:
                     continue
+                if len(st) > 1:
+                    continue  # TAG-ONE v85.292 / TAG-ONE-FIX v85.293: a paper wearing several tags stays where it is until only one remains
                 if not st:
-                    if len(st) > 1:
-                        continue  # TAG-ONE v85.292: a paper wearing several tags stays where it is until only one remains
                     continue  # an untagged paper never moves by itself
                 _par = os.path.dirname(p)  # TAG-FOLLOW-POSITION v85.259: where the paper stands decides where its stage lives
                 _pos = os.path.dirname(_par) if os.path.basename(_par) in _voc else _par  # TAG-FOLLOW-POSITION v85.259: inside a stage, the position is the stage parent; inside a position, it is the parent itself
