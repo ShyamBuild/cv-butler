@@ -1887,7 +1887,7 @@ def name_for(p, eye=None):  # NAME-AUTHORITY v85.252: ONE authority for every re
     if not nm and not _fast:  # CHAT-RESTORE v85.257: a desk walk takes no text path at all
         try: nm = _display_name(_name_from_first_line(p) or '') or ''
         except Exception: nm = ''
-    if not nm:  # HEADER-EYE v85.278: the eye is the last honest witness before the filename is trusted
+    if not nm and not _fast:  # HEADER-EYE-FAST v85.291: the OCR is a last resort for the rename path - a desk walk never pays 25s for it
         nm = _header_ocr_name(p) or ''
     if not nm:  # NAME-AUTHORITY v85.252: the filename heuristic is LAST and only for a human-shaped stem (GARBAGE-FIRST)
         _stem = os.path.splitext(os.path.basename(p))[0]
