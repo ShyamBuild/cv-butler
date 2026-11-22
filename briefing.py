@@ -279,7 +279,7 @@ def _fmt_tpl(tpl, hit, f, name):
     except Exception:
         _dz = ''
     where = f"Company: {cli}" + (f" | Location: {loc}" if loc else "")
-    at = cli + (f", {loc}" if loc else "")
+    at = cli + (f", {loc}" if loc and str(loc).strip().lower() not in (str(title) + chr(32) + str(cli)).lower() else "")  # WHERE-DUP v85.280: never name the city twice (New Delhi role at ..., Delhi)
     try:
         return tpl.format(name=name, position=title, company=cli, location=loc or '-', where_line=where, where=at, designation=_dz, client=cli)  # CLIENT-KEY v84.42: legacy templates ask for {client}; the living registry answers
     except Exception:
