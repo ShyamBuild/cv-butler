@@ -2959,7 +2959,15 @@ def _eye_preferred_name(p, stem):  # RENAME-EYE v85.244: the name the paper shou
 def tag_follow(root, say=print):  # TAG-FOLLOW v85.246: the tag is the order - the folder obeys it
     moved = 0
     try:
-        _voc = _tag_vocab()
+        _voc = set(_tag_vocab())  # TAG-LEARN v85.294: the pipeline the house already knows ...
+        for _dp, _dn, _fn in os.walk(root):  # TAG-LEARN v85.294: ... plus EVERY tag the papers actually wear
+            for _f in _fn:
+                if not _f.lower().endswith('.pdf'):
+                    continue
+                try:
+                    _voc.update(_tags_of(os.path.join(_dp, _f)))
+                except Exception:
+                    pass
         for dp, dn, fn in os.walk(root):
             for f in fn:
                 if not f.lower().endswith(".pdf"):
