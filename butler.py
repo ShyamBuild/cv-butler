@@ -1791,6 +1791,18 @@ def _xlsx_head(p):  # NAMING-PERFECT v85.254: rows 1-3 of a sheet, read cheaply 
     except Exception:
         return ''
 
+def _content_is_cv(p, text=None):  # KIND-BY-CONTENT v85.299: a junk filename is no evidence about the paper - its own words say whether it is a CV
+    try:
+        t = text if text is not None else (extract_text(p) or '')
+    except Exception:
+        return False
+    tl = (t or '').lower()
+    if len(tl) < 400: return False
+    _wired = bool(re.search(r"[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}", tl)) or bool(re.search(r"(?<!\d)[6-9]\d{9}(?!\d)", tl))
+    if not _wired: return False
+    _cvw = ("experience", "education", "skills", "career", "employment", "profile", "curriculum vitae", "resume", "achievement", "qualification")
+    return sum(1 for _w in _cvw if _w in tl) >= 2
+
 def _paper_kind_of(p):  # NAMING-PERFECT v85.254: no OCR ever, fastest test first
     try:
         _bn = os.path.basename(p)
@@ -1815,6 +1827,7 @@ def _paper_kind_of(p):  # NAMING-PERFECT v85.254: no OCR ever, fastest test firs
         except Exception:
             pass
         if _is_desk_candidate(_bn) and not _garbage_stem(_stem): return 'cv'
+        if _content_is_cv(p): return 'cv'  # KIND-BY-CONTENT v85.299: only AFTER the JD tests, and only on its own words
         return 'other'
     return 'other'
 
@@ -2129,6 +2142,19 @@ def _stem_inside_name(stem, name):  # NAME-COMPLETE v85.126: a shortened coat is
         if i < len(a) and a[i] == t: i += 1
     return i == len(a)
 
+def _name_head_cut(s):  # NAME-HEAD-CUT v85.299: a CV/RESUME prefix and a credential tail are not part of the name
+    s = (s or '').strip()
+    m = re.match(r'(?i)^(?:curriculum\s+vitae|resume|c\.?v\.?s?)\s*[:.\-\u2013\u2014|]?\s*(.+)$', s)
+    if m:
+        rest = m.group(1).strip()
+        if len(rest.split()) >= 2 or re.match(r'(?i)^(?:curriculum\s+vitae|resume|c\.?v\.?s?)\s*[:.\-\u2013\u2014|]', s):
+            s = rest
+    if ',' in s or '|' in s or ';' in s:
+        head = re.split(r'[,|;]', s)[0].strip()
+        if 2 <= len(head.split()) <= 4:
+            s = head
+    return s
+
 def _name_from_head_lines(lines):  # ACCEPTANCE v85.101: the naming brain as a pure function of head lines - fixtures test it inside the gate, so ALL GREEN means WORKS, not merely lawful  # DEEP-CAPS v85.108: two adjacent one-word all-caps lines join into one human  # HEAD-SCOPE v85.109: a head wears its name in its first three breaths  # ROLE-BENEATH v85.110: a one-line caps name wears its role beneath  # EMAIL-ANCHOR v85.111: the master's own anchor - a caps line whose first or last word lives inside the email local part is the human, wherever it sits on the page
     _mls = [re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:-]?', l.strip(), flags=re.I)[0].strip() for l in lines if l.strip()][:2]
     _mmail = ''
@@ -2151,6 +2177,7 @@ def _name_from_head_lines(lines):  # ACCEPTANCE v85.101: the naming brain as a p
             _j += 1
     ls = [re.sub(r'^(?:Name|Candidate|Applicant)\s*:\s*', '', re.split(r'\s+(?:Phone|Mob|Tel|E-Mail|Email)[:-]?', l.strip(), flags=re.I)[0].strip(' |·\t')) for l in lines if l.strip()][:8]  # PIPE-SCAN v85.125: pipe and bullet scars are stripped before the brain reads the head  # LABEL-STRIP v85.131: a leading Name: or Candidate: label is a doorplate, not a word of the human
     ls = [re.sub(r'\s+\+?\(?\d[\d\s().-]{7,}\s*$', '', l) for l in ls]  # PHONE-TAIL v85.121: a phone printed beside a caps name is removed before the email anchor checks identity
+    ls = [_name_head_cut(l) for l in ls]  # NAME-HEAD-CUT v85.299: a CV prefix and a credential tail are not part of the name
     i = 0
     while i < len(ls) and i < 3:
         cands = [ls[i]]
@@ -6631,6 +6658,18 @@ def _tagonly_probe():  # TAG-ONLY v85.240  # NO-COUPLE v85.240: the flow moves n
     except Exception:
         return False
 
+def _namewise_probe():  # NAME-WISE v85.299: a junk filename never decides the kind, and the first breath may lead with CV/RESUME or trail a credential list
+    try:
+        _a = _name_from_head_lines(['Diwakar Pandey, BCA, MBA (HRD & OD)', '+91-8719837196, dibakarhrmlead@gmail.com'])
+        _b = _name_from_head_lines(['CV PANKAJ KUMAR', 'E-Mail: pankaj.anand@ymail.com'])
+        _c = _name_from_head_lines(['SUMAN KUMAR', 'Phone: 9876543210'])
+        _d = _content_is_cv('', text='Diwakar Pandey')
+        _e = _content_is_cv('', text=('experience education skills career employment profile qualification ' * 12) + ' x@y.com')
+        _f = _name_head_cut('CV Raman')
+        return (_a == 'Diwakar Pandey') and (_b == 'Pankaj Kumar') and (_c == 'Suman Kumar') and (_d is False) and (_e is True) and (_f == 'CV Raman')
+    except Exception:
+        return False
+
 def _tagtiers_probe():  # TAG-TIERS v85.242: an empty write belongs to a folder, a paper keeps a stage - proven live, not by shape
     import tempfile
     _d = None; _f = None
@@ -7632,6 +7671,7 @@ def _selftest(root):
     ck('S639 a desk walk names without the eye and the click still asks it', _deskfast_probe())
     ck('S640 a CV landing in Ready for Manager Review receives its twin block by itself', _stamponarrival_probe())
     ck('S642 a stamp may be MOVED but never rewritten - the rect moves, the words and the look stay', _movestamp_probe())
+    ck('S643 a junk filename is no evidence of kind, and a CV prefix or credential tail is not part of the name', _namewise_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
