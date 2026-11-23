@@ -6671,6 +6671,13 @@ def _tagonly_probe():  # TAG-ONLY v85.240  # NO-COUPLE v85.240: the flow moves n
     except Exception:
         return False
 
+def _firstverb_probe():  # FIRST-VERB v85.304: chat can be asked for one verb at the door, and asks for none by default
+    try:
+        _bf = open(os.path.join(BASE_DIR, "briefing.py"), encoding="utf-8").read()
+        return ("CVTOOL_FIRST_VERB" in _bf) and ("FIRST-VERB v85.304" in _bf) and ("do_up(_fv0" in _bf or "do_up(" in _bf)
+    except Exception:
+        return False
+
 def _identitywitness_probe():  # IDENTITY-WITNESS v85.301: a name never proves sameness - only a phone or an email does
     try:
         import stampkeeper as _sk5, inspect as _insp5
@@ -7714,6 +7721,7 @@ def _selftest(root):
     ck('S643 a junk filename is no evidence of kind, and a CV prefix or credential tail is not part of the name', _namewise_probe())
     ck('S644 a role or firm word never extends a name, and a cached verdict dies when the brain learns', _namewise2_probe())
     ck('S645 a name never proves two papers are one human - only a phone or an email does', _identitywitness_probe())
+    ck('S646 chat may be asked for one verb at the door, and asks for none by default', _firstverb_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())

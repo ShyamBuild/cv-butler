@@ -1837,6 +1837,10 @@ if __name__ == "__main__":
         import butler as _butler_refresh
         _butler_refresh._desk_refresh(root, print); _butler_refresh._SWEEP_QUIET['on'] = True  # DESK-REFRESH v85.148: the desk arrives already swept
         print(f"🤖 butler chat - 📂 {root}")
+        _fv0 = (os.environ.get("CVTOOL_FIRST_VERB") or "").strip()  # FIRST-VERB v85.304: the door may ask for one verb at entry
+        if _fv0:
+            try: do_up(_fv0[2:].strip() if _fv0.lower().startswith("up") else _fv0, root)
+            except Exception as _fve: print("⚠️ first verb skipped:", _fve)
         try:  # FOCUS-VOICE v85.227: the desk is named at the door, so a stale focus can never surprise a call
          _fv = _read_focus() or {}
          print(chr(32) * 3 + chr(127919) + ' desk: ' + str(_fv.get('display') or 'house root') + (' (' + str(_fv.get('client')) + ')' if _fv.get('client') else ''))
