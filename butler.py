@@ -2367,7 +2367,7 @@ def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a prope
                   except Exception: pass
                   continue
                  except Exception: pass
-                if not _SWEEP_QUIET.get('on'): _say_once('🛌 twin settled: %s rests in its suffix seat - a seated twin is a finished deed, never a pendulum' % x)  # TWIN-SETTLE v85.133  # SWEEP-QUIET v85.187: the chat stays clean; the watcher still says it
+                if not _SWEEP_QUIET.get('on'): _say_once('🛌 seat taken: %s rests in a suffix seat - the seat is a file name, never proof of the same person' % x)  # TWIN-SETTLE v85.133  # SWEEP-QUIET v85.187: the chat stays clean; the watcher still says it  # IDENTITY-WITNESS v85.301
                 if _d4 and os.path.exists(_q4) and os.path.basename(_q4).lower() != x.lower():
                     _w1s = ''
                     try: _w1s = re.sub(r'[^a-z]', '', (emails_in_text(_full_text(p)) or [''])[0].split('@')[0].lower())
@@ -3265,13 +3265,13 @@ def twins_cmd(arg, root, say=print):  # TWINS v84.36: same human, several papers
         if arg and arg.lower() not in k: continue
         if len(ps) < 2: continue
         shown += 1
-        say(f'👥 {k}:')
+        say(f'👥 {k} (same NAME - identity not proven by a name):')  # IDENTITY-WITNESS v85.301
         for p in ps:
             tgs = _tags_of(p); stage = os.path.basename(os.path.dirname(p))
             hint = ' · keeper?' if (stage in _tag_vocab() or tgs) else ''
             say(f'   · {os.path.relpath(p, root)} · tags: {", ".join(tgs) or "none"}{hint}')
         say('   the Bin is yours - I never delete')
-    if not shown: say('✅ no twin papers on the desk - every human rests in one file')
+    if not shown: say('✅ no repeated names on the desk')  # IDENTITY-WITNESS v85.301
 
 def forget_cmd(arg, root, say=print):  # COVERED-MEMORY v84.15: the door that re-opens a person for a new season
     d = covered_load(); nk = _name_key(arg + '.pdf')
@@ -6671,6 +6671,20 @@ def _tagonly_probe():  # TAG-ONLY v85.240  # NO-COUPLE v85.240: the flow moves n
     except Exception:
         return False
 
+def _identitywitness_probe():  # IDENTITY-WITNESS v85.301: a name never proves sameness - only a phone or an email does
+    try:
+        import stampkeeper as _sk5, inspect as _insp5
+        _a = {'name': 'Pankaj Kumar', 'emails': ['kumarpankaj034@gmail.com'], 'phones': ['7252000400']}
+        _b = {'name': 'Pankaj Kumar', 'emails': [], 'phones': []}
+        _c = {'name': 'Pankaj Kumar', 'emails': ['kumarpankaj034@gmail.com'], 'phones': []}
+        _d = {'name': 'Pankaj Kumar', 'emails': ['someoneelse@gmail.com'], 'phones': ['9999999999']}
+        _e = {'name': 'Pankaj Kumari', 'emails': [], 'phones': ['7252000400']}
+        return ((_sk5.same_person(_a, _b) is False) and (_sk5.same_person(_a, _c) is True)
+                and (_sk5.same_person(_a, _d) is False) and (_sk5.same_person(_a, _e) is True)
+                and ('same_person(ids, j)' in _insp5.getsource(_sk5.stamp_on_arrival)))
+    except Exception:
+        return False
+
 def _namewise2_probe():  # NAME-WISE2 v85.300: a role or firm word never extends a name, and an old verdict expires
     try:
         _a = _name_from_head_lines(['ARUN TRIPATHI', 'AUTO', 'MANAGEMENT PROFESSIONAL'])
@@ -7310,7 +7324,7 @@ def _selftest(root):
     ck('S214 a question is never a folder', 0 <= _src.find(chr(35)+' PIPELINE-CLI-FIRST') < _src.find('if not os.path.isdir('+'root):'))  # S214 repinned v84.1: the marker, not the tuple's spelling - a widened door keeps its guard
     ck('S215 a lock must prove its holder lives before it names the world', 'os.kill(' in _src[_src.find('def _pl_root():'):_src.find('def _tags_of(')])
     ck('S482 the suffix search never targets the file own path', (chr(35)+' TWIN-SETTLE v85.133') in _src and _src.count('os.path.abspath(_q5) != os.path.abspath(' + 'p)') >= 1)
-    ck('S483 a seated twin rests in both doors', _src.count('a seated twin ' + 'rests') >= 1 and _src.count('twin settled: ' + '%s') >= 1)
+    ck('S483 a seated file rests in both doors and a seat is never proof of identity', _src.count('never proof of the same person') >= 1 and _src.count('seat taken: ' + '%s') >= 1)  # IDENTITY-WITNESS v85.301
     ck('S484 every door writes its cost to the act ledger', (chr(35)+' ACT-LEDGER v85.134') in _src and _src.count('def _act_wrap(') >= 1 and _src.count('actions.jsonl' + chr(39)) >= 1)
     ck('S485 no rename happens unwatched', (chr(35)+' RENAME-WITNESS v85.135') in _src and _src.count('os.rename = _logged_' + 'rename') >= 1)
     ck('S486 a bulleted name doorplate speaks', (chr(35)+' BULLET-NAME v85.135') in _src and _src.count('Name' + chr(92) + 's*[') >= 1)
@@ -7699,6 +7713,7 @@ def _selftest(root):
     ck('S642 a stamp may be MOVED but never rewritten - the rect moves, the words and the look stay', _movestamp_probe())
     ck('S643 a junk filename is no evidence of kind, and a CV prefix or credential tail is not part of the name', _namewise_probe())
     ck('S644 a role or firm word never extends a name, and a cached verdict dies when the brain learns', _namewise2_probe())
+    ck('S645 a name never proves two papers are one human - only a phone or an email does', _identitywitness_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
