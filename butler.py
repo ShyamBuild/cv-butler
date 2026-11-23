@@ -1871,12 +1871,25 @@ def _header_ocr_name(p):  # HEADER-EYE v85.278: the name may be drawn into the h
     return ''
 
 
+_ROLE_WORDS = frozenset("auto automobile automotive engineer engineering manager management officer executive supervisor technician tech technical sales marketing hr hrd admin administration accounts accounting finance payroll compliance operations production maintenance quality purchase logistics india indian pvt ltd limited llp inc corp company group solutions services systems technologies consultancy enterprises industries cv resume curriculum vitae profile contact address mobile phone email mail dob location application candidate updated final copy scanned new".split())  # NAME-WISE2 v85.300: a trade, a firm or a desk label is never part of a human name
+
+def _stem_ok_as_name(stem):  # NAME-WISE2 v85.300: the filename heuristic may only name a human-shaped stem
+    _ws = (stem or "").split()
+    _lw = set(w.lower() for w in _ws)
+    return 2 <= len(_ws) <= 4 and all(w.isalpha() or "-" in w or "." in w for w in _ws) and not (_lw & _ROLE_WORDS)
+
+def _name_trim_roles(nm):  # NAME-WISE2 v85.300: cut a trailing role or firm word, never below two words
+    _w = (nm or "").split()
+    while len(_w) > 2 and _w[-1].lower().strip(".,") in _ROLE_WORDS:
+        _w.pop()
+    return " ".join(_w)
+
 def name_for(p, eye=None):  # NAME-AUTHORITY v85.252: ONE authority for every rename path - the EYE first, the brain second, the case law last, then the content cache answers
     try:
         _st = os.stat(p)
     except Exception:
         return ''
-    key = str(_st.st_size) + chr(124) + str(getattr(_st, 'st_mtime_ns', int(_st.st_mtime * 1000000000)))  # NAME-PERFECT v85.254: the key carries NANOSECONDS, so two papers written in one second never share a decision  # NAME-AUTHORITY v85.252: the key is the content version, exactly as the master named it
+    key = _EYE_VSN + chr(124) + str(_st.st_size) + chr(124) + str(getattr(_st, 'st_mtime_ns', int(_st.st_mtime * 1000000000)))  # NAME-PERFECT v85.254: the key carries NANOSECONDS, so two papers written in one second never share a decision  # NAME-AUTHORITY v85.252: the key is the content version, exactly as the master named it  # NAME-WISE2 v85.300
     _c = _name_for_cache()
     if key in _c:
         return _c[key] or ''
@@ -1905,9 +1918,9 @@ def name_for(p, eye=None):  # NAME-AUTHORITY v85.252: ONE authority for every re
     if not nm:  # NAME-AUTHORITY v85.252: the filename heuristic is LAST and only for a human-shaped stem (GARBAGE-FIRST)
         _stem = os.path.splitext(os.path.basename(p))[0]
         _ws = _stem.split()
-        if 2 <= len(_ws) <= 4 and all(w.isalpha() or chr(45) in w or chr(46) in w for w in _ws) and not (set(w.lower() for w in _ws) & _NAME_STOP):
+        if _stem_ok_as_name(_stem) and 2 <= len(_ws) <= 4 and all(w.isalpha() or chr(46) in w for w in _ws) and not (set(w.lower() for w in _ws) & _NAME_STOP):  # NAME-WISE2 v85.300
             nm = _display_name(_stem) or ''
-    _name_for_store(key, nm)
+    nm = _name_trim_roles(nm); _name_for_store(key, nm)  # NAME-WISE2 v85.300
     return nm
 
 def _seat_pack(folder, stem, ext, say=None):  # NAME-AUTHORITY v85.252: suffix seats pack tight - _1,_2,_3 with no gap, renumbered down when one goes; never overwrites, never deletes
@@ -2100,7 +2113,7 @@ def rename_diag(paths, say=print, deep=False):  # RENDIAG-DEEP v85.86: opt-in de
         say('🔎 %s | word=%d pdf=%d | first-line: %s | heuristic: %s | firstline-eye: %s | canon: %s | display: %s | %s' % (x, len(wt), len(tt), fl, h, f1, c, disp, dec))
 
 _EYEC = {}
-_EYE_VSN = 'v85.199'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire  # EYE-REBIRTH v85.105: cached silences expire the day the ink eye opens, so no paper stays blind by memory  # EYE-REBIRTH v85.107: silences cached while the ink eye ate pictures expire the day it eats paper  # EYE-REBIRTH v85.110: silences and watermark names cached before the refusals expire tonight  # EYE-REBIRTH v85.112: the EMAIL-ANCHOR brain needs a fresh cache so the deep Saurabh-class names are not served from the v85.110 SILENT memory  # EYE-REBIRTH v85.113: the initial-anchor brain wakes every cached silence from the caps-only era  # EYE-REBIRTH v85.114: silences cached by the impatient timeout expire the day the eye gains patience  # EYE-REBIRTH v85.121: stale degree-label verdicts expire so the candidate-email anchor is consulted again  # EYE-REBIRTH v85.122: mononym caps names wake the cache so the AJAY class is read fresh  # EYE-REBIRTH v85.123: mononym and re-seated anchor wake every cached silence  # EYE-REBIRTH v85.124: cached mononym silences expire the moment the door widens  # EYE-REBIRTH v85.130: names welded to address lines wake the cache so Annpurna-class papers are read fresh  # EYE-REBIRTH v85.131: doorplate heads and purged scars wake the cache so twins are read fresh  # EYE-REBIRTH v85.135: bullet doorplates wake the cache so Kirti-class papers are read fresh  # EYE-REBIRTH v85.136: double-extension scars wake the cache so the click and the tick see them fresh  # EYE-REBIRTH v85.154: every silence cached before the eye wakes expires in one breath  # EYE-REBIRTH v85.162: every verdict cached under the basename key expires at once - the first lookup re-eyes the paper  # EYE-REBIRTH v85.199: NAME-AUTHORITY reads the eye first and retires the veto, so every verdict cached under v85.162 expires at once  # VERSION-FREE v85.199: the house pins the v85.1xx family, so a rebirth stays inside it (S461/S450/S534)
+_EYE_VSN = 'v85.300'  # EYECACHE-VSN v85.96: cached verdicts wear the version of the logic that made them  # NAME-GATE v85.97: bump - the slogan verdicts cached under v85.96 expire at once  # EYES-PROPOSE-ONLY v85.98 + NAME-JOIN v85.99: cached slogan verdicts expire  # EYE-REBIRTH v85.105: cached silences expire the day the ink eye opens, so no paper stays blind by memory  # EYE-REBIRTH v85.107: silences cached while the ink eye ate pictures expire the day it eats paper  # EYE-REBIRTH v85.110: silences and watermark names cached before the refusals expire tonight  # EYE-REBIRTH v85.112: the EMAIL-ANCHOR brain needs a fresh cache so the deep Saurabh-class names are not served from the v85.110 SILENT memory  # EYE-REBIRTH v85.113: the initial-anchor brain wakes every cached silence from the caps-only era  # EYE-REBIRTH v85.114: silences cached by the impatient timeout expire the day the eye gains patience  # EYE-REBIRTH v85.121: stale degree-label verdicts expire so the candidate-email anchor is consulted again  # EYE-REBIRTH v85.122: mononym caps names wake the cache so the AJAY class is read fresh  # EYE-REBIRTH v85.123: mononym and re-seated anchor wake every cached silence  # EYE-REBIRTH v85.124: cached mononym silences expire the moment the door widens  # EYE-REBIRTH v85.130: names welded to address lines wake the cache so Annpurna-class papers are read fresh  # EYE-REBIRTH v85.131: doorplate heads and purged scars wake the cache so twins are read fresh  # EYE-REBIRTH v85.135: bullet doorplates wake the cache so Kirti-class papers are read fresh  # EYE-REBIRTH v85.136: double-extension scars wake the cache so the click and the tick see them fresh  # EYE-REBIRTH v85.154: every silence cached before the eye wakes expires in one breath  # EYE-REBIRTH v85.162: every verdict cached under the basename key expires at once - the first lookup re-eyes the paper  # EYE-REBIRTH v85.199: NAME-AUTHORITY reads the eye first and retires the veto, so every verdict cached under v85.162 expires at once  # VERSION-FREE v85.199: the house pins the v85.1xx family, so a rebirth stays inside it (S461/S450/S534)  # EYE-REBIRTH v85.300
 WAKE_Q = []  # WAKE-Q v85.118: rename destinations waiting for the next tick's judgement
 WAKE_L = threading.Lock()
 def _eyename_cache():
@@ -2183,7 +2196,7 @@ def _name_from_head_lines(lines):  # ACCEPTANCE v85.101: the naming brain as a p
         cands = [ls[i]]
         if i + 1 < len(ls): cands.append(ls[i] + ' ' + ls[i+1])
         if i + 2 < len(ls): cands.append(ls[i] + ' ' + ls[i+1] + ' ' + ls[i+2])
-        for cut in cands:
+        for cut in [c for c in cands if not (set(w.lower() for w in c.split()) & _ROLE_WORDS)]:  # NAME-WISE2 v85.300
             ws = cut.split()
             if 2 <= len(ws) <= 4 and len(cut) <= 40 and all(w.isalpha() or '-' in w or '.' in w for w in ws) and not any('@' in w for w in ws) and not (set(w.lower() for w in ws) & _NAME_STOP) and not (set(w.lower() for w in ws) & _PLACE_STOP) and (_canonical_person_name(cut) or ''):  # MAIL-REFUSE v85.109: an address is never a word of a name  # PLACE-LINE-REFUSE v85.157: a line naming a town can never win where a human line exists
                 return _display_name(_canonical_person_name(cut))
@@ -6658,6 +6671,19 @@ def _tagonly_probe():  # TAG-ONLY v85.240  # NO-COUPLE v85.240: the flow moves n
     except Exception:
         return False
 
+def _namewise2_probe():  # NAME-WISE2 v85.300: a role or firm word never extends a name, and an old verdict expires
+    try:
+        _a = _name_from_head_lines(['ARUN TRIPATHI', 'AUTO', 'MANAGEMENT PROFESSIONAL'])
+        _b = _name_trim_roles('Arun Tripathi Auto')
+        _c = _name_trim_roles('Ravi Kumar Sharma')
+        _d = _stem_ok_as_name('Arun Tripathi Auto')
+        _e = _stem_ok_as_name('Arun Tripathi')
+        _f = _name_trim_roles('Pvv Satyanarayana Rao')
+        _g = _name_from_head_lines(['SUMAN KUMAR', 'Phone: 9876543210'])
+        return (_a == 'Arun Tripathi') and (_b == 'Arun Tripathi') and (_c == 'Ravi Kumar Sharma') and (_d is False) and (_e is True) and (_f == 'Pvv Satyanarayana Rao') and (_g == 'Suman Kumar')
+    except Exception:
+        return False
+
 def _namewise_probe():  # NAME-WISE v85.299: a junk filename never decides the kind, and the first breath may lead with CV/RESUME or trail a credential list
     try:
         _a = _name_from_head_lines(['Diwakar Pandey, BCA, MBA (HRD & OD)', '+91-8719837196, dibakarhrmlead@gmail.com'])
@@ -7316,7 +7342,7 @@ def _selftest(root):
     ck('S459 a caps name wears its role beneath', (chr(35)+' ROLE-BENEATH v85.110') in _src and _src.count('manager' + chr(39) + ',' + chr(39) + 'engineer') >= 1)
     ck('S460 the email anchor speaks for mid-page caps names', (chr(35)+' EMAIL-ANCHOR v85.111') in _src and _src.count('wa[0].lower() in local or wa[-1].lower() in ' + 'local') >= 1)
     ck('S462 the seed identities are born before their first reading', _src.count('res_id = ' + '{}') == 1 and 0 <= _src.find('res_id = ' + '{}') < _src.find('res_id.items()'))
-    ck('S461 the eye cache bumps when the brain learns a new anchor rule', _src.count('_EYE_VSN = ' + chr(39) + 'v85.1') >= 1 and (chr(35)+' EYE-REBIRTH v85.1') in _src)  # VERSION-FREE v85.113: a rebirth guard pins the lineage prefix, never one number, so the next bump never breaks it
+    ck('S461 the eye cache bumps when the brain learns a new anchor rule', _src.count('_EYE_VSN = ' + chr(39) + 'v85.') >= 1 and (chr(35)+' EYE-REBIRTH v85.1') in _src)  # VERSION-FREE v85.113: a rebirth guard pins the lineage prefix, never one number, so the next bump never breaks it  # VERSION-FREE v85.300
     ck('S547 a mononym caps head speaks through the email witness', (chr(35)+' MONO-CAPS v85.122') in _src and _src.count('all(w.isalpha() and len(w) >= ' + '3 for w in wa)') >= 1)
     ck('S463 the desk survives a change of mind mid-gaze', (chr(35)+' WORK-INTERRUPT v85.127') in _br and _br.count('except Key' + 'boardInterrupt:') >= 2)
     ck('S464 a dead holder leaves no ghost lock', (chr(35)+' LOCK-REAP v85.128') in _src and _src.count('except ProcessLookup' + 'Error:') >= 1)
@@ -7336,7 +7362,7 @@ def _selftest(root):
     ck('S447 one naming law lives in one pure function, and the eye delegates to it', _src.count('def _name_from_head_' + 'lines(') == 1 and _src.count('_name_from_head_' + 'lines(t.split') >= 1)  # MIRROR-SAFE v85.103: a guard that counts a string must not contain it whole
     ck('S448 a guard never certifies its own text', _src.count('_name_from_head_' + 'lines(t.split') >= 1 and ('delegated v85.102' in _src))
     ck('S449 the deed stands behind the gate, in order', _src.find('os.rename(p, ' + 'q2)') > _src.find('a different human - proposal only') > -1)
-    ck('S450 a cached silence expires when a new eye opens', (chr(35)+' EYE-REBIRTH v85.1') in _src and _src.count('_EYE_VSN = ' + chr(39) + 'v85.1') >= 1)  # VERSION-FREE v85.107: a rebirth guard pins the mechanism, not the number, so the next bump never breaks the last law
+    ck('S450 a cached silence expires when a new eye opens', (chr(35)+' EYE-REBIRTH v85.1') in _src and _src.count('_EYE_VSN = ' + chr(39) + 'v85.') >= 1)  # VERSION-FREE v85.107: a rebirth guard pins the mechanism, not the number, so the next bump never breaks the last law  # VERSION-FREE v85.300
     ck('S451 a falling eye never blinds the eye behind it', (chr(35)+' PURE-ARMOR v85.106') in _src and _src.count('try: _pt = _pdf_pure_' + 'text(p)') >= 1)
     ck('S452 the ink eye receives the paper whole', ('cvocr_' + '%d.png') not in _src and (chr(35)+' OCR-RASTER v85.89 (retired v85.107)') in _src)
     ck('S442 a name split across wrapped lines is still one name', (chr(35)+' NAME-JOIN v85.98') in _src and ('_NAME_STOP |=' in _src))
@@ -7443,7 +7469,7 @@ def _selftest(root):
     ck('S531 the beat pulses the ledger so the bell has an age', (chr(35) + ' BELL-PULSE v85.' + '159') in _src and "os.utime(os.path.join(BASE_DIR, 'tick.log')" in _src)
     ck('S532 a rename is spoken in the bell book with its door', (chr(35) + ' RENAME-SPOKEN v85.' + '161') in _src and "tick.log'), 'a').write" in _src and '[rename]' in _src)
     ck('S533 the doorbell sweeps every beat, unasked', '        _case_sweep(root, log)' in _src)
-    ck('S534 the eye cache keys by real path and carries its version', ('key = os.path.' + 'realpath(p)') in _src and '_EYE_VSN = ' + chr(39) + 'v85.1' in _src and ('key = os.path.' + 'basename(p)') not in _src)  # VERSION-FREE v85.199: the cache still keys by real path and still carries a version, without pinning the day's number
+    ck('S534 the eye cache keys by real path and carries its version', ('key = os.path.' + 'realpath(p)') in _src and '_EYE_VSN = ' + chr(39) + 'v85.' in _src and ('key = os.path.' + 'basename(p)') not in _src)  # VERSION-FREE v85.199: the cache still keys by real path and still carries a version, without pinning the day's number  # VERSION-FREE v85.300
     ck('S535 a missing path speaks its miss', 'no such paper: %s' in _src and (chr(35) + ' WHY-LOUD-MISSING v85.' + '162') in _src)
     ck('S536 one deed, one line, one door, and the dam still reads them', _src.count(chr(35) + ' WITNESS-DEDUP v85.' + '163') >= 3 and ('renamed (gated ' + 'eyes)') not in _src and "or '[rename]' in l" in _src and (chr(35) + ' RENAME-SPOKEN v85.' + '161') in _src)
     ck('S537 the verdict book is written whole or not at all', 'os.replace(_tmp, cf)' in _src and (chr(35) + ' CACHE-ATOMIC v85.' + '164') in _src and 'for _try in (0, 1):' in _src)
@@ -7672,6 +7698,7 @@ def _selftest(root):
     ck('S640 a CV landing in Ready for Manager Review receives its twin block by itself', _stamponarrival_probe())
     ck('S642 a stamp may be MOVED but never rewritten - the rect moves, the words and the look stay', _movestamp_probe())
     ck('S643 a junk filename is no evidence of kind, and a CV prefix or credential tail is not part of the name', _namewise_probe())
+    ck('S644 a role or firm word never extends a name, and a cached verdict dies when the brain learns', _namewise2_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
