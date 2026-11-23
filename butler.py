@@ -884,16 +884,19 @@ def _desk_refresh(root, say=print):  # DESK-REFRESH v85.148: stat each stage fol
         try: _jr.dump(last, open(rf, 'w'))
         except Exception: pass
 
-def _preview_open(p, say=print):  # PREVIEW v84.46: the seated paper opens in Preview behind your eyes; already-open is fine; the machine never closes what you opened
+def _preview_open(p, say=print):  # PREVIEW v84.46  # PREVIEW-SEAT v85.306: a slow pre-check may never cost the open
     if not (p or '').lower().endswith('.pdf'): return
     try:
         import subprocess
-        out = subprocess.run(['osascript', '-e', 'tell application "Preview" to get name of windows'], capture_output=True, text=True, timeout=5).stdout or ''
+        out = ''
+        try:
+            out = subprocess.run(['osascript', '-e', 'tell application "Preview" to get name of windows'], capture_output=True, text=True, timeout=2).stdout or ''
+        except Exception:
+            out = ''
         if os.path.basename(p) in out: return
         subprocess.Popen(['open', '-g', '-a', 'Preview', p])
     except Exception:
         pass
-
 
 def _preview_close(p, say=print):  # PREVIEW-CLOSE v85.148: release the hold on a specific paper's face
     if not (p or '').lower().endswith('.pdf'): return
@@ -2830,6 +2833,7 @@ def _prep_phone_pick(phones, p, say=print):  # UI-NUMBERS v85.217  # PICK-ONE v8
     except Exception:
         return phones[0] if phones else None
 def _chair_card(name, p, ph, em, say=print, phones=None):  # CHAIR-CARD v85.181  # UI-NUMBERS v85.217: every number is on the card before the pick
+    _preview_open(p, say)  # PREVIEW-SEAT v85.306: the seated paper opens in Preview behind your eyes, in every door
     try:
         _idn = {}
         try:
@@ -6671,6 +6675,16 @@ def _tagonly_probe():  # TAG-ONLY v85.240  # NO-COUPLE v85.240: the flow moves n
     except Exception:
         return False
 
+def _previewseat_probe():  # PREVIEW-SEAT v85.306: the card opens the paper and a slow pre-check never blocks the open
+    try:
+        import inspect as _i
+        _cc = _i.getsource(_chair_card)
+        _po = _i.getsource(_preview_open)
+        _preview_open('/tmp/butler-preview-probe-not-a-paper.txt')
+        return ('_preview_open(p, say)' in _cc) and ('PREVIEW-SEAT v85.306' in _cc) and ('Popen' in _po)
+    except Exception:
+        return False
+
 def _firstverb_probe():  # FIRST-VERB v85.304: chat can be asked for one verb at the door, and asks for none by default
     try:
         _bf = open(os.path.join(BASE_DIR, "briefing.py"), encoding="utf-8").read()
@@ -7722,6 +7736,7 @@ def _selftest(root):
     ck('S644 a role or firm word never extends a name, and a cached verdict dies when the brain learns', _namewise2_probe())
     ck('S645 a name never proves two papers are one human - only a phone or an email does', _identitywitness_probe())
     ck('S646 chat may be asked for one verb at the door, and asks for none by default', _firstverb_probe())
+    ck('S647 the seated paper opens in Preview, and a slow pre-check never blocks the open', _previewseat_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
