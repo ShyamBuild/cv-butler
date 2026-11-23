@@ -3135,6 +3135,25 @@ def _rp(p):  # MISSING-PATH v85.223: a folder the master renamed or removed is n
     except Exception:
         return os.path.abspath(str(p))
 
+def _seat_key(it):  # DESK-LOOSE-FIRST v85.311: the loose tray seats before any staged paper
+    _p = (it or {}).get("p") or ""
+    try:
+        _loose = 0 if os.path.basename(os.path.dirname(_p)) not in _tag_vocab() else 1
+    except Exception:
+        _loose = 1
+    return (_loose, 0 if (it or {}).get("re") else 1)
+
+def _chair_at_risk(cur, deed=None):  # UP-ADVANCES-WHEN-SAFE v85.311: a chair is kept only when something can be lost
+    try:
+        if deed is None:
+            import json as _cj
+            deed = _cj.load(open(os.path.join(BASE_DIR, ".last_deed.json")))
+        if not isinstance(deed, dict) or not deed.get("text"):
+            return False
+        return _name_key(deed.get("name") or "") == _name_key((cur or {}).get("name") or "")
+    except Exception:
+        return False
+
 def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes, and the seat itself re-checks coverage
     seat_rename_check(root, lambda *a, **k: None)  # SEE-FAILURE v85.183: the sweep still runs; the card says the rest
     s = sheet_load()
@@ -3168,7 +3187,7 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
     _cur = s.get('current') or {}  # SEAT-ADVANCE v85.230: the man already in the chair
     _cur_p = _rp(_cur.get('p') or '') if _cur.get('status') == 'waiting' else ''
     _skipped_cur = False
-    for it in sorted(s.get('items', []), key=lambda x: 1 if x.get('re') else 0):  # RETRAY v84.55: new blood outranks the re-review tray in the chair
+    for it in sorted(s.get('items', []), key=_seat_key):  # RETRAY v84.55: new blood outranks the re-review tray in the chair  # DESK-LOOSE-FIRST v85.311
         if it.get('status') != 'waiting': continue
         if _cur_p and not (arg or "").strip():  # SEAT-ADVANCE v85.230: every row of the seated human is skipped
          _hit3 = _rp(it.get("p") or "") == _cur_p or (_name_key(it.get("name") or "") == _name_key(_cur.get("name") or "") and bool(_cur.get("name")))
@@ -3194,6 +3213,10 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
          it["status"] = "done"; it["outcome"] = "description"; continue
         i = it; break
     sheet_save(s)
+    if not i and _cur_p and not _chair_at_risk(_cur):  # UP-ADVANCES-WHEN-SAFE v85.311: nothing at risk -> let him go
+         s['current'] = None; sheet_save(s)
+         say('\U0001f9d1 %s released - nothing was at risk; say up again to seat the next' % (_cur.get('name') or 'he'))
+         return
     if not i and _cur_p:  # SEAT-ADVANCE v85.230: nobody else seatable - the seated man keeps the chair
      say('🪑 %s is the last candidate - he stays in the chair' % (_cur.get('name') or 'he'))
      i = _cur
@@ -6708,6 +6731,17 @@ def _tagonly_probe():  # TAG-ONLY v85.240  # NO-COUPLE v85.240: the flow moves n
     except Exception:
         return False
 
+def _seatsense_probe():  # SEAT-SENSE v85.311: loose first, and a chair lets go when nothing can be lost
+    try:
+        _loose = _seat_key({"p": "/pos/Arun Tripathi.pdf"})[0]
+        _staged = _seat_key({"p": "/pos/Call Scheduled/Arun Tripathi.pdf"})[0]
+        _risk_a = _chair_at_risk({"name": "Ranjna Nand Jha"}, {"name": "Ranjna Nand Jha", "text": "hi"})
+        _risk_b = _chair_at_risk({"name": "Ranjna Nand Jha"}, {"name": "Ranjna Nand Jha"})
+        _risk_c = _chair_at_risk({"name": "Ranjna Nand Jha"}, {"name": "Someone Else", "text": "hi"})
+        return (_loose == 0) and (_staged == 1) and (_risk_a is True) and (_risk_b is False) and (_risk_c is False)
+    except Exception:
+        return False
+
 def _phonewitness_probe():  # PHONE-WITNESS v85.309: a cached number never speaks for a paper that says otherwise
     try:
         _a = _phone_cache_ok(['7252000400', 'kumarpkj1987@gmail.com'], ['kumarpankaj034@gmail.com'])
@@ -7599,7 +7633,7 @@ def _selftest(root):
     ck('S335 no candidate-facing text claims the details travelled on WhatsApp', all((('on ' + 'WhatsApp') not in open(os.path.join(BASE_DIR, dd, ff)).read()) for dd in ('templates', 'drafts') for ff in os.listdir(os.path.join(BASE_DIR, dd)) if ff.endswith('.txt')))  # S335 repinned v85.4: the law guards truth, not vocabulary
     ck('S336 every single-key answer is a keystroke - no Enter in the copilot'+chr(39)+'s mouth', (chr(35)+' LISTEN v85.3') in _src and ('_listen(' in open(os.path.join(BASE_DIR, 'briefing.py')).read().split('def _pick_phone(')[1].split(chr(10) + 'def ')[0]))
     ck('S326 the cue says aloud what cancel leaves behind', (chr(35)+' ASK-LINE v84.49') in _src and ('n = cancel, he stays in the chair' in _src))
-    ck('S327 the tray refills only when empty and new blood always outranks it', (chr(35)+' RETRAY v84.55') in _src and ('key=lambda x: 1 if x.get(' + chr(39) + 're' + chr(39) + ') else 0' in _src))
+    ck('S327 the tray seats loose papers first and new blood outranks the aged within a tier', (chr(35)+' RETRAY v84.55') in _src and ('key=_seat_key' in _src) and ('def _seat_key(' in _src))  # SEAT-SENSE v85.311
     ck('S328 the tray offers one skipped soul per empty seed, oldest first', (chr(35)+' RETRAY-ONE v84.56') in _src and ('del skd[kp]; refed += 1; break' in _src))
     ck('S329 the freeze holds - v85.0 is the standing price of every future change', (chr(35)+' THE FREEZE v85.0') in _src and os.path.exists(os.path.join(BASE_DIR, 'README.md')) and os.path.exists(os.path.join(BASE_DIR, 'install.sh')))
     # S491 source inspection is unwrapped
@@ -7792,6 +7826,7 @@ def _selftest(root):
     ck('S647 the seated paper opens in Preview, and a slow pre-check never blocks the open', _previewseat_probe())
     ck('S648 a re-named paper speaks its new name at the seat, never the stale memory', _nameatcard_probe())
     ck('S649 a cached phone answers only when the paper agrees on the human', _phonewitness_probe())
+    ck('S650 the loose tray seats first, and a chair with nothing at risk lets go', _seatsense_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
