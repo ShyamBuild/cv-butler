@@ -2832,6 +2832,21 @@ def _prep_phone_pick(phones, p, say=print):  # UI-NUMBERS v85.217  # PICK-ONE v8
         return _p3
     except Exception:
         return phones[0] if phones else None
+def _card_name(i, p):  # NAME-AT-CARD v85.307: the file name is the latest truth - the sheet memory may be stale
+    try:
+        live = os.path.splitext(os.path.basename(p))[0].strip()
+        core = re.sub(r"_\d+$", "", live).strip()   # a twin seat is a file detail, never a digit in the name
+        ws = core.split()
+        _bad = re.search(r"\d", core) or (set(w.lower().strip(".,-") for w in ws) & _ROLE_WORDS)
+        if 2 <= len(ws) <= 4 and all(w.replace(".", "").replace("-", "").isalpha() for w in ws) and not _bad:
+            return live
+    except Exception:
+        pass
+    try:
+        return i.get("name") or ""
+    except Exception:
+        return ""
+
 def _chair_card(name, p, ph, em, say=print, phones=None):  # CHAIR-CARD v85.181  # UI-NUMBERS v85.217: every number is on the card before the pick
     _preview_open(p, say)  # PREVIEW-SEAT v85.306: the seated paper opens in Preview behind your eyes, in every door
     try:
@@ -3209,7 +3224,7 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
     except Exception:
      _phl = []
     _preview_open(p, say)
-    _chair_card(i['name'], p, ph, _em, say, phones=_phl)  # UI-NUMBERS v85.217  # HORIZONTAL v85.9  # IDENTITY-AT-SEAT v84.39  # EMOJI-CUE v84.51  # MAP-COMPACT v84.37
+    _chair_card(_card_name(i, p), p, ph, _em, say, phones=_phl)  # UI-NUMBERS v85.217  # HORIZONTAL v85.9  # IDENTITY-AT-SEAT v84.39  # EMOJI-CUE v84.51  # MAP-COMPACT v84.37  # NAME-AT-CARD v85.307
     _chosen = None
     if len(_phl) > 1:
      _chosen = _prep_phone_pick(_phl, p, say)
@@ -6675,6 +6690,16 @@ def _tagonly_probe():  # TAG-ONLY v85.240  # NO-COUPLE v85.240: the flow moves n
     except Exception:
         return False
 
+def _nameatcard_probe():  # NAME-AT-CARD v85.307: a re-named paper speaks its new name, never the stale memory
+    try:
+        _a = _card_name({"name": "Payroll Management"}, "/tmp/Madan Mohan Sharma.pdf")
+        _b = _card_name({"name": "Kept Memory"}, "/tmp/zz junk 123.pdf")
+        _c = _card_name({"name": "Kept Memory"}, "/tmp/Arun Tripathi Auto.pdf")
+        _d = _card_name({"name": "Kept Memory"}, "/tmp/Pankaj Kumar_2.pdf")
+        return (_a == "Madan Mohan Sharma") and (_b == "Kept Memory") and (_c == "Kept Memory") and (_d == "Pankaj Kumar_2")
+    except Exception:
+        return False
+
 def _previewseat_probe():  # PREVIEW-SEAT v85.306: the card opens the paper and a slow pre-check never blocks the open
     try:
         import inspect as _i
@@ -7737,6 +7762,7 @@ def _selftest(root):
     ck('S645 a name never proves two papers are one human - only a phone or an email does', _identitywitness_probe())
     ck('S646 chat may be asked for one verb at the door, and asks for none by default', _firstverb_probe())
     ck('S647 the seated paper opens in Preview, and a slow pre-check never blocks the open', _previewseat_probe())
+    ck('S648 a re-named paper speaks its new name at the seat, never the stale memory', _nameatcard_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
