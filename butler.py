@@ -756,7 +756,7 @@ def _tag_roundtrip_ok():  # S217 witness body - prints its own steps if it ever 
         return False
 TAG_WAITING = ('Awaiting JD Confirmation', 'Awaiting CV Update')  # TAG-CLASS v84.5: debts that coexist - a candidate may owe the JD ack and the CV update at once
 def _tag_stage(t):  # TAG-CLASS v84.5: everything else is a stage - one at a time, folder-bound
-    return t in _tag_vocab() and t not in TAG_WAITING
+    return bool(t) and (t in _tag_vocab() or t in TAG_NAMES or t in ("Reject", "Rejected by Manager", "3 Reject"))  # EVERY-TAG-MOVES v85.329: every tag orders the folder - the waiting pair included
 
 def _tag_vocab():  # DESK v84.0: built at call time, so no ordering of the book can starve it
     return list(PIPELINE_CLOCKED) + list(PIPELINE_MOMENT) + list(PIPELINE_TERMINAL) + list(PIPELINE_PRE)
@@ -6731,6 +6731,15 @@ def _tagonly_probe():  # TAG-ONLY v85.240  # NO-COUPLE v85.240: the flow moves n
     except Exception:
         return False
 
+def _stagelaw_probe():  # EVERY-TAG-MOVES v85.329: every tag the master uses orders the folder; a colour never does
+    try:
+        return (_tag_stage("Call Scheduled") is True and _tag_stage("Awaiting CV Update") is True
+                and _tag_stage("Awaiting JD Confirmation") is True and _tag_stage("Reject") is True
+                and _tag_stage("Ready for Manager Review") is True and _tag_stage("Blue") is False
+                and _tag_stage("") is False and _tag_stage("not a tag") is False)
+    except Exception:
+        return False
+
 def _seatsense_probe():  # SEAT-SENSE v85.311: loose first, and a chair lets go when nothing can be lost
     try:
         _loose = _seat_key({"p": "/pos/Arun Tripathi.pdf"})[0]
@@ -7827,6 +7836,7 @@ def _selftest(root):
     ck('S648 a re-named paper speaks its new name at the seat, never the stale memory', _nameatcard_probe())
     ck('S649 a cached phone answers only when the paper agrees on the human', _phonewitness_probe())
     ck('S650 the loose tray seats first, and a chair with nothing at risk lets go', _seatsense_probe())
+    ck('S651 every tag the master uses orders the folder, and a colour tag never does', _stagelaw_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
