@@ -292,10 +292,28 @@ def _only_digits(_lst):  # NUMBER-AT-SOURCE v85.169: the picker's predicate writ
     return _out
 def phones_of(p, quiet=False):  # NUMBER-AT-SOURCE v85.169: every number leaves through one sieve - an email in the witness list never becomes a dialling target
     return _only_digits(_phones_of_raw(p, quiet))
+def _phone_cache_ok(hit, now_emails):  # PHONE-WITNESS v85.309: a cached number answers only when the paper agrees on the human
+    try:
+        _old = [str(x).strip().lower() for x in (hit or []) if "@" in str(x)]
+        _now = [str(x).strip().lower() for x in (now_emails or []) if "@" in str(x)]
+        if not _old or not _now:
+            return True
+        return bool(set(_old) & set(_now))
+    except Exception:
+        return True
+
 def _phones_of_raw(p, quiet=False):  # QUIET-CLERK v81.87: the picker may ask without the ceremony; the law of speaking identity still binds every voice that drafts
     _pbk, _pcf = _phonebook()  # PHONEBOOK-FIRST v85.48: a number learned once is known forever, in microseconds, even if the paper later goes silent
     _bn = os.path.basename(p)
-    if _pbk.get(_bn): return list(_pbk[_bn])
+    _hit = _pbk.get(_bn)
+    if _hit:  # PHONE-WITNESS v85.309: the cache may not outvote the paper
+        try:
+            _now_em = _email_cheap(p) or []
+        except Exception:
+            _now_em = []
+        if isinstance(_now_em, str):
+            _now_em = [_now_em] if _now_em else []
+        if _phone_cache_ok(_hit, _now_em): return list(_hit)
     try:
         _ta = _phones_by_basename(p)
         if _ta: return list(_ta)
@@ -6690,6 +6708,16 @@ def _tagonly_probe():  # TAG-ONLY v85.240  # NO-COUPLE v85.240: the flow moves n
     except Exception:
         return False
 
+def _phonewitness_probe():  # PHONE-WITNESS v85.309: a cached number never speaks for a paper that says otherwise
+    try:
+        _a = _phone_cache_ok(['7252000400', 'kumarpkj1987@gmail.com'], ['kumarpankaj034@gmail.com'])
+        _b = _phone_cache_ok(['7252000400', 'kumarpankaj034@gmail.com'], ['kumarpankaj034@gmail.com'])
+        _c = _phone_cache_ok(['7252000400'], [])
+        _d = _phone_cache_ok(['8107165322', 'kumarpankaj034@gmail.com'], ['KumarPankaj034@Gmail.com'])
+        return (_a is False) and (_b is True) and (_c is True) and (_d is True)
+    except Exception:
+        return False
+
 def _nameatcard_probe():  # NAME-AT-CARD v85.307: a re-named paper speaks its new name, never the stale memory
     try:
         _a = _card_name({"name": "Payroll Management"}, "/tmp/Madan Mohan Sharma.pdf")
@@ -7763,6 +7791,7 @@ def _selftest(root):
     ck('S646 chat may be asked for one verb at the door, and asks for none by default', _firstverb_probe())
     ck('S647 the seated paper opens in Preview, and a slow pre-check never blocks the open', _previewseat_probe())
     ck('S648 a re-named paper speaks its new name at the seat, never the stale memory', _nameatcard_probe())
+    ck('S649 a cached phone answers only when the paper agrees on the human', _phonewitness_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
