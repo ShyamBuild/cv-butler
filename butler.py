@@ -7176,6 +7176,42 @@ def _taglevel_probe():  # TAG-LEVEL v85.343: a sub-folder paper settles at the P
     except Exception:
         return False
 
+def _stampverify_probe():  # STAMP-VERIFY v85.348: a good stamp passes, a legacy DA-less one and a stack both fail
+    try:
+        import tempfile as _tf
+        import stampkeeper as _sk
+        from pypdf import PdfWriter as _PW
+        from pypdf.annotations import FreeText as _FT
+        _d = _tf.mkdtemp()
+        _txt = "Sunsoft Technology" + chr(10) + "Total Experience: 7 years" + chr(10) + "Current CTC: 6.5 LPA" + chr(10) + "Expected CTC: 8 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10) + "Notice Period: 30 days"
+        _good = os.path.join(_d, "good.pdf")
+        _w = _PW(); _w.add_blank_page(width=595, height=842); _w.write(_good)
+        _sk._write_tag(_good, _txt, 200, 110)
+        if not _sk.stamp_verify(_good)["ok"]:
+            return False                       # our own write must pass its own proof
+        _legacy = os.path.join(_d, "legacy.pdf")
+        _w2 = _PW(); _w2.add_blank_page(width=595, height=842); _w2.write(_legacy)
+        _w2 = _PW(clone_from=_legacy)
+        _w2.add_annotation(page_number=0, annotation=_FT(text=_txt, rect=(60, 60, 300, 250)))
+        _w2.write(_legacy)
+        if _sk.stamp_verify(_legacy)["ok"]:
+            return False                       # no /DA means the viewer picks a plain face - NOT bold
+        _sk._write_tag(_legacy, _txt, 200, 110)
+        if not _sk.stamp_verify(_legacy)["ok"]:
+            return False                       # one repair makes it provably good
+        _stack = os.path.join(_d, "stack.pdf")
+        _w3 = _PW(); _w3.add_blank_page(width=595, height=842); _w3.write(_stack)
+        _sk._write_tag(_stack, _txt, 200, 110)
+        _w3 = _PW(clone_from=_stack)
+        _w3.add_annotation(page_number=0, annotation=_FT(text="Sunsoft Technology (old)", rect=(70, 80, 320, 200)))
+        _w3.write(_stack)
+        if _sk.stamp_verify(_stack)["ok"]:
+            return False                       # two overlapping stamps are never ok
+        _sk._write_tag(_stack, _txt, 200, 110)
+        return _sk.stamp_verify(_stack)["ok"]
+    except Exception:
+        return False
+
 def _stampsize_probe():  # STAMP-SIZE-TRUTH v85.347: bare, unsized and 12pt stamps are all NOT right
     try:
         import tempfile as _tf
@@ -8191,6 +8227,7 @@ def _selftest(root):
     ck('S663 Ctrl+S writes one stamp at 24pt in a box that fits, and a second press never stacks', _stamp24_probe())
     ck('S664 an older Sunsoft stamp on another page never survives a repair - one stamp per paper', _stampone_probe())
     ck('S665 a bare, an unsized and a 12pt stamp are all NOT right - only one complete 24pt stamp is', _stampsize_probe())
+    ck('S666 a stamp is proven: one, bold, the masters size, face declared, complete - and each bad shape is repaired once', _stampverify_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
