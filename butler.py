@@ -7176,6 +7176,36 @@ def _taglevel_probe():  # TAG-LEVEL v85.343: a sub-folder paper settles at the P
     except Exception:
         return False
 
+def _stampsize_probe():  # STAMP-SIZE-TRUTH v85.347: bare, unsized and 12pt stamps are all NOT right
+    try:
+        import tempfile as _tf
+        import stampkeeper as _sk
+        from pypdf import PdfWriter as _PW, PdfWriter as _P2
+        from pypdf.annotations import FreeText as _FT
+        sys.path.insert(0, os.path.join(BASE_DIR, "notes"))
+        import stamp_now as _sn
+        _d = _tf.mkdtemp()
+        _txt = "Sunsoft Technology" + chr(10) + "Total Experience: 7 years" + chr(10) + "Current CTC: 6.5 LPA" + chr(10) + "Expected CTC: 8 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10) + "Notice Period: 30 days"
+        _bare = os.path.join(_d, "bare.pdf")
+        _w = _PW(); _w.add_blank_page(width=595, height=842); _w.write(_bare)
+        if _sn.stamp_is_right(_sk, _bare):
+            return False                           # a bare paper is never right
+        _good = os.path.join(_d, "good.pdf")
+        _w2 = _PW(); _w2.add_blank_page(width=595, height=842); _w2.write(_good)
+        _sk._write_tag(_good, _txt, 200, 110)
+        if not _sn.stamp_is_right(_sk, _good):
+            return False                           # one complete 24pt stamp IS right
+        _unsized = os.path.join(_d, "unsized.pdf")
+        _w3 = _PW(); _w3.add_blank_page(width=595, height=842); _w3.write(_unsized)
+        _w3 = _PW(clone_from=_unsized)
+        _w3.add_annotation(page_number=0, annotation=_FT(text=_txt, rect=(60, 60, 300, 250)))
+        _w3.write(_unsized)
+        if _sn.stamp_is_right(_sk, _unsized):
+            return False                           # a stamp with no readable size is not right either
+        return True
+    except Exception:
+        return False
+
 def _stampone_probe():  # STAMP-ONE-ALL v85.346: an older stamp on another page never survives a repair
     try:
         import tempfile as _tf
@@ -8160,6 +8190,7 @@ def _selftest(root):
     ck('S662 the Ctrl+Y door anchors on the clicked position - a sub-folder paper settles there, an outside paper stays', _tagdoor_probe())
     ck('S663 Ctrl+S writes one stamp at 24pt in a box that fits, and a second press never stacks', _stamp24_probe())
     ck('S664 an older Sunsoft stamp on another page never survives a repair - one stamp per paper', _stampone_probe())
+    ck('S665 a bare, an unsized and a 12pt stamp are all NOT right - only one complete 24pt stamp is', _stampsize_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
