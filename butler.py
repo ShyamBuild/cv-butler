@@ -3115,7 +3115,7 @@ def _tag_position_of(p, _par, _voc, root):  # TAG-LEVEL v85.343: a stage folder 
         _hop += 1
     return _pos
 
-def tag_follow(root, say=print):  # TAG-FOLLOW v85.246: the tag is the order - the folder obeys it
+def tag_follow(root, say=print, pos=None):  # TAG-FOLLOW v85.246: the tag is the order - the folder obeys it  # TAG-DOOR v85.344
     moved = 0
     try:
         _voc = set(_tag_vocab())  # TAG-LEARN v85.294: the pipeline the house already knows ...
@@ -3141,7 +3141,9 @@ def tag_follow(root, say=print):  # TAG-FOLLOW v85.246: the tag is the order - t
                 if not st:
                     continue  # an untagged paper never moves by itself
                 _par = os.path.dirname(p)  # TAG-FOLLOW-POSITION v85.259: where the paper stands decides where its stage lives
-                _pos = _tag_position_of(p, _par, _voc, root)  # TAG-FOLLOW-POSITION v85.259: inside a stage, the position is the stage parent; inside a position, it is the parent itself  # TAG-LEVEL v85.343
+                _pos = pos or _tag_position_of(p, _par, _voc, root)  # TAG-FOLLOW-POSITION v85.259: inside a stage, the position is the stage parent; inside a position, it is the parent itself  # TAG-LEVEL v85.343  # TAG-DOOR v85.344
+                if pos and not (os.path.abspath(p) + os.sep).startswith(os.path.abspath(pos) + os.sep):
+                    continue                             # TAG-DOOR v85.344: the anchor governs its own papers only
                 if not _pos:
                     continue                             # TAG-LEVEL v85.343: a paper above every position never moves
                 want = os.path.join(_pos, st[0])  # TAG-FOLLOW-POSITION v85.259: the stage is a SIBLING of its position, never a child of the house root (the 166-file collapse)
@@ -7174,6 +7176,27 @@ def _taglevel_probe():  # TAG-LEVEL v85.343: a sub-folder paper settles at the P
     except Exception:
         return False
 
+def _tagdoor_probe():  # TAG-DOOR v85.344: an explicit position anchors every paper, sub-folder papers included
+    try:
+        import tempfile as _tf
+        _r = _tf.mkdtemp()
+        _pos = os.path.join(_r, "Client", "Pos")
+        _sub = os.path.join(_pos, "Sub")
+        os.makedirs(_sub)
+        _deep = os.path.join(_sub, "deep2.pdf")
+        _out = os.path.join(_r, "Client", "outside.pdf")
+        for _x in (_deep, _out):
+            open(_x, "wb").write(b"%PDF-1.4" + chr(10).encode())
+        _tag_write(_deep, ["Feedback Pending"])
+        _tag_write(_out, ["Feedback Pending"])
+        tag_follow(_r, lambda *a, **k: None, pos=_pos)
+        _landed = os.path.join(_pos, "Feedback Pending", "deep2.pdf")
+        _stayed_out = os.path.exists(_out)
+        _no_nest = not os.path.exists(os.path.join(_sub, "Feedback Pending"))
+        return bool(os.path.exists(_landed) and _stayed_out and _no_nest)
+    except Exception:
+        return False
+
 def _tagfollow_probe():  # TAG-FOLLOW v85.246: tagged moves, untagged stays
     try:
         import tempfile as _tf
@@ -8077,6 +8100,7 @@ def _selftest(root):
     ck('S659 the fields a saved draft reads carry no queue number and no repeated city', _draftlabel_probe())
     ck('S660 refresh reopens a loose-again paper, releases the chair and seats the next', _refreshreal_probe())
     ck('S661 a paper in a sub-folder settles at the position level, never nested and never above it', _taglevel_probe())
+    ck('S662 the Ctrl+Y door anchors on the clicked position - a sub-folder paper settles there, an outside paper stays', _tagdoor_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
