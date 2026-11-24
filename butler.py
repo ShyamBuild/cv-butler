@@ -7176,6 +7176,28 @@ def _taglevel_probe():  # TAG-LEVEL v85.343: a sub-folder paper settles at the P
     except Exception:
         return False
 
+def _stampone_probe():  # STAMP-ONE-ALL v85.346: an older stamp on another page never survives a repair
+    try:
+        import tempfile as _tf
+        import stampkeeper as _sk
+        from pypdf import PdfWriter as _PW, PdfReader as _PR
+        from pypdf.annotations import FreeText as _FT
+        _d = _tf.mkdtemp()
+        _p = os.path.join(_d, "two.pdf")
+        _w = _PW(); _w.add_blank_page(width=595, height=842); _w.add_blank_page(width=595, height=842); _w.write(_p)
+        _txt = "Sunsoft Technology" + chr(10) + "Total Experience: 7 years" + chr(10) + "Current CTC: 6.5 LPA" + chr(10) + "Expected CTC: 8 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10) + "Notice Period: 30 days"
+        _sk._write_tag(_p, _txt, 200, 110)
+        _w2 = _PW(clone_from=_p)
+        _w2.add_annotation(page_number=0, annotation=_FT(text=_txt, rect=(60, 60, 300, 190)))
+        _w2.write(_p)                          # an older stamp now sits on page 1, the new one elsewhere
+        if _sk.stamp_health(_p)["n"] != 2:
+            return False                       # the fixture itself must carry two first
+        _sk._write_tag(_p, _txt, 200, 110)
+        _h = _sk.stamp_health(_p)
+        return _h["n"] == 1 and _h["complete"]
+    except Exception:
+        return False
+
 def _stamp24_probe():  # STAMP-24 v85.345: one stamp, the masters size, a box that fits, no stack
     try:
         import tempfile as _tf
@@ -8137,6 +8159,7 @@ def _selftest(root):
     ck('S661 a paper in a sub-folder settles at the position level, never nested and never above it', _taglevel_probe())
     ck('S662 the Ctrl+Y door anchors on the clicked position - a sub-folder paper settles there, an outside paper stays', _tagdoor_probe())
     ck('S663 Ctrl+S writes one stamp at 24pt in a box that fits, and a second press never stacks', _stamp24_probe())
+    ck('S664 an older Sunsoft stamp on another page never survives a repair - one stamp per paper', _stampone_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
