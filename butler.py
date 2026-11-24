@@ -6731,6 +6731,14 @@ def _tagonly_probe():  # TAG-ONLY v85.240  # NO-COUPLE v85.240: the flow moves n
     except Exception:
         return False
 
+def _deskwins_probe():  # DESK-WINS v85.334: the master choice is the desk and a chair belongs to its position
+    try:
+        _bf = open(os.path.join(BASE_DIR, "briefing.py"), encoding="utf-8").read()
+        return ("DESK-WINS v85.334" in _bf and "SEAT-SCOPE v85.334" in _bf
+                and _bf.index("DESK-WINS v85.334") < _bf.index("elif live:"))
+    except Exception:
+        return False
+
 def _stagelaw_probe():  # EVERY-TAG-MOVES v85.329: every tag the master uses orders the folder; a colour never does
     try:
         return (_tag_stage("Call Scheduled") is True and _tag_stage("Awaiting CV Update") is True
@@ -7837,6 +7845,7 @@ def _selftest(root):
     ck('S649 a cached phone answers only when the paper agrees on the human', _phonewitness_probe())
     ck('S650 the loose tray seats first, and a chair with nothing at risk lets go', _seatsense_probe())
     ck('S651 every tag the master uses orders the folder, and a colour tag never does', _stagelaw_probe())
+    ck('S652 the chosen desk wins and a chair from another position is released', _deskwins_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())

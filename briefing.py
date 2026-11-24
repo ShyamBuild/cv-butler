@@ -1859,20 +1859,47 @@ if __name__ == "__main__":
                 or os.path.abspath(r).startswith(os.path.abspath(root) + os.sep)
                 or os.path.abspath(root).startswith(os.path.abspath(r) + os.sep)]
         live = [r for r in live if os.path.abspath(r) != os.path.abspath(root)]  # FOCUS-KEEP v85.290: a watcher on the HOUSE ROOT serves every position, so it must never override the position the master clicked with Ctrl+B
-        if live:
+        # DESK-WINS v85.334: the master's Ctrl+B / Ctrl+U choice IS the desk - a watcher may only fill an empty desk
+        _desk = {}
+        try:
+            _desk = json.load(open(os.path.join(BASE_DIR, 'desk.json'))) or {}
+        except Exception:
+            _desk = {}
+        _chosen = ''
+        _desk_p = _desk.get('primary') or ''
+        if _desk_p and os.path.isdir(_desk_p):
+            _chosen = _desk_p
+            print('   \🎯 desk: ' + os.path.relpath(_chosen, root))
+        elif live:
             pickr = live[0]
             if len(live) > 1:
-                print("   🤖 butlers running:")
-                for i, r in enumerate(live): print(f"      {i+1}) {os.path.relpath(r, root)}")
-                try: pickr = live[int(input("   sync focus to #: ").strip()) - 1]
+                print('   \🤖 butlers running:')
+                for i, r in enumerate(live): print('      %d) %s' % (i + 1, os.path.relpath(r, root)))
+                try: pickr = live[int(input('   sync focus to #: ').strip()) - 1]
                 except Exception: pass
-            json.dump({'path': pickr, 'display': clean_pos(os.path.basename(pickr)),
-                       'client': re.sub(r'^\d+[\s_-]*', '', os.path.basename(os.path.dirname(pickr))), 'also': []},
+            _chosen = pickr
+            print('   \🎯 focus synced to running butler: ' + os.path.relpath(pickr, root))
+        if _chosen:
+            _prev = (_fv or {}).get('path') or ''
+            json.dump({'path': _chosen, 'display': clean_pos(os.path.basename(_chosen)),
+                       'client': re.sub(r'^\d+[\s_-]*', '', os.path.basename(os.path.dirname(_chosen))), 'also': []},
                       open(FOCUS_FILE, 'w'), indent=2)
-            print(f"   🎯 focus synced to running butler: {os.path.relpath(pickr, root)}")
+            if _prev and os.path.abspath(_prev) != os.path.abspath(_chosen):   # SEAT-SCOPE v85.334: a chair belongs to its position
+                try:
+                    _sf = os.path.join(BASE_DIR, 'sheet.json')
+                    _s2 = json.load(open(_sf))
+                    _c2 = _s2.get('current') or {}
+                    if _c2 and not os.path.abspath(_c2.get('p') or '').startswith(os.path.abspath(_chosen) + os.sep):
+                        _s2['current'] = None
+                        json.dump(_s2, open(_sf, 'w'), indent=1)
+                        print('   \🪑 chair released - it held ' + str(_c2.get('name') or 'a paper') + ' from another position')
+                except Exception:
+                    pass
             try:  # UI-NUMBERS v85.217: the tray is spoken once, at the door
-             _r0 = _house_rows()
-             print('📥 %s pending · ⏳ %s waiting · 🏆 %s ready' % (_r0['pending'], _r0['waiting'], _r0['ready']))
+                _r0 = _house_rows()
+                print('\📥 %s pending \· \⏳ %s waiting \· \🏆 %s ready' % (_r0['pending'], _r0['waiting'], _r0['ready']))
+            except Exception:
+                pass
             except Exception:
              pass
         import faulthandler as _fh; _fh.enable()  # HARD-CRASH-VOICE v85.51: if the interpreter itself dies, the stack speaks to the terminal instead of vanishing
