@@ -1990,7 +1990,7 @@ if __name__ == "__main__":
             if q == 'twins' or q.startswith('twins '): butler.twins_cmd(q[5:].strip(), root, _say); continue  # TWINS v84.36
             if q.startswith('skipfolder '): butler.skipfolder_cmd(q[11:].strip(), root, _say); continue  # NON-QUEUE v84.39
             if q.strip() == 'weekly': butler.weekly_cmd('', root, _say); continue  # WEEKLY v84.40
-            if q.strip() == 'refresh': butler.calls_cmd('', root, _say); continue  # SELF-REFRESH v84.32
+            if q.strip() == 'refresh': butler.refresh_cmd(root, _say); continue  # SELF-REFRESH v84.32  # REFRESH-REAL v85.342: reopen, release, reseed, seat  # REFRESH-REAL v85.342
             if q.strip() == 'options': butler.options_cmd('', root, _say); continue  # OPTIONS-MAP v84.32
             if butler.sheet_current() and q.strip() in ('1', '2', '3', '4', '5', '6', '7', '8'): do_outcome(q.strip(), root); continue  # CHAIR v84.10b  # HOLD-OPTION v85.335
             if butler.sheet_current() and butler.chair_word(q): do_outcome(butler.chair_word(q), root); continue

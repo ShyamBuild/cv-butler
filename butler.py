@@ -1556,6 +1556,39 @@ def _ident_of(p):  # DUP-SEED v85.26: a paper's identity is its email-and-phone 
     except Exception: pass
     return ids
 
+def refresh_cmd(root=None, say=print):  # REFRESH-REAL v85.342: re-read the folders, reopen what came back loose, seat again
+    _root = root or _pl_root()
+    s = sheet_load()
+    _focus = _focus_path(_root)
+    reopened = 0
+    for it in s.get('items', []):
+        p = it.get('p') or ''
+        if it.get('status') == 'waiting' or not p or not os.path.exists(p):
+            continue
+        if not os.path.abspath(p).startswith(_focus + os.sep):
+            continue                                   # another position keeps its own rows
+        try:
+            _par = os.path.basename(os.path.dirname(p))
+            if not _tag_stage(_par):                   # the paper is back OUTSIDE a stage: it is un-processed again
+                it['status'] = 'waiting'; it['outcome'] = ''
+                reopened += 1
+        except Exception:
+            pass
+    if s.get('current'):
+        s['current'] = None                           # RELEASE: the old pass does not hold the chair
+    sheet_save(s)
+    try:
+        calls_cmd('', _root, say)
+    except Exception:
+        pass
+    if reopened:
+        say('♻️ %d paper(s) came back to the chair - their folder is loose again' % reopened)
+    try:
+        up_cmd('', _root, say)
+    except Exception:
+        pass
+    return reopened
+
 def calls_cmd(arg, root, say=print, hint=True):  # CHAIR v84.10b (v84.30): FOLDER-TRUTH - the sheet maps the folders, not the tags
     res_id = {}  # DUP-SEED v85.26 (re-seated v85.122): the residents' identities are born before the first loop reads them, gathered once per seed, so a second download may never re-enter the chair wearing a portal mask
     scopes = [desk_resolve(arg, root)] if arg else (desk_paths() or [root])
@@ -6770,6 +6803,16 @@ def _tagonly_probe():  # TAG-ONLY v85.240  # NO-COUPLE v85.240: the flow moves n
     except Exception:
         return False
 
+def _refreshreal_probe():  # REFRESH-REAL v85.342: refresh reopens loose papers, releases the chair and seats again
+    try:
+        _b = open(os.path.join(BASE_DIR, "butler.py"), encoding="utf-8").read()
+        _r = open(os.path.join(BASE_DIR, "briefing.py"), encoding="utf-8").read()
+        return ("def refresh_cmd(" in _b and "REFRESH-REAL v85.342" in _b
+                and "refresh_cmd(root, _say)" in _r
+                and _b.index("def refresh_cmd(") < _b.index("def calls_cmd("))
+    except Exception:
+        return False
+
 def _draftlabel_probe():  # DRAFT-LABELS v85.341b: the fields a saved draft reads are clean too
     try:
         _b = open(os.path.join(BASE_DIR, "butler.py"), encoding="utf-8").read()
@@ -7964,6 +8007,7 @@ def _selftest(root):
     ck('S657 the draft carries no queue number and never names a place twice', _templatepure_probe())
     ck('S658 every label a draft interpolates loses its queue number', _labelall_probe())
     ck('S659 the fields a saved draft reads carry no queue number and no repeated city', _draftlabel_probe())
+    ck('S660 refresh reopens a loose-again paper, releases the chair and seats the next', _refreshreal_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
