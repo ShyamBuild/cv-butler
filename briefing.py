@@ -73,6 +73,8 @@ if not isinstance(_sysnl.stdout, _NLOut):
 def clean_pos(name):
     name = (name or '').replace('|', ' ')  # PIPE-CLEAN v67
     n = re.sub(r'^jd[\s_-]+', '', name, flags=re.I)
+    n = re.sub(r'^\s*\d{1,3}[\s._\-]+', '', n)  # LABEL-NUMBER-CLEAN: '01 ' is a queue number  # LABEL-NUMBER-CLEAN v85.335
+    n = re.sub(r'^\s*\d{1,3}[\s._\-]+', '', n)  # LABEL-NUMBER-CLEAN: '01 ' is a queue number  # LABEL-NUMBER-CLEAN v85.335
     n = n.replace('_', ' ').replace('-', ' ')
     n = re.sub(r'\b(pvt\.?|ltd\.?|llp|inc\.?|corp\.?|projects|technologies|solutions|enterprises|international|india)\b', ' ', n, flags=re.I)
     n = re.sub(r'\s*\.\s*', ' ', n)
@@ -1976,7 +1978,7 @@ if __name__ == "__main__":
             if q.strip() == 'weekly': butler.weekly_cmd('', root, _say); continue  # WEEKLY v84.40
             if q.strip() == 'refresh': butler.calls_cmd('', root, _say); continue  # SELF-REFRESH v84.32
             if q.strip() == 'options': butler.options_cmd('', root, _say); continue  # OPTIONS-MAP v84.32
-            if butler.sheet_current() and q.strip() in ('1', '2', '3', '4', '5', '6', '7'): do_outcome(q.strip(), root); continue  # CHAIR v84.10b
+            if butler.sheet_current() and q.strip() in ('1', '2', '3', '4', '5', '6', '7', '8'): do_outcome(q.strip(), root); continue  # CHAIR v84.10b  # HOLD-OPTION v85.335
             if butler.sheet_current() and butler.chair_word(q): do_outcome(butler.chair_word(q), root); continue
             if q == 'up' or q.startswith('up '): do_up(q[2:].strip(), root); continue
             if q.startswith('calls'): do_calls(q[5:].strip(), root); continue

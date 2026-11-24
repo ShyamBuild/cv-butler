@@ -1370,7 +1370,7 @@ def sheet_current(): return sheet_load().get('current')
 CHAIR_WORDS = {'missed': '5', 'no answer': '5', 'jd': '1', 'jd mailed': '1', 'cv': '3', 'update cv': '3', 'not interested': '2', 'ready': '6', 'manager': '6', 'skip': '7', 'skip him': '7', 'skip for now': '7', 'skip him for now': '7', 'nudge': '4', 'remind': '4', 'reminder': '4'}  # CHAIR-WORDS renumbered v84.44: the reminder owns four
 def chair_word(q): return CHAIR_WORDS.get((q or '').strip().lower())
 _QUIET_ID = {'on': False}  # QUIET-DEED v85.182: one switch silences the triple during a chair deed
-OUTCOMES = {'1': ('Awaiting JD Confirmation', 'interested · JD mailed', 'jd'), '2': ('Closed \u2013 Not Proceeding', 'not interested', 'refer'), '3': ('Awaiting CV Update', 'will update CV', 'cv'), '4': ('', 'nudge - remind to acknowledge the JD or send the updated CV', 'nudge'), '5': ('Call Scheduled', 'missed / no answer', 'missed'), '6': ('Ready for Manager Review', 'ready for manager', None), '7': (None, 'skipped', None)}  # NUDGE-OPTION v84.44: seven doors - the reminder changes no tag and moves nothing
+OUTCOMES = {'1': ('Awaiting JD Confirmation', 'interested · JD mailed', 'jd'), '2': ('Closed \u2013 Not Proceeding', 'not interested', 'refer'), '3': ('Awaiting CV Update', 'will update CV', 'cv'), '4': ('', 'nudge - remind to acknowledge the JD or send the updated CV', 'nudge'), '5': ('Call Scheduled', 'missed / no answer', 'missed'), '6': ('Ready for Manager Review', 'ready for manager', None), '7': (None, 'skipped', None), '8': (None, 'held', None)}  # NUDGE-OPTION v84.44: seven doors - the reminder changes no tag and moves nothing  # HOLD-OPTION v85.335
 def taught_digits(name):  # CHAIR-PHONE v84.10c: the chair reads the taught book directly, then falls back to the paper
     import json as _j
     low = (name or '').lower()
@@ -2886,7 +2886,7 @@ def _chair_card(name, p, ph, em, say=print, phones=None):  # CHAIR-CARD v85.181 
             say(_paint('│  📱 ', 'd') + _paint(_nums, 'g'))
         elif ph:
             say(_paint('│  📱 ', 'd') + _paint(ph, 'g'))
-        say(_paint('└─ ', 'd') + _paint('1 jd · 2 refer · 3 cv · 4 nudge · 5 missed · 6 ready · 7 skip', 'm'))
+        say(_paint('└─ ', 'd') + _paint('1 jd · 2 refer · 3 cv · 4 nudge · 5 missed · 6 ready · 7 skip · 8 hold', 'm'))  # HOLD-OPTION v85.335
         return True
     except Exception:
         return False
@@ -3502,8 +3502,12 @@ def _draft_local_text(path, name, p):  # ONE-VOICE-FIRST v85.40: one door serves
     _dm = {}
     try: _dm = _j2.load(open(os.path.join(BASE_DIR, 'desk_meta.json'))).get(desk_load().get('primary') or '', {})
     except Exception: pass
-    _fld = _cc.defaultdict(str, {'name': name, 'full': name, 'position': _pi.get('role') or os.path.basename(os.path.dirname(p)), 'role': _pi.get('role') or os.path.basename(os.path.dirname(p)), 'roleline': _pi.get('role') or os.path.basename(os.path.dirname(p)), 'company': _pi.get('company') or _dm.get('company') or '', 'location': _pi.get('loc') or _pi.get('location') or ''})  # PLACEHOLDER-DIALECT v85.44: the door speaks the master's files' dialect - full, role and roleline arrive dressed, so no courtesy renders an empty name or a blank role
+    _fld = _cc.defaultdict(str, {'name': name, 'full': name, 'position': _clean_label(_pi.get('role') or os.path.basename(os.path.dirname(p))), 'role': _pi.get('role') or os.path.basename(os.path.dirname(p)), 'roleline': _pi.get('role') or os.path.basename(os.path.dirname(p)), 'company': _pi.get('company') or _dm.get('company') or '', 'location': _pi.get('loc') or _pi.get('location') or ''})  # PLACEHOLDER-DIALECT v85.44: the door speaks the master's files' dialect - full, role and roleline arrive dressed, so no courtesy renders an empty name or a blank role  # LABEL-NUMBER-CLEAN v85.335
     return open(path).read().strip().format_map(_fld)
+
+def _clean_label(s):  # LABEL-NUMBER-CLEAN v85.335: a queue number ("01 ") is not part of the position name
+    s = re.sub(r'^\s*\d{1,3}[\s._\-]+', '', str(s or ''))
+    return re.sub(r'\s{2,}', ' ', s).strip()
 
 def _chair_wa_text(kind, p, name):  # ONE-VOICE v84.19: the chair drafts through the same composer the keywords have always used; drafts/ and built-ins are fallbacks, not rivals
     if kind == 'cv':  # SCENARIO-3 v84.41: outcome 3 speaks the master's combo - acknowledge the JD and send the updated CV - from the scenario store; the legacy nudge stays the later touchpoint
@@ -3520,7 +3524,7 @@ def _chair_wa_text(kind, p, name):  # ONE-VOICE v84.19: the chair drafts through
                 _dm = {}
                 try: _dm = _j2.load(open(os.path.join(BASE_DIR, 'desk_meta.json'))).get(desk_load().get('primary') or '', {})
                 except Exception: pass
-                _fld = _cc.defaultdict(str, {'name': name, 'position': _pi.get('role') or os.path.basename(os.path.dirname(p)), 'company': _pi.get('company') or _dm.get('company') or '', 'location': _pi.get('loc') or _pi.get('location') or ''})
+                _fld = _cc.defaultdict(str, {'name': name, 'position': _clean_label(_pi.get('role') or os.path.basename(os.path.dirname(p))), 'company': _pi.get('company') or _dm.get('company') or '', 'location': _pi.get('loc') or _pi.get('location') or ''})  # LABEL-NUMBER-CLEAN v85.335
                 return open(_rp).read().strip().format_map(_fld)
         except Exception:
             pass
@@ -3714,6 +3718,15 @@ def outcome_cmd(key, root, say=print):  # CHAIR v84.10b (v84.11): the chair reme
     if not cur: say('🪑 chair empty - type up'); return
     o = OUTCOMES.get(key)
     if not o: say('🤷 unknown outcome - digits 1 to 7, or missed / jd / cv / not interested / ready / skip'); return
+    if str(key).strip() == '8':  # HOLD-OPTION v85.335: no tag, no move, no draft, nothing remembered - the desk moves on
+        say('⏭️ %s held - files untouched, nothing remembered' % (cur.get('name') or 'he'))
+        for it in s.get('items', []):
+            if os.path.realpath(it.get('p') or '') == os.path.realpath(cur.get('p') or ''):
+                it['status'] = 'done'; it['outcome'] = 'held'
+        s['current'] = None; sheet_save(s)
+        try: up_cmd('', root, say)
+        except Exception: pass
+        return
     tag, outcome, draft = o; p = cur['p']
     if not os.path.exists(p):  # FP v84.11: a renamed paper is still the same paper
         q = _find_by_fp(cur.get('fp'), root)
@@ -5478,7 +5491,7 @@ def main():
         action_execute(print); sys.exit(0)
     if len(sys.argv) > 1 and sys.argv[1].lower() in ('n', 'no', 'cancel') and action_pending():
         action_cancel(print); sys.exit(0)
-    if len(sys.argv) > 1 and sys.argv[1] in ('1', '2', '3', '4', '5', '6', '7') and sheet_current():  # CHAIR v84.10b
+    if len(sys.argv) > 1 and sys.argv[1] in ('1', '2', '3', '4', '5', '6', '7', '8') and sheet_current():  # CHAIR v84.10b  # HOLD-OPTION v85.335
         outcome_cmd(sys.argv[1], _pl_root(), print); sys.exit(0)
     if len(sys.argv) > 1 and sheet_current() and chair_word(sys.argv[1]):
         outcome_cmd(chair_word(sys.argv[1]), _pl_root(), print); sys.exit(0)
@@ -6731,6 +6744,18 @@ def _tagonly_probe():  # TAG-ONLY v85.240  # NO-COUPLE v85.240: the flow moves n
     except Exception:
         return False
 
+def _hold_probe():  # HOLD-OPTION v85.335: the eighth door changes nothing and remembers nothing
+    try:
+        _o = OUTCOMES.get('8')
+        _ok = (_o == (None, 'held', None))
+        _src = open(os.path.join(BASE_DIR, 'butler.py'), encoding='utf-8').read()
+        _brf = open(os.path.join(BASE_DIR, 'briefing.py'), encoding='utf-8').read()
+        return (_ok and 'HOLD-OPTION v85.335' in _src and 'held - files untouched' in _src
+                and "'8') and sheet_current()" in _src and "'8')" in _brf
+                and _clean_label('01 Sales Manager- Retail') == 'Sales Manager- Retail')
+    except Exception:
+        return False
+
 def _deskwins_probe():  # DESK-WINS v85.334: the master choice is the desk and a chair belongs to its position
     try:
         _bf = open(os.path.join(BASE_DIR, "briefing.py"), encoding="utf-8").read()
@@ -7846,6 +7871,7 @@ def _selftest(root):
     ck('S650 the loose tray seats first, and a chair with nothing at risk lets go', _seatsense_probe())
     ck('S651 every tag the master uses orders the folder, and a colour tag never does', _stagelaw_probe())
     ck('S652 the chosen desk wins and a chair from another position is released', _deskwins_probe())
+    ck('S653 the eighth door holds a paper untouched and remembers nothing; names lose their queue number', _hold_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
