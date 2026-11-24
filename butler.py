@@ -7176,6 +7176,41 @@ def _taglevel_probe():  # TAG-LEVEL v85.343: a sub-folder paper settles at the P
     except Exception:
         return False
 
+def _stamp24_probe():  # STAMP-24 v85.345: one stamp, the masters size, a box that fits, no stack
+    try:
+        import tempfile as _tf
+        import stampkeeper as _sk
+        from pypdf import PdfWriter as _PW, PdfReader as _PR
+        _d = _tf.mkdtemp()
+        _p = os.path.join(_d, "cv.pdf")
+        _w = _PW(); _w.add_blank_page(width=595, height=842); _w.write(_p)
+        _txt = "Sunsoft Technology" + chr(10) + "Total Experience: 7 years" + chr(10) + "Current CTC: 6.5 LPA" + chr(10) + "Expected CTC: 8 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10) + "Notice Period: 30 days"
+        _sk._write_tag(_p, _txt, 200, 110)
+        _sk._write_tag(_p, _txt, 200, 110)      # pressed twice - it must never stack
+        _r = _PR(_p)
+        _found = []
+        for _pg in _r.pages:
+            for _ref in (_pg.get("/Annots") or []):
+                _o = _ref.get_object()
+                if str(_o.get("/Subtype")) == "/FreeText" and "Sunsoft" in str(_o.get("/Contents") or ""):
+                    _found.append(_o)
+        if len(_found) != 1:
+            return False                          # one stamp only
+        _da = str(_found[0].get("/DA") or "")
+        if " 24 Tf" not in _da:
+            return False                          # the masters size, not a literal
+        _rect = [float(v) for v in _found[0].get("/Rect")]
+        _h = _rect[3] - _rect[1]
+        _lines = len([l for l in str(_found[0].get("/Contents") or "").split(chr(10)) if l.strip()])
+        if _h < _lines * 24.0 * 1.05:
+            return False                          # the box fits its own text
+        _hh = _sk.stamp_health(_p)
+        if _hh.get("n") != 1 or not _hh.get("complete"):
+            return False                          # one complete stamp after two presses
+        return _sk.has_complete_stamp(_p)
+    except Exception:
+        return False
+
 def _tagdoor_probe():  # TAG-DOOR v85.344: an explicit position anchors every paper, sub-folder papers included
     try:
         import tempfile as _tf
@@ -8101,6 +8136,7 @@ def _selftest(root):
     ck('S660 refresh reopens a loose-again paper, releases the chair and seats the next', _refreshreal_probe())
     ck('S661 a paper in a sub-folder settles at the position level, never nested and never above it', _taglevel_probe())
     ck('S662 the Ctrl+Y door anchors on the clicked position - a sub-folder paper settles there, an outside paper stays', _tagdoor_probe())
+    ck('S663 Ctrl+S writes one stamp at 24pt in a box that fits, and a second press never stacks', _stamp24_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
