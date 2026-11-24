@@ -2956,7 +2956,12 @@ def stamp_complete(text):  # STAMP-COMPLETE v85.235: the empty template Suman Ku
             if row is None:
                 missing.append(name); continue
             val = _stamp_value(row)
-            if kind == "num":
+            if name == "Notice Period":  # NOTICE-TRUTH v85.354: "Immediate Joiner" is a real notice period
+                _nv = str(val).strip().lower()
+                _real = any(ch.isdigit() for ch in val) or (any(ch.isalpha() for ch in val) and _nv not in ("na", "n/a", "none", "nil", "-"))
+                if not _real:
+                    missing.append(name)
+            elif kind == "num":  # NOTICE-TRUTH v85.354
                 if not any(ch.isdigit() for ch in val):
                     missing.append(name)
             else:
@@ -7176,6 +7181,18 @@ def _taglevel_probe():  # TAG-LEVEL v85.343: a sub-folder paper settles at the P
     except Exception:
         return False
 
+def _noticetruth_probe():  # NOTICE-TRUTH v85.354: "Immediate Joiner" completes a stamp, an empty template never does
+    try:
+        _head = "Sunsoft Technology" + chr(10) + "Total Experience: 9 years" + chr(10) + "Current CTC: 9 LPA" + chr(10) + "Expected: 11 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10)
+        _imm = stamp_complete(_head + "Notice Period: Immediate Joiner")
+        _days = stamp_complete(_head + "Notice Period: 30 days")
+        _neg = stamp_complete(_head + "Notice Period: Negotiable")
+        _none = stamp_complete(_head + "Notice Period: -")
+        _na = stamp_complete(_head + "Notice Period: n/a")
+        return bool(_imm[0] and _days[0] and _neg[0] and not _none[0] and not _na[0])
+    except Exception:
+        return False
+
 def _openstamp_probe():  # OPEN-STAMP v85.350: a page-targeted copy lands on THAT page and the twin is untouched
     try:
         import tempfile as _tf, hashlib as _hl
@@ -8254,6 +8271,7 @@ def _selftest(root):
     ck('S665 a bare, an unsized and a 12pt stamp are all NOT right - only one complete 24pt stamp is', _stampsize_probe())
     ck('S666 a stamp is proven: one, bold, the masters size, face declared, complete - and each bad shape is repaired once', _stampverify_probe())
     ck('S667 a page-targeted stamp lands on the page asked for and the twin is never touched', _openstamp_probe())
+    ck('S668 Immediate Joiner and Negotiable complete a stamp, an empty or n/a notice never does', _noticetruth_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
