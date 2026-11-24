@@ -3108,6 +3108,13 @@ def _client_doc(p):  # CLIENT-DOC v85.216: the company name on a paper is the co
         pass
     return False
 
+def _focus_stage(root=None):  # STAGE-DESK v85.337: the stage the desk was called on, if any
+    try:
+        import json as _sj
+        return (_sj.load(open(os.path.join(BASE_DIR, 'focus.json'))).get('stage') or '').strip()
+    except Exception:
+        return ''
+
 def _focus_path(root=None):  # SCOPE v85.215: one terminal, one position - the focus names the folder the chair may draw from
     try:
         import json as _fj
@@ -3172,14 +3179,17 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
             q = _find_by_fp(it.get('fp'), root)
             if q: p = it['p'] = q
             else: it['status'] = 'done'; it['outcome'] = 'gone'; continue
-        if os.path.basename(os.path.dirname(p)) in _tag_vocab() or _name_key(os.path.basename(p)) in mem or _in_nonqueue(p):
+        _fsd = _focus_stage(root)   # STAGE-DESK v85.337: a desk called on a stage seats THAT stage's papers
+        if _fsd and os.path.basename(os.path.dirname(p)) != _fsd:
+            continue
+        if (not _fsd) and (os.path.basename(os.path.dirname(p)) in _tag_vocab() or _name_key(os.path.basename(p)) in mem or _in_nonqueue(p)):  # STAGE-DESK v85.337
             it['status'] = 'done'; it['outcome'] = 'covered elsewhere'; continue  # FOLDER-TRUTH v84.30
     for sc in [_focus_path(root)]:  # SCOPE v85.215: the chair seeds only its own position
         for dp, dn, fn in os.walk(sc):
             for x in fn:
                 if not _is_desk_candidate(x): continue
                 q = os.path.join(dp, x); rq = _rp(q)
-                if rq in known or rq in sk or os.path.basename(dp) in _tag_vocab() or _name_key(x) in mem or _in_nonqueue(q): continue  # FOLDER-TRUTH v84.30
+                if rq in known or rq in sk or (os.path.basename(dp) in _tag_vocab() and os.path.basename(dp) != _focus_stage(root)) or _name_key(x) in mem or _in_nonqueue(q): continue  # FOLDER-TRUTH v84.30  # STAGE-DESK v85.337
                 s.setdefault('items', []).append({'p': q, 'name': os.path.splitext(x)[0], 'status': 'waiting', 'fp': _fp(q)})
                 known.add(rq)
                 say(f'🆕 joined the sheet: {x}')
@@ -3206,7 +3216,10 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
             q = _find_by_fp(it.get('fp'), root)
             if q: p = it['p'] = q
             else: it['status'] = 'done'; it['outcome'] = 'gone'; continue
-        if os.path.basename(os.path.dirname(p)) in _tag_vocab() or _name_key(os.path.basename(p)) in mem or _in_nonqueue(p):
+        _fsd = _focus_stage(root)   # STAGE-DESK v85.337: a desk called on a stage seats THAT stage's papers
+        if _fsd and os.path.basename(os.path.dirname(p)) != _fsd:
+            continue
+        if (not _fsd) and (os.path.basename(os.path.dirname(p)) in _tag_vocab() or _name_key(os.path.basename(p)) in mem or _in_nonqueue(p)):  # STAGE-DESK v85.337
             it['status'] = 'done'; it['outcome'] = 'covered elsewhere'; continue  # FOLDER-TRUTH v84.30
             it['status'] = 'done'; it['outcome'] = 'covered elsewhere'; continue
         if _jd_like_name(os.path.basename(p)) or _portal_name(os.path.basename(p)) or os.path.basename(os.path.dirname(p)) in ("JD Files", "Summaries") or _client_doc(p):  # JD-HOUSE v85.214: a description is never a chair
@@ -6744,6 +6757,18 @@ def _tagonly_probe():  # TAG-ONLY v85.240  # NO-COUPLE v85.240: the flow moves n
     except Exception:
         return False
 
+def _stagedesk_probe():  # STAGE-DESK v85.337: the stage the desk was called on scopes both the seed and the seat
+    try:
+        _b = open(os.path.join(BASE_DIR, 'butler.py'), encoding='utf-8').read()
+        _r = open(os.path.join(BASE_DIR, 'briefing.py'), encoding='utf-8').read()
+        _u = open(os.path.join(BASE_DIR, 'bin', 'butler-up.sh'), encoding='utf-8').read()
+        return ('def _focus_stage(' in _b and 'STAGE-DESK v85.337' in _b
+                and _b.count('_fsd = _focus_stage(root)') >= 2
+                and "'stage': (_desk.get('stage') or '')" in _r
+                and "'stage'" in _u and 'def _focus_stage' in _b)
+    except Exception:
+        return False
+
 def _hold_probe():  # HOLD-OPTION v85.335: the eighth door changes nothing and remembers nothing
     try:
         _o = OUTCOMES.get('8')
@@ -7872,6 +7897,7 @@ def _selftest(root):
     ck('S651 every tag the master uses orders the folder, and a colour tag never does', _stagelaw_probe())
     ck('S652 the chosen desk wins and a chair from another position is released', _deskwins_probe())
     ck('S653 the eighth door holds a paper untouched and remembers nothing; names lose their queue number', _hold_probe())
+    ck('S654 a desk called on a stage seats only that stage, and names its position as usual', _stagedesk_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())

@@ -1883,7 +1883,7 @@ if __name__ == "__main__":
             print('   \🎯 focus synced to running butler: ' + os.path.relpath(pickr, root))
         if _chosen:
             _prev = (_fv or {}).get('path') or ''
-            json.dump({'path': _chosen, 'display': clean_pos(os.path.basename(_chosen)),
+            json.dump({'path': _chosen, 'stage': (_desk.get('stage') or ''), 'display': clean_pos(os.path.basename(_chosen)),  # STAGE-DESK v85.337
                        'client': re.sub(r'^\d+[\s_-]*', '', os.path.basename(os.path.dirname(_chosen))), 'also': []},
                       open(FOCUS_FILE, 'w'), indent=2)
             if _prev and os.path.abspath(_prev) != os.path.abspath(_chosen):   # SEAT-SCOPE v85.334: a chair belongs to its position
