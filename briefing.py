@@ -269,7 +269,7 @@ def _fmt_tpl(tpl, hit, f, name):
         import butler as _bt
         _idn = _bt.pos_identity(str(hit)) if (hit and os.path.isfile(str(hit))) else {}
         if _idn.get('company'): cli = _idn['company']
-        if _idn.get('role'): title = _idn['role']
+        if _idn.get('role'): title = _tpl_title(_idn['role'])  # TEMPLATE-PURE v85.340
         if _idn.get('loc'): loc = _idn['loc']
         _dz = _idn.get('designation') or title  # DESIG-FALLBACK v84.29: the designation slot is never blank - it borrows the position's name when untold
         if not _idn.get('company'):  # META-COMPANY v85.3: when no client folder exists, the desk's taught company answers - a taught name may not sit unused while a guess speaks
@@ -280,12 +280,26 @@ def _fmt_tpl(tpl, hit, f, name):
             if _mc: cli = _mc
     except Exception:
         _dz = ''
-    where = f"Company: {cli}" + (f" | Location: {loc}" if loc else "")
-    at = cli + (f", {loc}" if loc and str(loc).strip().lower() not in (str(title) + chr(32) + str(cli)).lower() else "")  # WHERE-DUP v85.280: never name the city twice (New Delhi role at ..., Delhi)
+    where = f"Company: {cli}" + (f" | Location: {loc}" if loc and _tpl_where(title, cli, loc) != cli else "")  # TEMPLATE-PURE
+    at = _tpl_where(title, cli, loc)  # TEMPLATE-PURE v85.340: words decide, not punctuation  # WHERE-DUP v85.280: the place is named once
     try:
         return tpl.format(name=name, position=title, company=cli, location=loc or '-', where_line=where, where=at, designation=_dz, client=cli)  # CLIENT-KEY v84.42: legacy templates ask for {client}; the living registry answers
     except Exception:
         return tpl.format_map(_SafeDict(name=name, position=title, company=cli, location=loc or '-', where_line=where, where=at, designation=_dz, client=cli))
+def _tpl_title(s):  # TEMPLATE-PURE v85.340: the draft reads the position exactly as the card does
+    s = re.sub(r'^\s*\d{1,3}[\s._\-]+', '', str(s or ''))
+    return re.sub(r'\s{2,}', ' ', s).strip()
+
+def _tpl_where(title, cli, loc):  # TEMPLATE-PURE: a place already named by the position is never named again
+    if not loc:
+        return cli
+    _n = lambda s: re.sub(r'[^a-z0-9]+', ' ', str(s or '').lower()).strip()
+    _t = _n(title)
+    _toks = [w for w in _n(loc).split() if len(w) > 2]
+    if _toks and all(w in _t for w in _toks):
+        return cli
+    return cli + ', ' + str(loc)
+
 def _pos_client_for(hit, f=None):
     for base in ([os.path.dirname(os.path.abspath(hit))] if hit else []) + ([f['path']] if f and f.get('path') else []):
         comp = _company_root(base)

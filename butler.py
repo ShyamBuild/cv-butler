@@ -6767,6 +6767,16 @@ def _tagonly_probe():  # TAG-ONLY v85.240  # NO-COUPLE v85.240: the flow moves n
     except Exception:
         return False
 
+def _templatepure_probe():  # TEMPLATE-PURE v85.340: no queue number in the draft, no city twice
+    try:
+        _r = open(os.path.join(BASE_DIR, "briefing.py"), encoding="utf-8").read()
+        if "def _tpl_title(" not in _r or "def _tpl_where(" not in _r:
+            return False
+        return ('TEMPLATE-PURE v85.340' in _r and '_tpl_title(_idn' in _r
+                and '_tpl_where(title, cli, loc)' in _r)
+    except Exception:
+        return False
+
 def _sheetheal_probe():  # SHEET-HEAL v85.339: a malformed sheet heals instead of stopping the house
     try:
         _b = open(os.path.join(BASE_DIR, "butler.py"), encoding="utf-8").read()
@@ -7928,6 +7938,7 @@ def _selftest(root):
     ck('S654 a desk called on a stage seats only that stage, and names its position as usual', _stagedesk_probe())
     ck('S655 a killed stamp write reaps its own temp file and leaves no litter', _tmpself_probe())
     ck('S656 a malformed sheet heals on read and the card never speaks a queue number', _sheetheal_probe())
+    ck('S657 the draft carries no queue number and never names a place twice', _templatepure_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
