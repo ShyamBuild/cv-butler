@@ -1361,8 +1361,18 @@ def tags_tidy(say=print):  # TIDY v84.9: carry each misplaced paper home, one ke
 
 SHEET_PATH = os.path.join(BASE_DIR, 'sheet.json')  # CHAIR v84.10b: today's call queue lives here
 def sheet_load():
-    try: return json.load(open(SHEET_PATH))
-    except Exception: return {'date': '', 'items': [], 'current': None}
+    try:
+        s = json.load(open(SHEET_PATH))
+    except Exception:
+        return {'date': '', 'items': [], 'current': None}
+    if not isinstance(s, dict):
+        return {'date': '', 'items': [], 'current': None}
+    _it = s.get('items')
+    if isinstance(_it, dict):
+        s['items'] = list(_it.values())      # SHEET-HEAL v85.339: a map of rows is a list of rows
+    elif not isinstance(_it, list):
+        s['items'] = []
+    return s
 def sheet_save(s):
     try: json.dump(s, open(SHEET_PATH, 'w'), indent=1)
     except Exception: pass
@@ -2873,7 +2883,7 @@ def _chair_card(name, p, ph, em, say=print, phones=None):  # CHAIR-CARD v85.181 
             _idn = pos_identity(p) or {}
         except Exception:
             _idn = {}
-        _role = _idn.get('role') or os.path.basename(os.path.dirname(p))
+        _role = _clean_label(_idn.get('role') or os.path.basename(os.path.dirname(p)))  # CARD-LABEL v85.339
         _co = _idn.get('company') or ''
         _loc = _idn.get('loc') or ''
         say(_paint('┌─ 🪑 ', 'd') + _paint(str(name).upper(), 'b'))
@@ -6757,6 +6767,15 @@ def _tagonly_probe():  # TAG-ONLY v85.240  # NO-COUPLE v85.240: the flow moves n
     except Exception:
         return False
 
+def _sheetheal_probe():  # SHEET-HEAL v85.339: a malformed sheet heals instead of stopping the house
+    try:
+        _b = open(os.path.join(BASE_DIR, "butler.py"), encoding="utf-8").read()
+        _s = sheet_load()
+        _ok = isinstance(_s.get("items"), list) and "SHEET-HEAL v85.339" in _b
+        return _ok and _b.count("_clean_label(") >= 3
+    except Exception:
+        return False
+
 def _tmpself_probe():  # TMP-SELF-CLEAN v85.338: a killed stamp write reaps its own scratch, never leaves litter
     try:
         _sk = open(os.path.join(BASE_DIR, "stampkeeper.py"), encoding="utf-8").read()
@@ -7908,6 +7927,7 @@ def _selftest(root):
     ck('S653 the eighth door holds a paper untouched and remembers nothing; names lose their queue number', _hold_probe())
     ck('S654 a desk called on a stage seats only that stage, and names its position as usual', _stagedesk_probe())
     ck('S655 a killed stamp write reaps its own temp file and leaves no litter', _tmpself_probe())
+    ck('S656 a malformed sheet heals on read and the card never speaks a queue number', _sheetheal_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
