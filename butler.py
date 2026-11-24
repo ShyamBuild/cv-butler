@@ -7181,6 +7181,32 @@ def _taglevel_probe():  # TAG-LEVEL v85.343: a sub-folder paper settles at the P
     except Exception:
         return False
 
+def _boxfit_probe():  # BOX-FIT v85.355: the frame is measured at the drawn size, and a squeezed frame is refused
+    try:
+        import stampkeeper as _sk
+        _txt = "Sunsoft Technology" + chr(10) + "Total Experience: 9 years" + chr(10) + "Current CTC: 9 LPA" + chr(10) + "Expected: 11 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10) + "Notice Period: Immediate Joiner"
+        _w, _h = _sk.need_size(_txt)
+        _lines = len([l for l in _txt.split(chr(10)) if l.strip()])
+        _wide = _w >= 0.95 * 360
+        _tall = _h >= _lines * float(_sk.STAMP_STYLE["font_size"]) * 1.05
+        import tempfile as _tf
+        from pypdf import PdfWriter as _PW, PdfReader as _PR
+        _d = _tf.mkdtemp()
+        _p = os.path.join(_d, "fit.pdf")
+        _wr = _PW(); _wr.add_blank_page(width=595, height=842); _wr.write(_p)
+        _sk._write_tag(_p, _txt, 200, 110)
+        _v = _sk.stamp_verify(_p)
+        _rect = None
+        for _pg in _PR(_p).pages:
+            for _ref in (_pg.get("/Annots") or []):
+                _o = _ref.get_object()
+                if str(_o.get("/Subtype")) == "/FreeText" and "Sunsoft" in str(_o.get("/Contents") or ""):
+                    _rect = [float(x) for x in _o.get("/Rect")]
+        _boxw = (_rect[2] - _rect[0]) if _rect else 0
+        return bool(_wide and _tall and _v.get("ok") and _boxw >= 0.95 * 360)
+    except Exception:
+        return False
+
 def _noticetruth_probe():  # NOTICE-TRUTH v85.354: "Immediate Joiner" completes a stamp, an empty template never does
     try:
         _head = "Sunsoft Technology" + chr(10) + "Total Experience: 9 years" + chr(10) + "Current CTC: 9 LPA" + chr(10) + "Expected: 11 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10)
@@ -8272,6 +8298,7 @@ def _selftest(root):
     ck('S666 a stamp is proven: one, bold, the masters size, face declared, complete - and each bad shape is repaired once', _stampverify_probe())
     ck('S667 a page-targeted stamp lands on the page asked for and the twin is never touched', _openstamp_probe())
     ck('S668 Immediate Joiner and Negotiable complete a stamp, an empty or n/a notice never does', _noticetruth_probe())
+    ck('S669 the stamp frame is measured at the drawn size - 24pt text needs a ~375pt frame, not 191', _boxfit_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
