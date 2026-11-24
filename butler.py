@@ -3495,15 +3495,18 @@ def _draft_fields(name, pos, p=None):
             v = get_visual_name(p)
             if v: full = v
         except Exception: pass
-    _dz = _idn['designation'] or _idn['role']
+    _dz = _clean_label(_idn['designation'] or _idn['role'])  # DRAFT-LABELS v85.341b
     _co = _idn['company'] or meta.get('company')
     _parts = []
     if _dz: _parts.append('the ' + _dz + ' opening')
     if _co: _parts.append('for ' + _co)
-    _tail = ', '.join(x for x in (_idn['role'], _idn['loc']) if x and x != _dz)
+    _rl1 = _clean_label(_idn['role'])
+    _loc2 = _clean_label(_idn['loc'])
+    _loc2 = '' if (_loc2 and all(w in _rl1.lower() for w in _loc2.lower().replace(',', ' ').split() if len(w) > 2)) else _loc2
+    _tail = ', '.join(x for x in (_rl1, _loc2) if x and x != _dz)  # DRAFT-LABELS v85.341b: no queue number, no city twice
     if _tail: _parts.append('(' + _tail + ')')
     roleline = ' '.join(_parts) or 'the role we discussed'  # ROLELINE v84.18 (refined v84.22): designation, company, then where - omitting only what was never taught
-    return collections.defaultdict(str, {'first': (full or name).split()[0].title(), 'full': (full or name).title(), 'role': role.strip(), 'company': meta.get('company', ''), 'loc': loc.strip(), 'pos': pos or '', 'signature': _sig(), 'roleline': roleline})
+    return collections.defaultdict(str, {'first': (full or name).split()[0].title(), 'full': (full or name).title(), 'role': _clean_label(role), 'company': meta.get('company', ''), 'loc': loc.strip(), 'pos': pos or '', 'signature': _sig(), 'roleline': roleline})  # DRAFT-LABELS v85.341b
 def _draft_text(kind, name, pos, p=None):
     lp = os.path.join(DRAFTS_DIR, kind + '.txt')
     if not os.path.exists(lp): return None
@@ -3525,7 +3528,7 @@ def _draft_local_text(path, name, p):  # ONE-VOICE-FIRST v85.40: one door serves
     _dm = {}
     try: _dm = _j2.load(open(os.path.join(BASE_DIR, 'desk_meta.json'))).get(desk_load().get('primary') or '', {})
     except Exception: pass
-    _fld = _cc.defaultdict(str, {'name': name, 'full': name, 'position': _clean_label(_pi.get('role') or os.path.basename(os.path.dirname(p))), 'role': _pi.get('role') or os.path.basename(os.path.dirname(p)), 'roleline': _pi.get('role') or os.path.basename(os.path.dirname(p)), 'company': _pi.get('company') or _dm.get('company') or '', 'location': _pi.get('loc') or _pi.get('location') or ''})  # PLACEHOLDER-DIALECT v85.44: the door speaks the master's files' dialect - full, role and roleline arrive dressed, so no courtesy renders an empty name or a blank role  # LABEL-NUMBER-CLEAN v85.335
+    _fld = _cc.defaultdict(str, {'name': name, 'full': name, 'position': _clean_label(_pi.get('role') or os.path.basename(os.path.dirname(p))), 'role': _clean_label(_pi.get('role') or os.path.basename(os.path.dirname(p))), 'roleline': _clean_label(_pi.get('role') or os.path.basename(os.path.dirname(p))), 'company': _pi.get('company') or _dm.get('company') or '', 'location': _pi.get('loc') or _pi.get('location') or ''})  # PLACEHOLDER-DIALECT v85.44: the door speaks the master's files' dialect - full, role and roleline arrive dressed, so no courtesy renders an empty name or a blank role  # LABEL-NUMBER-CLEAN v85.335
     return open(path).read().strip().format_map(_fld)
 
 def _clean_label(s):  # LABEL-NUMBER-CLEAN v85.335: a queue number ("01 ") is not part of the position name
@@ -5105,7 +5108,7 @@ class Butler:
                     if pos.startswith('.') or not os.path.isdir(pp): continue
                     if pp not in reg:
                         role, loc = (pos.split(' -', 1) + [''])[:2]
-                        reg[pp] = {'company': cm.get(client, ''), 'role': role.strip(), 'loc': loc.strip(), 'designation': ''}
+                        reg[pp] = {'company': cm.get(client, ''), 'role': _clean_label(role), 'loc': loc.strip(), 'designation': ''}  # DRAFT-LABELS v85.341b
                         changed = True
                         client_norm = __import__('re').sub(r'^\d+[\s_-]*', '', client or '').strip().lower().replace(' ', '')  # COMPANY-NORM v85.148: coat-minus-digits, collapsed
                         say(f'🧠 new position understood: {client} / {pos}' + ('' if cm.get(client_norm) or cm.get(client) else ' - company unknown; teach once: client ' + client + ' = <company>'))
@@ -6767,6 +6770,26 @@ def _tagonly_probe():  # TAG-ONLY v85.240  # NO-COUPLE v85.240: the flow moves n
     except Exception:
         return False
 
+def _draftlabel_probe():  # DRAFT-LABELS v85.341b: the fields a saved draft reads are clean too
+    try:
+        _b = open(os.path.join(BASE_DIR, "butler.py"), encoding="utf-8").read()
+        return ("_dz = _clean_label(_idn['designation']" in _b
+                and '_loc2' in _b and 'DRAFT-LABELS v85.341b' in _b
+                and "'role': _clean_label(role)" in _b
+                and _clean_label('01 Sales Manager- X') == 'Sales Manager- X')
+    except Exception:
+        return False
+
+def _labelall_probe():  # LABEL-ALL v85.341: no label a draft interpolates carries a queue number
+    try:
+        _b = open(os.path.join(BASE_DIR, "butler.py"), encoding="utf-8").read()
+        return (_b.count("'role': _clean_label(") >= 2
+                and _b.count("'roleline': _clean_label(") >= 2
+                and _b.count("'position': _clean_label(") >= 2
+                and _clean_label('01 Sales Manager- Retail') == 'Sales Manager- Retail')
+    except Exception:
+        return False
+
 def _templatepure_probe():  # TEMPLATE-PURE v85.340: no queue number in the draft, no city twice
     try:
         _r = open(os.path.join(BASE_DIR, "briefing.py"), encoding="utf-8").read()
@@ -7939,6 +7962,8 @@ def _selftest(root):
     ck('S655 a killed stamp write reaps its own temp file and leaves no litter', _tmpself_probe())
     ck('S656 a malformed sheet heals on read and the card never speaks a queue number', _sheetheal_probe())
     ck('S657 the draft carries no queue number and never names a place twice', _templatepure_probe())
+    ck('S658 every label a draft interpolates loses its queue number', _labelall_probe())
+    ck('S659 the fields a saved draft reads carry no queue number and no repeated city', _draftlabel_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
