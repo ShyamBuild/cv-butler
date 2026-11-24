@@ -6757,6 +6757,15 @@ def _tagonly_probe():  # TAG-ONLY v85.240  # NO-COUPLE v85.240: the flow moves n
     except Exception:
         return False
 
+def _tmpself_probe():  # TMP-SELF-CLEAN v85.338: a killed stamp write reaps its own scratch, never leaves litter
+    try:
+        _sk = open(os.path.join(BASE_DIR, "stampkeeper.py"), encoding="utf-8").read()
+        return ("TMP-SELF-CLEAN v85.338" in _sk and _sk.count("TMP-SELF-CLEAN v85.338") >= 2
+                and _sk.count("tmp = new_pdf + '.tmp'") == 2
+                and _sk.count("os.remove(tmp)") >= 2)
+    except Exception:
+        return False
+
 def _stagedesk_probe():  # STAGE-DESK v85.337: the stage the desk was called on scopes both the seed and the seat
     try:
         _b = open(os.path.join(BASE_DIR, 'butler.py'), encoding='utf-8').read()
@@ -7898,6 +7907,7 @@ def _selftest(root):
     ck('S652 the chosen desk wins and a chair from another position is released', _deskwins_probe())
     ck('S653 the eighth door holds a paper untouched and remembers nothing; names lose their queue number', _hold_probe())
     ck('S654 a desk called on a stage seats only that stage, and names its position as usual', _stagedesk_probe())
+    ck('S655 a killed stamp write reaps its own temp file and leaves no litter', _tmpself_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
