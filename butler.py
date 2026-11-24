@@ -7176,6 +7176,31 @@ def _taglevel_probe():  # TAG-LEVEL v85.343: a sub-folder paper settles at the P
     except Exception:
         return False
 
+def _openstamp_probe():  # OPEN-STAMP v85.350: a page-targeted copy lands on THAT page and the twin is untouched
+    try:
+        import tempfile as _tf, hashlib as _hl
+        import stampkeeper as _sk
+        from pypdf import PdfWriter as _PW, PdfReader as _PR
+        _d = _tf.mkdtemp()
+        _twin = os.path.join(_d, "twin.pdf")
+        _w = _PW(); _w.add_blank_page(width=595, height=842); _w.add_blank_page(width=595, height=842); _w.write(_twin)
+        _txt = "Sunsoft Technology" + chr(10) + "Total Experience: 7 years" + chr(10) + "Current CTC: 6.5 LPA" + chr(10) + "Expected CTC: 8 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10) + "Notice Period: 30 days"
+        _sk._write_tag(_twin, _txt, 200, 110)
+        _h0 = _hl.sha256(open(_twin, "rb").read()).hexdigest()
+        _open = os.path.join(_d, "open.pdf")
+        _w2 = _PW(); _w2.add_blank_page(width=595, height=842); _w2.add_blank_page(width=595, height=842); _w2.write(_open)
+        _sk._write_tag(_open, _txt, 200, 110, page=2)
+        _h1 = _hl.sha256(open(_twin, "rb").read()).hexdigest()
+        _pg = None
+        for _i, _p in enumerate(_PR(_open).pages):
+            for _ref in (_p.get("/Annots") or []):
+                _o = _ref.get_object()
+                if str(_o.get("/Subtype")) == "/FreeText" and "Sunsoft" in str(_o.get("/Contents") or ""):
+                    _pg = _i + 1
+        return _pg == 2 and _h0 == _h1 and _sk.stamp_verify(_open)["ok"]
+    except Exception:
+        return False
+
 def _stampverify_probe():  # STAMP-VERIFY v85.348: a good stamp passes, a legacy DA-less one and a stack both fail
     try:
         import tempfile as _tf
@@ -8228,6 +8253,7 @@ def _selftest(root):
     ck('S664 an older Sunsoft stamp on another page never survives a repair - one stamp per paper', _stampone_probe())
     ck('S665 a bare, an unsized and a 12pt stamp are all NOT right - only one complete 24pt stamp is', _stampsize_probe())
     ck('S666 a stamp is proven: one, bold, the masters size, face declared, complete - and each bad shape is repaired once', _stampverify_probe())
+    ck('S667 a page-targeted stamp lands on the page asked for and the twin is never touched', _openstamp_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
