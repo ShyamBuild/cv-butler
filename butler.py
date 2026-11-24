@@ -3076,6 +3076,45 @@ def _eye_preferred_name(p, stem):  # RENAME-EYE v85.244: the name the paper shou
             pass
     return disp
 
+def _tag_position_of(p, _par, _voc, root):  # TAG-LEVEL v85.343: a stage folder is always a CHILD OF THE POSITION, never nested
+    _pos = _par                                      # SUB-SAFE v85.343: spelled apart so the caller-line rewrite below cannot touch it
+    if os.path.basename(_par) in _voc:
+        _pos = os.path.dirname(_par)                 # standing in a stage folder: its parent is the position
+    try:
+        _rd = os.path.relpath(_par, root).count(os.sep)
+    except Exception:
+        _rd = 9
+    if _rd < 1 and os.path.abspath(_par) != os.path.abspath(root):
+        return None                                      # above every position: this paper never moves
+    _hop = 0
+    while _hop < 4:
+        try:
+            _kids = set(os.listdir(_pos))
+        except Exception:
+            _kids = set()
+        if _kids & _voc:
+            break                                        # this folder already holds stages: it IS the position
+        if os.path.abspath(_pos) == os.path.abspath(root):
+            break                                        # never rise above the root the act was given
+        _up = os.path.dirname(_pos)
+        if _up == _pos:
+            break
+        try:
+            _upk = set(os.listdir(_up))
+        except Exception:
+            _upk = set()
+        if _upk & _voc:
+            _pos = _up                                # the level above holds the stages: that is the position
+            break
+        try:
+            if os.path.relpath(_up, root).count(os.sep) < 1 and os.path.abspath(_up) != os.path.abspath(root):
+                break                                    # the level above is a client: refuse, keep the paper
+        except Exception:
+            pass
+        _pos = _up
+        _hop += 1
+    return _pos
+
 def tag_follow(root, say=print):  # TAG-FOLLOW v85.246: the tag is the order - the folder obeys it
     moved = 0
     try:
@@ -3102,7 +3141,9 @@ def tag_follow(root, say=print):  # TAG-FOLLOW v85.246: the tag is the order - t
                 if not st:
                     continue  # an untagged paper never moves by itself
                 _par = os.path.dirname(p)  # TAG-FOLLOW-POSITION v85.259: where the paper stands decides where its stage lives
-                _pos = os.path.dirname(_par) if os.path.basename(_par) in _voc else _par  # TAG-FOLLOW-POSITION v85.259: inside a stage, the position is the stage parent; inside a position, it is the parent itself
+                _pos = _tag_position_of(p, _par, _voc, root)  # TAG-FOLLOW-POSITION v85.259: inside a stage, the position is the stage parent; inside a position, it is the parent itself  # TAG-LEVEL v85.343
+                if not _pos:
+                    continue                             # TAG-LEVEL v85.343: a paper above every position never moves
                 want = os.path.join(_pos, st[0])  # TAG-FOLLOW-POSITION v85.259: the stage is a SIBLING of its position, never a child of the house root (the 166-file collapse)
                 if os.path.abspath(os.path.dirname(p)) == os.path.abspath(want):
                     continue
@@ -7106,6 +7147,33 @@ def _belowtext_probe():  # BELOW-TEXT v85.245: the master geometry - left-aligne
     except Exception:
         return False
 
+def _taglevel_probe():  # TAG-LEVEL v85.343: a sub-folder paper settles at the POSITION level, never nested
+    try:
+        import tempfile as _tf
+        _r = _tf.mkdtemp()
+        _pos = os.path.join(_r, "Client", "Pos")
+        _sub = os.path.join(_pos, "Sub")
+        os.makedirs(os.path.join(_pos, "Call Scheduled"))
+        os.makedirs(_sub)
+        _deep = os.path.join(_sub, "deep.pdf")
+        _flat = os.path.join(_pos, "flat.pdf")
+        _plain = os.path.join(_pos, "plain.pdf")
+        _above = os.path.join(_r, "Client", "above.pdf")
+        for _x in (_deep, _flat, _plain, _above):
+            open(_x, "wb").write(b"%PDF-1.4" + chr(10).encode())
+        _tag_write(_deep, ["Call Scheduled"])
+        _tag_write(_flat, ["Call Scheduled"])
+        _tag_write(_above, ["Call Scheduled"])
+        tag_follow(_r, lambda *a, **k: None)
+        _seat = os.path.join(_pos, "Call Scheduled")
+        _ok = os.path.exists(os.path.join(_seat, "deep.pdf")) and os.path.exists(os.path.join(_seat, "flat.pdf"))
+        _notnest = not os.path.exists(os.path.join(_sub, "Call Scheduled"))
+        _stay = os.path.exists(_plain)
+        _above_still = os.path.exists(_above)
+        return bool(_ok and _notnest and _stay and _above_still)
+    except Exception:
+        return False
+
 def _tagfollow_probe():  # TAG-FOLLOW v85.246: tagged moves, untagged stays
     try:
         import tempfile as _tf
@@ -8008,6 +8076,7 @@ def _selftest(root):
     ck('S658 every label a draft interpolates loses its queue number', _labelall_probe())
     ck('S659 the fields a saved draft reads carry no queue number and no repeated city', _draftlabel_probe())
     ck('S660 refresh reopens a loose-again paper, releases the chair and seats the next', _refreshreal_probe())
+    ck('S661 a paper in a sub-folder settles at the position level, never nested and never above it', _taglevel_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
