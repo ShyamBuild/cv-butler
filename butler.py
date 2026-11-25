@@ -758,6 +758,11 @@ TAG_WAITING = ('Awaiting JD Confirmation', 'Awaiting CV Update')  # TAG-CLASS v8
 def _tag_stage(t):  # TAG-CLASS v84.5: everything else is a stage - one at a time, folder-bound
     return bool(t) and (t in _tag_vocab() or t in TAG_NAMES or t in ("Reject", "Rejected by Manager", "3 Reject"))  # EVERY-TAG-MOVES v85.329: every tag orders the folder - the waiting pair included
 
+REST_ALIAS = {'Awaiting JD Confirmation': 'Ready for Manager Review', 'Awaiting CV Update': 'Ready for Manager Review'}  # REST-ALIAS v85.369: three warm tags, one resting place - the master manages warm candidates in a single folder
+def _rest_folder(tag):  # REST-ALIAS v85.369: the ONE place a tags resting folder is decided - the tag on the paper is never touched
+    return REST_ALIAS.get(tag, tag)
+
+
 def _tag_vocab():  # DESK v84.0: built at call time, so no ordering of the book can starve it
     return list(PIPELINE_CLOCKED) + list(PIPELINE_MOMENT) + list(PIPELINE_TERMINAL) + list(PIPELINE_PRE)
 def _match_tag(w):
@@ -1054,7 +1059,7 @@ def _stage_move(p, tag, say=print):  # STAGE-SYNC v84.3: a tagged paper rests in
     if len(parts) >= 4 and parts[-2] in _tag_vocab(): pos = os.path.join(root, *parts[:-2])
     elif len(parts) == 3: pos = os.path.join(root, *parts[:-1])
     else: return
-    tgt = os.path.join(pos, tag)
+    tgt = os.path.join(pos, _rest_folder(tag))  # REST-ALIAS v85.369
     if os.path.realpath(os.path.dirname(p)) == os.path.realpath(tgt): return
     try:
         os.makedirs(tgt, exist_ok=True)
@@ -1099,7 +1104,7 @@ def _tag_apply_one(p, tag, on, say=print):  # TAG-VOICE v84.5: waiting tags add 
     elif len(parts) == 3: pos = os.path.join(root, *parts[:-1])
     else: pos = None
     if pos:
-        tgt = os.path.join(pos, tag)
+        tgt = os.path.join(pos, _rest_folder(tag))  # REST-ALIAS v85.369
         if os.path.realpath(os.path.dirname(p)) != os.path.realpath(tgt):
             _twin = os.path.join(tgt, os.path.basename(p))
             if os.path.exists(_twin): conflict = _twin  # TWIN v84.8: name the twin; the master Bins, the machine never deletes
@@ -1108,8 +1113,8 @@ def _tag_apply_one(p, tag, on, say=print):  # TAG-VOICE v84.5: waiting tags add 
     txt = f"🤖 Proposal: {os.path.basename(p)} → {tag} · now: [{', '.join(cur) or '-'}] → after: [{', '.join(after)}]"  # SHOW-BOTH v84.5
     if drops: txt += f' · drops {", ".join(drops)}'
     if keeps: txt += f' · keeps {", ".join(keeps)}'
-    if move_to: txt += f' · move {os.path.basename(os.path.dirname(p))} → {tag}'
-    if conflict: txt += f' · a twin already rests in {tag} ({os.path.relpath(conflict, root)}) - tagged in place; the twin is yours to Bin, I never delete'
+    if move_to: txt += f' · move {os.path.basename(os.path.dirname(p))} → {_rest_folder(tag)}'  # REST-ALIAS v85.369
+    if conflict: txt += f' · a twin already rests in {_rest_folder(tag)} ({os.path.relpath(conflict, root)}) - tagged in place; the twin is yours to Bin, I never delete'  # REST-ALIAS v85.369
     say(txt)  # ASK-LINE v84.49: statement first, question second
     try: _j.dump({'p': p, 'tag': tag, 'on': on, 'move_to': bool(move_to) and not conflict, 'ts': int(time.time())}, open(os.path.join(BASE_DIR, 'pending_action.json'), 'w'))
     except Exception: pass
@@ -3151,7 +3156,7 @@ def tag_follow(root, say=print, pos=None):  # TAG-FOLLOW v85.246: the tag is the
                     continue                             # TAG-DOOR v85.344: the anchor governs its own papers only
                 if not _pos:
                     continue                             # TAG-LEVEL v85.343: a paper above every position never moves
-                want = os.path.join(_pos, st[0])  # TAG-FOLLOW-POSITION v85.259: the stage is a SIBLING of its position, never a child of the house root (the 166-file collapse)
+                want = os.path.join(_pos, _rest_folder(st[0]))  # TAG-FOLLOW-POSITION v85.259: the stage is a SIBLING of its position, never a child of the house root (the 166-file collapse)  # REST-ALIAS v85.369
                 if os.path.abspath(os.path.dirname(p)) == os.path.abspath(want):
                     continue
                 try:
@@ -7347,6 +7352,62 @@ def _dacounter_probe():  # DA-COUNTER v85.368: the page still draws 12pt while /
     except Exception:
         return False
 
+def _restalias_probe():  # REST-ALIAS v85.369: three warm tags rest in ONE folder, the tag on the paper never changes, and no awaiting folder is minted again
+    try:
+        import tempfile as _tf
+        _g = globals()
+        _d = _tf.mkdtemp(prefix="ra_")
+        _pos = os.path.join(_d, "Client", "Pos")
+        for _s in ("Feedback Pending", "Awaiting JD Confirmation", "Ready for Manager Review"):
+            os.makedirs(os.path.join(_pos, _s), exist_ok=True)
+        _warm1 = os.path.join(_pos, "Awaiting JD Confirmation", "warm1.pdf")
+        _warm2 = os.path.join(_pos, "Awaiting JD Confirmation", "warm2.pdf")
+        _ctl = os.path.join(_pos, "ctl.pdf")
+        _plain = os.path.join(_pos, "plain.pdf")
+        for _x in (_warm1, _warm2, _ctl, _plain):
+            open(_x, "wb").write(b"%PDF-1.4" + bytes(chr(10), "ascii"))
+        _tag_write(_warm1, ["Awaiting JD Confirmation"])
+        _tag_write(_warm2, ["Awaiting CV Update"])
+        _tag_write(_ctl, ["Feedback Pending"])
+        _before = list(_tags_of(_warm1))
+        tag_follow(_d, lambda *a, **k: None)
+        _rf = os.path.join(_pos, "Ready for Manager Review")
+        if not os.path.exists(os.path.join(_rf, "warm1.pdf")):
+            return False              # an awaiting-JD paper rests with the warm ones
+        if not os.path.exists(os.path.join(_rf, "warm2.pdf")):
+            return False              # an awaiting-CV paper rests in the SAME folder
+        if os.path.exists(os.path.join(_pos, "Awaiting JD Confirmation", "warm2.pdf")):
+            return False              # the old folder keeps nothing it should have given up
+        if not _before or list(_tags_of(os.path.join(_rf, "warm1.pdf"))) != _before:
+            return False              # the tags travels untouched - only the folder changes
+        if not os.path.exists(os.path.join(_pos, "Feedback Pending", "ctl.pdf")):
+            return False              # a tag outside the map still earns its own folder
+        if not os.path.exists(_plain):
+            return False              # an untagged paper never moves
+        _d2 = _tf.mkdtemp(prefix="ra2_")
+        _p2 = os.path.join(_d2, "Client", "Pos")
+        os.makedirs(os.path.join(_p2, "Call Scheduled"), exist_ok=True)
+        _nw = os.path.join(_p2, "new.pdf"); open(_nw, "wb").write(b"%PDF-1.4" + bytes(chr(10), "ascii"))
+        _tag_write(_nw, ["Awaiting JD Confirmation"])
+        tag_follow(_d2, lambda *a, **k: None)
+        if not os.path.exists(os.path.join(_p2, "Ready for Manager Review", "new.pdf")):
+            return False              # a fresh position lands the paper in the one folder
+        if os.path.exists(os.path.join(_p2, "Awaiting JD Confirmation")):
+            return False              # the awaiting folder is never minted again
+        _rr = _g.get("_pl_root"); _rl = _g.get("_safe_repath_ledgers")
+        try:
+            _g["_pl_root"] = lambda *a, **k: _d2
+            _g["_safe_repath_ledgers"] = lambda *a, **k: None
+            _door = os.path.join(_p2, "door.pdf"); open(_door, "wb").write(b"%PDF-1.4" + bytes(chr(10), "ascii"))
+            _tag_write(_door, ["Awaiting CV Update"])
+            _stage_move(_door, "Awaiting CV Update", lambda *a, **k: None)
+        finally:
+            if _rr is not None: _g["_pl_root"] = _rr
+            if _rl is not None: _g["_safe_repath_ledgers"] = _rl
+        return os.path.exists(os.path.join(_p2, "Ready for Manager Review", "door.pdf"))   # the door reads the same map as the sweep
+    except Exception:
+        return False
+
 def _pitchcheck_probe():  # PITCH-CHECK v85.365: a tight frame is refused so the house widens it
     try:
         import tempfile as _tf
@@ -8594,6 +8655,7 @@ def _selftest(root):
     ck('S674 the stamp box carries Preview own line height (1.20-1.30 x size), so editing never shrinks the text', _editfit_probe())
     ck('S675 a frame tighter than 1.20 x size is refused, so Ctrl+S widens it and editing stops shrinking', _pitchcheck_probe())
     ck('S677 the page still draws 12pt while /DA carries the editor number Preview halves back to 12, and Ctrl+S still calls the stamp right', _dacounter_probe())
+    ck('S678 three warm tags rest in one folder - Awaiting JD Confirmation and Awaiting CV Update land in Ready for Manager Review with their tags untouched', _restalias_probe())
     ck('S676 the copy path and the tag path are one writer - same Rect, DA, DS, Q and appearance, and never a second stamp', _onewriter_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
