@@ -8057,6 +8057,62 @@ def _inkfit_probe():  # INK-FIT v85.384: the frame is at least the ink and at mo
     except Exception:
         return False
 
+def _gateway_probe():  # STAMP-LOCK v85.385: exactly ONE gateway writes a stamp - every door calls it and nothing else writes the number Preview reads
+    try:
+        _base = BASE_DIR
+        _files = ("stampkeeper.py", "butler.py", "briefing.py", "notes/stamp_now.py", "notes/stamp_open.py")
+        _free_n = "FreeText" + "("                    # built, never written - a guard may not certify its own text
+        _da_n = "NameObject(" + chr(39) + "/DA" + chr(39) + ")"
+        _free = []
+        _da = []
+        for _f in _files:
+            _p = os.path.join(_base, _f)
+            if not os.path.exists(_p):
+                return False              # a door that vanished is not a pass
+            for _i, _l in enumerate(open(_p, encoding="utf-8", errors="replace").read().split(chr(10)), 1):
+                if _free_n in _l:
+                    _free.append((_f, _i))
+                if _da_n in _l:
+                    _da.append((_f, _i))
+        if len(_free) != 1 or _free[0][0] != "stampkeeper.py":
+            return False                  # ONE constructor of a stamp, in the module
+        if len(_da) != 1 or _da[0][0] != "stampkeeper.py":
+            return False                  # ONE writer of the number Preview reads
+        _doors = {"notes/stamp_now.py": "sk._write_tag(", "notes/stamp_open.py": "sk._write_tag("}
+        for _f, _needle in _doors.items():
+            _p = os.path.join(_base, _f)
+            if _needle not in open(_p, encoding="utf-8", errors="replace").read():
+                return False              # the door must hand the stamp to the gateway
+        _arr = open(os.path.join(_base, "stampkeeper.py"), encoding="utf-8", errors="replace").read()
+        return "_write_tag(p, blk.get(" in _arr   # and the arrival door does the same
+    except Exception:
+        return False
+
+def _stamplock_probe():  # STAMP-LOCK v85.385: the approved stamp cannot drift - five measured numbers and the geometry they produce
+    try:
+        import stampkeeper as _sk
+        _st = _sk.STAMP_STYLE
+        _pts = float(_st.get("editor_points") or 0)
+        _fac = float(_st.get("editor_factor") or 0)
+        _sz = float(_st["font_size"])
+        _lp = float(_st.get("line_pt") or 0)
+        _bl = float(_st.get("bleed_pt") or 0)
+        if abs(_pts - 24.0) > 1e-9 or abs(_fac - 0.483003917) > 1e-9:
+            return False                  # the editor reads 24 because Preview multiplies by 0.483003917
+        if abs(_sz - _pts * _fac) > 1e-4:
+            return False                  # the page draws what Preview re-draws (5-decimal rounding allowed)
+        if abs(_lp - 14.0) > 1e-9 or abs(_bl - 0.5) > 1e-9:
+            return False                  # the step Preview uses and a half-point bleed
+        _t = "Sunsoft Technology" + chr(10) + "Total Experience: 12.6 years" + chr(10) + "Notice Period: 90 days (Buyout)"
+        _iw, _ia, _ib = _sk.ink_extents(_t)
+        _w, _h = _sk.need_size(_t)
+        _n = len([l for l in _t.split(chr(10)) if l.strip()])
+        if abs(_w - (_iw + 2.0 * _bl)) > 0.01 or abs(_h - (_ia + (_n - 1) * _lp + _ib + 2.0 * _bl)) > 0.01:
+            return False                  # the frame is the ink plus one bleed, computed per stamp
+        return abs(_sk.da_size(_sz) - _pts) < 0.01
+    except Exception:
+        return False
+
 def _pitchcheck_probe():  # PITCH-CHECK v85.365: a tight frame is refused so the house widens it
     try:
         import tempfile as _tf
@@ -9320,6 +9376,8 @@ def _selftest(root):
     ck('S691 the frame holds the longest line plus its inset, measured at the real size - no text is cut before a click', _noclip_probe())
     ck('S692 the frame keeps the last line descender inside it - no vertical cut before a click - and the step stays line_pt', _vfit_probe())
     ck('S693 the frame is exactly the ink plus one bleed on every axis - never cut before a click, never padded beyond the text', _inkfit_probe())
+    ck('S694 one gateway writes every stamp - one FreeText constructor and one /DA writer, both in stampkeeper, and Ctrl+S, Ctrl+V and the arrival path all call it', _gateway_probe())
+    ck('S695 the approved stamp cannot drift - editor_points 24, factor 0.483003917, step 14.0, bleed 0.5 and a frame of ink + 2 x bleed', _stamplock_probe())
     ck('S676 the copy path and the tag path are one writer - same Rect, DA, DS, Q and appearance, and never a second stamp', _onewriter_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
