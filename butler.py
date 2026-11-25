@@ -1064,10 +1064,10 @@ def _stage_move(p, tag, say=print):  # STAGE-SYNC v84.3: a tagged paper rests in
     try:
         os.makedirs(tgt, exist_ok=True)
         newp = os.path.join(tgt, os.path.basename(p))
-        if os.path.exists(newp): say(f'📦 a paper already rests in {tag} - left in place'); return
+        if os.path.exists(newp): say(f'📦 a paper already rests in {_rest_folder(tag)} - left in place'); return  # CHAT-ALIAS v85.370
         os.rename(p, newp)
         _safe_repath_ledgers(p, newp)
-        say(f'📦 moved {os.path.basename(p)} into {tag}')
+        say(f'📦 moved {os.path.basename(p)} into {_rest_folder(tag)}')  # CHAT-ALIAS v85.370
     except Exception as _me:
         say(f'⚠️ stage move skipped: {_me}')
 
@@ -3169,7 +3169,7 @@ def tag_follow(root, say=print, pos=None):  # TAG-FOLLOW v85.246: the tag is the
                             _k += 1
                     os.rename(p, q)
                     moved += 1
-                    say("🧲 %s → %s (follows its tag)" % (f, st[0]))
+                    say("🧲 %s → %s (follows its tag)" % (f, _rest_folder(st[0])))  # CHAT-ALIAS v85.370
                     try:
                         _safe_repath_ledgers(p, q)
                     except Exception:
@@ -7408,6 +7408,61 @@ def _restalias_probe():  # REST-ALIAS v85.369: three warm tags rest in ONE folde
     except Exception:
         return False
 
+def _chatalias_probe():  # CHAT-ALIAS v85.370: in chat the chosen option writes ITS OWN tag but rests in Ready for Manager Review - and the house says the folder it uses
+    try:
+        import tempfile as _tf
+        _g = globals()
+        if _rest_folder(OUTCOMES["1"][0]) != "Ready for Manager Review":
+            return False                  # option 1 (jd) rests with the warm ones
+        if _rest_folder(OUTCOMES["3"][0]) != "Ready for Manager Review":
+            return False                  # option 3 (cv) rests with the warm ones
+        if _rest_folder(OUTCOMES["2"][0]) == "Ready for Manager Review":
+            return False                  # option 2 (not interested) keeps its own folder
+        if (CHAIR_WORDS or {}).get("jd") != "1" or (CHAIR_WORDS or {}).get("cv") != "3":
+            return False                  # the keywords still point at those two doors
+        _d = _tf.mkdtemp(prefix="ca_")
+        _pos = os.path.join(_d, "Client", "Pos")
+        os.makedirs(os.path.join(_pos, "Call Scheduled"), exist_ok=True)
+        _spoke = []
+        def _say(*a, **k):
+            _spoke.append(" ".join(str(x) for x in a))
+        _keep = {}
+        for _k in ("BASE_DIR", "_pl_root", "_safe_repath_ledgers", "menu_key"):
+            _keep[_k] = _g.get(_k)
+        _n = 0
+        try:
+            _g["BASE_DIR"] = _d
+            _g["_pl_root"] = lambda *a, **k: _d
+            _g["_safe_repath_ledgers"] = lambda *a, **k: None
+            _g["menu_key"] = lambda *a, **k: "y"          # the master answers yes to the proposal
+            for _opt in ("1", "3", "2"):
+                _tag = OUTCOMES[_opt][0]
+                _n += 1
+                _p = os.path.join(_pos, "cand%d.pdf" % _n)
+                open(_p, "wb").write(b"%PDF-1.4" + bytes(chr(10), "ascii"))
+                _tag_apply_one(_p, _tag, True, _say)   # exactly what the chat calls
+                _warm = os.path.join(_pos, "Ready for Manager Review", os.path.basename(_p))
+                _own = os.path.join(_pos, _tag, os.path.basename(_p))
+                if _opt == "2":
+                    if os.path.exists(_warm):
+                        return False          # a not-interested paper never joins the warm pool
+                    continue
+                if not os.path.exists(_warm):
+                    return False              # the chosen option rests in the one warm folder
+                if list(_tags_of(_warm)) != [_tag]:
+                    return False              # the tag is exactly the one chosen - never rewritten, never dropped
+            if not any("Ready for Manager Review" in s for s in _spoke):
+                return False                  # the house SAYS the folder it uses
+            if any("into Awaiting" in s or "rests in Awaiting" in s for s in _spoke):
+                return False                  # it never speaks an awaiting tag as if it were a folder
+            return True
+        finally:
+            for _k, _v in _keep.items():
+                if _v is not None:
+                    _g[_k] = _v
+    except Exception:
+        return False
+
 def _pitchcheck_probe():  # PITCH-CHECK v85.365: a tight frame is refused so the house widens it
     try:
         import tempfile as _tf
@@ -8656,6 +8711,7 @@ def _selftest(root):
     ck('S675 a frame tighter than 1.20 x size is refused, so Ctrl+S widens it and editing stops shrinking', _pitchcheck_probe())
     ck('S677 the page still draws 12pt while /DA carries the editor number Preview halves back to 12, and Ctrl+S still calls the stamp right', _dacounter_probe())
     ck('S678 three warm tags rest in one folder - Awaiting JD Confirmation and Awaiting CV Update land in Ready for Manager Review with their tags untouched', _restalias_probe())
+    ck('S679 in chat mode option 1 (jd) and option 3 (cv) rest in Ready for Manager Review wearing their own tags, and the house speaks the folder it uses', _chatalias_probe())
     ck('S676 the copy path and the tag path are one writer - same Rect, DA, DS, Q and appearance, and never a second stamp', _onewriter_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
