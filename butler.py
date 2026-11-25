@@ -758,9 +758,14 @@ TAG_WAITING = ('Awaiting JD Confirmation', 'Awaiting CV Update')  # TAG-CLASS v8
 def _tag_stage(t):  # TAG-CLASS v84.5: everything else is a stage - one at a time, folder-bound
     return bool(t) and (t in _tag_vocab() or t in TAG_NAMES or t in ("Reject", "Rejected by Manager", "3 Reject"))  # EVERY-TAG-MOVES v85.329: every tag orders the folder - the waiting pair included
 
-REST_ALIAS = {'Awaiting JD Confirmation': 'Ready for Manager Review', 'Awaiting CV Update': 'Ready for Manager Review'}  # REST-ALIAS v85.369: three warm tags, one resting place - the master manages warm candidates in a single folder
-def _rest_folder(tag):  # REST-ALIAS v85.369: the ONE place a tags resting folder is decided - the tag on the paper is never touched
-    return REST_ALIAS.get(tag, tag)
+REST_ALIAS = {}  # REST-ALIAS v85.369: three warm tags, one resting place - the master manages warm candidates in a single folder  # REST-RULE v85.372
+def _rest_folder(tag):  # REST-ALIAS v85.369: the ONE place a tags resting folder is decided  # REST-RULE v85.372: a RULE, not a list - any awaiting-... tag rests with the warm ones, so a spelling nobody coded still lands right
+    _t = (tag or '').strip()
+    if _t in REST_ALIAS:
+        return REST_ALIAS[_t]                    # the override slot - empty by default, so nothing is hardcoded
+    if _t.lower().startswith('awaiting'):
+        return 'Ready for Manager Review'         # every waiting-for-something tag is a warm candidate
+    return _t
 
 
 def _tag_vocab():  # DESK v84.0: built at call time, so no ordering of the book can starve it
@@ -3152,7 +3157,7 @@ def tag_follow(root, say=print, pos=None):  # TAG-FOLLOW v85.246: the tag is the
                     continue
                 p = os.path.join(dp, f)
                 try:
-                    st = [t for t in _tags_of(p) if t in _voc]  # TAG-ALL v85.292: EVERY tag orders the folder - there is no waiting-tag category (master S9)
+                    st = [t for t in _tags_of(p) if t in _voc and t not in COLOR_TAGS]  # TAG-ALL v85.292: EVERY tag orders the folder - there is no waiting-tag category (master S9)  # REST-RULE v85.372
                 except Exception:
                     continue
                 if len(st) > 1:
@@ -5521,11 +5526,11 @@ class Butler:
         def _n(s): return (s or '').lower().replace(chr(8211), '-').replace(' ', '_')
         try:
             for d in os.listdir(base):
-                if os.path.isdir(os.path.join(base, d)) and _n(d) == _n(tag):
+                if os.path.isdir(os.path.join(base, d)) and _n(d) == _n(_rest_folder(tag)):  # REST-RULE v85.372
                     return os.path.join(base, d)
         except Exception:
             pass
-        return os.path.join(base, tag)
+        return os.path.join(base, _rest_folder(tag))  # REST-RULE v85.372
 
     def handle_tags(self, p, say):
         if _settling(p): return  # TAGS-GATE v60
@@ -5534,17 +5539,17 @@ class Butler:
             nm = re.sub(r'[/\\:]', '-', (t or '').split(chr(10))[0].strip())
             if not nm or nm in ('Red', 'Orange', 'Yellow', 'Green', 'Blue', 'Purple', 'Gray', 'Grey'): continue
             d0 = os.path.dirname(p)
-            if os.path.basename(d0) == nm: return  # HOME v78
+            if os.path.basename(d0) == _rest_folder(nm): return  # HOME v78  # REST-RULE v85.372
             base = d0
             while base != self.root and os.path.basename(base) in _tag_vocab(): base = os.path.dirname(base)  # STAGE-NEVER-BASE v85.128: a stage folder is a seat, never a root - the tag's home is sought from the chair that holds the stages, so no chair is ever built inside a chair
-            tgt = os.path.join(base, nm)
+            tgt = os.path.join(base, _rest_folder(nm))  # REST-RULE v85.372
             os.makedirs(tgt, exist_ok=True)
             dst = os.path.join(tgt, os.path.basename(p)); c = 1
             b2, e2 = os.path.splitext(os.path.basename(p))
             while os.path.exists(dst): dst = os.path.join(tgt, f'{b2}_{c}{e2}'); c += 1
             if _settling(p): return
             try:
-                os.rename(p, dst); say(f'📁 [move] {os.path.basename(p)} -> {nm}/'); return
+                os.rename(p, dst); say(f'📁 [move] {os.path.basename(p)} -> {_rest_folder(nm)}/'); return  # REST-RULE v85.372
             except Exception: return
         return  # TAG-TRUTH-AUTHORITATIVE v78
         if len(os.path.relpath(os.path.dirname(p), self.root).split(os.sep)) < 2:  # CLIENT-ROOT v73
@@ -7504,6 +7509,67 @@ def _tagfollowvoice_probe():  # TAG-FOLLOW-VOICE v85.371: a sweep move is writte
     except Exception:
         return False
 
+def _restrule_probe():  # REST-RULE v85.372: a tag nobody coded rests with the warm ones - handler and sweep agree, colours never block, nothing leaves its position
+    try:
+        import tempfile as _tf
+        _g = globals()
+        _d = _tf.mkdtemp(prefix="rr_")
+        _pos = os.path.join(_d, "Client", "Pos")
+        os.makedirs(os.path.join(_pos, "Call Scheduled"), exist_ok=True)
+        _NEW = "Awaiting for JD acknowledge"          # the masters own spelling - never named in the code
+        if _rest_folder(_NEW) != "Ready for Manager Review":
+            return False                  # the RULE handles a tag nobody hardcoded
+        if _NEW in REST_ALIAS:
+            return False                  # and it was not smuggled into the override map
+        class _S:
+            root = os.path.abspath(_d)
+        _s = _S()
+        def _mk(_name):
+            _q = os.path.join(_pos, _name)
+            open(_q, "wb").write(b"%PDF-1.4" + bytes(chr(10), "ascii"))
+            return _q
+        _old = _g.get("SETTLE_TEST")
+        try:
+            _g["SETTLE_TEST"] = True          # the file is fresh; settling is not what is under test
+            _p = _mk("girraj.pdf")
+            _tag_write(_p, [_NEW])
+            _spoke = []
+            Butler.handle_tags(_s, _p, lambda *a, **k: _spoke.append(" ".join(str(x) for x in a)))
+            _want = os.path.join(_pos, "Ready for Manager Review", "girraj.pdf")
+            if not os.path.exists(_want):
+                return False              # the handler lands him with the warm ones
+            if list(_tags_of(_want)) != [_NEW]:
+                return False              # the tag is untouched
+            if not any("Ready for Manager Review" in s for s in _spoke):
+                return False              # and the house says the folder it used
+            _n = len(_spoke)
+            Butler.handle_tags(_s, _want, lambda *a, **k: _spoke.append("x"))
+            if not os.path.exists(_want) or len(_spoke) != _n:
+                return False              # HOME: a seated paper is never churned
+            _c = _mk("colour.pdf")
+            _tag_write(_c, ["Awaiting CV Update", "Blue"])
+            tag_follow(_d, lambda *a, **k: None)
+            if not os.path.exists(os.path.join(_pos, "Ready for Manager Review", "colour.pdf")):
+                return False              # a colour tag never freezes a warm paper out
+            _k = _mk("ctl.pdf")
+            _tag_write(_k, ["Call Scheduled"])
+            Butler.handle_tags(_s, _k, lambda *a, **k: None)
+            if not os.path.exists(os.path.join(_pos, "Call Scheduled", "ctl.pdf")):
+                return False              # a tag that is not awaiting keeps its own folder
+        finally:
+            if _old is not None:
+                _g["SETTLE_TEST"] = _old
+        for _r, _dn, _fn in os.walk(_d):
+            for _f in _fn:
+                if not _f.endswith(".pdf"):
+                    continue
+                _par = os.path.dirname(os.path.join(_r, _f))
+                if _par != _pos and os.path.dirname(_par) != _pos:
+                    return False          # SCOPE: nothing ever leaves its position
+        return True
+    except Exception:
+        return False
+
 def _pitchcheck_probe():  # PITCH-CHECK v85.365: a tight frame is refused so the house widens it
     try:
         import tempfile as _tf
@@ -8754,6 +8820,7 @@ def _selftest(root):
     ck('S678 three warm tags rest in one folder - Awaiting JD Confirmation and Awaiting CV Update land in Ready for Manager Review with their tags untouched', _restalias_probe())
     ck('S679 in chat mode option 1 (jd) and option 3 (cv) rest in Ready for Manager Review wearing their own tags, and the house speaks the folder it uses', _chatalias_probe())
     ck('S680 a sweep writes its tag move into the house log and a failed move is spoken aloud, never swallowed', _tagfollowvoice_probe())
+    ck('S681 any awaiting-... tag rests in Ready for Manager Review through the handler and the sweep, a colour tag never blocks it, and nothing leaves its position', _restrule_probe())
     ck('S676 the copy path and the tag path are one writer - same Rect, DA, DS, Q and appearance, and never a second stamp', _onewriter_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
