@@ -825,6 +825,15 @@ def menu_key(prompt='', allowed=('y', 't', 'n')):  # ONE-INPUT v84.47 (ASK-LINE 
     return ''
 
 
+def _src_converted(p):  # DOC-SWEEP-TRUTH v85.376: the book answers "was THIS content converted?", never "is any PDF beside it"
+    try:
+        import json as _j
+        _b = _j.load(open(os.path.join(BASE_DIR, ".converted.json")))
+    except Exception:
+        return False
+    return _b.get(p) == _src_stamp(p)
+
+
 def _doc_sweep(root, say=print, dry=False):  # DOC-SWEEP v85.200: a source doc whose PDF already sits beside it is carried to Converted Files - the master's review shelf
     _moved = 0
     _seen = 0
@@ -835,6 +844,14 @@ def _doc_sweep(root, say=print, dry=False):  # DOC-SWEEP v85.200: a source doc w
                 if not _f.lower().endswith(('.doc', '.docx')):
                     continue
                 _seen += 1
+                # DOC-SWEEP-TRUTH v85.376: a source NEWER than the paper beside it has NOT been converted yet - it must stay and convert
+                _srcf = os.path.join(_dp, _f)
+                _pdfx = os.path.join(_dp, os.path.splitext(_f)[0] + ".pdf")
+                try:
+                    if (not _src_converted(_srcf)) and os.path.getmtime(_srcf) > os.path.getmtime(_pdfx):
+                        continue                       # the conversion runs first, and it seats as name_1.pdf (v85.375)
+                except OSError:
+                    pass
                 _pdf = os.path.join(_dp, os.path.splitext(_f)[0] + '.pdf')
                 try:
                     if not (os.path.exists(_pdf) and os.path.getsize(_pdf) > 0):
@@ -7713,6 +7730,42 @@ def _noclobber_probe():  # NO-CLOBBER v85.375: an arriving or converted paper ne
     except Exception:
         return False
 
+def _docsweep_probe():  # DOC-SWEEP-TRUTH v85.376: a NEWER source is never swept away unread - it converts first, seats as _1, and only then goes to Converted Files
+    try:
+        import tempfile as _tf, json as _j
+        _g = globals()
+        _d = _tf.mkdtemp(prefix="ds_")
+        _pos = os.path.join(_d, "Client", "Pos")
+        os.makedirs(_pos, exist_ok=True)
+        _old = os.path.join(_pos, "x.pdf")
+        open(_old, "wb").write(b"%PDF-1.4 OLD PAPER")
+        _src = os.path.join(_pos, "x.docx")
+        open(_src, "wb").write(b"NEW SOURCE")
+        os.utime(_old, (1000000, 1000000))            # the paper is old
+        os.utime(_src, (2000000, 2000000))            # the source is newer - it has NOT been converted
+        _keep = _g.get("BASE_DIR")
+        try:
+            _g["BASE_DIR"] = _d
+            _doc_sweep(_pos, lambda *a, **k: None)
+            if not os.path.exists(_src):
+                return False                          # a newer source is NOT swept away unread
+            # once the book records THIS content as converted, the sweep may carry it away
+            _j.dump({_src: _src_stamp(_src)}, open(os.path.join(_d, ".converted.json"), "w"))
+            _doc_sweep(_pos, lambda *a, **k: None)
+            _arch = os.path.join(_pos, "Converted Files")
+            if os.path.exists(_src):
+                return False                          # converted -> the source may now be shelved
+            if not os.path.isdir(_arch):
+                return False
+            if not open(_old, "rb").read().startswith(b"%PDF-1.4 OLD PAPER"):
+                return False                          # and the old paper was never touched
+            return True
+        finally:
+            if _keep is not None:
+                _g["BASE_DIR"] = _keep
+    except Exception:
+        return False
+
 def _pitchcheck_probe():  # PITCH-CHECK v85.365: a tight frame is refused so the house widens it
     try:
         import tempfile as _tf
@@ -8967,6 +9020,7 @@ def _selftest(root):
     ck('S682 a carried stamp keeps every line of the original - invented line included - and the sizes we decided, on a twin and on a bare CV', _stampcarryall_probe())
     ck('S683 a stamp drawn at twice or half the masters size is refused because the verifier reads the drawing, never the DA counter', _stampdrawn_probe())
     ck('S684 a conversion and an arrival never land on an existing paper - they take the next seat, and a changed source converts again', _noclobber_probe())
+    ck('S685 a source newer than the paper beside it is never swept away unread - it converts first and is shelved only once the book knows its content', _docsweep_probe())
     ck('S676 the copy path and the tag path are one writer - same Rect, DA, DS, Q and appearance, and never a second stamp', _onewriter_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
