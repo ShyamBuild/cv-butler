@@ -7238,6 +7238,18 @@ def _taglevel_probe():  # TAG-LEVEL v85.343: a sub-folder paper settles at the P
     except Exception:
         return False
 
+def _editfit_probe():  # EDIT-FIT v85.364: the box carries Preview own line height, so editing cannot shrink the text
+    try:
+        import stampkeeper as _sk
+        _t = "Sunsoft Technology" + chr(10) + "Total Experience: 9 years" + chr(10) + "Current CTC: 9 LPA" + chr(10) + "Expected: 11 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10) + "Notice Period: Immediate Joiner"
+        _w, _h = _sk.need_size(_t)
+        _lines = len([l for l in _t.split(chr(10)) if l.strip()])
+        _pitch = float(_h) / _lines
+        _size = float(_sk.STAMP_STYLE["font_size"])
+        return bool(_pitch >= _size * 1.20 and _pitch <= _size * 1.30)
+    except Exception:
+        return False
+
 def _scopelaw_probe():  # SCOPE-LAW v85.363: a scope filters the chair; no scope changes nothing
     try:
         import tempfile as _tf, json as _j
@@ -8456,6 +8468,7 @@ def _selftest(root):
     ck('S671 the stamp carries our own appearance at 24pt and its drawing fills the frame exactly', _apown_probe())
     ck('S672 a stamp with no drawn appearance is not finished - the viewer would pick its own size', _aprequire_probe())
     ck('S673 a Ctrl+U scope limits the chair to its own papers, and an empty scope changes nothing', _scopelaw_probe())
+    ck('S674 the stamp box carries Preview own line height (1.20-1.30 x size), so editing never shrinks the text', _editfit_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
