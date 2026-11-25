@@ -2104,6 +2104,21 @@ def _free_seat(path):  # NO-CLOBBER v85.375: the house never lands on an existin
     return os.path.join(_sd, '%s_%d%s' % (_ss, _k, _se))
 
 
+def _soffice_seat(p, out, sp):  # SOFFICE-SEAT v85.377: soffice renders into a temp scratch and only the finished pdf reaches the seat - the paper beside the source is never touched
+    import tempfile as _t, shutil as _sh
+    _tmpdir = _t.mkdtemp(prefix='conv_tmp_')   # a tempfile.mkdtemp scratch, never a folder of the master's
+    try:
+        sp.run(['soffice', '--headless', '--convert-to', 'pdf', '--outdir', _tmpdir, p], capture_output=True, timeout=300)
+        _made = os.path.join(_tmpdir, os.path.splitext(os.path.basename(p))[0] + '.pdf')
+        if os.path.exists(_made):
+            _sh.move(_made, out)
+            return True
+        return False
+    finally:
+        try: _sh.rmtree(_tmpdir, ignore_errors=True)   # only the tempfile scratch is reaped
+        except Exception: pass
+
+
 def _convert_to_pdf(p, log):  # CONVERT-WATCH v85.52: a Word paper is not a scan, it is a locked eye - conversion is the key; the source stays untouched and the book remembers
     import json as _jc, subprocess as _sp
     cf = os.path.join(BASE_DIR, '.converted.json')
@@ -2120,7 +2135,7 @@ def _convert_to_pdf(p, log):  # CONVERT-WATCH v85.52: a Word paper is not a scan
         else:
             _okp = _pages_pdf(p, out, log)  # PAGES-FIRST v85.56: Pages renders, and only if Pages refuses does the second hand move
             if not _okp:
-                _sp.run(['soffice', '--headless', '--convert-to', 'pdf', '--outdir', os.path.dirname(p), p], capture_output=True, timeout=300)
+                _soffice_seat(p, out, _sp)  # SOFFICE-SEAT v85.377
     except FileNotFoundError:
         if not done_map.get('_nosoffice'):
             done_map['_nosoffice'] = 1
@@ -7766,6 +7781,40 @@ def _docsweep_probe():  # DOC-SWEEP-TRUTH v85.376: a NEWER source is never swept
     except Exception:
         return False
 
+def _sofficeseat_probe():  # SOFFICE-SEAT v85.377: when Pages refuses and soffice renders, the old paper beside the source is still never touched
+    try:
+        import tempfile as _tf, subprocess as _sub
+        _g = globals()
+        _d = _tf.mkdtemp(prefix="ss_")
+        _old = os.path.join(_d, "x.pdf")
+        open(_old, "wb").write(b"%PDF-1.4 OLD PAPER WITH DATA")
+        _src = os.path.join(_d, "x.docx")
+        open(_src, "wb").write(b"NEW SOURCE")
+        _before = open(_old, "rb").read()
+        _keep = {k: _g.get(k) for k in ("BASE_DIR", "_pages_pdf")}
+        _real_run = _sub.run
+        try:
+            _g["BASE_DIR"] = _d
+            _g["_pages_pdf"] = lambda *a, **k: False       # Pages refuses - force the soffice hand
+            def _fake_soffice(_cmd, **k):
+                _od = _cmd[_cmd.index("--outdir") + 1]
+                open(os.path.join(_od, "x.pdf"), "wb").write(b"%PDF-1.4 CONVERTED BY SOFFICE")
+                return None
+            _sub.run = _fake_soffice
+            _convert_to_pdf(_src, lambda *a, **k: None)
+            if not os.path.exists(os.path.join(_d, "x_1.pdf")):
+                return False                  # the finished pdf reached the SEAT
+            if open(_old, "rb").read() != _before:
+                return False                  # and the old paper is byte-identical
+            return open(os.path.join(_d, "x_1.pdf"), "rb").read().startswith(b"%PDF-1.4 CONVERTED BY SOFFICE")
+        finally:
+            _sub.run = _real_run
+            for _k, _v in _keep.items():
+                if _v is not None:
+                    _g[_k] = _v
+    except Exception:
+        return False
+
 def _pitchcheck_probe():  # PITCH-CHECK v85.365: a tight frame is refused so the house widens it
     try:
         import tempfile as _tf
@@ -9021,6 +9070,7 @@ def _selftest(root):
     ck('S683 a stamp drawn at twice or half the masters size is refused because the verifier reads the drawing, never the DA counter', _stampdrawn_probe())
     ck('S684 a conversion and an arrival never land on an existing paper - they take the next seat, and a changed source converts again', _noclobber_probe())
     ck('S685 a source newer than the paper beside it is never swept away unread - it converts first and is shelved only once the book knows its content', _docsweep_probe())
+    ck('S686 when soffice renders the pdf it does so in scratch, so the paper beside the source is never overwritten', _sofficeseat_probe())
     ck('S676 the copy path and the tag path are one writer - same Rect, DA, DS, Q and appearance, and never a second stamp', _onewriter_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
