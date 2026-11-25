@@ -7959,6 +7959,38 @@ def _pixelsame_probe():  # PIXEL-SAME v85.381: our painting uses Preview own thr
     except Exception:
         return False
 
+def _noclip_probe():  # NO-CLIP v85.382: every line fits inside the frame with its inset, measured at the REAL size - nothing is cut before a click
+    try:
+        import tempfile as _tf, re as _re
+        import stampkeeper as _sk
+        from pypdf import PdfWriter as _PW, PdfReader as _PR
+        from PIL import ImageFont as _IF
+        _sz = float(_sk.STAMP_STYLE["font_size"])
+        _pad = float(_sk.STAMP_STYLE.get("pad_pt") or 0)
+        if _pad <= 0:
+            return False                  # the inset must be declared
+        _t = "Sunsoft Technology" + chr(10) + "Total Experience: 12.6 years" + chr(10) + "Current CTC: 11.17 LPA" + chr(10) + "Expected: 15 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Gwalior" + chr(10) + "Notice Period: 120 days (Buyout) with handover"
+        _d = _tf.mkdtemp(prefix="nc2_")
+        _p = os.path.join(_d, "s.pdf")
+        _w = _PW(); _w.add_blank_page(width=595, height=842); _w.write(_p)
+        _sk._write_tag(_p, _t, 200, 110, page=1)
+        _a = _PR(_p).pages[0]["/Annots"][0].get_object()
+        _r = [float(v) for v in _a.get("/Rect")]
+        _box = _r[2] - _r[0]
+        _f = _IF.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", max(1, int(round(_sz * 10))))
+        _wide = max(_f.getlength(l) for l in _t.split(chr(10)) if l.strip()) / 10.0
+        if _box < _wide + 2.0 * _pad - 0.01:
+            return False                  # THE FRAME HOLDS THE LONGEST LINE PLUS ITS INSET - nothing is cut
+        _ap = _a["/AP"].get_object()["/N"]
+        _ap = _ap.get_object() if hasattr(_ap, "get_object") else _ap
+        _s = _ap.get_data().decode("latin-1", "ignore")
+        _x = [float(m) for m in _re.findall(r"1 0 0 1 ([0-9.]+) [0-9.]+ Tm", _s)]
+        if not _x or abs(_x[0] - _pad) > 0.01:
+            return False                  # and the text is drawn from that same inset
+        return bool(_sk.stamp_verify(_p)["ok"])
+    except Exception:
+        return False
+
 def _pitchcheck_probe():  # PITCH-CHECK v85.365: a tight frame is refused so the house widens it
     try:
         import tempfile as _tf
@@ -9219,6 +9251,7 @@ def _selftest(root):
     ck('S688 the stamp counter reads exactly 24 in the editor, the page draws our size, and a stale counter is refused so Ctrl+S heals it', _stamp24_probe())
     ck('S689 the stamp does not move when clicked - the page draws what Preview re-draws - and the editor reads exactly 24', _sametosame_probe())
     ck('S690 the house paints the stamp with Preview own three numbers - glyph, line step and first-baseline inset - so a click re-draws the same picture', _pixelsame_probe())
+    ck('S691 the frame holds the longest line plus its inset, measured at the real size - no text is cut before a click', _noclip_probe())
     ck('S676 the copy path and the tag path are one writer - same Rect, DA, DS, Q and appearance, and never a second stamp', _onewriter_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
