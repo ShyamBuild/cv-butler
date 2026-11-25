@@ -7815,6 +7815,36 @@ def _sofficeseat_probe():  # SOFFICE-SEAT v85.377: when Pages refuses and soffic
     except Exception:
         return False
 
+def _editorfactor_probe():  # EDITOR-FACTOR v85.378: the knob lands the editor on the drawn size - 12 x ratio x factor == 12, and the writer emits it
+    try:
+        import tempfile as _tf, re as _re
+        import stampkeeper as _sk
+        from pypdf import PdfWriter as _PW, PdfReader as _PR
+        _sz = float(_sk.STAMP_STYLE["font_size"])
+        _f = float(_sk.STAMP_STYLE.get("editor_factor") or 0)
+        _r = float(_sk.STAMP_STYLE.get("da_ratio") or 0)
+        if _f <= 0 or _r <= 0:
+            return False                  # both numbers must exist
+        if abs(_sz * _r * _f - _sz) > 0.15:
+            return False                  # the editor must land back ON the drawn size - the A/B law
+        _d = _tf.mkdtemp(prefix="ef_")
+        _p = os.path.join(_d, "s.pdf")
+        _w = _PW(); _w.add_blank_page(width=595, height=842); _w.write(_p)
+        _t = "Sunsoft Technology" + chr(10) + "Total Experience: 9 years" + chr(10) + "Current CTC: 9 LPA" + chr(10) + "Expected: 11 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10) + "Notice Period: 45 days"
+        _sk._write_tag(_p, _t, 200, 110, page=1)
+        _a = _PR(_p).pages[0]["/Annots"][0].get_object()
+        _m = _re.search(r"([0-9.]+) Tf", str(_a.get("/DA") or ""))
+        if not _m or abs(float(_m.group(1)) - _sz * _r) > 0.05:
+            return False                  # /DA carries size x ratio
+        _ap = _a["/AP"].get_object()["/N"]
+        _ap = _ap.get_object() if hasattr(_ap, "get_object") else _ap
+        _drawn = _re.findall(r"/TT1 ([0-9.]+) Tf", _ap.get_data().decode("latin-1", "ignore"))
+        if not _drawn or abs(float(_drawn[0]) - _sz) > 0.05:
+            return False                  # the page draws the size we decided
+        return bool(_sk.stamp_verify(_p)["ok"])   # and the whole stamp still verifies
+    except Exception:
+        return False
+
 def _pitchcheck_probe():  # PITCH-CHECK v85.365: a tight frame is refused so the house widens it
     try:
         import tempfile as _tf
@@ -9071,6 +9101,7 @@ def _selftest(root):
     ck('S684 a conversion and an arrival never land on an existing paper - they take the next seat, and a changed source converts again', _noclobber_probe())
     ck('S685 a source newer than the paper beside it is never swept away unread - it converts first and is shelved only once the book knows its content', _docsweep_probe())
     ck('S686 when soffice renders the pdf it does so in scratch, so the paper beside the source is never overwritten', _sofficeseat_probe())
+    ck('S687 the counter is derived from the measured Preview factor, so the editor always lands back on the drawn size', _editorfactor_probe())
     ck('S676 the copy path and the tag path are one writer - same Rect, DA, DS, Q and appearance, and never a second stamp', _onewriter_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
