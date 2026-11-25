@@ -7181,6 +7181,26 @@ def _taglevel_probe():  # TAG-LEVEL v85.343: a sub-folder paper settles at the P
     except Exception:
         return False
 
+def _aprequire_probe():  # AP-REQUIRE v85.358: no drawn appearance means NOT finished
+    try:
+        import tempfile as _tf
+        import stampkeeper as _sk
+        from pypdf import PdfWriter as _PW
+        from pypdf.annotations import FreeText as _FT
+        _d = _tf.mkdtemp()
+        _p = os.path.join(_d, "noap.pdf")
+        _w = _PW(); _w.add_blank_page(width=595, height=842); _w.write(_p)
+        _w2 = _PW(clone_from=_p)
+        _t = "Sunsoft Technology" + chr(10) + "Total Experience: 9 years" + chr(10) + "Current CTC: 9 LPA" + chr(10) + "Expected: 11 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10) + "Notice Period: Immediate Joiner"
+        _w2.add_annotation(page_number=0, annotation=_FT(text=_t, rect=(40, 40, 415, 240)))
+        _w2.write(_p)
+        if _sk.stamp_verify(_p)["ok"]:
+            return False                      # a stamp with no appearance is never finished
+        _sk._write_tag(_p, _t, 200, 110)
+        return _sk.stamp_verify(_p)["ok"]
+    except Exception:
+        return False
+
 def _apown_probe():  # AP-OWN v85.357: the stamp carries OUR appearance at 24pt, filling its frame
     try:
         import tempfile as _tf
@@ -8352,6 +8372,7 @@ def _selftest(root):
     ck('S669 the stamp frame is measured at the drawn size - 24pt text needs a ~375pt frame, not 191', _boxfit_probe())
     ck('S670 the watcher copy path writes the masters 24pt stamp, never the old hardcoded 12pt', _apply24_probe())
     ck('S671 the stamp carries our own appearance at 24pt and its drawing fills the frame exactly', _apown_probe())
+    ck('S672 a stamp with no drawn appearance is not finished - the viewer would pick its own size', _aprequire_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
