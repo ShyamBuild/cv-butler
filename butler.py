@@ -7238,6 +7238,20 @@ def _taglevel_probe():  # TAG-LEVEL v85.343: a sub-folder paper settles at the P
     except Exception:
         return False
 
+def _pitchcheck_probe():  # PITCH-CHECK v85.365: a tight frame is refused so the house widens it
+    try:
+        import tempfile as _tf
+        import stampkeeper as _sk
+        from pypdf import PdfWriter as _PW, PdfReader as _PR
+        _d = _tf.mkdtemp()
+        _p = os.path.join(_d, "tight.pdf")
+        _w = _PW(); _w.add_blank_page(width=595, height=842); _w.write(_p)
+        _t = "Sunsoft Technology" + chr(10) + "Total Experience: 9 years" + chr(10) + "Current CTC: 9 LPA" + chr(10) + "Expected: 11 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10) + "Notice Period: Immediate Joiner"
+        _sk._write_tag(_p, _t, 200, 110, page=1)
+        return _sk.stamp_verify(_p)["ok"] and _sk.need_size(_t)[1] >= 7 * float(_sk.STAMP_STYLE["font_size"]) * 1.20
+    except Exception:
+        return False
+
 def _editfit_probe():  # EDIT-FIT v85.364: the box carries Preview own line height, so editing cannot shrink the text
     try:
         import stampkeeper as _sk
@@ -8469,6 +8483,7 @@ def _selftest(root):
     ck('S672 a stamp with no drawn appearance is not finished - the viewer would pick its own size', _aprequire_probe())
     ck('S673 a Ctrl+U scope limits the chair to its own papers, and an empty scope changes nothing', _scopelaw_probe())
     ck('S674 the stamp box carries Preview own line height (1.20-1.30 x size), so editing never shrinks the text', _editfit_probe())
+    ck('S675 a frame tighter than 1.20 x size is refused, so Ctrl+S widens it and editing stops shrinking', _pitchcheck_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
