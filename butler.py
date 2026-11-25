@@ -7181,6 +7181,30 @@ def _taglevel_probe():  # TAG-LEVEL v85.343: a sub-folder paper settles at the P
     except Exception:
         return False
 
+def _apply24_probe():  # APPLY-24 v85.356: the copy path writes the masters size, never a 12pt duplicate
+    try:
+        import tempfile as _tf, re as _re
+        import stampkeeper as _sk
+        from pypdf import PdfWriter as _PW, PdfReader as _PR
+        _d = _tf.mkdtemp()
+        _src = os.path.join(_d, "src.pdf")
+        _w = _PW(); _w.add_blank_page(width=595, height=842); _w.write(_src)
+        _txt = "Sunsoft Technology" + chr(10) + "Total Experience: 9 years" + chr(10) + "Current CTC: 9 LPA" + chr(10) + "Expected: 11 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10) + "Notice Period: Immediate Joiner"
+        _sk._write_tag(_src, _txt, 200, 110)
+        _dst = os.path.join(_d, "dst.pdf")
+        _w2 = _PW(); _w2.add_blank_page(width=595, height=842); _w2.write(_dst)
+        _ok, _msg = _sk.apply_stamp(_src, _dst, page=1)
+        if not _ok:
+            return False
+        _a = _PR(_dst).pages[0]["/Annots"][0].get_object()
+        _da = str(_a.get("/DA") or "")
+        if "24 Tf" not in _da:
+            return False                          # the copy path must write the masters size
+        _v = _sk.stamp_verify(_dst)
+        return bool(_v.get("ok"))
+    except Exception:
+        return False
+
 def _boxfit_probe():  # BOX-FIT v85.355: the frame is measured at the drawn size, and a squeezed frame is refused
     try:
         import stampkeeper as _sk
@@ -8299,6 +8323,7 @@ def _selftest(root):
     ck('S667 a page-targeted stamp lands on the page asked for and the twin is never touched', _openstamp_probe())
     ck('S668 Immediate Joiner and Negotiable complete a stamp, an empty or n/a notice never does', _noticetruth_probe())
     ck('S669 the stamp frame is measured at the drawn size - 24pt text needs a ~375pt frame, not 191', _boxfit_probe())
+    ck('S670 the watcher copy path writes the masters 24pt stamp, never the old hardcoded 12pt', _apply24_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
