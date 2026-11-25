@@ -7407,7 +7407,7 @@ def _dacounter_probe():  # DA-COUNTER v85.368: the page still draws 12pt while /
             return False                  # the reader lands back on the drawn size
         if ("font: bold %gpt" % _sz) not in str(_a.get("/DS") or ""):
             return False                  # /DS keeps telling the truth about the drawing
-        if _sk.da_ratio() < 1.0 or abs(_sk.da_size(_sz) - _sz * _sk.da_ratio()) > 1e-9:  # STAMP-TRUTH-2 v85.374
+        if _sk.da_ratio() < 1.0 or abs(_sk.da_size(_sz) - _sz * _sk.da_ratio()) > 0.01:  # STAMP-TRUTH-2 v85.374  # SAME-TO-SAME v85.380
             return False                  # the knob is engaged, not accidentally absent
         if not _sk.stamp_verify(_p)["ok"]:
             return False                  # the verifier accepts our own stamp
@@ -7825,7 +7825,7 @@ def _editorfactor_probe():  # EDITOR-FACTOR v85.378: the knob lands the editor o
         _r = float(_sk.STAMP_STYLE.get("da_ratio") or 0)
         if _f <= 0 or _r <= 0:
             return False                  # both numbers must exist
-        if abs(_sz * _r * _f - _sz) > 0.5:  # STAMP-24-EXACT v85.379
+        if abs(_sz * _r * _f - _sz) > 0.15:  # STAMP-24-EXACT v85.379  # SAME-TO-SAME v85.380
             return False                  # the editor must land back ON the drawn size - the A/B law
         _d = _tf.mkdtemp(prefix="ef_")
         _p = os.path.join(_d, "s.pdf")
@@ -7884,6 +7884,40 @@ def _stamp24_probe():  # STAMP-24-EXACT v85.379: the editor reads exactly 24, th
         _q = os.path.join(_d, "old.pdf")
         _w2.write(_q)
         return not _sk.stamp_verify(_q)["ok"]   # the previous counter (25 in the editor) is refused -> Ctrl+S heals it
+    except Exception:
+        return False
+
+def _sametosame_probe():  # SAME-TO-SAME v85.380: the page draws what Preview re-draws, so a click changes nothing, and the editor reads exactly 24
+    try:
+        import tempfile as _tf, re as _re
+        import stampkeeper as _sk
+        from pypdf import PdfWriter as _PW, PdfReader as _PR
+        _sz = float(_sk.STAMP_STYLE["font_size"])
+        _pts = float(_sk.STAMP_STYLE.get("editor_points") or 0)
+        _f = float(_sk.STAMP_STYLE.get("editor_factor") or 0)
+        if _pts <= 0 or _f <= 0:
+            return False                  # both numbers must exist
+        if abs(_sz - _pts * _f) > 0.01:
+            return False                  # the page draws what Preview calls 24
+        if abs(_sk.da_size(_sz) - _pts) > 0.01:
+            return False                  # the editor reads exactly 24
+        if abs(_sk.da_size(_sz) * _f - _sz) > 0.01:
+            return False                  # THE CLICK CHANGES NOTHING: /DA x factor == the drawn size
+        _d = _tf.mkdtemp(prefix="sts_")
+        _p = os.path.join(_d, "s.pdf")
+        _w = _PW(); _w.add_blank_page(width=595, height=842); _w.write(_p)
+        _t = "Sunsoft Technology" + chr(10) + "Total Experience: 9 years" + chr(10) + "Current CTC: 9 LPA" + chr(10) + "Expected: 11 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10) + "Notice Period: 45 days"
+        _sk._write_tag(_p, _t, 200, 110, page=1)
+        _a = _PR(_p).pages[0]["/Annots"][0].get_object()
+        _m = _re.search(r"([0-9.]+) Tf", str(_a.get("/DA") or ""))
+        if not _m or abs(float(_m.group(1)) - _pts) > 0.01:
+            return False                  # the writer emits exactly 24
+        _ap = _a["/AP"].get_object()["/N"]
+        _ap = _ap.get_object() if hasattr(_ap, "get_object") else _ap
+        _dr = _re.findall(r"/TT1 ([0-9.]+) Tf", _ap.get_data().decode("latin-1", "ignore"))
+        if not _dr or abs(float(_dr[0]) - _sz) > 0.05:
+            return False                  # and the page draws the same size Preview would re-draw
+        return bool(_sk.stamp_verify(_p)["ok"])
     except Exception:
         return False
 
@@ -9145,6 +9179,7 @@ def _selftest(root):
     ck('S686 when soffice renders the pdf it does so in scratch, so the paper beside the source is never overwritten', _sofficeseat_probe())
     ck('S687 the counter is derived from the measured Preview factor, so the editor always lands back on the drawn size', _editorfactor_probe())
     ck('S688 the stamp counter reads exactly 24 in the editor, the page draws our size, and a stale counter is refused so Ctrl+S heals it', _stamp24_probe())
+    ck('S689 the stamp does not move when clicked - the page draws what Preview re-draws - and the editor reads exactly 24', _sametosame_probe())
     ck('S676 the copy path and the tag path are one writer - same Rect, DA, DS, Q and appearance, and never a second stamp', _onewriter_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
