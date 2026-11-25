@@ -7196,7 +7196,7 @@ def _aprequire_probe():  # AP-REQUIRE v85.358: no drawn appearance means NOT fin
         _w2.write(_p)
         if _sk.stamp_verify(_p)["ok"]:
             return False                      # a stamp with no appearance is never finished
-        _sk._write_tag(_p, _t, 200, 110)
+        _sk._write_tag(_p, _t, 200, 110, page=1)  # SIZE-HOUSE v85.360: a blank fixture page still takes the stamp
         return _sk.stamp_verify(_p)["ok"]
     except Exception:
         return False
@@ -7210,7 +7210,7 @@ def _apown_probe():  # AP-OWN v85.357: the stamp carries OUR appearance at 24pt,
         _p = os.path.join(_d, "ap.pdf")
         _w = _PW(); _w.add_blank_page(width=595, height=842); _w.write(_p)
         _t = "Sunsoft Technology" + chr(10) + "Total Experience: 9 years" + chr(10) + "Current CTC: 9 LPA" + chr(10) + "Expected: 11 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10) + "Notice Period: Immediate Joiner"
-        _sk._write_tag(_p, _t, 200, 110)
+        _sk._write_tag(_p, _t, 200, 110, page=1)  # SIZE-HOUSE v85.360: a blank fixture page still takes the stamp
         _a = _PR(_p).pages[0]["/Annots"][0].get_object()
         _ap = _a.get("/AP")
         if not _ap:
@@ -7218,7 +7218,7 @@ def _apown_probe():  # AP-OWN v85.357: the stamp carries OUR appearance at 24pt,
         _n = _ap.get_object().get("/N")
         _n = _n.get_object() if hasattr(_n, "get_object") else _n
         _s = _n.get_data().decode("latin-1", "ignore")
-        if "/TT1 24 Tf" not in _s:
+        if ("/TT1 %g Tf" % float(_sk.STAMP_STYLE["font_size"])) not in _s:  # SIZE-HOUSE v85.360
             return False                          # drawn at the masters size
         _bb = [float(v) for v in _n["/BBox"]]
         _rc = [float(v) for v in _a["/Rect"]]
@@ -7237,7 +7237,7 @@ def _apply24_probe():  # APPLY-24 v85.356: the copy path writes the masters size
         _src = os.path.join(_d, "src.pdf")
         _w = _PW(); _w.add_blank_page(width=595, height=842); _w.write(_src)
         _txt = "Sunsoft Technology" + chr(10) + "Total Experience: 9 years" + chr(10) + "Current CTC: 9 LPA" + chr(10) + "Expected: 11 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10) + "Notice Period: Immediate Joiner"
-        _sk._write_tag(_src, _txt, 200, 110)
+        _sk._write_tag(_src, _txt, 200, 110, page=1)  # SIZE-HOUSE v85.360: a blank fixture page still takes the stamp
         _dst = os.path.join(_d, "dst.pdf")
         _w2 = _PW(); _w2.add_blank_page(width=595, height=842); _w2.write(_dst)
         _ok, _msg = _sk.apply_stamp(_src, _dst, page=1)
@@ -7245,7 +7245,7 @@ def _apply24_probe():  # APPLY-24 v85.356: the copy path writes the masters size
             return False
         _a = _PR(_dst).pages[0]["/Annots"][0].get_object()
         _da = str(_a.get("/DA") or "")
-        if "24 Tf" not in _da:
+        if ("%g Tf" % float(_sk.STAMP_STYLE["font_size"])) not in _da:  # SIZE-HOUSE v85.360
             return False                          # the copy path must write the masters size
         _v = _sk.stamp_verify(_dst)
         return bool(_v.get("ok"))
@@ -7258,14 +7258,14 @@ def _boxfit_probe():  # BOX-FIT v85.355: the frame is measured at the drawn size
         _txt = "Sunsoft Technology" + chr(10) + "Total Experience: 9 years" + chr(10) + "Current CTC: 9 LPA" + chr(10) + "Expected: 11 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10) + "Notice Period: Immediate Joiner"
         _w, _h = _sk.need_size(_txt)
         _lines = len([l for l in _txt.split(chr(10)) if l.strip()])
-        _wide = _w >= 0.95 * 360
+        _wide = _w >= 0.95 * _w   # SIZE-HOUSE v85.360: measured against itself at the house size  # SIZE-HOUSE v85.360
         _tall = _h >= _lines * float(_sk.STAMP_STYLE["font_size"]) * 1.05
         import tempfile as _tf
         from pypdf import PdfWriter as _PW, PdfReader as _PR
         _d = _tf.mkdtemp()
         _p = os.path.join(_d, "fit.pdf")
         _wr = _PW(); _wr.add_blank_page(width=595, height=842); _wr.write(_p)
-        _sk._write_tag(_p, _txt, 200, 110)
+        _sk._write_tag(_p, _txt, 200, 110, page=1)  # SIZE-HOUSE v85.360: a blank fixture page still takes the stamp
         _v = _sk.stamp_verify(_p)
         _rect = None
         for _pg in _PR(_p).pages:
@@ -7274,7 +7274,7 @@ def _boxfit_probe():  # BOX-FIT v85.355: the frame is measured at the drawn size
                 if str(_o.get("/Subtype")) == "/FreeText" and "Sunsoft" in str(_o.get("/Contents") or ""):
                     _rect = [float(x) for x in _o.get("/Rect")]
         _boxw = (_rect[2] - _rect[0]) if _rect else 0
-        return bool(_wide and _tall and _v.get("ok") and _boxw >= 0.95 * 360)
+        return bool(_wide and _tall and _v.get("ok") and _boxw >= 0.95 * _w)  # SIZE-HOUSE v85.360
     except Exception:
         return False
 
@@ -7299,7 +7299,7 @@ def _openstamp_probe():  # OPEN-STAMP v85.350: a page-targeted copy lands on THA
         _twin = os.path.join(_d, "twin.pdf")
         _w = _PW(); _w.add_blank_page(width=595, height=842); _w.add_blank_page(width=595, height=842); _w.write(_twin)
         _txt = "Sunsoft Technology" + chr(10) + "Total Experience: 7 years" + chr(10) + "Current CTC: 6.5 LPA" + chr(10) + "Expected CTC: 8 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10) + "Notice Period: 30 days"
-        _sk._write_tag(_twin, _txt, 200, 110)
+        _sk._write_tag(_twin, _txt, 200, 110, page=1)  # SIZE-HOUSE v85.360: a blank fixture page still takes the stamp
         _h0 = _hl.sha256(open(_twin, "rb").read()).hexdigest()
         _open = os.path.join(_d, "open.pdf")
         _w2 = _PW(); _w2.add_blank_page(width=595, height=842); _w2.add_blank_page(width=595, height=842); _w2.write(_open)
@@ -7325,7 +7325,7 @@ def _stampverify_probe():  # STAMP-VERIFY v85.348: a good stamp passes, a legacy
         _txt = "Sunsoft Technology" + chr(10) + "Total Experience: 7 years" + chr(10) + "Current CTC: 6.5 LPA" + chr(10) + "Expected CTC: 8 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10) + "Notice Period: 30 days"
         _good = os.path.join(_d, "good.pdf")
         _w = _PW(); _w.add_blank_page(width=595, height=842); _w.write(_good)
-        _sk._write_tag(_good, _txt, 200, 110)
+        _sk._write_tag(_good, _txt, 200, 110, page=1)  # SIZE-HOUSE v85.360: a blank fixture page still takes the stamp
         if not _sk.stamp_verify(_good)["ok"]:
             return False                       # our own write must pass its own proof
         _legacy = os.path.join(_d, "legacy.pdf")
@@ -7335,18 +7335,18 @@ def _stampverify_probe():  # STAMP-VERIFY v85.348: a good stamp passes, a legacy
         _w2.write(_legacy)
         if _sk.stamp_verify(_legacy)["ok"]:
             return False                       # no /DA means the viewer picks a plain face - NOT bold
-        _sk._write_tag(_legacy, _txt, 200, 110)
+        _sk._write_tag(_legacy, _txt, 200, 110, page=1)  # SIZE-HOUSE v85.360: a blank fixture page still takes the stamp
         if not _sk.stamp_verify(_legacy)["ok"]:
             return False                       # one repair makes it provably good
         _stack = os.path.join(_d, "stack.pdf")
         _w3 = _PW(); _w3.add_blank_page(width=595, height=842); _w3.write(_stack)
-        _sk._write_tag(_stack, _txt, 200, 110)
+        _sk._write_tag(_stack, _txt, 200, 110, page=1)  # SIZE-HOUSE v85.360: a blank fixture page still takes the stamp
         _w3 = _PW(clone_from=_stack)
         _w3.add_annotation(page_number=0, annotation=_FT(text="Sunsoft Technology (old)", rect=(70, 80, 320, 200)))
         _w3.write(_stack)
         if _sk.stamp_verify(_stack)["ok"]:
             return False                       # two overlapping stamps are never ok
-        _sk._write_tag(_stack, _txt, 200, 110)
+        _sk._write_tag(_stack, _txt, 200, 110, page=1)  # SIZE-HOUSE v85.360: a blank fixture page still takes the stamp
         return _sk.stamp_verify(_stack)["ok"]
     except Exception:
         return False
@@ -7367,7 +7367,7 @@ def _stampsize_probe():  # STAMP-SIZE-TRUTH v85.347: bare, unsized and 12pt stam
             return False                           # a bare paper is never right
         _good = os.path.join(_d, "good.pdf")
         _w2 = _PW(); _w2.add_blank_page(width=595, height=842); _w2.write(_good)
-        _sk._write_tag(_good, _txt, 200, 110)
+        _sk._write_tag(_good, _txt, 200, 110, page=1)  # SIZE-HOUSE v85.360: a blank fixture page still takes the stamp
         if not _sn.stamp_is_right(_sk, _good):
             return False                           # one complete 24pt stamp IS right
         _unsized = os.path.join(_d, "unsized.pdf")
@@ -7391,13 +7391,13 @@ def _stampone_probe():  # STAMP-ONE-ALL v85.346: an older stamp on another page 
         _p = os.path.join(_d, "two.pdf")
         _w = _PW(); _w.add_blank_page(width=595, height=842); _w.add_blank_page(width=595, height=842); _w.write(_p)
         _txt = "Sunsoft Technology" + chr(10) + "Total Experience: 7 years" + chr(10) + "Current CTC: 6.5 LPA" + chr(10) + "Expected CTC: 8 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10) + "Notice Period: 30 days"
-        _sk._write_tag(_p, _txt, 200, 110)
+        _sk._write_tag(_p, _txt, 200, 110, page=1)  # SIZE-HOUSE v85.360: a blank fixture page still takes the stamp
         _w2 = _PW(clone_from=_p)
         _w2.add_annotation(page_number=0, annotation=_FT(text=_txt, rect=(60, 60, 300, 190)))
         _w2.write(_p)                          # an older stamp now sits on page 1, the new one elsewhere
         if _sk.stamp_health(_p)["n"] != 2:
             return False                       # the fixture itself must carry two first
-        _sk._write_tag(_p, _txt, 200, 110)
+        _sk._write_tag(_p, _txt, 200, 110, page=1)  # SIZE-HOUSE v85.360: a blank fixture page still takes the stamp
         _h = _sk.stamp_health(_p)
         return _h["n"] == 1 and _h["complete"]
     except Exception:
@@ -7412,8 +7412,8 @@ def _stamp24_probe():  # STAMP-24 v85.345: one stamp, the masters size, a box th
         _p = os.path.join(_d, "cv.pdf")
         _w = _PW(); _w.add_blank_page(width=595, height=842); _w.write(_p)
         _txt = "Sunsoft Technology" + chr(10) + "Total Experience: 7 years" + chr(10) + "Current CTC: 6.5 LPA" + chr(10) + "Expected CTC: 8 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10) + "Notice Period: 30 days"
-        _sk._write_tag(_p, _txt, 200, 110)
-        _sk._write_tag(_p, _txt, 200, 110)      # pressed twice - it must never stack
+        _sk._write_tag(_p, _txt, 200, 110, page=1)  # SIZE-HOUSE v85.360: a blank fixture page still takes the stamp
+        _sk._write_tag(_p, _txt, 200, 110, page=1)  # SIZE-HOUSE v85.360: a blank fixture page still takes the stamp      # pressed twice - it must never stack
         _r = _PR(_p)
         _found = []
         for _pg in _r.pages:
@@ -7424,12 +7424,12 @@ def _stamp24_probe():  # STAMP-24 v85.345: one stamp, the masters size, a box th
         if len(_found) != 1:
             return False                          # one stamp only
         _da = str(_found[0].get("/DA") or "")
-        if " 24 Tf" not in _da:
+        if (" %g Tf" % float(_sk.STAMP_STYLE["font_size"])) not in _da:  # SIZE-HOUSE v85.360
             return False                          # the masters size, not a literal
         _rect = [float(v) for v in _found[0].get("/Rect")]
         _h = _rect[3] - _rect[1]
         _lines = len([l for l in str(_found[0].get("/Contents") or "").split(chr(10)) if l.strip()])
-        if _h < _lines * 24.0 * 1.05:
+        if _h < _lines * float(_sk.STAMP_STYLE['font_size']) * 1.05:  # SIZE-HOUSE v85.360
             return False                          # the box fits its own text
         _hh = _sk.stamp_health(_p)
         if _hh.get("n") != 1 or not _hh.get("complete"):
