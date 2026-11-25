@@ -2068,6 +2068,25 @@ def _pages_pdf(p, out, log):  # PAGES-FIRST v85.56: the master's first choice fo
     except Exception:
         return False
 
+def _src_stamp(p):  # NO-CLOBBER v85.375: a source is remembered by its CONTENT stamp, never by its path alone - a new file under an old path is a new file
+    try:
+        _st = os.stat(p)
+        return '%d|%d' % (int(_st.st_mtime), int(_st.st_size))
+    except Exception:
+        return '0|0'
+
+
+def _free_seat(path):  # NO-CLOBBER v85.375: the house never lands on an existing paper - it seats beside it (name_1, name_2, ...), for EVERY file and every candidate
+    if not os.path.exists(path):
+        return path
+    _sd, _sb = os.path.dirname(path), os.path.basename(path)
+    _ss, _se = os.path.splitext(_sb)
+    _k = 1
+    while os.path.exists(os.path.join(_sd, '%s_%d%s' % (_ss, _k, _se))):
+        _k += 1
+    return os.path.join(_sd, '%s_%d%s' % (_ss, _k, _se))
+
+
 def _convert_to_pdf(p, log):  # CONVERT-WATCH v85.52: a Word paper is not a scan, it is a locked eye - conversion is the key; the source stays untouched and the book remembers
     import json as _jc, subprocess as _sp
     cf = os.path.join(BASE_DIR, '.converted.json')
@@ -2075,8 +2094,8 @@ def _convert_to_pdf(p, log):  # CONVERT-WATCH v85.52: a Word paper is not a scan
         done_map = _jc.load(open(cf))
     except Exception:
         done_map = {}
-    if done_map.get(p): return
-    out = os.path.splitext(p)[0] + '.pdf'
+    if done_map.get(p) in ('1', _src_stamp(p)): return  # NO-CLOBBER v85.375
+    out = _free_seat(os.path.splitext(p)[0] + '.pdf')  # NO-CLOBBER v85.375
     ext = os.path.splitext(p)[1].lower()
     try:
         if ext in ('.png', '.jpg', '.jpeg', '.heic'):
@@ -2093,7 +2112,7 @@ def _convert_to_pdf(p, log):  # CONVERT-WATCH v85.52: a Word paper is not a scan
     except Exception:
         return
     if os.path.exists(out):
-        done_map[p] = 1
+        done_map[p] = _src_stamp(p)  # NO-CLOBBER v85.375
         try:
             _jc.dump(done_map, open(cf, 'w'))
         except Exception:
@@ -7661,6 +7680,39 @@ def _stampdrawn_probe():  # STAMP-TRUTH-2 v85.374: a resized stamp is REFUSED - 
     except Exception:
         return False
 
+def _noclobber_probe():  # NO-CLOBBER v85.375: an arriving or converted paper never lands on an existing one, and a CHANGED source converts again
+    try:
+        import tempfile as _tf
+        _g = globals()
+        _d = _tf.mkdtemp(prefix="nc_")
+        _keep = {k: _g.get(k) for k in ("BASE_DIR", "_pages_pdf")}
+        try:
+            _g["BASE_DIR"] = _d
+            _old = os.path.join(_d, "x.pdf"); open(_old, "wb").write(b"%PDF-1.4 OLD PAPER WITH DATA")
+            _src = os.path.join(_d, "x.docx"); open(_src, "wb").write(b"NEW SOURCE")
+            _before = open(_old, "rb").read()
+            def _fake_pages(_p, _out, _log):
+                open(_out, "wb").write(b"%PDF-1.4 CONVERTED")
+                return True
+            _g["_pages_pdf"] = _fake_pages
+            _convert_to_pdf(_src, lambda *a, **k: None)
+            if not os.path.exists(os.path.join(_d, "x_1.pdf")):
+                return False              # the conversion SEATS beside the old paper
+            if open(_old, "rb").read() != _before:
+                return False              # and never touches it
+            _mark = _src_stamp(_src)
+            open(_src, "wb").write(b"NEW SOURCE with the extra data")   # same path, new content
+            if _src_stamp(_src) == _mark:
+                return False              # the content stamp notices a change
+            _convert_to_pdf(_src, lambda *a, **k: None)
+            return os.path.exists(os.path.join(_d, "x_2.pdf"))   # a changed source converts again, one more seat
+        finally:
+            for _k, _v in _keep.items():
+                if _v is not None:
+                    _g[_k] = _v
+    except Exception:
+        return False
+
 def _pitchcheck_probe():  # PITCH-CHECK v85.365: a tight frame is refused so the house widens it
     try:
         import tempfile as _tf
@@ -8914,6 +8966,7 @@ def _selftest(root):
     ck('S681 any awaiting-... tag rests in Ready for Manager Review through the handler and the sweep, a colour tag never blocks it, and nothing leaves its position', _restrule_probe())
     ck('S682 a carried stamp keeps every line of the original - invented line included - and the sizes we decided, on a twin and on a bare CV', _stampcarryall_probe())
     ck('S683 a stamp drawn at twice or half the masters size is refused because the verifier reads the drawing, never the DA counter', _stampdrawn_probe())
+    ck('S684 a conversion and an arrival never land on an existing paper - they take the next seat, and a changed source converts again', _noclobber_probe())
     ck('S676 the copy path and the tag path are one writer - same Rect, DA, DS, Q and appearance, and never a second stamp', _onewriter_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
