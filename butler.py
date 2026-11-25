@@ -7953,7 +7953,7 @@ def _pixelsame_probe():  # PIXEL-SAME v85.381: our painting uses Preview own thr
         if abs(abs(_ys[0] - _ys[1]) - _lp) > 0.05:
             return False                  # the line step is the one Preview uses
         _r = [float(v) for v in _a.get("/Rect")]
-        if abs(((_r[3] - _r[1]) - _ys[0]) - _sz * _ins) > 0.1:
+        if abs(((_r[3] - _r[1]) - _ys[0]) - (_sk.ink_extents(_t)[1] + float(_sk.STAMP_STYLE.get('bleed_pt') or 0.5))) > 0.1:  # INK-FIT v85.384
             return False                  # and the first baseline sits where Preview puts it (AP-local y vs the box height)
         return bool(_sk.stamp_verify(_p)["ok"])
     except Exception:
@@ -7966,7 +7966,7 @@ def _noclip_probe():  # NO-CLIP v85.382: every line fits inside the frame with i
         from pypdf import PdfWriter as _PW, PdfReader as _PR
         from PIL import ImageFont as _IF
         _sz = float(_sk.STAMP_STYLE["font_size"])
-        _pad = float(_sk.STAMP_STYLE.get("pad_pt") or 0)
+        _pad = float(_sk.STAMP_STYLE.get("bleed_pt") or 0)  # INK-FIT v85.384-pad
         if _pad <= 0:
             return False                  # the inset must be declared
         _t = "Sunsoft Technology" + chr(10) + "Total Experience: 12.6 years" + chr(10) + "Current CTC: 11.17 LPA" + chr(10) + "Expected: 15 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Gwalior" + chr(10) + "Notice Period: 120 days (Buyout) with handover"
@@ -7979,7 +7979,7 @@ def _noclip_probe():  # NO-CLIP v85.382: every line fits inside the frame with i
         _box = _r[2] - _r[0]
         _f = _IF.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", max(1, int(round(_sz * 10))))
         _wide = max(_f.getlength(l) for l in _t.split(chr(10)) if l.strip()) / 10.0
-        if _box < _wide + 2.0 * _pad - 0.01:
+        if _box < _sk.ink_extents(_t)[0] + 2.0 * float(_sk.STAMP_STYLE.get('bleed_pt') or 0.5) - 0.01:  # INK-FIT v85.384
             return False                  # THE FRAME HOLDS THE LONGEST LINE PLUS ITS INSET - nothing is cut
         _ap = _a["/AP"].get_object()["/N"]
         _ap = _ap.get_object() if hasattr(_ap, "get_object") else _ap
@@ -7999,7 +7999,7 @@ def _vfit_probe():  # V-FIT v85.383: the last line descender stays inside the fr
         _sz = float(_sk.STAMP_STYLE["font_size"])
         _ins = float(_sk.STAMP_STYLE.get("editor_inset") or 0)
         _lp = float(_sk.STAMP_STYLE.get("line_pt") or 0)
-        _pad = float(_sk.STAMP_STYLE.get("pad_pt") or 0)
+        _pad = float(_sk.STAMP_STYLE.get("bleed_pt") or 0)  # INK-FIT v85.384-pad
         if min(_ins, _lp, _pad) <= 0:
             return False                  # the three numbers must exist
         _t = "Sunsoft Technology" + chr(10) + "Total Experience: 12.6 years" + chr(10) + "Current CTC: 11.17 LPA" + chr(10) + "Expected: 15 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Gwalior" + chr(10) + "Notice Period: 90 days (Buyout)gy"
@@ -8016,10 +8016,44 @@ def _vfit_probe():  # V-FIT v85.383: the last line descender stays inside the fr
             return False                  # one baseline per line
         if abs((_ys[0] - _ys[1]) - _lp) > 0.01:
             return False                  # the step is line_pt, independent of the box height
-        _desc = _sz * 0.22                    # a descender is about a fifth of the size
-        if _ys[-1] - _desc < 0.5:
+        _desc = _sk.ink_extents(_t)[2]                    # a descender is about a fifth of the size  # INK-FIT v85.384
+        if _ys[-1] - _desc < -0.01:  # INK-FIT v85.384
             return False                  # THE LAST LINE DESCENDER IS INSIDE THE FRAME - no vertical cut
         return bool(_sk.stamp_verify(_p)["ok"])
+    except Exception:
+        return False
+
+def _inkfit_probe():  # INK-FIT v85.384: the frame is at least the ink and at most the ink plus one bleed - never cut, never padded
+    try:
+        import tempfile as _tf
+        import stampkeeper as _sk
+        from pypdf import PdfWriter as _PW, PdfReader as _PR
+        _bleed = float(_sk.STAMP_STYLE.get("bleed_pt") or 0)
+        _step = float(_sk.STAMP_STYLE.get("line_pt") or 0)
+        if _bleed <= 0 or _step <= 0:
+            return False                  # both numbers must exist
+        _head = "Sunsoft Technology" + chr(10) + "Total Experience: 12.6 years" + chr(10) + "Current CTC: 11.17 LPA" + chr(10) + "Expected: 15 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Gwalior" + chr(10)
+        _cases = (_head + "Notice Period: 90 days (Buyout)",          # the long descender line
+                  _head + "Notice Period: 30 days",                  # an ordinary line
+                  "Sunsoft Technology" + chr(10) + "Total Experience: 1 year" + chr(10) + "Current CTC: 1 LPA" + chr(10) + "Expected: 2 LPA" + chr(10) + "Present Location: Pune" + chr(10) + "Permanent Location: Pune" + chr(10) + "Notice Period: Immediate Joiner")   # the shortest
+        _d = _tf.mkdtemp(prefix="ink_")
+        for _i, _t in enumerate(_cases):
+            _p = os.path.join(_d, "c%d.pdf" % _i)
+            _w = _PW(); _w.add_blank_page(width=595, height=842); _w.write(_p)
+            _sk._write_tag(_p, _t, 200, 110, page=1)
+            _a = _PR(_p).pages[0]["/Annots"][0].get_object()
+            _r = [float(v) for v in _a.get("/Rect")]
+            _w0, _above, _below = _sk.ink_extents(_t)
+            _n = len([l for l in _t.split(chr(10)) if l.strip()])
+            _need_w = _w0 + 2.0 * _bleed
+            _need_h = _above + (_n - 1) * _step + _below + 2.0 * _bleed
+            if (_r[2] - _r[0]) < _need_w - 0.01 or (_r[3] - _r[1]) < _need_h - 0.01:
+                return False              # never less than the text needs - no cut
+            if (_r[2] - _r[0]) > _need_w + 0.05 or (_r[3] - _r[1]) > _need_h + 0.05:
+                return False              # and never more than that - just enough
+            if not _sk.stamp_verify(_p)["ok"]:
+                return False
+        return True
     except Exception:
         return False
 
@@ -8033,7 +8067,7 @@ def _pitchcheck_probe():  # PITCH-CHECK v85.365: a tight frame is refused so the
         _w = _PW(); _w.add_blank_page(width=595, height=842); _w.write(_p)
         _t = "Sunsoft Technology" + chr(10) + "Total Experience: 9 years" + chr(10) + "Current CTC: 9 LPA" + chr(10) + "Expected: 11 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10) + "Notice Period: Immediate Joiner"
         _sk._write_tag(_p, _t, 200, 110, page=1)
-        return _sk.stamp_verify(_p)["ok"] and _sk.need_size(_t)[1] >= 7 * float(_sk.STAMP_STYLE["font_size"]) * 1.20
+        return _sk.stamp_verify(_p)["ok"] and _sk.need_size(_t)[1] >= _sk.ink_extents(_t)[1] + 6 * float(_sk.STAMP_STYLE.get('line_pt') or 14.6) + _sk.ink_extents(_t)[2] - 0.01  # INK-FIT v85.384
     except Exception:
         return False
 
@@ -8043,7 +8077,7 @@ def _editfit_probe():  # EDIT-FIT v85.364: the box carries Preview own line heig
         _t = "Sunsoft Technology" + chr(10) + "Total Experience: 9 years" + chr(10) + "Current CTC: 9 LPA" + chr(10) + "Expected: 11 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10) + "Notice Period: Immediate Joiner"
         _w, _h = _sk.need_size(_t)
         _lines = len([l for l in _t.split(chr(10)) if l.strip()])
-        _pitch = float(_h) / _lines
+        _pitch = float(_sk.STAMP_STYLE.get('line_pt') or 0)  # INK-FIT v85.384
         _size = float(_sk.STAMP_STYLE["font_size"])
         return bool(_pitch >= _size * 1.20 and _pitch <= _size * 1.30)
     except Exception:
@@ -9285,6 +9319,7 @@ def _selftest(root):
     ck('S690 the house paints the stamp with Preview own three numbers - glyph, line step and first-baseline inset - so a click re-draws the same picture', _pixelsame_probe())
     ck('S691 the frame holds the longest line plus its inset, measured at the real size - no text is cut before a click', _noclip_probe())
     ck('S692 the frame keeps the last line descender inside it - no vertical cut before a click - and the step stays line_pt', _vfit_probe())
+    ck('S693 the frame is exactly the ink plus one bleed on every axis - never cut before a click, never padded beyond the text', _inkfit_probe())
     ck('S676 the copy path and the tag path are one writer - same Rect, DA, DS, Q and appearance, and never a second stamp', _onewriter_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
