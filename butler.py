@@ -7570,6 +7570,62 @@ def _restrule_probe():  # REST-RULE v85.372: a tag nobody coded rests with the w
     except Exception:
         return False
 
+def _stampcarryall_probe():  # STAMP-CARRY-ALL v85.373: a carried stamp keeps EVERY line of the original - nothing coded, nothing dropped - at the sizes we decided
+    try:
+        import tempfile as _tf, re as _re
+        import stampkeeper as _sk
+        from pypdf import PdfWriter as _PW, PdfReader as _PR
+        _d = _tf.mkdtemp(prefix="sca_")
+        _src = os.path.join(_d, "src.pdf")
+        _w = _PW(); _w.add_blank_page(width=595, height=842); _w.write(_src)
+        _extra = "Note: a line nobody coded - " + str(len(_d))
+        _txt = "Sunsoft Technology" + chr(10) + "Total Experience: 9 years" + chr(10) + "Current CTC: 9 LPA" + chr(10) + "Expected: 11 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10) + "Notice Period: 45 days" + chr(10) + _extra
+        _sk._write_tag(_src, _txt, 200, 110, page=1)
+        _sz = float(_sk.STAMP_STYLE["font_size"])
+        _lines = [l for l in _txt.split(chr(10)) if l.strip()]
+        def _check(_p):
+            _st = _sk.stamp_from(_p)
+            if not _st or _st["text"] != _txt:
+                return False                  # every line verbatim - the invented one included
+            _a = None
+            for _pg in _PR(_p).pages:
+                for _ref in (_pg.get("/Annots") or []):
+                    _o = _ref.get_object()
+                    if str(_o.get("/Subtype")) == "/FreeText" and "Sunsoft" in str(_o.get("/Contents") or ""):
+                        _a = _o
+            if _a is None:
+                return False
+            if abs(_sk.da_drawn(str(_a.get("/DA") or "")) - _sz) > 0.05:
+                return False                  # /DA carries size x ratio, so the editor lands on the drawn size
+            if ("font: bold %gpt" % _sz) not in str(_a.get("/DS") or ""):
+                return False                  # /DS still names the drawn size
+            _ap = _a["/AP"].get_object()["/N"]
+            _ap = _ap.get_object() if hasattr(_ap, "get_object") else _ap
+            _s = _ap.get_data().decode("latin-1", "ignore")
+            _drawn = _re.findall(r"/TT1 ([0-9.]+) Tf", _s)
+            if not _drawn or abs(float(_drawn[0]) - _sz) > 0.05:
+                return False                  # the page DRAWS our size
+            if (_s.count("Tj") + _s.count("TJ")) != len(_lines):
+                return False                  # one drawn piece per line - nothing skipped
+            _r = [float(v) for v in _a.get("/Rect")]
+            if (_r[3] - _r[1]) < len(_lines) * float(_sk.STAMP_STYLE.get("line_pt") or 14.6) * 0.95:
+                return False                  # the frame keeps the pitch we decided
+            return bool(_sk.stamp_verify(_p)["ok"])
+        _tw = os.path.join(_d, "twin.pdf")
+        _w2 = _PW(); _w2.add_blank_page(width=595, height=842); _w2.write(_tw)
+        _sk._write_tag(_tw, "Sunsoft Technology" + chr(10) + "Total Experience: 1 year", 120, 60, page=1)   # a stale short stamp
+        _ok, _msg = _sk.apply_stamp(_src, _tw, page=1)
+        if not _ok or not _check(_tw):
+            return False                      # the twin gets the WHOLE stamp, replacing the stale one
+        _cv = os.path.join(_d, "cv.pdf")
+        _w3 = _PW(); _w3.add_blank_page(width=595, height=842); _w3.write(_cv)
+        _ok2, _msg2 = _sk.apply_stamp(_src, _cv, page=1)
+        if not _ok2 or not _check(_cv):
+            return False                      # a CV with no stamp gets the same complete stamp
+        return True
+    except Exception:
+        return False
+
 def _pitchcheck_probe():  # PITCH-CHECK v85.365: a tight frame is refused so the house widens it
     try:
         import tempfile as _tf
@@ -8821,6 +8877,7 @@ def _selftest(root):
     ck('S679 in chat mode option 1 (jd) and option 3 (cv) rest in Ready for Manager Review wearing their own tags, and the house speaks the folder it uses', _chatalias_probe())
     ck('S680 a sweep writes its tag move into the house log and a failed move is spoken aloud, never swallowed', _tagfollowvoice_probe())
     ck('S681 any awaiting-... tag rests in Ready for Manager Review through the handler and the sweep, a colour tag never blocks it, and nothing leaves its position', _restrule_probe())
+    ck('S682 a carried stamp keeps every line of the original - invented line included - and the sizes we decided, on a twin and on a bare CV', _stampcarryall_probe())
     ck('S676 the copy path and the tag path are one writer - same Rect, DA, DS, Q and appearance, and never a second stamp', _onewriter_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
