@@ -7356,7 +7356,7 @@ def _dacounter_probe():  # DA-COUNTER v85.368: the page still draws 12pt while /
             return False                  # the reader lands back on the drawn size
         if ("font: bold %gpt" % _sz) not in str(_a.get("/DS") or ""):
             return False                  # /DS keeps telling the truth about the drawing
-        if _sk.da_ratio() <= 1.4:
+        if _sk.da_ratio() < 1.0 or abs(_sk.da_size(_sz) - _sz * _sk.da_ratio()) > 1e-9:  # STAMP-TRUTH-2 v85.374
             return False                  # the knob is engaged, not accidentally absent
         if not _sk.stamp_verify(_p)["ok"]:
             return False                  # the verifier accepts our own stamp
@@ -7622,6 +7622,41 @@ def _stampcarryall_probe():  # STAMP-CARRY-ALL v85.373: a carried stamp keeps EV
         _ok2, _msg2 = _sk.apply_stamp(_src, _cv, page=1)
         if not _ok2 or not _check(_cv):
             return False                      # a CV with no stamp gets the same complete stamp
+        return True
+    except Exception:
+        return False
+
+def _stampdrawn_probe():  # STAMP-TRUTH-2 v85.374: a resized stamp is REFUSED - the verifier reads the drawing, never trusts /DA alone
+    try:
+        import tempfile as _tf
+        import stampkeeper as _sk
+        from pypdf import PdfWriter as _PW
+        _d = _tf.mkdtemp(prefix="sd_")
+        _txt = "Sunsoft Technology" + chr(10) + "Total Experience: 9 years" + chr(10) + "Current CTC: 9 LPA" + chr(10) + "Expected: 11 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10) + "Notice Period: 45 days"
+        _good = os.path.join(_d, "good.pdf")
+        _w = _PW(); _w.add_blank_page(width=595, height=842); _w.write(_good)
+        _sk._write_tag(_good, _txt, 200, 110, page=1)
+        if not _sk.stamp_verify(_good)["ok"]:
+            return False                  # our own write still passes
+        _sz = float(_sk.STAMP_STYLE["font_size"])
+        def _resize(_dst, _draw):
+            _wr = _PW(clone_from=_good)
+            for _pg in _wr.pages:
+                for _ref in (_pg.get("/Annots") or []):
+                    _o = _ref.get_object()
+                    if str(_o.get("/Subtype")) == "/FreeText" and "Sunsoft" in str(_o.get("/Contents") or ""):
+                        _r = [float(v) for v in _o.get("/Rect")]
+                        _sk._draw_ap(_wr, _o, _txt, _r[2] - _r[0], _r[3] - _r[1], _draw, _sk.STAMP_STYLE["colour"])
+            _wr.write(_dst)
+            return _dst
+        _big = _resize(os.path.join(_d, "big.pdf"), _sz * 2.07)   # what Preview did to his file
+        if _sk.stamp_verify(_big)["ok"]:
+            return False                  # a doubled stamp is refused, not blessed
+        if "drawn" not in str(_sk.stamp_verify(_big).get("why") or ""):
+            return False                  # and the refusal names the drawing
+        _small = _resize(os.path.join(_d, "small.pdf"), _sz * 0.483)   # the old halving
+        if _sk.stamp_verify(_small)["ok"]:
+            return False                  # a halved stamp is refused too
         return True
     except Exception:
         return False
@@ -8878,6 +8913,7 @@ def _selftest(root):
     ck('S680 a sweep writes its tag move into the house log and a failed move is spoken aloud, never swallowed', _tagfollowvoice_probe())
     ck('S681 any awaiting-... tag rests in Ready for Manager Review through the handler and the sweep, a colour tag never blocks it, and nothing leaves its position', _restrule_probe())
     ck('S682 a carried stamp keeps every line of the original - invented line included - and the sizes we decided, on a twin and on a bare CV', _stampcarryall_probe())
+    ck('S683 a stamp drawn at twice or half the masters size is refused because the verifier reads the drawing, never the DA counter', _stampdrawn_probe())
     ck('S676 the copy path and the tag path are one writer - same Rect, DA, DS, Q and appearance, and never a second stamp', _onewriter_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
