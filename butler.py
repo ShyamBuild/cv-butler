@@ -7310,6 +7310,43 @@ def _onewriter_probe():  # STAMP-ONE-WRITER v85.367: the copy path and the tag p
     except Exception:
         return False
 
+def _dacounter_probe():  # DA-COUNTER v85.368: the page still draws 12pt while /DA carries the number Preview halves back to 12, and Ctrl+S still calls it right
+    try:
+        import tempfile as _tf, re as _re
+        import stampkeeper as _sk
+        from pypdf import PdfWriter as _PW, PdfReader as _PR
+        sys.path.insert(0, os.path.join(BASE_DIR, "notes"))
+        import stamp_now as _sn
+        _d = _tf.mkdtemp()
+        _p = os.path.join(_d, "da.pdf")
+        _w = _PW(); _w.add_blank_page(width=595, height=842); _w.write(_p)
+        _txt = "Sunsoft Technology" + chr(10) + "Total Experience: 9 years" + chr(10) + "Current CTC: 9 LPA" + chr(10) + "Expected: 11 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10) + "Notice Period: Immediate Joiner"
+        _sk._write_tag(_p, _txt, 200, 110, page=1)
+        _sz = float(_sk.STAMP_STYLE["font_size"])
+        _a = _PR(_p).pages[0]["/Annots"][0].get_object()
+        _da = str(_a.get("/DA") or "")
+        _n = _a["/AP"].get_object()["/N"]
+        _n = _n.get_object() if hasattr(_n, "get_object") else _n
+        _s = _n.get_data().decode("latin-1", "ignore")
+        if ("/TT1 %g Tf" % _sz) not in _s:
+            return False                  # the page must still DRAW 12pt - the display is untouchable
+        _m = _re.search(r"([0-9.]+) Tf", _da)
+        if not _m or abs(float(_m.group(1)) - _sk.da_size(_sz)) > 0.05:
+            return False                  # /DA carries size x ratio, never the bare size
+        if abs(_sk.da_drawn(_da) - _sz) > 0.05:
+            return False                  # the reader lands back on the drawn size
+        if ("font: bold %gpt" % _sz) not in str(_a.get("/DS") or ""):
+            return False                  # /DS keeps telling the truth about the drawing
+        if _sk.da_ratio() <= 1.4:
+            return False                  # the knob is engaged, not accidentally absent
+        if not _sk.stamp_verify(_p)["ok"]:
+            return False                  # the verifier accepts our own stamp
+        if abs(float(_sk.stamp_health(_p).get("size") or 0) - _sz) > 0.5:
+            return False                  # health reports the DRAWN size, not the counter
+        return bool(_sn.stamp_is_right(_sk, _p))   # Ctrl+S sees a right stamp - never a repair loop
+    except Exception:
+        return False
+
 def _pitchcheck_probe():  # PITCH-CHECK v85.365: a tight frame is refused so the house widens it
     try:
         import tempfile as _tf
@@ -7425,7 +7462,7 @@ def _apply24_probe():  # APPLY-24 v85.356: the copy path writes the masters size
             return False
         _a = _PR(_dst).pages[0]["/Annots"][0].get_object()
         _da = str(_a.get("/DA") or "")
-        if ("%g Tf" % float(_sk.STAMP_STYLE["font_size"])) not in _da:  # SIZE-HOUSE v85.360
+        if abs(_sk.da_drawn(_da) - float(_sk.STAMP_STYLE["font_size"])) > 0.5:  # SIZE-HOUSE v85.360  # DA-COUNTER v85.368
             return False                          # the copy path must write the masters size
         _v = _sk.stamp_verify(_dst)
         return bool(_v.get("ok"))
@@ -7604,7 +7641,7 @@ def _stamp24_probe():  # STAMP-24 v85.345: one stamp, the masters size, a box th
         if len(_found) != 1:
             return False                          # one stamp only
         _da = str(_found[0].get("/DA") or "")
-        if (" %g Tf" % float(_sk.STAMP_STYLE["font_size"])) not in _da:  # SIZE-HOUSE v85.360
+        if abs(_sk.da_drawn(_da) - float(_sk.STAMP_STYLE["font_size"])) > 0.5:  # SIZE-HOUSE v85.360  # DA-COUNTER v85.368
             return False                          # the masters size, not a literal
         _rect = [float(v) for v in _found[0].get("/Rect")]
         _h = _rect[3] - _rect[1]
@@ -8556,6 +8593,7 @@ def _selftest(root):
     ck('S673 a Ctrl+U scope limits the chair to its own papers, and an empty scope changes nothing', _scopelaw_probe())
     ck('S674 the stamp box carries Preview own line height (1.20-1.30 x size), so editing never shrinks the text', _editfit_probe())
     ck('S675 a frame tighter than 1.20 x size is refused, so Ctrl+S widens it and editing stops shrinking', _pitchcheck_probe())
+    ck('S677 the page still draws 12pt while /DA carries the editor number Preview halves back to 12, and Ctrl+S still calls the stamp right', _dacounter_probe())
     ck('S676 the copy path and the tag path are one writer - same Rect, DA, DS, Q and appearance, and never a second stamp', _onewriter_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
