@@ -3252,6 +3252,50 @@ def _chair_at_risk(cur, deed=None):  # UP-ADVANCES-WHEN-SAFE v85.311: a chair is
     except Exception:
         return False
 
+_SCOPE_MEM = {"sig": None, "set": set()}
+
+
+def _desk_file():  # SCOPE-LAW v85.363: the desk the door wrote (a test may point elsewhere)
+    return os.environ.get("CVTOOL_DESK_FILE") or os.path.join(BASE_DIR, "desk.json")
+
+
+def _desk_scope():  # SCOPE-LAW v85.363: the exact papers the Ctrl+U press named
+    try:
+        f = _desk_file()
+        sig = (f, os.path.getmtime(f))
+    except Exception:
+        _SCOPE_MEM["sig"] = None
+        _SCOPE_MEM["set"] = set()
+        return set()
+    if _SCOPE_MEM["sig"] == sig:
+        return _SCOPE_MEM["set"]
+    out = set()
+    try:
+        import json as _j
+        with open(f) as _fh:
+            _d = _j.load(_fh)
+        for _p in (_d.get("scope") or []):
+            try:
+                out.add(_rp(_p))
+            except Exception:
+                pass
+    except Exception:
+        out = set()
+    _SCOPE_MEM["sig"] = sig
+    _SCOPE_MEM["set"] = out
+    return out
+
+
+def _sc_ok(p):  # SCOPE-LAW v85.363: no scope = everything; a scope = only its papers
+    s = _desk_scope()
+    if not s:
+        return True
+    try:
+        return _rp(p) in s
+    except Exception:
+        return False
+
+
 def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes, and the seat itself re-checks coverage
     seat_rename_check(root, lambda *a, **k: None)  # SEE-FAILURE v85.183: the sweep still runs; the card says the rest
     s = sheet_load()
@@ -3263,6 +3307,7 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
         except Exception: pass
     for it in s.get('items', []):  # SHEET-LIVE v84.12
         if it.get('status') != 'waiting': continue
+        if not _sc_ok(it.get('p') or ''): continue  # SCOPE-LAW v85.363  # SCOPE-LAW v85.363
         if not os.path.abspath(it.get("p") or "").startswith(_focus_path(root) + os.sep):
          continue  # SCOPE v85.215: a paper from another position waits for its own chair
         p = it['p']
@@ -3275,7 +3320,18 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
             continue
         if (not _fsd) and (os.path.basename(os.path.dirname(p)) in _tag_vocab() or _name_key(os.path.basename(p)) in mem or _in_nonqueue(p)):  # STAGE-DESK v85.337
             it['status'] = 'done'; it['outcome'] = 'covered elsewhere'; continue  # FOLDER-TRUTH v84.30
-    for sc in [_focus_path(root)]:  # SCOPE v85.215: the chair seeds only its own position
+    _scope_now = _desk_scope()  # SCOPE-LAW v85.363: a scoped press seeds only its own papers
+    if _scope_now:
+        for _sp in sorted(_scope_now):
+            try:
+                if (not os.path.exists(_sp)) or _rp(_sp) in known or _rp(_sp) in sk:
+                    continue
+                s.setdefault('items', []).append({'p': _sp, 'name': os.path.splitext(os.path.basename(_sp))[0], 'status': 'waiting'})
+                known.add(_rp(_sp))
+                say('in scope: %s' % os.path.basename(_sp))
+            except Exception:
+                pass
+    for sc in ([] if _scope_now else [_focus_path(root)]):  # SCOPE v85.215: the chair seeds only its own position  # SCOPE-LAW v85.363
         for dp, dn, fn in os.walk(sc):
             for x in fn:
                 if not _is_desk_candidate(x): continue
@@ -3290,6 +3346,7 @@ def up_cmd(arg, root, say=print):  # CHAIR v84.10b (v84.15): the sheet breathes,
     _skipped_cur = False
     for it in sorted(s.get('items', []), key=_seat_key):  # RETRAY v84.55: new blood outranks the re-review tray in the chair  # DESK-LOOSE-FIRST v85.311
         if it.get('status') != 'waiting': continue
+        if not _sc_ok(it.get('p') or ''): continue  # SCOPE-LAW v85.363  # SCOPE-LAW v85.363
         if _cur_p and not (arg or "").strip():  # SEAT-ADVANCE v85.230: every row of the seated human is skipped
          _hit3 = _rp(it.get("p") or "") == _cur_p or (_name_key(it.get("name") or "") == _name_key(_cur.get("name") or "") and bool(_cur.get("name")))
          if not _hit3:
@@ -7181,6 +7238,31 @@ def _taglevel_probe():  # TAG-LEVEL v85.343: a sub-folder paper settles at the P
     except Exception:
         return False
 
+def _scopelaw_probe():  # SCOPE-LAW v85.363: a scope filters the chair; no scope changes nothing
+    try:
+        import tempfile as _tf, json as _j
+        _d = _tf.mkdtemp()
+        _desk = os.path.join(_d, "desk.json")
+        _a = os.path.join(_d, "a.pdf"); _b = os.path.join(_d, "b.pdf"); _c = os.path.join(_d, "c.pdf")
+        for _x in (_a, _b, _c):
+            open(_x, "wb").write(b"%PDF-1.4" + chr(10).encode())
+        _old = os.environ.get("CVTOOL_DESK_FILE")
+        os.environ["CVTOOL_DESK_FILE"] = _desk
+        _j.dump({"scope": [_a, _b]}, open(_desk, "w"))
+        _SCOPE_MEM["sig"] = None
+        _ok_scoped = _sc_ok(_a) and _sc_ok(_b) and not _sc_ok(_c)
+        _j.dump({"scope": []}, open(_desk, "w"))
+        _SCOPE_MEM["sig"] = None
+        _ok_empty = _sc_ok(_a) and _sc_ok(_b) and _sc_ok(_c)
+        if _old is None:
+            os.environ.pop("CVTOOL_DESK_FILE", None)
+        else:
+            os.environ["CVTOOL_DESK_FILE"] = _old
+        _SCOPE_MEM["sig"] = None
+        return bool(_ok_scoped and _ok_empty)
+    except Exception:
+        return False
+
 def _aprequire_probe():  # AP-REQUIRE v85.358: no drawn appearance means NOT finished
     try:
         import tempfile as _tf
@@ -8373,6 +8455,7 @@ def _selftest(root):
     ck('S670 the watcher copy path writes the masters 24pt stamp, never the old hardcoded 12pt', _apply24_probe())
     ck('S671 the stamp carries our own appearance at 24pt and its drawing fills the frame exactly', _apown_probe())
     ck('S672 a stamp with no drawn appearance is not finished - the viewer would pick its own size', _aprequire_probe())
+    ck('S673 a Ctrl+U scope limits the chair to its own papers, and an empty scope changes nothing', _scopelaw_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
