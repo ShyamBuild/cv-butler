@@ -2388,8 +2388,17 @@ def _eyename_of(p, trace=False, log=None):  # EYES-IN-SWEEP v85.90: the OCR-back
  return name
 _SWEEP_QUIET = {'on': False}  # SWEEP-QUIET v85.187: the chat asks the sweep for silence; the watcher keeps its own voice
 
+def _tag_follow_logged(root, log):  # TAG-FOLLOW-VOICE v85.371: the sweeps tag moves write their diagnosis into the house log - an unspoken move cannot be contradicted
+    try:
+        return tag_follow(root, lambda m: log('🧲 ' + str(m)))
+    except Exception as _e:
+        try: log('⚠️ tag-follow crashed: %r' % (_e,))
+        except Exception: pass
+        return 0
+
+
 def _case_sweep(root, log, trace=False):  # CASE-SWEEP v85.57: casing is a property of the name, not of the ceremony's memory  # SWEEP-TRACE v85.70: with trace on, every file speaks its verdict, so a silent sweep names the guard that silenced it
-    try: tag_follow(root, lambda *a, **k: None)  # TAG-FOLLOW v85.246: every beat starts by obeying the tags
+    try: _tag_follow_logged(root, log)  # TAG-FOLLOW v85.246: every beat starts by obeying the tags  # TAG-FOLLOW-VOICE v85.371
     except Exception:
         pass
     try:
@@ -7463,6 +7472,38 @@ def _chatalias_probe():  # CHAT-ALIAS v85.370: in chat the chosen option writes 
     except Exception:
         return False
 
+def _tagfollowvoice_probe():  # TAG-FOLLOW-VOICE v85.371: a sweep move is written into the house log, a settled tree says nothing, and a FAILED move is spoken instead of swallowed
+    try:
+        import tempfile as _tf
+        _d = _tf.mkdtemp(prefix="tfv_")
+        _pos = os.path.join(_d, "Client", "Pos")
+        os.makedirs(os.path.join(_pos, "Call Scheduled"), exist_ok=True)
+        _p = os.path.join(_pos, "warm.pdf")
+        open(_p, "wb").write(b"%PDF-1.4" + bytes(chr(10), "ascii"))
+        _tag_write(_p, ["Awaiting JD Confirmation"])
+        _spoke = []
+        _n = _tag_follow_logged(_d, lambda m: _spoke.append(str(m)))
+        if _n != 1 or not os.path.exists(os.path.join(_pos, "Ready for Manager Review", "warm.pdf")):
+            return False                  # the move itself still happens
+        if not any("Ready for Manager Review" in s for s in _spoke):
+            return False                  # and the beat SAID it, naming the folder it used
+        _again = _tag_follow_logged(_d, lambda m: _spoke.append(str(m)))
+        if _again != 0 or len(_spoke) != _n:
+            return False                  # a settled tree moves nothing and says nothing
+        _rf = os.path.join(_pos, "Ready for Manager Review")
+        _p2 = os.path.join(_pos, "blocked.pdf")
+        open(_p2, "wb").write(b"%PDF-1.4" + bytes(chr(10), "ascii"))
+        _tag_write(_p2, ["Awaiting CV Update"])
+        _said = []
+        try:
+            os.chmod(_rf, 0o500)          # unwritable target: the move MUST fail
+            _tag_follow_logged(_d, lambda m: _said.append(str(m)))
+        finally:
+            os.chmod(_rf, 0o700)
+        return any("could not move" in s or "crashed" in s for s in _said)   # silence was the bug, so a failure speaks
+    except Exception:
+        return False
+
 def _pitchcheck_probe():  # PITCH-CHECK v85.365: a tight frame is refused so the house widens it
     try:
         import tempfile as _tf
@@ -8712,6 +8753,7 @@ def _selftest(root):
     ck('S677 the page still draws 12pt while /DA carries the editor number Preview halves back to 12, and Ctrl+S still calls the stamp right', _dacounter_probe())
     ck('S678 three warm tags rest in one folder - Awaiting JD Confirmation and Awaiting CV Update land in Ready for Manager Review with their tags untouched', _restalias_probe())
     ck('S679 in chat mode option 1 (jd) and option 3 (cv) rest in Ready for Manager Review wearing their own tags, and the house speaks the folder it uses', _chatalias_probe())
+    ck('S680 a sweep writes its tag move into the house log and a failed move is spoken aloud, never swallowed', _tagfollowvoice_probe())
     ck('S676 the copy path and the tag path are one writer - same Rect, DA, DS, Q and appearance, and never a second stamp', _onewriter_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
