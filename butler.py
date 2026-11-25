@@ -6957,12 +6957,34 @@ def _sheetheal_probe():  # SHEET-HEAL v85.339: a malformed sheet heals instead o
     except Exception:
         return False
 
-def _tmpself_probe():  # TMP-SELF-CLEAN v85.338: a killed stamp write reaps its own scratch, never leaves litter
+def _tmpself_probe():  # TMP-SELF-CLEAN v85.338: a killed stamp write reaps its own scratch, never leaves litter  # TMP-SELF-BEHAV v85.367: proven by killing the write on both paths, because a code-count probe certified the duplicate writer this lap removed
     try:
-        _sk = open(os.path.join(BASE_DIR, "stampkeeper.py"), encoding="utf-8").read()
-        return ("TMP-SELF-CLEAN v85.338" in _sk and _sk.count("TMP-SELF-CLEAN v85.338") >= 2
-                and _sk.count("tmp = new_pdf + '.tmp'") == 2
-                and _sk.count("os.remove(tmp)") >= 2)
+        import tempfile as _tf
+        import stampkeeper as _sk
+        from pypdf import PdfWriter as _PW
+        _d = _tf.mkdtemp()
+        _txt = "Sunsoft Technology" + chr(10) + "Total Experience: 9 years" + chr(10) + "Notice Period: 30 days"
+        def _boom(*_a, **_k):
+            raise OSError("killed write")
+        def _killed(_path):
+            _p = os.path.join(_d, "kill_%s.pdf" % _path)
+            _w = _PW(); _w.add_blank_page(width=595, height=842); _w.write(_p)
+            _orig = _sk.shutil.move
+            _sk.shutil.move = _boom
+            try:
+                if _path == "copy":
+                    _src = os.path.join(_d, "src.pdf")
+                    _w2 = _PW(); _w2.add_blank_page(width=595, height=842); _w2.write(_src)
+                    _sk._write_tag(_src, _txt, 200, 110, page=1)  # SIZE-HOUSE v85.360: the witness carries a stamp
+                    _sk.apply_stamp(_src, _p, page=1)
+                else:
+                    _sk._write_tag(_p, _txt, 200, 110, page=1)
+            except Exception:
+                pass
+            finally:
+                _sk.shutil.move = _orig
+            return not os.path.exists(_p + ".tmp")   # the litter, or its absence - the only thing the name promises
+        return bool(_killed("tag") and _killed("copy"))
     except Exception:
         return False
 
@@ -7235,6 +7257,56 @@ def _taglevel_probe():  # TAG-LEVEL v85.343: a sub-folder paper settles at the P
         _stay = os.path.exists(_plain)
         _above_still = os.path.exists(_above)
         return bool(_ok and _notnest and _stay and _above_still)
+    except Exception:
+        return False
+
+def _onewriter_probe():  # STAMP-ONE-WRITER v85.367: the copy path and the tag path are one writer - same Rect, DA, DS, Q and appearance, never a second stamp
+    try:
+        import tempfile as _tf
+        import stampkeeper as _sk
+        from pypdf import PdfWriter as _PW, PdfReader as _PR
+        _d = _tf.mkdtemp()
+        _txt = "Sunsoft Technology" + chr(10) + "Total Experience: 9 years" + chr(10) + "Current CTC: 9 LPA" + chr(10) + "Expected: 11 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10) + "Notice Period: Immediate Joiner"
+        _old = os.path.join(_d, "old.pdf")
+        _w = _PW(); _w.add_blank_page(width=595, height=842); _w.write(_old)
+        _sk._write_tag(_old, _txt, 200, 110, page=1)  # SIZE-HOUSE v85.360: the witness paper carries a complete stamp
+        _st = _sk.stamp_from(_old)
+        if not _st:
+            return False                      # no witness, no proof
+        _a = os.path.join(_d, "copy.pdf")
+        _w = _PW(); _w.add_blank_page(width=595, height=842); _w.write(_a)
+        _okA, _msgA = _sk.apply_stamp(_old, _a, page=1)          # path A: what the watcher copy uses
+        _b = os.path.join(_d, "tag.pdf")
+        _w = _PW(); _w.add_blank_page(width=595, height=842); _w.write(_b)
+        _okB, _msgB = _sk._write_tag(_b, _st["text"], _st["w"], _st["h"], page=1)  # path B: same text, same geometry
+        if not (_okA and _okB) or _msgA != _msgB:
+            return False                      # one writer says one sentence
+        _fa = _PR(_a).pages[0]["/Annots"][0].get_object()
+        _fb = _PR(_b).pages[0]["/Annots"][0].get_object()
+        if [float(v) for v in _fa["/Rect"]] != [float(v) for v in _fb["/Rect"]]:
+            return False                      # the same text lands in the same box
+        if str(_fa.get("/DA") or "") != str(_fb.get("/DA") or ""):
+            return False                      # one DA string - the number Preview reads
+        if str(_fa.get("/DS") or "") != str(_fb.get("/DS") or ""):
+            return False                      # one DS string - the number Preview shows
+        _qa = _fa.get("/Q"); _qb = _fb.get("/Q")
+        if (None if _qa is None else int(_qa)) != (None if _qb is None else int(_qb)):
+            return False                      # one quadding
+        def _apd(_o):
+            _n = _o["/AP"].get_object()["/N"]
+            _n = _n.get_object() if hasattr(_n, "get_object") else _n
+            return _n.get_data()
+        if _apd(_fa) != _apd(_fb):
+            return False                      # one appearance stream: face, pitch and drawing agree
+        if not _sk.stamp_verify(_a)["ok"]:
+            return False                      # the copy path is a whole stamp on its own
+        _c = os.path.join(_d, "again.pdf")
+        _w = _PW(); _w.add_blank_page(width=595, height=842); _w.write(_c)
+        _sk._write_tag(_c, _txt, 200, 110, page=1)  # SIZE-HOUSE v85.360: a paper that already carries a stamp
+        _okC, _msgC = _sk.apply_stamp(_old, _c, page=1)
+        if not _okC or _sk.stamp_health(_c)["n"] != 1:
+            return False                      # STAMP-ONE-ALL v85.346: a second writer would leave a second stamp
+        return True
     except Exception:
         return False
 
@@ -8484,6 +8556,7 @@ def _selftest(root):
     ck('S673 a Ctrl+U scope limits the chair to its own papers, and an empty scope changes nothing', _scopelaw_probe())
     ck('S674 the stamp box carries Preview own line height (1.20-1.30 x size), so editing never shrinks the text', _editfit_probe())
     ck('S675 a frame tighter than 1.20 x size is refused, so Ctrl+S widens it and editing stops shrinking', _pitchcheck_probe())
+    ck('S676 the copy path and the tag path are one writer - same Rect, DA, DS, Q and appearance, and never a second stamp', _onewriter_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
     ck('S607 a printed number is offered even at nine digits', _width_probe())
