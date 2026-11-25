@@ -7921,6 +7921,44 @@ def _sametosame_probe():  # SAME-TO-SAME v85.380: the page draws what Preview re
     except Exception:
         return False
 
+def _pixelsame_probe():  # PIXEL-SAME v85.381: our painting uses Preview own three numbers - glyph, step and inset - so a click re-draws the same picture
+    try:
+        import tempfile as _tf, re as _re
+        import stampkeeper as _sk
+        from pypdf import PdfWriter as _PW, PdfReader as _PR
+        _sz = float(_sk.STAMP_STYLE["font_size"])
+        _pts = float(_sk.STAMP_STYLE.get("editor_points") or 0)
+        _f = float(_sk.STAMP_STYLE.get("editor_factor") or 0)
+        _ins = float(_sk.STAMP_STYLE.get("editor_inset") or 0)
+        _lp = float(_sk.STAMP_STYLE.get("line_pt") or 0)
+        if min(_pts, _f, _ins, _lp) <= 0:
+            return False                  # every measured number must exist
+        if abs(_sz - _pts * _f) > 0.001:
+            return False                  # the glyph size is Preview own
+        _d = _tf.mkdtemp(prefix="px_")
+        _p = os.path.join(_d, "s.pdf")
+        _w = _PW(); _w.add_blank_page(width=595, height=842); _w.write(_p)
+        _t = "Sunsoft Technology" + chr(10) + "Total Experience: 9 years" + chr(10) + "Current CTC: 9 LPA" + chr(10) + "Expected: 11 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Mumbai" + chr(10) + "Notice Period: 45 days"
+        _sk._write_tag(_p, _t, 200, 110, page=1)
+        _a = _PR(_p).pages[0]["/Annots"][0].get_object()
+        _ap = _a["/AP"].get_object()["/N"]
+        _ap = _ap.get_object() if hasattr(_ap, "get_object") else _ap
+        _s = _ap.get_data().decode("latin-1", "ignore")
+        _dr = _re.findall(r"/TT1 ([0-9.]+) Tf", _s)
+        if not _dr or abs(float(_dr[0]) - _sz) > 0.001:
+            return False                  # the page draws the same glyph size Preview would
+        _ys = [float(m) for m in _re.findall(r"1 0 0 1 [0-9.]+ ([0-9.]+) Tm", _s)]
+        if len(_ys) < 2:
+            return False
+        if abs(abs(_ys[0] - _ys[1]) - _lp) > 0.05:
+            return False                  # the line step is the one Preview uses
+        _r = [float(v) for v in _a.get("/Rect")]
+        if abs(((_r[3] - _r[1]) - _ys[0]) - _sz * _ins) > 0.1:
+            return False                  # and the first baseline sits where Preview puts it (AP-local y vs the box height)
+        return bool(_sk.stamp_verify(_p)["ok"])
+    except Exception:
+        return False
+
 def _pitchcheck_probe():  # PITCH-CHECK v85.365: a tight frame is refused so the house widens it
     try:
         import tempfile as _tf
@@ -9180,6 +9218,7 @@ def _selftest(root):
     ck('S687 the counter is derived from the measured Preview factor, so the editor always lands back on the drawn size', _editorfactor_probe())
     ck('S688 the stamp counter reads exactly 24 in the editor, the page draws our size, and a stale counter is refused so Ctrl+S heals it', _stamp24_probe())
     ck('S689 the stamp does not move when clicked - the page draws what Preview re-draws - and the editor reads exactly 24', _sametosame_probe())
+    ck('S690 the house paints the stamp with Preview own three numbers - glyph, line step and first-baseline inset - so a click re-draws the same picture', _pixelsame_probe())
     ck('S676 the copy path and the tag path are one writer - same Rect, DA, DS, Q and appearance, and never a second stamp', _onewriter_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
