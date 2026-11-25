@@ -7991,6 +7991,38 @@ def _noclip_probe():  # NO-CLIP v85.382: every line fits inside the frame with i
     except Exception:
         return False
 
+def _vfit_probe():  # V-FIT v85.383: the last line descender stays inside the frame, and the step is still line_pt
+    try:
+        import tempfile as _tf, re as _re
+        import stampkeeper as _sk
+        from pypdf import PdfWriter as _PW, PdfReader as _PR
+        _sz = float(_sk.STAMP_STYLE["font_size"])
+        _ins = float(_sk.STAMP_STYLE.get("editor_inset") or 0)
+        _lp = float(_sk.STAMP_STYLE.get("line_pt") or 0)
+        _pad = float(_sk.STAMP_STYLE.get("pad_pt") or 0)
+        if min(_ins, _lp, _pad) <= 0:
+            return False                  # the three numbers must exist
+        _t = "Sunsoft Technology" + chr(10) + "Total Experience: 12.6 years" + chr(10) + "Current CTC: 11.17 LPA" + chr(10) + "Expected: 15 LPA" + chr(10) + "Present Location: Mumbai" + chr(10) + "Permanent Location: Gwalior" + chr(10) + "Notice Period: 90 days (Buyout)gy"
+        _d = _tf.mkdtemp(prefix="vf_")
+        _p = os.path.join(_d, "s.pdf")
+        _w = _PW(); _w.add_blank_page(width=595, height=842); _w.write(_p)
+        _sk._write_tag(_p, _t, 200, 110, page=1)
+        _a = _PR(_p).pages[0]["/Annots"][0].get_object()
+        _ap = _a["/AP"].get_object()["/N"]
+        _ap = _ap.get_object() if hasattr(_ap, "get_object") else _ap
+        _ys = [float(m) for m in _re.findall(r"1 0 0 1 [0-9.]+ ([0-9.]+) Tm", _ap.get_data().decode("latin-1", "ignore"))]
+        _n = len([l for l in _t.split(chr(10)) if l.strip()])
+        if len(_ys) != _n:
+            return False                  # one baseline per line
+        if abs((_ys[0] - _ys[1]) - _lp) > 0.01:
+            return False                  # the step is line_pt, independent of the box height
+        _desc = _sz * 0.22                    # a descender is about a fifth of the size
+        if _ys[-1] - _desc < 0.5:
+            return False                  # THE LAST LINE DESCENDER IS INSIDE THE FRAME - no vertical cut
+        return bool(_sk.stamp_verify(_p)["ok"])
+    except Exception:
+        return False
+
 def _pitchcheck_probe():  # PITCH-CHECK v85.365: a tight frame is refused so the house widens it
     try:
         import tempfile as _tf
@@ -9252,6 +9284,7 @@ def _selftest(root):
     ck('S689 the stamp does not move when clicked - the page draws what Preview re-draws - and the editor reads exactly 24', _sametosame_probe())
     ck('S690 the house paints the stamp with Preview own three numbers - glyph, line step and first-baseline inset - so a click re-draws the same picture', _pixelsame_probe())
     ck('S691 the frame holds the longest line plus its inset, measured at the real size - no text is cut before a click', _noclip_probe())
+    ck('S692 the frame keeps the last line descender inside it - no vertical cut before a click - and the step stays line_pt', _vfit_probe())
     ck('S676 the copy path and the tag path are one writer - same Rect, DA, DS, Q and appearance, and never a second stamp', _onewriter_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
