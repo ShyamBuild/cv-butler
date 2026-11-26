@@ -2048,42 +2048,53 @@ def _locked_names():  # SEAT-SETTLE v85.387: a name the master locked is never r
     except Exception:
         return set()
 
-def _seat_settle(folder, say=None):  # SEAT-SETTLE v85.387: a seat family packs tight and a lone twin RISES to the plain name the moment the plain paper is gone
-    try:  # the shelf pairs a source with its PDF, so the conversion lap settles that pair - never this one
-        if os.path.basename(os.path.normpath(folder)).lower() in ("converted files", "converted doc files"):
-            return 0
+def _seat_settle(folder, say=None):  # SEAT-SETTLE v85.387 + PAIR-SETTLE v85.388: a seat family packs tight, a lone twin RISES to the plain name, and a converted source rises WITH its paper, never apart
+    try:
         import re as _re4
         _lock = _locked_names()
         _names = os.listdir(folder)
     except Exception:
         return 0
+    _SRC = (".docx", ".doc", ".rtf")      # PAIR-SETTLE v85.388: a rendered source is a member of the family, never a stranger
     _fam = {}
     for _n in _names:
         _b, _e = os.path.splitext(_n)
-        if _e.lower() != ".pdf":
-            continue                  # the papers are PDFs; a converted source is settled by the conversion lap
+        _ext = _e.lower()
+        if _ext != ".pdf" and _ext not in _SRC:
+            continue
         _m = _re4.match(chr(94) + "(.*?)" + chr(95) + "(\\d+)" + chr(36), _b)
         if not _m or not _m.group(1) or _m.group(1) != _m.group(1).strip():
             continue                  # a bare number or a trailing space is not a family head
-        _fam.setdefault(_m.group(1), []).append((int(_m.group(2)), _n))
+        _fam.setdefault(_m.group(1), []).append((int(_m.group(2)), _ext, _n))
     _moved = 0
     for _stem, _seats in sorted(_fam.items()):
         if _stem.lower() in _lock:
             continue                  # the master locked this name - it rests exactly as it is
         if _jd_like_name(_stem) or _portal_name(_stem):
             continue                  # a JD or a portal artefact keeps its name forever
-        _plain = os.path.join(folder, _stem + ".pdf")
+        _seats.sort()
+        _anchor = ([_s for _s in _seats if _s[1] == ".pdf"] or _seats)[0]   # PAIR-SETTLE v85.388: the paper leads; a shelf with no paper hands the lead to its lowest source
+        _plain = os.path.join(folder, _stem + _anchor[1])
         if not os.path.exists(_plain):
-            _p0 = os.path.join(folder, sorted(_seats)[0][1])
+            _p0 = os.path.join(folder, _anchor[2])
             if _is_candidate_paper(_p0) and not _settling(_p0):
-                try:
-                    os.rename(_p0, _plain); _moved += 1
-                    if say: say("🔢 seat rose: %s -> %s" % (os.path.basename(_p0), os.path.basename(_plain)))
+                for _num, _ext, _n in [_s for _s in _seats if _s[0] == _anchor[0]]:   # PAIR-SETTLE v85.388: every member of that index rises in the same breath
+                    _sp = os.path.join(folder, _n)
+                    _dst = os.path.join(folder, _stem + _ext)
+                    if os.path.exists(_dst):
+                        continue      # never land on a name that is already there
                     try:
-                        _safe_rename_ledger(_p0, _stem, "seat-promote", once=True); _safe_repath_ledgers(_p0, _plain)
+                        os.rename(_sp, _dst); _moved += 1
+                        if say: say("🔢 seat rose: %s -> %s" % (_n, _stem + _ext))
+                        if _ext == ".pdf":
+                            try:
+                                _safe_rename_ledger(_sp, _stem, "seat-promote", once=True); _safe_repath_ledgers(_sp, _dst)
+                            except Exception: pass
                     except Exception: pass
-                except Exception: pass
         _moved += _seat_pack(folder, _stem, ".pdf", say)   # NAME-AUTHORITY v85.252: ONE packer, so a family never learns two habits
+        for _se in _SRC:
+            if any(_s[1] == _se for _s in _seats):
+                _moved += _seat_pack(folder, _stem, _se, say)   # PAIR-SETTLE v85.388: the sources pack by the same numbers as the papers
     return _moved
 
 def _bare_stem(name):  # SUMMARY-DEAD v85.253: a stem ends before its FIRST office extension - a scar like "X.pdf.sb-9f2" is X, never X.pdf
@@ -8146,6 +8157,45 @@ def _seatsettle_probe():  # SEAT-SETTLE v85.387: a family packs tight, a lone tw
     except Exception:
         return False
 
+def _pairsettle_probe():  # PAIR-SETTLE v85.388: a source rises and packs WITH its paper, a shelf of sources settles alone, and a member of another index never jumps onto the plain name
+    try:
+        import tempfile as _tf
+        _d = _tf.mkdtemp(prefix="pair_")
+        _stage = os.path.join(_d, "Position", "Stage")
+        _shelf = os.path.join(_d, "Position", "Converted Files")
+        os.makedirs(_stage); os.makedirs(_shelf)
+        def _put(D, n):
+            open(os.path.join(D, n), "w").write("x" + chr(10))
+        def _nm(D):
+            return sorted(os.listdir(D))
+        for _n in ("Ramesh Patil_1.pdf", "Ramesh Patil_1.docx", "Ramesh Patil_2.pdf", "Ramesh Patil_2.docx"):
+            _put(_stage, _n)
+        if _seat_settle(_stage) != 4:
+            return False              # two rises and two packs - the pair moved in the same breath
+        if _nm(_stage) != ["Ramesh Patil.docx", "Ramesh Patil.pdf", "Ramesh Patil_1.docx", "Ramesh Patil_1.pdf"]:
+            return False              # the paper and its source are still in step
+        if _seat_settle(_stage) != 0:
+            return False              # a settled family rests
+        _put(_shelf, "Sunita Rao_1.docx"); _put(_shelf, "Sunita Rao_2.doc")
+        if _seat_settle(_shelf) != 2:
+            return False              # the lowest source rises, the other packs down
+        if _nm(_shelf) != ["Sunita Rao.docx", "Sunita Rao_1.doc"]:
+            return False
+        if any(_x.lower().endswith(".pdf") for _x in _nm(_shelf)):
+            return False              # never a paper that nobody rendered
+        _put(_stage, "Kiran Joshi_1.pdf"); _put(_stage, "Kiran Joshi_3.docx")
+        _seat_settle(_stage)
+        if "Kiran Joshi.pdf" not in _nm(_stage) or "Kiran Joshi.docx" in _nm(_stage):
+            return False              # the paper led; the source at another index never jumps onto the plain name
+        if "Kiran Joshi_1.docx" not in _nm(_stage):
+            return False              # ... it packs down to the first free seat instead
+        _put(_stage, "JD_Ramesh_1.pdf")
+        if "JD_Ramesh_1.pdf" not in _nm(_stage):
+            return False              # a JD is never a person family
+        return True
+    except Exception:
+        return False
+
 def _houseguards_probe():  # HOUSE-GUARDS v85.386: the gate restores every code file a note may write, a no-patch ship refuses code dirt, and the relaunch plans exactly ONE watcher per root
     try:
         import tempfile as _tf, subprocess as _sp
@@ -9550,6 +9600,7 @@ def _selftest(root):
     ck('S695 the approved stamp cannot drift - editor_points 24, factor 0.483003917, step 14.0, bleed 0.5 and a frame of ink + 2 x bleed', _stamplock_probe())
     ck('S696 the gate restores every code file a note may write, refuses code dirt on a no-patch ship, and plans exactly ONE watcher per root', _houseguards_probe())
     ck('S697 a seat family packs tight and a lone twin rises to the plain name the moment the plain paper is gone - instantly, and a same-name arrival takes the next number', _seatsettle_probe())
+    ck('S698 a converted source rises and packs WITH its paper - never apart - and a shelf of sources settles without inventing a paper', _pairsettle_probe())
     ck('S676 the copy path and the tag path are one writer - same Rect, DA, DS, Q and appearance, and never a second stamp', _onewriter_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
