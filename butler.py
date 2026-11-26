@@ -2041,6 +2041,51 @@ def _seat_pack(folder, stem, ext, say=None):  # NAME-AUTHORITY v85.252: suffix s
     return moved
 
 _STRAY_EXT = (chr(46) + 'pdf', chr(46) + 'doc', chr(46) + 'docx', chr(46) + 'rtf', chr(46) + 'xlsx', chr(46) + 'msg', chr(46) + 'eml')
+def _locked_names():  # SEAT-SETTLE v85.387: a name the master locked is never renumbered and never promoted
+    try:
+        import json as _jl
+        return {str(x).lower() for x in _jl.load(open(os.path.join(BASE_DIR, "name_locks.json")))}
+    except Exception:
+        return set()
+
+def _seat_settle(folder, say=None):  # SEAT-SETTLE v85.387: a seat family packs tight and a lone twin RISES to the plain name the moment the plain paper is gone
+    try:  # the shelf pairs a source with its PDF, so the conversion lap settles that pair - never this one
+        if os.path.basename(os.path.normpath(folder)).lower() in ("converted files", "converted doc files"):
+            return 0
+        import re as _re4
+        _lock = _locked_names()
+        _names = os.listdir(folder)
+    except Exception:
+        return 0
+    _fam = {}
+    for _n in _names:
+        _b, _e = os.path.splitext(_n)
+        if _e.lower() != ".pdf":
+            continue                  # the papers are PDFs; a converted source is settled by the conversion lap
+        _m = _re4.match(chr(94) + "(.*?)" + chr(95) + "(\\d+)" + chr(36), _b)
+        if not _m or not _m.group(1) or _m.group(1) != _m.group(1).strip():
+            continue                  # a bare number or a trailing space is not a family head
+        _fam.setdefault(_m.group(1), []).append((int(_m.group(2)), _n))
+    _moved = 0
+    for _stem, _seats in sorted(_fam.items()):
+        if _stem.lower() in _lock:
+            continue                  # the master locked this name - it rests exactly as it is
+        if _jd_like_name(_stem) or _portal_name(_stem):
+            continue                  # a JD or a portal artefact keeps its name forever
+        _plain = os.path.join(folder, _stem + ".pdf")
+        if not os.path.exists(_plain):
+            _p0 = os.path.join(folder, sorted(_seats)[0][1])
+            if _is_candidate_paper(_p0) and not _settling(_p0):
+                try:
+                    os.rename(_p0, _plain); _moved += 1
+                    if say: say("🔢 seat rose: %s -> %s" % (os.path.basename(_p0), os.path.basename(_plain)))
+                    try:
+                        _safe_rename_ledger(_p0, _stem, "seat-promote", once=True); _safe_repath_ledgers(_p0, _plain)
+                    except Exception: pass
+                except Exception: pass
+        _moved += _seat_pack(folder, _stem, ".pdf", say)   # NAME-AUTHORITY v85.252: ONE packer, so a family never learns two habits
+    return _moved
+
 def _bare_stem(name):  # SUMMARY-DEAD v85.253: a stem ends before its FIRST office extension - a scar like "X.pdf.sb-9f2" is X, never X.pdf
     _low = str(name).lower()
     for _e in _STRAY_EXT:
@@ -2757,6 +2802,7 @@ def _event_tick(root, log=print):  # RENAME-WATCH v85.52 + CONVERT-WATCH v85.52:
                 _convert_to_pdf(p, log)
             elif ext == '.pdf':
                 _fast_rename(p, root, log)
+        _seat_settle(dpath, log)  # SEAT-SETTLE v85.387: one settle per changed folder per beat - the same law, for a hand the event door never heard
 
 def _tick_log(msg):  # BELL-TOWER v85.55: the bell keeps its own book - one timestamped line per deed, readable from any folder, independent of whichever process owns the key
     try:
@@ -4612,6 +4658,7 @@ class Butler:
         if not os.path.isdir(folder): return
         try:
             self._compact_numbers(folder, print)
+            _seat_settle(folder, print)  # SEAT-SETTLE v85.387: a deletion settles its family at once - the twins rise and pack
         except Exception as e:
             print(f"⚠️ compact error in {folder}: {e}")
 
@@ -5566,6 +5613,7 @@ class Butler:
                     except Exception: pass
             self.handle_pdf(p, say)
             if not sk: self.handle_tags(p, say)
+            _seat_settle(os.path.dirname(p), say)  # SEAT-SETTLE v85.387: the folder settles when its paper is routed - the boot scan therefore settles the whole house
             self._compact_numbers(os.path.dirname(p), say)
         elif ext == '.xlsx':
             p = self._summary_xlsx(p, say)  # SUMMARY-CALL v71
@@ -8057,6 +8105,44 @@ def _inkfit_probe():  # INK-FIT v85.384: the frame is at least the ink and at mo
     except Exception:
         return False
 
+def _seatsettle_probe():  # SEAT-SETTLE v85.387: a family packs tight, a lone twin rises to the plain name, and the next same-name paper takes the next number
+    try:
+        import tempfile as _tf
+        _d = _tf.mkdtemp(prefix="seat_")
+        _stage = os.path.join(_d, "Position", "Stage")     # HOUSE->POSITION->STAGE, never a one-level fixture
+        os.makedirs(_stage)
+        def _put(n):
+            open(os.path.join(_stage, n), "w").write("x" + chr(10))
+        def _names():
+            return sorted(os.listdir(_stage))
+        for _n in ("Amit Sharma.pdf", "Amit Sharma_1.pdf", "Amit Sharma_2.pdf"):
+            _put(_n)
+        os.remove(os.path.join(_stage, "Amit Sharma.pdf"))   # the master deletes the plain paper by hand
+        if _seat_settle(_stage) != 2:
+            return False              # one promotion AND one pack - two deeds, no more
+        if _names() != ["Amit Sharma.pdf", "Amit Sharma_1.pdf"]:
+            return False              # the lone twin rose, the family closed the gap
+        _put("Amit Sharma_4.pdf")
+        if _seat_settle(_stage) != 1 or _names() != ["Amit Sharma.pdf", "Amit Sharma_1.pdf", "Amit Sharma_2.pdf"]:
+            return False              # a gap closes on the following paper, the plain name is never re-taken
+        if _seat_settle(_stage) != 0:
+            return False              # a settled family rests - no churn on the tick
+        _put("Amit Sharma_3.pdf")
+        if os.path.basename(_free_seat(os.path.join(_stage, "Amit Sharma.pdf"))) != "Amit Sharma_4.pdf":
+            return False              # a same-name arrival takes the NEXT number after the name
+        os.remove(os.path.join(_stage, "Amit Sharma_3.pdf"))
+        _put("JD_Pankaj_1.pdf"); _put("Summary_1.xlsx")
+        if _seat_settle(_stage) != 0:
+            return False              # a JD and a spreadsheet are never a person family
+        if "JD_Pankaj_1.pdf" not in _names() or "Summary_1.xlsx" not in _names():
+            return False
+        _src = open(os.path.abspath(__file__), encoding="utf-8", errors="replace").read()
+        _nm = "_seat" + "_settle("            # built, never written - a guard may not certify its own text
+        return ((_nm + "folder") in _src and (_nm + "dpath") in _src
+                and (_nm + "os.path.dirname(p)") in _src)   # the event door, the beat AND the routed paper
+    except Exception:
+        return False
+
 def _houseguards_probe():  # HOUSE-GUARDS v85.386: the gate restores every code file a note may write, a no-patch ship refuses code dirt, and the relaunch plans exactly ONE watcher per root
     try:
         import tempfile as _tf, subprocess as _sp
@@ -9460,6 +9546,7 @@ def _selftest(root):
     ck('S694 one gateway writes every stamp - one FreeText constructor and one /DA writer, both in stampkeeper, and Ctrl+S, Ctrl+V and the arrival path all call it', _gateway_probe())
     ck('S695 the approved stamp cannot drift - editor_points 24, factor 0.483003917, step 14.0, bleed 0.5 and a frame of ink + 2 x bleed', _stamplock_probe())
     ck('S696 the gate restores every code file a note may write, refuses code dirt on a no-patch ship, and plans exactly ONE watcher per root', _houseguards_probe())
+    ck('S697 a seat family packs tight and a lone twin rises to the plain name the moment the plain paper is gone - instantly, and a same-name arrival takes the next number', _seatsettle_probe())
     ck('S676 the copy path and the tag path are one writer - same Rect, DA, DS, Q and appearance, and never a second stamp', _onewriter_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
