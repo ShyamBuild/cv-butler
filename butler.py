@@ -5964,6 +5964,9 @@ def main():
         def on_deleted(self, e):
             if not e.is_directory:
                 B._check_siblings(os.path.dirname(e.src_path))
+    for _sdp, _sdn, _sfn in os.walk(root):  # SEAT-SETTLE v85.387: the whole house settles once at boot - a twin whose base went while the house slept rises now, before a single event
+        _sdn[:] = [d for d in _sdn if not d.startswith(".")]
+        _seat_settle(_sdp, print)
     obs = Observer(); obs.schedule(H(), path=root, recursive=True); obs.start()
     cleaner.clean_tree(root, print)   # startup tidy (Trash-only, two-observation rule)
 
@@ -8139,7 +8142,7 @@ def _seatsettle_probe():  # SEAT-SETTLE v85.387: a family packs tight, a lone tw
         _src = open(os.path.abspath(__file__), encoding="utf-8", errors="replace").read()
         _nm = "_seat" + "_settle("            # built, never written - a guard may not certify its own text
         return ((_nm + "folder") in _src and (_nm + "dpath") in _src
-                and (_nm + "os.path.dirname(p)") in _src)   # the event door, the beat AND the routed paper
+                and (_nm + "os.path.dirname(p)") in _src and (_nm + "_sdp") in _src)   # the event door, the beat, the routed paper AND the boot
     except Exception:
         return False
 
