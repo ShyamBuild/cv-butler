@@ -8057,6 +8057,87 @@ def _inkfit_probe():  # INK-FIT v85.384: the frame is at least the ink and at mo
     except Exception:
         return False
 
+def _houseguards_probe():  # HOUSE-GUARDS v85.386: the gate restores every code file a note may write, a no-patch ship refuses code dirt, and the relaunch plans exactly ONE watcher per root
+    try:
+        import tempfile as _tf, subprocess as _sp
+        _ship = os.path.join(BASE_DIR, "ship.sh")
+        if not os.path.exists(_ship):
+            return False                  # the gate itself must exist
+        _src = open(_ship, encoding="utf-8", errors="replace").read()
+        _decl = "ROLLBACK" + "_LIST=("    # built, never written as one token - a guard may not certify its own text
+        _row = next((l for l in _src.split(chr(10)) if l.strip().startswith(_decl)), None)
+        if _row is None:
+            return False                  # (a) the list is declared once, by name
+        _rb = [t.strip() for t in _row.split("(", 1)[1].split(")")[0].split() if t.strip()]
+        if not _rb:
+            return False
+        _touched = set()                  # what a note may write, measured from the notes - never remembered
+        _q = "[" + chr(34) + chr(39) + "]"
+        for _sub in ("notes", os.path.join("notes", "applied")):
+            _dd = os.path.join(BASE_DIR, _sub)
+            if not os.path.isdir(_dd):
+                return False
+            for _f in sorted(os.listdir(_dd)):
+                if not _f.endswith(".py"):
+                    continue
+                _t = open(os.path.join(_dd, _f), encoding="utf-8", errors="replace").read()
+                for _m in re.findall(r"P\.write(?:_raw)?\([^)]*?" + _q + r"([\w./-]+\.py)" + _q, _t):
+                    _touched.add(_m)
+        if not _touched:
+            return False                  # a corpus that names nothing proves nothing
+        if _touched - set(_rb):
+            return False                  # (a) every file a note may write must be restorable
+        _d = _tf.mkdtemp(prefix="houseg_")
+        try:
+            _env = dict(os.environ)
+            _env["CV_TOOL"] = _d
+            _env["CV_ROOT"] = os.path.join(_d, "root")
+            def _go(*_a):
+                return _sp.run(list(_a), cwd=_d, env=_env, capture_output=True, text=True, timeout=25)
+            os.makedirs(_env["CV_ROOT"])
+            os.makedirs(os.path.join(_d, "notes"))
+            for _f in _rb + ["summary_builder.py"]:
+                _p = os.path.join(_d, _f)
+                if not os.path.isdir(os.path.dirname(_p)):
+                    os.makedirs(os.path.dirname(_p))
+                open(_p, "w").write("v0" + chr(10))
+            if _go("git", "init", "-q").returncode != 0:
+                return False
+            if _go("git", "add", "-A").returncode != 0:
+                return False
+            if _go("git", "-c", "user.email=g@l", "-c", "user.name=g", "commit", "-qm", "base").returncode != 0:
+                return False
+            for _f in _rb:                      # (b) every listed code file is dirtied - and nothing else
+                open(os.path.join(_d, _f), "a").write("dirt" + chr(10))
+            if _go("zsh", _ship, "--rollback").returncode != 0:
+                return False              # (b) the rollback door opens
+            if _go("git", "status", "--porcelain").stdout.strip():
+                return False              # (b) and leaves not ONE code file dirty - the half-state is gone
+            _c1 = _go("zsh", _ship, "--purity")
+            if _c1.returncode != 0 or "HEAD" not in _c1.stdout:
+                return False              # (c) a clean no-patch tree passes
+            open(os.path.join(_d, "butler.py"), "a").write("dirt" + chr(10))
+            if _go("zsh", _ship, "--purity").returncode == 0:
+                return False              # (c) dirty butler.py in a no-patch tree must refuse
+            _go("zsh", _ship, "--rollback")
+            open(os.path.join(_d, "summary_builder.py"), "a").write("dirt" + chr(10))
+            if _go("zsh", _ship, "--purity").returncode == 0:
+                return False              # (c) law 31 names summary_builder.py as well
+            _i_gate = _src.find("[ -z " + chr(34) + "$PATCH" + chr(34) + " ]")
+            if not (_src.find("ALL GREEN") < _i_gate < _src.find("git add -A")):
+                return False              # (c) the refusal stands BEFORE the commit, not after it
+            _r1 = os.path.join(_d, "watcher_root")
+            os.makedirs(_r1)
+            for _n in ("a", "b"):
+                open(os.path.join(_d, "butler_%s.lock" % _n), "w").write("%d|%s" % (os.getpid(), _r1))
+            _rd = _go("zsh", _ship, "--roots")
+            _roots = [l.strip() for l in _rd.stdout.split(chr(10)) if l.strip()]
+            return (_rd.returncode == 0 and _r1 in _roots and _env["CV_ROOT"] in _roots and len(_roots) == len(set(_roots)))
+        finally:
+            pass  # the mkdtemp tree is unique per run and reaped by the OS; the house speaks no deletion verb (S166-class guards)
+    except Exception:
+        return False
+
 def _gateway_probe():  # STAMP-LOCK v85.385: exactly ONE gateway writes a stamp - every door calls it and nothing else writes the number Preview reads
     try:
         _base = BASE_DIR
@@ -9378,6 +9459,7 @@ def _selftest(root):
     ck('S693 the frame is exactly the ink plus one bleed on every axis - never cut before a click, never padded beyond the text', _inkfit_probe())
     ck('S694 one gateway writes every stamp - one FreeText constructor and one /DA writer, both in stampkeeper, and Ctrl+S, Ctrl+V and the arrival path all call it', _gateway_probe())
     ck('S695 the approved stamp cannot drift - editor_points 24, factor 0.483003917, step 14.0, bleed 0.5 and a frame of ink + 2 x bleed', _stamplock_probe())
+    ck('S696 the gate restores every code file a note may write, refuses code dirt on a no-patch ship, and plans exactly ONE watcher per root', _houseguards_probe())
     ck('S676 the copy path and the tag path are one writer - same Rect, DA, DS, Q and appearance, and never a second stamp', _onewriter_probe())
     ck('S609 a dead number hands on to the next witness', _nextnumber_probe())
     ck('S608 a closed page is re-armed before a park', _targetrecover_probe())
